@@ -1,0 +1,1 @@
+import{_ as e}from"./vendor-quill-Dxrwdmtq.js";import{l as t,f as n,z as r}from"./vendor-vue-core-CZdz8cHV.js";import"./vendor-8yHaUXFb.js";const s={name:"TaxComponent"};function a(c,p,_,m,f,i){const o=t("router-view");return n(),r(o)}const d=e(s,[["render",a]]);export{d as default};

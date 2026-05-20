@@ -1,0 +1,1 @@
+import{_ as t}from"./vendor-quill-Dxrwdmtq.js";import{l as e,f as r,z as n}from"./vendor-vue-core-CZdz8cHV.js";import"./vendor-8yHaUXFb.js";const c={name:"ProductAttributeComponent"};function s(p,a,_,m,i,u){const o=e("router-view");return r(),n(o)}const $=t(c,[["render",s]]);export{$ as default};
