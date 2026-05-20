@@ -39,3 +39,13 @@ storage/media-library/
 public/file/service-account-file.json
 .env
 /storage/
+# build files
+*.zip
+
+# node / frontend builds
+/public/build
+/resources/js.zip
+
+# large seed images (optional)
+public/images/seeder/
+
