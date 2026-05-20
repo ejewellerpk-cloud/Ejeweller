@@ -1,0 +1,48 @@
+========================================================================
+             LIST OF MODIFIED SOURCE FILES TO UPLOAD TO SERVER
+========================================================================
+
+Below is the exact list of custom source files modified in this session. 
+Upload these files to their respective locations on your production server.
+
+------------------------------------------------------------------------
+[BACKEND / LARAVEL FILES (PHP & Blade Templates)]
+------------------------------------------------------------------------
+1. shopperzz/app/Http/Controllers/frontend/OtpController.php
+2. shopperzz/app/Http/Requests/OtpRequest.php
+3. shopperzz/app/Libraries/AppLibrary.php
+4. shopperzz/app/Services/OrderService.php
+5. shopperzz/app/Services/FrontendOrderService.php
+6. shopperzz/app/Http/Requests/SiteRequest.php
+7. shopperzz/resources/views/emails/password.blade.php
+8. shopperzz/resources/views/emails/order.blade.php
+9. shopperzz/resources/views/emails/orderGot.blade.php
+10. shopperzz/resources/views/emails/subscriber.blade.php
+11. shopperzz/app/Services/ProductService.php
+
+------------------------------------------------------------------------
+[FRONTEND / VUE FILES (Source code)]
+------------------------------------------------------------------------
+12. shopperzz/resources/js/components/frontend/auth/LoginComponent.vue
+13. shopperzz/resources/js/components/frontend/auth/OtpComponent.vue
+14. shopperzz/resources/js/components/frontend/auth/ForgotPasswordComponent.vue
+15. shopperzz/resources/js/components/frontend/product/ProductDetailsComponent.vue
+16. shopperzz/resources/js/components/frontend/components/ProductListComponent.vue
+17. shopperzz/resources/js/components/admin/settings/Site/SiteComponent.vue
+18. shopperzz/resources/js/services/appService.js
+19. shopperzz/resources/js/store/modules/frontend/frontendProduct.js
+20. shopperzz/resources/js/components/frontend/wishlist/WishlistComponent.vue
+21. shopperzz/resources/js/store/modules/frontend/frontendCart.js
+22. shopperzz/resources/js/components/layouts/frontend/FrontendCartComponent.vue
+23. shopperzz/resources/js/components/frontend/checkout/cartList/CartListComponent.vue
+24. shopperzz/resources/js/components/frontend/checkout/SummeryComponent.vue
+25. shopperzz/resources/js/components/DefaultComponent.vue
+26. shopperzz/resources/js/store/modules/auth.js
+27. shopperzz/resources/js/languages/en.json
+
+========================================================================
+NOTE: 
+After uploading the frontend Vue source files, make sure to compile the 
+production bundle using "npm run build" (on your local or staging server) 
+and upload the compiled "shopperzz/public/build" folder to your server as well.
+========================================================================
