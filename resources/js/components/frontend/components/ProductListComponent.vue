@@ -105,7 +105,7 @@
                         </span>
                     </div>
 
-                    <!-- Add to Cart Round Icon Button (replacing the Buy Now button) -->
+                    <!-- Add to Cart Round Icon Button -->
                     <button type="button" @click.prevent.stop="addToCart(product)" title="Add to Cart"
                         class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300">
                         <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>

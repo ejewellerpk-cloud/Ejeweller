@@ -165,6 +165,20 @@ class Product extends Model implements HasMedia
         return '';
     }
 
+    public function getStockAttribute(): int
+    {
+        if ($this->show_stock_out == \App\Enums\Activity::DISABLE) {
+            if ($this->can_purchasable == \App\Enums\Ask::NO) {
+                return (int) env('NON_PURCHASE_QUANTITY', 99999);
+            }
+            if (isset($this->attributes['stock_items_sum_quantity'])) {
+                return (int) $this->attributes['stock_items_sum_quantity'];
+            }
+            return (int) $this->stockItems()->sum('quantity');
+        }
+        return 0;
+    }
+
     public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')->width(168)->height(180)->keepOriginalImageFormat()->quality(70)->nonOptimized();

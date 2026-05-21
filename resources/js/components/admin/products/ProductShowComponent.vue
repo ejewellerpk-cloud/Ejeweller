@@ -237,7 +237,7 @@
                             <p class="text-sm font-semibold text-gray-500">
                                 {{ $t('label.images') }} &mdash;
                                 <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>/6
-                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag & drop to reorder. Image #1 = Cover photo.</span>
+                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag & drop to reorder. Image #1 = Cover photo. (Recommended Size: 1000x1000 px Square)</span>
                             </p>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <label for="addImage" v-if="product.images && product.images.length < 6"

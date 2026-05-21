@@ -31,6 +31,7 @@ class SimpleProductResource extends JsonResource
             'discounted_price'  => AppLibrary::currencyAmountFormat($price - (($price / 100) * $this->discount)),
             'price'             => (double) ($price - (($price / 100) * $this->discount)),
             'old_price'         => (double) $price,
+            'stock'             => (int) $this->stock,
             'maximum_purchase_quantity' => (int) $this->maximum_purchase_quantity,
             'taxes'             => ProductTaxResource::collection($this->taxes),
             'shipping'          => [
