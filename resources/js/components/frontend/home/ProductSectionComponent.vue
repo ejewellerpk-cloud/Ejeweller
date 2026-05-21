@@ -20,7 +20,7 @@
                     <Swiper
                         :dir="'ltr'"
                         :slides-per-view="2"
-                        :space-between="16"
+                        :space-between="10"
                         :navigation="true"
                         :modules="modules"
                         :breakpoints="{
@@ -67,7 +67,7 @@
                     <Swiper
                         :dir="'ltr'"
                         :slides-per-view="2"
-                        :space-between="16"
+                        :space-between="10"
                         :navigation="true"
                         :modules="modules"
                         :breakpoints="{
