@@ -1,25 +1,26 @@
 <template>
-    <LoadingComponent :props="loading" />
-
-    <section class="mb-3 sm:mb-10" v-if="brands.length > 0">
-        <div class="container">
-            <h2 class="capitalize text-2xl sm:text-4xl font-bold -mb-10">
-                {{ $t('label.popular_brands') }}
-            </h2>
-            <Swiper dir="ltr" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
-                <SwiperSlide v-for="brand in brands" class="mobile:!w-[120px]">
-                    <router-link :to="{name: 'frontend.product', query:{ brand: brand.slug }}" class="w-full rounded-2xl shadow-xs group border border-gray-100">
-                        <figure class="w-full h-[120px] flex items-center justify-center">
-                            <img :src="brand.cover" alt="brand" class="w-14">
-                        </figure>
-                        <span class="text-sm sm:text-lg font-medium capitalize text-center pb-3 block group-hover:text-primary">
-                                {{ brand.name }}
-                            </span>
-                    </router-link>
-                </SwiperSlide>
-            </Swiper>
-        </div>
-    </section>
+    <div ref="lazySection" class="relative min-h-[50px]">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+        <section class="mb-3 sm:mb-10" v-if="brands.length > 0">
+            <div class="container">
+                <h2 class="capitalize text-2xl sm:text-4xl font-bold -mb-10">
+                    {{ $t('label.popular_brands') }}
+                </h2>
+                <Swiper dir="ltr" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
+                    <SwiperSlide v-for="brand in brands" class="mobile:!w-[120px]">
+                        <router-link :to="{name: 'frontend.product', query:{ brand: brand.slug }}" class="w-full rounded-2xl shadow-xs group border border-gray-100">
+                            <figure class="w-full h-[120px] flex items-center justify-center">
+                                <img :src="brand.cover" alt="brand" class="w-14">
+                            </figure>
+                            <span class="text-sm sm:text-lg font-medium capitalize text-center pb-3 block group-hover:text-primary">
+                                    {{ brand.name }}
+                                </span>
+                        </router-link>
+                    </SwiperSlide>
+                </Swiper>
+            </div>
+        </section>
+    </div>
 </template>
 
 <script>
@@ -61,17 +62,35 @@ export default {
         },
     },
     mounted() {
-        this.loading.isActive = true;
-        this.$store.dispatch("frontendProductBrand/lists", {
-            paginate: 0,
-            order_column: "id",
-            order_type: "asc",
-            status: statusEnum.ACTIVE,
-        }).then(res => {
-            this.loading.isActive = false;
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                this.fetchData();
+                observer.disconnect();
+            }
+        }, { rootMargin: '300px' });
+        
+        if (this.$refs.lazySection) {
+            observer.observe(this.$refs.lazySection);
+        } else {
+            this.fetchData();
+        }
+    },
+    methods: {
+        fetchData() {
+            if (this.brands.length > 0) return;
+
+            this.loading.isActive = true;
+            this.$store.dispatch("frontendProductBrand/lists", {
+                paginate: 0,
+                order_column: "id",
+                order_type: "asc",
+                status: statusEnum.ACTIVE,
+            }).then(res => {
+                this.loading.isActive = false;
+            }).catch((err) => {
+                this.loading.isActive = false;
+            });
+        }
     }
 }
 </script>

@@ -46,7 +46,12 @@ class ProductSectionProductResource extends JsonResource
             'stock'                                     => $this->product?->stock,
             'slug'                                      => $this->product?->slug,
             'cover'                                     => $this->product?->cover,
+            'previews'                                  => $this->product?->previews,
             'variation_count'                           => (int) count($this->product?->variations),
+            'rating_star'                               => $this->product?->rating_star,
+            'rating_star_count'                         => (int) $this->product?->rating_star_count,
+            'wishlist'                                  => (bool) $this->product?->wishlist,
+            'videos'                                    => ProductVideoResource::collection($this->product?->videos),
         ];
     }
 }

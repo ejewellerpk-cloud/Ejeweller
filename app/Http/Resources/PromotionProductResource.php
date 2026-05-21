@@ -34,10 +34,18 @@ class PromotionProductResource extends JsonResource
                 'shipping_cost'  => (double) $this->product?->shipping_cost,
                 'is_product_quantity_multiply' => $this->product?->is_product_quantity_multiply
             ],
+            'currency_price'                       => AppLibrary::currencyAmountFormat($price),
+            'flash_sale'                           => $this->product?->add_to_flash_sale == Ask::YES,
+            'is_offer'                             => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date),
             'stock'                                => $this->product?->stock,
             'slug'                                 => $this->product?->slug,
             'cover'                                => $this->product?->cover,
+            'previews'                             => $this->product?->previews,
             'variation_count'                      => (int) count($this->product?->variations),
+            'rating_star'                          => $this->product?->rating_star,
+            'rating_star_count'                    => (int) $this->product?->rating_star_count,
+            'wishlist'                             => (bool) $this->product?->wishlist,
+            'videos'                               => ProductVideoResource::collection($this->product?->videos),
         ];
     }
 }
