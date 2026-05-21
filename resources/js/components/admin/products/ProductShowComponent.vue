@@ -237,16 +237,9 @@
                             <p class="text-sm font-semibold text-gray-500">
                                 {{ $t('label.images') }} &mdash;
                                 <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>/6
-                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Arrow buttons se reorder karo. Image #1 = Cover photo.</span>
+                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag & drop to reorder. Image #1 = Cover photo.</span>
                             </p>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <!-- Save Order Button — only visible when order changed -->
-                                <button type="button" v-if="imageOrderChanged"
-                                    @click.prevent="saveImageOrder"
-                                    class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all shadow-sm animate-pulse">
-                                    <i class="fa-solid fa-floppy-disk text-xs"></i>
-                                    Save Order
-                                </button>
                                 <label for="addImage" v-if="product.images && product.images.length < 6"
                                     class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all">
                                     <input type="file" id="addImage" @change="saveImage" ref="imageProperty"
@@ -266,10 +259,16 @@
                         <!-- Image Sequence Grid with numbered badges + arrows -->
                         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                             <div v-for="(image, index) in localImageOrder" :key="index"
-                                class="relative group/thumb flex flex-col items-center gap-1.5">
+                                draggable="true"
+                                @dragstart="dragStart($event, index)"
+                                @dragover.prevent
+                                @dragenter.prevent="dragEnter($event, index)"
+                                @drop="drop($event, index)"
+                                :class="{ 'opacity-50 border-dashed border-2 border-primary': dragIndex === index, 'scale-105 border-dashed border-2 border-primary z-10': dropIndex === index && dragIndex !== index }"
+                                class="relative group/thumb flex flex-col items-center gap-1.5 p-1 rounded-xl transition-all duration-200">
 
                                 <!-- Thumbnail -->
-                                <div class="relative w-full cursor-pointer rounded-xl overflow-hidden border-2 transition-all duration-200"
+                                <div class="relative w-full cursor-grab active:cursor-grabbing rounded-xl overflow-hidden border-2 transition-all duration-200"
                                     :class="livePreview === image ? 'border-primary shadow-md' : 'border-gray-200 hover:border-primary/40'"
                                     @click="switchImage(image, index)">
                                     <img class="w-full aspect-square object-cover object-top" :src="image" alt="product" />
@@ -637,15 +636,13 @@ export default {
             showMediaPicker: false,
             localImageOrder: [],
             originalImageOrder: [],
+            dragIndex: null,
+            dropIndex: null,
         };
     },
     computed: {
         product: function () {
             return this.$store.getters["product/show"];
-        },
-        imageOrderChanged: function () {
-            if (this.localImageOrder.length !== this.originalImageOrder.length) return false;
-            return this.localImageOrder.some((url, i) => url !== this.originalImageOrder[i]);
         },
     },
     mounted() {
@@ -772,17 +769,34 @@ export default {
         },
         moveImage: function (fromIndex, toIndex) {
             if (toIndex < 0 || toIndex >= this.localImageOrder.length) return;
+            if (fromIndex === toIndex) return;
             const arr = [...this.localImageOrder];
             const [moved] = arr.splice(fromIndex, 1);
             arr.splice(toIndex, 0, moved);
             this.localImageOrder = arr;
             // Keep deleteIndex in sync with moved image
             this.deleteIndex = this.localImageOrder.indexOf(this.livePreview);
+            // Auto save
+            this.saveImageOrder();
+        },
+        dragStart: function(event, index) {
+            this.dragIndex = index;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.dropEffect = 'move';
+        },
+        dragEnter: function(event, index) {
+            if (this.dragIndex !== null) {
+                this.dropIndex = index;
+            }
+        },
+        drop: function(event, index) {
+            if (this.dragIndex !== null && this.dragIndex !== index) {
+                this.moveImage(this.dragIndex, index);
+            }
+            this.dragIndex = null;
+            this.dropIndex = null;
         },
         saveImageOrder: async function () {
-            if (!this.imageOrderChanged) return;
-            const confirmed = await appService.destroyConfirmation();
-            if (!confirmed) return;
             try {
                 this.loading.isActive = true;
                 const productId = this.$route.params.id;
