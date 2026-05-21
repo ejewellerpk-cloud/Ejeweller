@@ -94,7 +94,15 @@ export default {
                     this.$refs.fileProperty.value = null;
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    this.errors = err.response.data.errors;
+                    if (err.response && err.response.data && err.response.data.errors) {
+                        this.errors = err.response.data.errors;
+                    } else if (err.response && err.response.data && err.response.data.message) {
+                        alertService.error(err.response.data.message);
+                        this.errors = {};
+                    } else {
+                        alertService.error("An error occurred while importing.");
+                        this.errors = {};
+                    }
                 });
             } catch (err) {
                 this.loading.isActive = false;
