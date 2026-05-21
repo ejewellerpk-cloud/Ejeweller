@@ -196,7 +196,7 @@
                 </div>
 
                 <div class="w-full p-4 max-md:p-0">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 mb-12 componentLoading">
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-6 mb-12 componentLoading">
                         <LoadingContentComponent :props="loadingContent" />
                         <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
                     </div>

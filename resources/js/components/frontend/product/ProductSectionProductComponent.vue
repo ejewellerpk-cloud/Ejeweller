@@ -14,7 +14,7 @@
             </div>
 
             <div class="w-full max-md:p-0">
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6 mb-12">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-6 mb-12">
                     <LoadingContentComponent :props="loadingContent" />
                     <ProductListComponent v-if="products.length > 0" :products="products"/>
                 </div>
