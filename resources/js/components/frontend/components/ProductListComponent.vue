@@ -34,18 +34,12 @@
                 class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
             </button>
 
-            <div v-if="product.videos && product.videos.length > 0" 
-                class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-primary text-white shadow-sm pointer-events-none transition-all duration-300">
-                <svg class="w-3 h-3 fill-current ml-0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M7 6v12l10-6z"/>
-                </svg>
-            </div>
 
             <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
-                <!-- Main Slider for Product Images -->
-                <Swiper v-if="product.previews && product.previews.length > 1"
+                <!-- Main Slider for Product Images + Video -->
+                <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
                     :dir="'ltr'"
-                    :pagination="{ clickable: true }"
+                    :pagination="getPaginationConfig(product)"
                     :modules="modules"
                     :loop="true"
                     @swiper="onSwiperInit($event, product.id)"
@@ -84,14 +78,14 @@
                     </SwiperSlide>
                 </Swiper>
                 
-                <!-- Single Image Fallback -->
+                <!-- Single Image Fallback (no video, only 1 image) -->
                 <router-link v-else class="w-full h-full block"
                     :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
                     <img :src="product.cover" alt="product"
                         class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                 </router-link>
             </div>
-        </div>
+        </div><!-- /.relative.overflow-hidden.rounded-xl.isolate -->
 
         <router-link class="block overflow-hidden text-ellipsis" :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
             <div class="px-1.5 sm:px-2 pt-2">
@@ -401,6 +395,23 @@ export default {
             }
             return true;
         },
+        getPaginationConfig: function (product) {
+            const hasVideo = product.videos && product.videos.length > 0;
+            if (!hasVideo) {
+                return { clickable: true };
+            }
+            // video slide index: always at position 1 (after 1st image slide)
+            const videoSlideIndex = 1;
+            return {
+                clickable: true,
+                renderBullet: function (index, className) {
+                    if (index === videoSlideIndex) {
+                        return `<span class="${className} video-dot"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
+                    }
+                    return `<span class="${className}"></span>`;
+                }
+            };
+        },
     }
 }
 </script>
@@ -438,6 +449,32 @@ export default {
     width: 16px;
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Video play icon replacing the 2nd pagination dot */
+.product-card-slider :deep(.video-dot) {
+    background: rgba(255, 92, 0, 0.55) !important;
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 2px !important;
+}
+
+.product-card-slider :deep(.video-dot svg) {
+    width: 8px;
+    height: 8px;
+    fill: white;
+    display: block;
+    margin-left: 1px;
+}
+
+.product-card-slider :deep(.video-dot.swiper-pagination-bullet-active) {
+    background: #ff5c00 !important;
+    width: 14px !important;
+    border-radius: 50% !important;
 }
 
 .animate-heart-pulse {

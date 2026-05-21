@@ -230,35 +230,92 @@
 
             <div class="db-card tab-content px-4" id="image">
                 <div class="row py-4 p-3">
-                    <div class="w-full max-w-[620px] flex flex-col-reverse sm:flex-row gap-3 sm:gap-5">
-                        <nav class="flex-shrink-0 w-full sm:max-w-[90px] flex flex-row sm:flex-col gap-3 sm:gap-5">
-                            <div class="flex flex-col gap-2">
+                    <div class="w-full max-w-[680px] flex flex-col gap-5">
+
+                        <!-- Header row: title + add buttons -->
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <p class="text-sm font-semibold text-gray-500">
+                                {{ $t('label.images') }} &mdash;
+                                <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>/6
+                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag numbers to reorder. Image #1 = Cover photo.</span>
+                            </p>
+                            <div class="flex items-center gap-2">
                                 <label for="addImage" v-if="product.images && product.images.length < 6"
-                                    class="relative w-full h-16 sm:h-20 flex items-center justify-center rounded-2xl cursor-pointer text-heading bg-gray-200">
+                                    class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all">
                                     <input type="file" id="addImage" @change="saveImage" ref="imageProperty"
                                         class="w-full h-full absolute -z-10 rounded-2xl opacity-0"
                                         accept="image/png, image/jpeg, image/jpg">
-                                    <i class="lab-fill-circle-plus text-xl sm:text-3xl"></i>
+                                    <i class="lab-fill-circle-plus text-sm"></i>
+                                    Upload
                                 </label>
-                                
                                 <button type="button" @click="showMediaPicker = true" v-if="product.images && product.images.length < 6"
-                                    class="w-full h-10 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-primary border border-slate-200 transition-all">
-                                    <i class="fa-solid fa-images"></i>
+                                    class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-primary border border-slate-200 transition-all">
+                                    <i class="fa-solid fa-images text-xs"></i>
+                                    Gallery
                                 </button>
                             </div>
-
-                            <button class="w-full" type="button" v-for="(image, index) in product.images">
-                                <img class="w-full h-16 sm:h-20 object-top object-cover rounded-2xl" :src="image"
-                                    alt="product" @click.prevent="switchImage(image, index)" />
-                            </button>
-                        </nav>
-                        <div class="w-full relative" v-if="livePreview">
-                            <img class="w-full h-96 sm:h-[480px] object-top object-cover rounded-2xl" alt="products"
-                                :src="livePreview" />
-                            <button v-if="imageCount > 0" @click.prevent="deleteImage"
-                                class="lab-line-cross text-3xl absolute -top-3 -right-3 w-9 h-9 leading-9 text-center rounded-full shadow-md bg-white text-danger"
-                                type="button"></button>
                         </div>
+
+                        <!-- Image Sequence Grid with numbered badges + arrows -->
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                            <div v-for="(image, index) in localImageOrder" :key="index"
+                                class="relative group/thumb flex flex-col items-center gap-1.5">
+
+                                <!-- Thumbnail -->
+                                <div class="relative w-full cursor-pointer rounded-xl overflow-hidden border-2 transition-all duration-200"
+                                    :class="livePreview === image ? 'border-primary shadow-md' : 'border-gray-200 hover:border-primary/40'"
+                                    @click="switchImage(image, index)">
+                                    <img class="w-full aspect-square object-cover object-top" :src="image" alt="product" />
+
+                                    <!-- Sequence Number Badge -->
+                                    <span class="absolute top-1 left-1 w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shadow"
+                                        :class="index === 0 ? 'bg-primary text-white' : 'bg-white/90 text-gray-700 border border-gray-200'">
+                                        {{ index + 1 }}
+                                    </span>
+
+                                    <!-- Cover Badge on first image -->
+                                    <span v-if="index === 0"
+                                        class="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-black px-1.5 py-0.5 rounded-full bg-primary text-white shadow whitespace-nowrap">
+                                        COVER
+                                    </span>
+                                </div>
+
+                                <!-- Up / Down Reorder Controls -->
+                                <div class="flex items-center gap-1">
+                                    <button type="button"
+                                        :disabled="index === 0"
+                                        :class="index === 0 ? 'opacity-20 cursor-not-allowed' : 'hover:bg-primary/10 hover:text-primary'"
+                                        class="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 flex items-center justify-center transition-all text-xs"
+                                        @click.prevent="moveImage(index, index - 1)"
+                                        title="Move Left">
+                                        <i class="fa-solid fa-chevron-left text-[9px]"></i>
+                                    </button>
+                                    <button type="button"
+                                        :disabled="index === localImageOrder.length - 1"
+                                        :class="index === localImageOrder.length - 1 ? 'opacity-20 cursor-not-allowed' : 'hover:bg-primary/10 hover:text-primary'"
+                                        class="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 flex items-center justify-center transition-all text-xs"
+                                        @click.prevent="moveImage(index, index + 1)"
+                                        title="Move Right">
+                                        <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Preview + Delete -->
+                        <div class="flex flex-col sm:flex-row gap-5 mt-1" v-if="livePreview">
+                            <div class="relative w-full sm:max-w-xs">
+                                <img class="w-full h-64 sm:h-80 object-top object-cover rounded-2xl border border-gray-200" alt="products"
+                                    :src="livePreview" />
+                                <button v-if="imageCount > 0" @click.prevent="deleteImage"
+                                    class="lab-line-cross text-3xl absolute -top-3 -right-3 w-9 h-9 leading-9 text-center rounded-full shadow-md bg-white text-danger"
+                                    type="button"></button>
+                                <span class="absolute bottom-2 left-2 text-[10px] font-black px-2 py-0.5 rounded-full bg-black/50 text-white">
+                                    Preview · Image #{{ localImageOrder.indexOf(livePreview) + 1 }}
+                                </span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -571,6 +628,7 @@ export default {
             shippingError: {},
             offerError: {},
             showMediaPicker: false,
+            localImageOrder: [],
         };
     },
     computed: {
@@ -601,6 +659,7 @@ export default {
                 this.barcodeImage = res.data.data.barcode_image;
                 this.livePreview = res.data.data.image;
                 this.imageCount = res.data.data.images.length;
+                this.localImageOrder = [...(res.data.data.images || [])];
                 this.shippingAndReturnForm.shipping_and_return = res.data.data.shipping_and_return;
                 this.shippingAndReturnForm.shipping_type = res.data.data.shipping_type;
                 this.shippingAndReturnForm.shipping_cost = res.data.data.shipping_cost;
@@ -698,6 +757,15 @@ export default {
             }).catch((err) => {
                 this.loading.isActive = false;
             });
+        },
+        moveImage: function (fromIndex, toIndex) {
+            if (toIndex < 0 || toIndex >= this.localImageOrder.length) return;
+            const arr = [...this.localImageOrder];
+            const [moved] = arr.splice(fromIndex, 1);
+            arr.splice(toIndex, 0, moved);
+            this.localImageOrder = arr;
+            // Keep deleteIndex in sync with moved image
+            this.deleteIndex = this.localImageOrder.indexOf(this.livePreview);
         },
         saveShippingAndReturn: function () {
             try {
