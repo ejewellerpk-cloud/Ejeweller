@@ -22,11 +22,6 @@
                     class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-secondary text-white">
                     {{ $t('label.flash_sale') }}
                 </span>
-                <span v-if="product.stock > 0 && product.stock <= 5"
-                    class="capitalize text-[10px] sm:text-xs font-extrabold rounded-full py-1 px-2.5 shadow-[0_4px_12px_rgba(239,68,68,0.25)] bg-red-600 text-white flex items-center gap-1.5 animate-pulse">
-                    <i class="fa-solid fa-fire text-yellow-300 text-[9px] sm:text-[11px]"></i>
-                    Only {{ product.stock }} Left!
-                </span>
             </div>
  
             <button type="button" @click.prevent.stop="wishlist(product)"
@@ -116,6 +111,14 @@
                 <h3 class="capitalize text-xs sm:text-sm font-semibold transition-all duration-300 hover:text-primary overflow-hidden text-ellipsis leading-tight mt-1.5 mb-1 text-gray-800">
                     {{ product.name }}
                 </h3>
+
+                <!-- Stock Left Alert -->
+                <div v-if="product.stock > 0 && product.stock <= 5" class="mt-1 mb-1">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold text-red-600 bg-red-50 border border-red-100/50 animate-pulse w-full">
+                        <i class="fa-solid fa-fire text-red-500"></i>
+                        Only {{ product.stock }} Left in Stock!
+                    </span>
+                </div>
 
                 <!-- 3. Rating & Sold Count Row -->
                 <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">

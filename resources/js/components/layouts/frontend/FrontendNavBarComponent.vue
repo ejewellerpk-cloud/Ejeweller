@@ -68,8 +68,9 @@
                                             <router-link v-for="(category, index) in categories" :key="index"
                                                 :to="{ name: 'frontend.product', query: { category: category.slug } }"
                                                 @mouseover.prevent="activeTab = 'category_' + category.slug"
-                                                class="capitalize text-sm font-semibold tracking-wide px-5 py-4 transition-all duration-300 relative before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-0.5 before:bg-primary hover:text-primary"
+                                                class="capitalize text-sm font-semibold tracking-wide px-5 py-4 transition-all duration-300 relative before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-0.5 before:bg-primary hover:text-primary flex items-center gap-2"
                                                 :class="{ 'text-primary before:w-full before:transition-all before:duration-300': activeTab === 'category_' + category.slug }">
+                                                <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-sm" />
                                                 {{ category.name }}
                                             </router-link>
                                         </nav>

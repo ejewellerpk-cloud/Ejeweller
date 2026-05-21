@@ -20,7 +20,10 @@
                     <div class="flex items-center justify-between py-3">
                         <router-link v-on:click="hideTarget('mobile-category-canvas', 'canvas-active')"
                             :to="{ name: 'frontend.product', query: { category: category.slug } }"
-                            class="text-lg font-semibold capitalize">{{ category.name }}</router-link>
+                            class="text-base font-semibold capitalize flex items-center gap-3">
+                            <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-8 h-8 rounded-full object-cover border border-gray-100 shadow-sm" />
+                            {{ category.name }}
+                        </router-link>
                         <button v-if="category.children.length > 0"
                             @click.prevent="showTarget('mobile_category_' + category.slug, '!translate-x-0')"
                             type="button">
