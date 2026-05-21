@@ -117,46 +117,46 @@
                 </div>
 
                 <div class="col-12 sm:col-6 lg:col-7 lg:pl-10">
-                    <!-- Premium Interactive Price & Offer Card -->
-                    <div class="bg-gradient-to-br from-gray-50 to-white border border-gray-100 rounded-2xl p-4 sm:p-5 mb-6 shadow-sm">
-                        <div class="flex flex-wrap items-center justify-between gap-4">
+                    <!-- Premium Interactive Price & Offer Row (Container styling removed as requested) -->
+                    <div class="mb-6">
+                        <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full">
                             <!-- Left: Price and Discount Pill -->
-                            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                <span class="text-3xl sm:text-4xl font-black text-primary tracking-tight">
+                            <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-3 shrink-0">
+                                <span class="text-2xl min-[360px]:text-3xl sm:text-4xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
                                     {{
                                         currencyFormat(temp.price, setting.site_digit_after_decimal_point,
                                             setting.site_default_currency_symbol, setting.site_currency_position)
                                     }}
                                 </span>
-                                <div class="flex items-center gap-2" v-if="product.is_offer">
-                                    <del class="text-base sm:text-lg font-medium text-gray-400 line-through">
+                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="product.is_offer">
+                                    <del class="text-xs min-[360px]:text-sm sm:text-base font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
                                         {{
                                             currencyFormat(temp.oldPrice, setting.site_digit_after_decimal_point,
                                                 setting.site_default_currency_symbol, setting.site_currency_position)
                                         }}
                                     </del>
                                     <span v-if="discountPercentageDetail() > 0" 
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-red-100 text-red-600 animate-pulse">
+                                        class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] min-[360px]:text-[10px] sm:text-xs font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
                                         {{ discountPercentageDetail() }}% OFF
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Right: Dynamic Ticker Stock & Sales Conveyor Badge -->
-                            <div class="h-[36px] overflow-hidden flex items-center relative select-none">
-                                <Transition name="badge-slide" mode="out-in">
+                            <div class="h-[36px] overflow-hidden flex items-center relative select-none shrink-0">
+                                <Transition name="badge-fade">
                                     <div :key="currentActiveBadge ? currentActiveBadge.type : 'empty'" v-if="currentActiveBadge"
                                         :class="currentActiveBadge.bgClass"
-                                        class="inline-flex items-center px-4 py-1.5 rounded-full border text-[11px] sm:text-xs font-black shadow-sm transition-all duration-300 whitespace-nowrap">
+                                        class="inline-flex items-center px-2 py-1 sm:px-4 sm:py-1.5 rounded-full border text-[9px] min-[360px]:text-[10px] sm:text-xs font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
                                         
                                         <!-- Low Stock Pulsing Indicator -->
-                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2 w-2 mr-2">
+                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-1.5 w-1.5 mr-1 sm:h-2 sm:w-2 sm:mr-2 shrink-0">
                                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
                                         </span>
                                         
                                         <!-- In Stock / Sold Count Icons -->
-                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon"></i>
+                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-1 sm:mr-1.5 text-[9px] min-[360px]:text-[10px] sm:text-xs"></i>
                                         
                                         <span>{{ currentActiveBadge.text }}</span>
                                     </div>
@@ -1408,24 +1408,26 @@ export default {
     }
 }
 
-/* Vertical sliding animation for conveyor badges */
-.badge-slide-enter-active,
-.badge-slide-leave-active {
-    transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+/* Super-premium simultaneous cross-fade with zero blank space */
+.badge-fade-enter-active,
+.badge-fade-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.badge-slide-leave-active {
+.badge-fade-leave-active {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 0;
     right: 0;
+    transform: translateY(-50%) scale(0.95);
+    pointer-events: none;
 }
-.badge-slide-enter-from {
+.badge-fade-enter-from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: scale(0.95);
 }
-.badge-slide-leave-to {
+.badge-fade-leave-to {
     opacity: 0;
-    transform: translateY(-16px);
+    transform: translateY(-50%) scale(0.9);
 }
 </style>
 
