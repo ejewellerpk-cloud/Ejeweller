@@ -16,7 +16,7 @@
             </div>
 
             <div v-if="categories.length > 0" class="px-4 pb-10">
-                <div class="grid grid-cols-2 gap-3 mt-4">
+                <div class="grid grid-cols-3 gap-3 mt-4">
                     <div v-for="category in categories" :key="category.id" class="relative">
                         <router-link v-on:click="hideTarget('mobile-category-canvas', 'canvas-active')"
                             :to="{ name: 'frontend.product', query: { category: category.slug } }"

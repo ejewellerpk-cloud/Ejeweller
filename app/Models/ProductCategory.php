@@ -26,7 +26,7 @@ class ProductCategory extends Model implements HasMedia
         'status'      => 'integer',
         'parent_id'   => 'integer',
     ];
-    protected $appends = array('cover');
+    protected $appends = array('cover', 'thumb');
 
     public function getThumbAttribute(): string
     {

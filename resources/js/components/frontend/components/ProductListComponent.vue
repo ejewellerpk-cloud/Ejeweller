@@ -44,7 +44,9 @@
                     <!-- 1st Slide: First Image -->
                     <SwiperSlide v-if="product.previews.length > 0">
                         <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
-                            <img :src="product.previews[0]" alt="product" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
+                            <img :src="product.previews[0]" alt="product" 
+                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')" 
+                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
                         </router-link>
                     </SwiperSlide>
@@ -67,7 +69,9 @@
                     <!-- Rest of Slides: Remaining Images -->
                     <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
                         <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
-                            <img :src="image" alt="product" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
+                            <img :src="image" alt="product" 
+                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
+                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
                         </router-link>
                     </SwiperSlide>
@@ -77,6 +81,7 @@
                 <router-link v-else class="w-full h-full block"
                     :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
                     <img :src="product.cover" alt="product"
+                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
                         class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                 </router-link>
             </div>

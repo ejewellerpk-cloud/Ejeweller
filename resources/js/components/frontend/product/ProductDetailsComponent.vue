@@ -42,6 +42,7 @@
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
                                     <img :src="media.url" alt="product" 
+                                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                                         :class="zoomedIndex === index ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                                         class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
                                 </div>
@@ -61,6 +62,7 @@
                             class="w-full cursor-pointer rounded-lg border border-gray-200 transition-all duration-500 bg-black flex items-center justify-center aspect-square relative" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
                                 <img class="w-full h-full rounded-lg border-2 border-gray-200 transition-all duration-500 object-cover"
+                                    @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
                                     :src="media.url" alt="gallery" />
                             </template>
                             <template v-else-if="media.type === 'video'">
@@ -70,6 +72,7 @@
                                 <!-- YouTube Video Thumbnail -->
                                 <template v-if="media.data.video_provider === 5">
                                     <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover"
+                                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
                                         :src="getVideoThumbnail(media)" alt="video thumbnail" />
                                 </template>
                                 <!-- Self-hosted Video (renders first frame natively) -->
@@ -111,6 +114,7 @@
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
                         <img :src="product.image" alt="products" 
+                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                             :class="zoomedIndex === 999 ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
                     </div>
@@ -343,6 +347,8 @@
         </div>
     </section>
 
+    <div id="related-products-trigger" class="w-full h-1"></div>
+
     <section v-if="relatedProducts.length > 0" class="mb-24 sm:mb-20">
         <div class="container">
             <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7">
@@ -350,8 +356,26 @@
                     {{ $t('label.related_products') }}
                 </h2>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-6">
-                <ProductListComponent v-if="relatedProducts.length > 0" :products="relatedProducts" />
+            <div class="product-section-slider-container relative">
+                <Swiper v-if="relatedProducts.length > 0"
+                    :dir="'ltr'"
+                    :slides-per-view="2"
+                    :space-between="16"
+                    :navigation="true"
+                    :autoplay="{ delay: 2500, disableOnInteraction: false }"
+                    :loop="true"
+                    :modules="modules"
+                    :breakpoints="{
+                        '640': { slidesPerView: 2, spaceBetween: 20 },
+                        '768': { slidesPerView: 3, spaceBetween: 24 },
+                        '1024': { slidesPerView: 4, spaceBetween: 24 }
+                    }"
+                    class="product-section-swiper !pb-10"
+                >
+                    <SwiperSlide v-for="product in relatedProducts" :key="product.id">
+                        <ProductListComponent :products="[product]" />
+                    </SwiperSlide>
+                </Swiper>
             </div>
         </div>
     </section>
@@ -443,7 +467,7 @@
 <script>
 import { ref } from "vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { FreeMode, Navigation, Thumbs, Pagination } from 'swiper/modules';
+import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -483,7 +507,7 @@ export default {
         return {
             thumbsSwiper,
             setThumbsSwiper,
-            modules: [FreeMode, Navigation, Thumbs, Pagination],
+            modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
         }
     },
     data() {
@@ -541,7 +565,8 @@ export default {
             soldCount: 0,
             badgeIndex: 0,
             badgeInterval: null,
-            localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]')
+            localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
+            isRelatedProductsLoaded: false
         }
     },
     computed: {
@@ -646,7 +671,23 @@ export default {
     },
     mounted() {
         this.show();
-        this.showRelatedProduct();
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !this.isRelatedProductsLoaded) {
+                    this.isRelatedProductsLoaded = true;
+                    this.showRelatedProduct();
+                }
+            });
+        });
+        
+        setTimeout(() => {
+            const target = document.getElementById('related-products-trigger');
+            if (target) {
+                observer.observe(target);
+            }
+        }, 500);
+
         this.tickerInterval = setInterval(() => {
             if (this.discountPercentageDetail() > 0) {
                 this.tickerIndex++;
