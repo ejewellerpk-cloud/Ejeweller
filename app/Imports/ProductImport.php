@@ -41,12 +41,21 @@ class ProductImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
 
         $seoTitle       = !empty($row['seo_title']) ? $row['seo_title'] : $product->name;
         $seoDescription = !empty($row['seo_description']) ? $row['seo_description'] : (!blank($product->description) ? strip_tags(substr($product->description, 0, 160)) : '');
-        $seoKeywords    = !empty($row['seo_keywords']) ? $row['seo_keywords'] : null;
+        $seoKeywordsArray = [];
+        if (!empty($row['seo_keywords'])) {
+            $keywords = explode(',', $this->sanitizeInput($row['seo_keywords']));
+            foreach ($keywords as $keyword) {
+                if (trim($keyword) !== '') {
+                    $seoKeywordsArray[] = trim($keyword);
+                }
+            }
+        }
+        $metaKeywordJson = !empty($seoKeywordsArray) ? json_encode($seoKeywordsArray) : null;
 
         $product->seo()->create([
             'title'        => $this->sanitizeInput($seoTitle),
             'description'  => $this->sanitizeInput($seoDescription),
-            'meta_keyword' => $this->sanitizeInput($seoKeywords),
+            'meta_keyword' => $metaKeywordJson,
         ]);
 
         return $product;
