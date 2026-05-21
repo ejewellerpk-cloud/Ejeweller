@@ -237,9 +237,16 @@
                             <p class="text-sm font-semibold text-gray-500">
                                 {{ $t('label.images') }} &mdash;
                                 <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>/6
-                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag numbers to reorder. Image #1 = Cover photo.</span>
+                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Arrow buttons se reorder karo. Image #1 = Cover photo.</span>
                             </p>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <!-- Save Order Button — only visible when order changed -->
+                                <button type="button" v-if="imageOrderChanged"
+                                    @click.prevent="saveImageOrder"
+                                    class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all shadow-sm animate-pulse">
+                                    <i class="fa-solid fa-floppy-disk text-xs"></i>
+                                    Save Order
+                                </button>
                                 <label for="addImage" v-if="product.images && product.images.length < 6"
                                     class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all">
                                     <input type="file" id="addImage" @change="saveImage" ref="imageProperty"
@@ -629,13 +636,17 @@ export default {
             offerError: {},
             showMediaPicker: false,
             localImageOrder: [],
+            originalImageOrder: [],
         };
     },
     computed: {
         product: function () {
             return this.$store.getters["product/show"];
         },
-
+        imageOrderChanged: function () {
+            if (this.localImageOrder.length !== this.originalImageOrder.length) return false;
+            return this.localImageOrder.some((url, i) => url !== this.originalImageOrder[i]);
+        },
     },
     mounted() {
         this.loading.isActive = true;
@@ -660,6 +671,7 @@ export default {
                 this.livePreview = res.data.data.image;
                 this.imageCount = res.data.data.images.length;
                 this.localImageOrder = [...(res.data.data.images || [])];
+                this.originalImageOrder = [...(res.data.data.images || [])];
                 this.shippingAndReturnForm.shipping_and_return = res.data.data.shipping_and_return;
                 this.shippingAndReturnForm.shipping_type = res.data.data.shipping_type;
                 this.shippingAndReturnForm.shipping_cost = res.data.data.shipping_cost;
@@ -766,6 +778,49 @@ export default {
             this.localImageOrder = arr;
             // Keep deleteIndex in sync with moved image
             this.deleteIndex = this.localImageOrder.indexOf(this.livePreview);
+        },
+        saveImageOrder: async function () {
+            if (!this.imageOrderChanged) return;
+            const confirmed = await appService.destroyConfirmation();
+            if (!confirmed) return;
+            try {
+                this.loading.isActive = true;
+                const productId = this.$route.params.id;
+                const orderedUrls = [...this.localImageOrder];
+
+                // Step 1: Fetch all images as File blobs in new sequence order
+                const files = [];
+                for (const url of orderedUrls) {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const filename = url.split('/').pop() || 'image.jpg';
+                    files.push(new File([blob], filename, { type: blob.type }));
+                }
+
+                // Step 2: Delete all images from last index to first (to keep indices stable)
+                for (let i = orderedUrls.length - 1; i >= 0; i--) {
+                    await this.$store.dispatch('product/deleteImage', {
+                        id: productId,
+                        index: i,
+                    });
+                }
+
+                // Step 3: Re-upload images in the new sequence order
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    await this.$store.dispatch('product/uploadImage', {
+                        id: productId,
+                        form: formData,
+                    });
+                }
+
+                alertService.success('Image sequence saved successfully!');
+                this.show();
+            } catch (err) {
+                this.loading.isActive = false;
+                alertService.error('Failed to save image order. Please try again.');
+            }
         },
         saveShippingAndReturn: function () {
             try {
