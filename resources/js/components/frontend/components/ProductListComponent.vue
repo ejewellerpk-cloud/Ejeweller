@@ -99,14 +99,14 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col">
                         <div class="flex flex-wrap items-baseline gap-1" v-if="product.is_offer">
-                            <span class="text-base sm:text-lg font-black text-primary leading-none">
+                            <span class="text-lg sm:text-xl font-black text-primary leading-none">
                                 {{ product.discounted_price }}
                             </span>
-                            <span class="text-[11px] sm:text-xs font-semibold text-shopperz-red line-through leading-none">
+                            <span class="text-xs sm:text-sm font-semibold text-shopperz-red line-through leading-none">
                                 {{ product.currency_price }}
                             </span>
                         </div>
-                        <span class="text-base sm:text-lg font-black text-primary leading-none" v-else>
+                        <span class="text-lg sm:text-xl font-black text-primary leading-none" v-else>
                             {{ product.currency_price }}
                         </span>
                     </div>

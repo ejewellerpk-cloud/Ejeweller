@@ -121,42 +121,42 @@
                     <div class="mb-6">
                         <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full">
                             <!-- Left: Price and Discount Pill -->
-                            <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-3 shrink-0">
-                                <span class="text-3xl min-[360px]:text-4xl sm:text-5xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
+                            <div class="flex flex-nowrap items-baseline gap-2 sm:gap-3 shrink-0">
+                                <span class="text-4xl min-[360px]:text-5xl sm:text-6xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
                                     {{
                                         currencyFormat(temp.price, setting.site_digit_after_decimal_point,
                                             setting.site_default_currency_symbol, setting.site_currency_position)
                                     }}
                                 </span>
                                 <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="product.is_offer">
-                                    <del class="text-sm min-[360px]:text-base sm:text-lg font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
+                                    <del class="text-base min-[360px]:text-lg sm:text-xl font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
                                         {{
                                             currencyFormat(temp.oldPrice, setting.site_digit_after_decimal_point,
                                                 setting.site_default_currency_symbol, setting.site_currency_position)
                                         }}
                                     </del>
                                     <span v-if="discountPercentageDetail() > 0" 
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] min-[360px]:text-[11px] sm:text-xs font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
+                                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs min-[360px]:text-sm sm:text-sm font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
                                         {{ discountPercentageDetail() }}% OFF
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Right: Dynamic Ticker Stock & Sales Conveyor Badge -->
-                            <div class="h-[36px] overflow-hidden flex items-center relative select-none shrink-0">
+                            <div class="h-[44px] overflow-hidden flex items-center relative select-none shrink-0">
                                 <Transition name="badge-fade">
                                     <div :key="currentActiveBadge ? currentActiveBadge.type : 'empty'" v-if="currentActiveBadge"
                                         :class="currentActiveBadge.bgClass"
-                                        class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border text-[11px] min-[360px]:text-xs sm:text-sm font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
+                                        class="inline-flex items-center px-3 py-2 sm:px-5 sm:py-2.5 rounded-full border text-xs min-[360px]:text-sm sm:text-base font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
                                         
                                         <!-- Low Stock Pulsing Indicator -->
-                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2 w-2 mr-1.5 sm:h-2.5 sm:w-2.5 sm:mr-2 shrink-0">
+                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2.5 w-2.5 mr-2 sm:h-3 sm:w-3 sm:mr-2.5 shrink-0">
                                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                                         </span>
                                         
                                         <!-- In Stock / Sold Count Icons -->
-                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-1.5 sm:mr-2 text-[11px] min-[360px]:text-xs sm:text-sm"></i>
+                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-2 sm:mr-2.5 text-xs min-[360px]:text-sm sm:text-base"></i>
                                         
                                         <span>{{ currentActiveBadge.text }}</span>
                                     </div>
