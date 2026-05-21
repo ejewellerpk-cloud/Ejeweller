@@ -14,6 +14,7 @@ export default {
         const toast = useToast();
         toast(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -21,6 +22,7 @@ export default {
         const toast = useToast();
         toast.success(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -28,6 +30,7 @@ export default {
         const toast = useToast();
         toast.info(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -35,6 +38,7 @@ export default {
         const toast = useToast();
         toast.warning(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -42,6 +46,7 @@ export default {
         const toast = useToast();
         toast.error(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -59,6 +64,7 @@ export default {
 
         toast.success(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 
@@ -66,6 +72,7 @@ export default {
         const toast = useToast();
         toast.success(message, {
             position: position,
+            onClick: () => { navigator.clipboard.writeText(message); }
         });
     },
 };
