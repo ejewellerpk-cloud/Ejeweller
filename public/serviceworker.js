@@ -1,5 +1,5 @@
 // Increment the version number whenever you want to force a cache refresh
-const VERSION = 'v1.8';
+const VERSION = 'v1.9';
 const staticCacheName = "pwa-" + VERSION;
 
 const filesToCache = [

@@ -23,6 +23,17 @@
                         <i class="lab-line-search text-xl text-heading"></i>
                     </button>
 
+                    <button v-if="logged" @click.prevent="showTarget('mobile-profile-canvas', 'canvas-active')" type="button"
+                        class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
+                        <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" />
+                        <i v-else class="lab-line-user text-xl text-heading"></i>
+                    </button>
+
+                    <router-link v-else :to="{ name: 'auth.login' }"
+                        class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
+                        <i class="lab-line-user text-xl text-heading"></i>
+                    </router-link>
+
                     <button @click.prevent="openCanvas('cart-canvas')" type="button"
                         class="relative flex-shrink-0 leading-none">
                         <i class="lab-line-bag text-xl text-heading"></i>

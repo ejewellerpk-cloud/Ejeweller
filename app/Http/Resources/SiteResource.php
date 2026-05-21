@@ -46,6 +46,7 @@ class SiteResource extends JsonResource
             "site_default_sms_gateway"                   => $this->info['site_default_sms_gateway'],
             "site_cash_on_delivery"                      => $this->info['site_cash_on_delivery'],
             "site_non_purchase_product_maximum_quantity" => $this->info['site_non_purchase_product_maximum_quantity'],
+            "site_is_return_product_price_add_to_credit" => $this->info['site_is_return_product_price_add_to_credit'] ?? null,
             "site_guest_checkout"                        => $this->info['site_guest_checkout'] ?? 10,
             "site_whatsapp_status"                       => $this->info['site_whatsapp_status'] ?? 10,
             "site_facebook_pixel_id"                     => $this->info['site_facebook_pixel_id'] ?? '',

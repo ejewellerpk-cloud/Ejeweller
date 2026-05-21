@@ -68,7 +68,7 @@
                         </label>
 
                         <vue-select class="db-field-control f-b-custom-select" id="site_default_sms_gateway"
-                            v-bind:class="errors.site_default_sms_gateway ? 'invalid' : ''"
+                            v-bind:class="errors.site_default_sms_gateway ? 'is-invalid' : ''"
                             v-model="form.site_default_sms_gateway" :options="smsGateways" label-by="name" value-by="id"
                             :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                             search-placeholder="--" />
@@ -139,7 +139,7 @@
 
                     <div class="form-col-12 sm:form-col-6">
                         <label for="site_default_ai_agent"
-                               class="db-field-title required">{{ $t("label.default_ai_agent") }} </label>
+                               class="db-field-title">{{ $t("label.default_ai_agent") }} </label>
                         <vue-select class="db-field-control f-b-custom-select" id="site_default_ai_agent"
                                     v-bind:class="errors.site_default_ai_agent ? 'is-invalid' : ''"
                                     v-model="form.site_default_ai_agent" :options="aiAgents" label-by="name"

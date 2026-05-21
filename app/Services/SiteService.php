@@ -42,18 +42,20 @@ class SiteService
     {
         try {
             $currency = Currency::find($request->site_default_currency);
+            $currency_symbol = $currency ? $currency->symbol : '$';
+            $currency_code = $currency ? $currency->code : 'USD';
             $app_debug = $this->envService->getValue('DEMO') ? Activity::DISABLE : $request->site_app_debug;
 
             $data = $request->validated();
-            $data['site_default_currency_symbol'] = $currency->symbol;
+            $data['site_default_currency_symbol'] = $currency_symbol;
             $data['site_app_debug'] = $app_debug;
             Settings::group('site')->set($data);
 
             $this->envService->addData([
                 'APP_DEBUG'              => $app_debug == Activity::ENABLE ? 'true' : 'false',
                 'TIMEZONE'               => $request->site_default_timezone,
-                'CURRENCY'               => $currency?->code,
-                'CURRENCY_SYMBOL'        => $currency?->symbol,
+                'CURRENCY'               => $currency_code,
+                'CURRENCY_SYMBOL'        => $currency_symbol,
                 'CURRENCY_POSITION'      => $request->site_currency_position,
                 'CURRENCY_DECIMAL_POINT' => $request->site_digit_after_decimal_point,
                 'DATE_FORMAT'            => $request->site_date_format,
