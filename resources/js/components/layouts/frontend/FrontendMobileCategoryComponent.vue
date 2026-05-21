@@ -15,26 +15,35 @@
                 </button>
             </div>
 
-            <ul v-if="categories.length > 0" class="px-4">
-                <li v-for="category in categories" class="border-b border-slate-100">
-                    <div class="flex items-center justify-between py-3">
+            <div v-if="categories.length > 0" class="px-4 pb-10">
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div v-for="category in categories" :key="category.id" class="relative">
                         <router-link v-on:click="hideTarget('mobile-category-canvas', 'canvas-active')"
                             :to="{ name: 'frontend.product', query: { category: category.slug } }"
-                            class="text-base font-semibold capitalize flex items-center gap-3">
-                            <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-8 h-8 rounded-full object-cover border border-gray-100 shadow-sm" />
-                            {{ category.name }}
+                            class="w-full block rounded-xl shadow-xs group border border-gray-100 bg-white hover:border-primary transition-all duration-300">
+                            
+                            <img class="w-full aspect-square object-cover block rounded-tl-xl rounded-tr-xl" 
+                                :src="category.thumb" alt="category" >
+                            
+                            <div class="py-2 px-2 flex items-center justify-between gap-1">
+                                <span class="text-xs font-semibold capitalize overflow-hidden whitespace-nowrap text-ellipsis group-hover:text-primary transition-colors"
+                                    :class="category.children.length > 0 ? 'w-[calc(100%-24px)] text-left' : 'w-full text-center'">
+                                    {{ category.name }}
+                                </span>
+
+                                <button v-if="category.children.length > 0"
+                                    @click.prevent.stop="showTarget('mobile_category_' + category.slug, '!translate-x-0')"
+                                    type="button" class="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
+                                    <i class="lab-line-chevron-right text-[10px]"></i>
+                                </button>
+                            </div>
                         </router-link>
-                        <button v-if="category.children.length > 0"
-                            @click.prevent="showTarget('mobile_category_' + category.slug, '!translate-x-0')"
-                            type="button">
-                            <i
-                                class="lab-line-chevron-right w-8 h-8 !leading-8 text-center rounded bg-primary/10 text-primary"></i>
-                        </button>
+
+                        <MobileMenuChildrenComponent :key="category" v-if="category.children" :parentCategory="category"
+                            :categories="category.children" />
                     </div>
-                    <MobileMenuChildrenComponent :key="category" v-if="category.children" :parentCategory="category"
-                        :categories="category.children" />
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
     </aside>
 </template>
