@@ -1,7 +1,7 @@
 <template>
     <aside id="mobile-sidebar-canvas"
         @click.self="hideTarget('mobile-sidebar-canvas', 'canvas-active')"
-        class="fixed inset-0 z-30 bg-black/50 duration-500 transition-all invisible opacity-0">
+        class="fixed inset-0 z-50 bg-black/50 duration-500 transition-all invisible opacity-0">
     <div
         class="w-full max-w-xs h-dvh overflow-x-hidden overflow-y-auto bg-white duration-500 transition-all ltr:-translate-x-full rtl:translate-x-full">
             <div class="py-4 flex items-center justify-between px-4 border-b border-slate-100">

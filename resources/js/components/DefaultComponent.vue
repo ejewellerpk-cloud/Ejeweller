@@ -30,7 +30,7 @@
 
     <!-- Abandoned Cart Checkout Reminder Banner -->
     <transition name="slide-left-fade">
-        <div v-if="showCheckoutReminder && theme === 'frontend'" class="fixed top-[100px] sm:top-[120px] right-4 sm:right-6 z-50 w-[70%] max-w-[240px] sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
+        <div v-if="showCheckoutReminder && theme === 'frontend'" class="checkout-reminder-popup fixed top-[100px] sm:top-[120px] right-4 sm:right-6 z-50 w-[70%] max-w-[240px] sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
             <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500 animate-pulse text-base">
                 <i class="lab-line-bag"></i>
             </div>
@@ -189,10 +189,10 @@ export default {
         },
         startAbandonedCartTimer() {
             this.stopAbandonedCartTimer();
-            if (this.hasShownReminder || this.$route.name === 'frontend.checkout.checkout') return;
+            if (this.hasShownReminder || (this.$route.name && this.$route.name.startsWith('frontend.checkout'))) return;
 
             this.reminderTimer = setTimeout(() => {
-                if (this.cartList && this.cartList.length > 0 && this.$route.name !== 'frontend.checkout.checkout') {
+                if (this.cartList && this.cartList.length > 0 && (!this.$route.name || !this.$route.name.startsWith('frontend.checkout'))) {
                     this.showCheckoutReminder = true;
                     this.hasShownReminder = true;
                 }
@@ -250,7 +250,7 @@ export default {
         $route: {
             handler(e) {
                 this.routeClassDefine(e);
-                if (e.name === 'frontend.checkout.checkout') {
+                if (e.name && e.name.startsWith('frontend.checkout')) {
                     this.showCheckoutReminder = false;
                 }
             },
@@ -286,6 +286,12 @@ export default {
     }
 }
 </script>
+
+<style>
+body.overflow-hidden .checkout-reminder-popup {
+    display: none !important;
+}
+</style>
 
 <style scoped>
 .slide-left-fade-enter-active,

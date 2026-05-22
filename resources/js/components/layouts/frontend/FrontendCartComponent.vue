@@ -1,7 +1,7 @@
 <template>
-    <aside id="cart-canvas" @click="closeBackdrop" class="fixed inset-0 z-30 bg-black/50 duration-500 transition-all invisible opacity-0">
+    <aside id="cart-canvas" @click="closeBackdrop" class="fixed inset-0 z-50 bg-black/50 duration-500 transition-all invisible opacity-0">
         <div
-            class="w-[85%] sm:w-full sm:max-w-md h-dvh overflow-x-hidden overflow-y-auto bg-white duration-500 transition-all ms-auto translate-x-full">
+            class="w-[85%] sm:w-full sm:max-w-md h-dvh overflow-x-hidden overflow-y-hidden flex flex-col bg-white duration-500 transition-all ms-auto translate-x-full">
             <div class="py-5 flex items-center justify-between px-4 border-b border-slate-100">
                 <h3 class="text-[22px] font-bold capitalize">{{ $t('label.shopping_cart') }}</h3>
                 <button type="button" class="lab-line-circle-cross text-lg text-danger"
@@ -13,57 +13,80 @@
                 <p class="text-sm">{{ $t('message.empty_cart') }}</p>
             </div>
 
-            <ul v-if="carts.length > 0" class="px-4 pt-4 pb-10 sm:pb-4 sm:h-[calc(100vh_-_218px)] sm:overflow-y-auto">
-                <li v-for="(cart, index) in carts"
-                    class="flex items-start gap-3 pb-4 mb-4 border-b last:mb-0 last:pb-0 last:border-none border-gray-100">
-                    <img :src="cart.image" alt="products" class="w-28 rounded-lg flex-shrink-0" />
+            <div v-if="carts.length > 0" class="flex-grow overflow-y-auto">
+                <ul class="px-4 pt-4 pb-4">
+                    <li v-for="(cart, index) in carts"
+                        class="flex items-start gap-3 pb-4 mb-4 border-b last:mb-0 last:pb-0 last:border-none border-gray-100">
+                        <img :src="cart.image" alt="products" class="w-28 rounded-lg flex-shrink-0" />
 
-                    <div class="relative w-full overflow-hidden">
-                        <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1">
-                            {{ cart.name }}
-                        </h4>
-                        <div v-if="cart.variation_id > 0" class="flex flex-wrap mb-2">
-                            <span class="text-xs capitalize inline-flex items-center">{{ cart.variation_names }}</span>
-                        </div>
-                        <div class="flex flex-wrap gap-2 items-center mb-3">
-                            <span class="font-semibold font-sans text-primary">{{ currencyFormat(cart.price,
-                                setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
-                            <del v-if="cart.old_price > cart.price" class="font-medium font-sans text-slate-400 text-xs line-through">
-                                {{ currencyFormat(cart.old_price, setting.site_digit_after_decimal_point,
-                                    setting.site_default_currency_symbol, setting.site_currency_position) }}
-                            </del>
-                            <span v-if="cart.old_price > cart.price" class="bg-primary text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(255,92,0,0.15)] flex items-center gap-0.5">
-                                <i class="fa-solid fa-tags text-[8px]"></i>
-                                {{ Math.round(((cart.old_price - cart.price) / cart.old_price) * 100) }}% OFF
-                            </span>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
-                                <button @click.prevent="quantityDecrement(index, cart)" type="button"
-                                    :class="cart.quantity === 1 ? 'cursor-not-allowed' : ''"
-                                    class="lab-fill-circle-minus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
-                                <input v-on:keypress="onlyNumber($event)" v-on:keyup="quantityUp(index, cart, $event)"
-                                    type="number" :value="cart.quantity"
-                                    class="text-center w-full h-5 text-sm font-medium">
-                                <button
-                                    :class="cart.quantity >= cart.stock ? 'cursor-not-allowed' : cart.quantity >= cart.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
-                                    @click.prevent="quantityIncrement(index, cart)" type="button"
-                                    class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
+                        <div class="relative w-full overflow-hidden">
+                            <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1">
+                                {{ cart.name }}
+                            </h4>
+                            <div v-if="cart.variation_id > 0" class="flex flex-wrap mb-2">
+                                <span class="text-xs capitalize inline-flex items-center">{{ cart.variation_names }}</span>
                             </div>
-                            <button @click.prevent="removeProduct(index)"
-                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white">
-                                <i class="lab-line-trash text-sm"></i>
-                                <span class="text-xs font-medium capitalize hidden sm:block">{{ $t('button.remove')
-                                    }}</span>
-                            </button>
+                            <div class="flex flex-wrap gap-2 items-center mb-3">
+                                <span class="font-semibold font-sans text-primary">{{ currencyFormat(cart.price,
+                                    setting.site_digit_after_decimal_point,
+                                    setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
+                                <del v-if="cart.old_price > cart.price" class="font-medium font-sans text-slate-400 text-xs line-through">
+                                    {{ currencyFormat(cart.old_price, setting.site_digit_after_decimal_point,
+                                        setting.site_default_currency_symbol, setting.site_currency_position) }}
+                                </del>
+                                <span v-if="cart.old_price > cart.price" class="bg-primary text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(255,92,0,0.15)] flex items-center gap-0.5">
+                                    <i class="fa-solid fa-tags text-[8px]"></i>
+                                    {{ Math.round(((cart.old_price - cart.price) / cart.old_price) * 100) }}% OFF
+                                </span>
+                            </div>
+
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
+                                    <button @click.prevent="quantityDecrement(index, cart)" type="button"
+                                        :class="cart.quantity === 1 ? 'cursor-not-allowed' : ''"
+                                        class="lab-fill-circle-minus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
+                                    <input v-on:keypress="onlyNumber($event)" v-on:keyup="quantityUp(index, cart, $event)"
+                                        type="number" :value="cart.quantity"
+                                        class="text-center w-full h-5 text-sm font-medium">
+                                    <button
+                                        :class="cart.quantity >= cart.stock ? 'cursor-not-allowed' : cart.quantity >= cart.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
+                                        @click.prevent="quantityIncrement(index, cart)" type="button"
+                                        class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
+                                </div>
+                                <button @click.prevent="removeProduct(index)"
+                                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white">
+                                    <i class="lab-line-trash text-sm"></i>
+                                    <span class="text-xs font-medium capitalize hidden sm:block">{{ $t('button.remove')
+                                        }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+
+                <!-- You May Also Like -->
+                <div v-if="popularProducts.length > 0" class="px-4 pb-4 border-t border-gray-100 pt-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2.5">You May Also Like</h4>
+                    <div class="flex gap-2.5 overflow-x-auto pb-2 cart-related-scroll">
+                        <div v-for="product in popularProducts" :key="product.id"
+                             @click.prevent="goToProduct(product.slug)"
+                             class="flex-shrink-0 w-[100px] cursor-pointer group">
+                            <div class="w-[100px] h-[100px] rounded-lg overflow-hidden bg-gray-50 mb-1.5">
+                                <img :src="product.cover" :alt="product.name"
+                                     @error="$event.target.src = setting.theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'p-3')"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                            <h5 class="text-[11px] font-medium text-gray-700 leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">{{ product.name }}</h5>
+                            <div class="flex items-center gap-1 mt-0.5">
+                                <span class="text-[11px] font-bold text-primary font-sans">{{ currencyFormat(product.currency_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
+                                <del v-if="product.old_currency_price > product.currency_price" class="text-[9px] text-gray-400 font-sans">{{ currencyFormat(product.old_currency_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</del>
+                            </div>
                         </div>
                     </div>
-                </li>
-            </ul>
+                </div>
+            </div>
 
-            <div v-if="carts.length > 0" class="p-4 border-t border-gray-100">
+            <div v-if="carts.length > 0" class="p-4 border-t border-gray-100 flex-shrink-0">
                 <!-- Total Savings Box (Premium Highlighted Banner) -->
                 <div v-if="totalSavings > 0" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm animate-pulse">
                     <div class="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
@@ -97,6 +120,8 @@ import targetService from "../../../services/targetService";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import {useCanvas} from "../../../composables/canvas";
+import statusEnum from "../../../enums/modules/statusEnum";
+import router from "../../../router";
 
 export default {
     name: "FrontendCartComponent",
@@ -126,8 +151,19 @@ export default {
         },
         totalSavings: function () {
             return this.$store.getters['frontendCart/totalSavings'];
+        },
+        popularProducts: function () {
+            return this.$store.getters['frontendProduct/popularProducts'];
         }
-
+    },
+    mounted() {
+        this.$store.dispatch('frontendProduct/popularProducts', {
+            paginate: 1,
+            per_page: 10,
+            order_column: 'id',
+            order_type: 'desc',
+            status: statusEnum.ACTIVE
+        }).catch();
     },
     methods: {
         hideTarget: function (id, cClass) {
@@ -186,7 +222,31 @@ export default {
                 this.$store.dispatch("frontendCart/destroyCoupon").then().catch();
                 alertService.warning(this.$t('message.coupon_remove'));
             }
+        },
+        goToProduct: function (slug) {
+            this.closeCanvas('cart-canvas');
+            router.push({ name: 'frontend.product.details', params: { slug: slug } });
         }
     }
 }
 </script>
+
+<style scoped>
+.cart-related-scroll::-webkit-scrollbar {
+    height: 3px;
+}
+.cart-related-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+}
+.cart-related-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>

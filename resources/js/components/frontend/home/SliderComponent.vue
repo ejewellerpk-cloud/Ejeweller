@@ -1,35 +1,40 @@
 <template>
     <LoadingComponent :props="loading" />
-    <section class="mb-10 sm:mb-20">
-        <div class="container">
-            <Swiper
-                v-if="sliders.length > 0"
-                dir="ltr"
-                :slides-per-view="1"
-                :speed="1000"
-                :loop="true"
-                :navigation="true"
-                :pagination="{ clickable: true }"
-                :autoplay="{ delay: 2500 }"
-                :modules="modules"
-                class="banner-swiper"
-            >
-                <SwiperSlide v-for="slider in sliders" :key="slider.id">
-                    <router-link v-if="slider.link" :to="slider.link">
-                        <img class="w-full rounded-2xl" :src="slider.image" alt="banner" >
-                    </router-link>
-                    <div v-else>
-                        <img class="w-full rounded-2xl" :src="slider.image" alt="banner" >
-                    </div>
-                </SwiperSlide>
-            </Swiper>
-        </div>
+    <section class="mb-10 sm:mb-20 w-full overflow-hidden">
+        <Swiper
+            v-if="sliders.length > 0"
+            dir="ltr"
+            :slides-per-view="1"
+            :speed="1000"
+            :loop="true"
+            effect="fade"
+            :fadeEffect="{ crossFade: true }"
+            :navigation="true"
+            :pagination="{ clickable: true }"
+            :autoplay="{ delay: 4000, disableOnInteraction: false }"
+            :modules="modules"
+            class="banner-swiper group"
+        >
+            <SwiperSlide v-for="slider in sliders" :key="slider.id" class="relative">
+                <router-link v-if="slider.link" :to="slider.link" class="block w-full h-full">
+                    <img class="w-full h-auto block" :src="slider.image" alt="banner" >
+                    <!-- Subtle Dark Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+                </router-link>
+                <div v-else class="w-full h-full relative">
+                    <img class="w-full h-auto block" :src="slider.image" alt="banner" >
+                    <!-- Subtle Dark Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+                </div>
+            </SwiperSlide>
+        </Swiper>
     </section>
 </template>
 
 <script>
 import 'swiper/css';
-import {Navigation, Pagination, Autoplay} from 'swiper/modules';
+import 'swiper/css/effect-fade';
+import {Navigation, Pagination, Autoplay, EffectFade} from 'swiper/modules';
 import {Swiper, SwiperSlide} from 'swiper/vue';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
@@ -43,7 +48,7 @@ export default {
     },
     setup() {
         return {
-            modules: [Navigation, Pagination, Autoplay],
+            modules: [Navigation, Pagination, Autoplay, EffectFade],
         }
     },
     data() {
@@ -79,33 +84,43 @@ export default {
 
 <style scoped>
 .banner-swiper :deep(.swiper-pagination) {
-    bottom: 20px !important;
+    bottom: 25px !important;
 }
 .banner-swiper :deep(.swiper-pagination-bullet) {
-    background: #ff5c00 !important;
-    opacity: 0.3;
-    width: 12px;
-    height: 12px;
-    margin: 0 5px !important;
+    background: #ffffff !important;
+    opacity: 0.5;
+    width: 30px;
+    height: 4px;
+    border-radius: 2px;
+    margin: 0 4px !important;
+    transition: all 0.3s ease;
 }
 .banner-swiper :deep(.swiper-pagination-bullet-active) {
     opacity: 1;
-    width: 30px;
-    border-radius: 6px;
-    background: #ff5c00 !important;
+    width: 50px;
+    background: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 .banner-swiper :deep(.swiper-button-next),
 .banner-swiper :deep(.swiper-button-prev) {
-    color: #ff5c00 !important;
-    background: white;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    color: white !important;
+    width: 50px;
+    height: 50px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.banner-swiper:hover :deep(.swiper-button-next),
+.banner-swiper:hover :deep(.swiper-button-prev) {
+    opacity: 1;
+}
+.banner-swiper :deep(.swiper-button-next):hover,
+.banner-swiper :deep(.swiper-button-prev):hover {
+    transform: scale(1.1);
 }
 .banner-swiper :deep(.swiper-button-next):after,
 .banner-swiper :deep(.swiper-button-prev):after {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 24px;
+    font-weight: 300;
 }
 </style>

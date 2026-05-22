@@ -310,7 +310,7 @@
 
     <!-- Mobile Search Start -->
     <form @submit.prevent="search" id="search"
-        class="w-full  lg:w-auto fixed inset-0 z-30 py-5 px-4 bg-white transition-all duration-500 origin-top scale-y-0">
+        class="w-full  lg:w-auto fixed inset-0 z-50 py-5 px-4 bg-white transition-all duration-500 origin-top scale-y-0">
         <div class="flex items-center justify-between mb-4">
             <router-link :to="{ name: 'frontend.home' }"
                 class="router-link-active router-link-exact-active flex-shrink-0">
