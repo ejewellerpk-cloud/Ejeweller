@@ -8,6 +8,7 @@ const  OrderDetailsComponent = () => import("../../components/frontend/account/o
 const  ChangePasswordComponent = () => import("../../components/frontend/account/changePassword/ChangePasswordComponent");
 const  AddressComponent = () => import("../../components/frontend/account/address/AddressComponent");
 const  PageComponent = () => import("../../components/frontend/page/PageComponent");
+const  CategoryComponent = () => import("../../components/frontend/category/CategoryComponent");
 const  ProductComponent = () => import("../../components/frontend/product/ProductComponent");
 const  ProductDetailsComponent = () => import("../../components/frontend/product/ProductDetailsComponent");
 const  PromotionProductComponent = () => import("../../components/frontend/product/PromotionProductComponent");
@@ -39,6 +40,15 @@ export default [
         path: "/product",
         component: ProductComponent,
         name: "frontend.product",
+        meta: {
+            isFrontend: true,
+            auth: false,
+        },
+    },
+    {
+        path: "/categories",
+        component: CategoryComponent,
+        name: "frontend.categories",
         meta: {
             isFrontend: true,
             auth: false,

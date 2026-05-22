@@ -1,0 +1,1 @@
+import{_ as e}from"./vendor-quill-BamKs-pO.js";import{l as t,f as n,z as r}from"./vendor-vue-core-C3mSXxjw.js";import"./vendor-8yHaUXFb.js";const s={name:"PageComponent"};function a(c,p,_,m,f,i){const o=t("router-view");return n(),r(o)}const $=e(s,[["render",a]]);export{$ as default};

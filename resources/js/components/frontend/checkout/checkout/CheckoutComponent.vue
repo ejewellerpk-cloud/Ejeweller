@@ -233,6 +233,24 @@ export default {
         this.$store.dispatch('frontendOutlet/lists', {
             status : this.enums.statusEnum.ACTIVE
         }).then(res => {
+            if (res.data.data.length === 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
+                this.$store.dispatch('frontendCart/updateOrderType', this.orderTypeEnum.DELIVERY);
+            } else if (res.data.data.length > 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
+                // If the cached outlet no longer exists in the loaded list, clear it
+                const cachedOutlet = this.getOutletAddress;
+                if (cachedOutlet && cachedOutlet.id) {
+                    const outletExists = res.data.data.find(o => o.id === cachedOutlet.id);
+                    if (!outletExists) {
+                        this.modelOutlet = res.data.data[0];
+                        this.$store.dispatch('frontendCart/outletAddress', res.data.data[0]);
+                    } else {
+                        this.modelOutlet = cachedOutlet;
+                    }
+                } else {
+                    this.modelOutlet = res.data.data[0];
+                    this.$store.dispatch('frontendCart/outletAddress', res.data.data[0]);
+                }
+            }
             this.loading.isActive = false;
         }).catch((err) => {
             this.loading.isActive = false;

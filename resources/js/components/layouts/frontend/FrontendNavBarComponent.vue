@@ -33,6 +33,16 @@
                         <i class="lab-line-search text-xl text-heading"></i>
                     </button>
 
+                    <!-- Mobile Wishlist -->
+                    <router-link :to="{ name: 'frontend.wishlist' }"
+                        class="relative flex-shrink-0 leading-none">
+                        <i class="lab-line-heart text-xl text-heading"></i>
+                        <span v-if="wishlists.length > 0"
+                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary">
+                            {{ wishlists.length }}
+                        </span>
+                    </router-link>
+
                     <button v-if="logged" @click.prevent="showTarget('mobile-profile-canvas', 'canvas-active')" type="button"
                         class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
                         <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" loading="lazy" />

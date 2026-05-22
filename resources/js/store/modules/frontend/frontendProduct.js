@@ -287,7 +287,11 @@ export const frontendProduct = {
             state.flashSaleProductPagination = payload;
         },
         categoryWiseProducts: function (state, payload) {
-            state.categoryWiseProducts   = payload.products;
+            if (payload.current_page && payload.current_page > 1) {
+                state.categoryWiseProducts = [...state.categoryWiseProducts, ...payload.products];
+            } else {
+                state.categoryWiseProducts = payload.products;
+            }
             state.categoryWiseBands      = payload.brands;
             state.categoryWiseVariations = payload.variations;
         },

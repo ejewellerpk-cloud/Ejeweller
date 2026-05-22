@@ -19,29 +19,31 @@
 </template>
 
 <script>
-
+import { defineAsyncComponent } from 'vue';
 import SliderComponent from "./SliderComponent.vue";
 import CategoryComponent from "./CategoryComponent.vue";
-import PromotionComponent from "./PromotionComponent.vue";
-import BenefitComponent from "./BenefitComponent.vue";
-import ProductSectionComponent from "./ProductSectionComponent.vue";
-import FlashSaleComponent from "./FlashSaleComponent.vue";
-import ProductBrandComponent from "./ProductBrandComponent.vue";
-import MostPopularComponent from "./MostPopularComponent.vue";
-import OutletComponent from "./OutletComponent.vue";
+
+// Lazy load below-the-fold components to reduce initial JS bundle size
+const PromotionComponent = defineAsyncComponent(() => import("./PromotionComponent.vue"));
+const ProductSectionComponent = defineAsyncComponent(() => import("./ProductSectionComponent.vue"));
+const MostPopularComponent = defineAsyncComponent(() => import("./MostPopularComponent.vue"));
+const FlashSaleComponent = defineAsyncComponent(() => import("./FlashSaleComponent.vue"));
+const ProductBrandComponent = defineAsyncComponent(() => import("./ProductBrandComponent.vue"));
+const OutletComponent = defineAsyncComponent(() => import("./OutletComponent.vue"));
+const BenefitComponent = defineAsyncComponent(() => import("./BenefitComponent.vue"));
 
 export default {
     name: "HomeComponent",
     components: {
-        MostPopularComponent,
-        FlashSaleComponent,
-        BenefitComponent,
         SliderComponent,
         CategoryComponent,
         PromotionComponent,
         ProductSectionComponent,
+        MostPopularComponent,
+        FlashSaleComponent,
         ProductBrandComponent,
-        OutletComponent
+        OutletComponent,
+        BenefitComponent
     }
 };
 </script>

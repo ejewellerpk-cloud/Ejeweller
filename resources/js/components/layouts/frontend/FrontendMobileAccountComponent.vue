@@ -1,5 +1,5 @@
 <template>
-    <aside id="mobile-profile-canvas"
+    <aside id="mobile-profile-canvas" @click.self="hideTarget('mobile-profile-canvas', 'canvas-active')"
         class="fixed inset-0 z-50 bg-black/50 duration-500 transition-all invisible opacity-0">
         <div
             class="w-full max-w-xs h-dvh overflow-x-hidden overflow-y-auto bg-white duration-500 transition-all ltr:-translate-x-full rtl:translate-x-full">

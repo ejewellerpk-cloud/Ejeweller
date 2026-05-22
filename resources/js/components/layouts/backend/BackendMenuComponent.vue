@@ -14,14 +14,14 @@
                     </a>
                 </li>
 
-                <li class="db-sidebar-nav-item" v-else @click.prevent="sidebarActive($event)">
+                <li class="db-sidebar-nav-item" v-else @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
                 </li>
 
-                <li class="db-sidebar-nav-item" v-if="menu.children" v-for="children in menu.children" @click.prevent="sidebarActive($event)">
+                <li class="db-sidebar-nav-item" v-if="menu.children" v-for="children in menu.children" @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="'/admin/' + children.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="children.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + children.language) }}</span>
@@ -31,7 +31,7 @@
 
             <!-- Static Media Menu -->
             <ul class="db-sidebar-nav-list">
-                <li class="db-sidebar-nav-item" @click.prevent="sidebarActive($event)">
+                <li class="db-sidebar-nav-item" @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="{ name: 'admin.media' }" class="db-sidebar-nav-menu">
                         <i class="fa-solid fa-photo-film text-sm"></i>
                         <span class="text-base flex-auto">Media Manager</span>

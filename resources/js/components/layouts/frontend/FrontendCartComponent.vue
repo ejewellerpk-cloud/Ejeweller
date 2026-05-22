@@ -78,8 +78,8 @@
                             </div>
                             <h5 class="text-[11px] font-medium text-gray-700 leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">{{ product.name }}</h5>
                             <div class="flex items-center gap-1 mt-0.5">
-                                <span class="text-[11px] font-bold text-primary font-sans">{{ currencyFormat(product.currency_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
-                                <del v-if="product.old_currency_price > product.currency_price" class="text-[9px] text-gray-400 font-sans">{{ currencyFormat(product.old_currency_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</del>
+                                <span class="text-[11px] font-bold text-primary font-sans">{{ currencyFormat(product.price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
+                                <del v-if="product.is_offer" class="text-[9px] text-gray-400 font-sans">{{ currencyFormat(product.old_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</del>
                             </div>
                         </div>
                     </div>

@@ -358,22 +358,23 @@
                 </h2>
             </div>
             <div class="product-section-slider-container relative">
-                <Swiper v-if="relatedProducts.length > 0"
-                    :dir="'ltr'"
-                    :slides-per-view="2"
-                    :space-between="16"
-                    :navigation="false"
-                    :autoplay="{ delay: 0, disableOnInteraction: false }"
-                    :speed="4000"
-                    :loop="true"
-                    :modules="modules"
-                    :breakpoints="{
-                        '640': { slidesPerView: 2, spaceBetween: 20 },
-                        '768': { slidesPerView: 3, spaceBetween: 24 },
-                        '1024': { slidesPerView: 4, spaceBetween: 24 }
-                    }"
-                    class="product-section-swiper continuous-slider !pb-10"
-                >
+                    <Swiper v-if="relatedProducts.length > 0"
+                        :dir="'ltr'"
+                        :slides-per-view="2"
+                        :space-between="16"
+                        :navigation="false"
+                        :freeMode="true"
+                        :autoplay="{ delay: 0, disableOnInteraction: false, pauseOnMouseEnter: true }"
+                        :speed="4000"
+                        :loop="true"
+                        :modules="modules"
+                        :breakpoints="{
+                            '640': { slidesPerView: 2, spaceBetween: 20 },
+                            '768': { slidesPerView: 3, spaceBetween: 24 },
+                            '1024': { slidesPerView: 4, spaceBetween: 24 }
+                        }"
+                        class="product-section-swiper continuous-slider !pb-10"
+                    >
                     <SwiperSlide v-for="product in relatedProducts" :key="product.id">
                         <ProductListComponent :products="[product]" />
                     </SwiperSlide>
@@ -400,10 +401,12 @@
         </div>
 
         <!-- Swiper Container (Full Screen) -->
-        <div class="w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
-            <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full review-preview-swiper">
-                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full flex items-center justify-center" @click.self="hidePreviewImage">
-                    <img :src="img" alt="review" class="max-w-full max-h-full object-contain pointer-events-none" loading="lazy" />
+        <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
+            <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full">
+                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full" @click.self="hidePreviewImage">
+                    <div class="w-full h-full flex items-center justify-center p-4" @click.self="hidePreviewImage">
+                        <img :src="img" alt="review" class="max-w-full max-h-[85vh] object-contain pointer-events-none" loading="lazy" />
+                    </div>
                 </SwiperSlide>
             </Swiper>
         </div>

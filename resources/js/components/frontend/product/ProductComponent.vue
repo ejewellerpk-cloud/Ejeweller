@@ -24,8 +24,8 @@
             </div>
 
             <div class="flex items-start border-t border-gray-100 max-md:border-none">
-                <div id="filter-canvas"
-                    class="max-md:fixed max-md:inset-0 max-md:z-30 max-md:bg-black/50 max-md:transition-all max-md:duration-500 max-md:opacity-0 max-md:invisible">
+                <div id="filter-canvas" @click.self="hideTarget('filter-canvas', 'canvas-active')"
+                    class="max-md:fixed max-md:inset-0 max-md:z-50 max-md:bg-black/50 max-md:transition-all max-md:duration-500 max-md:opacity-0 max-md:invisible">
                     <div
                         class="w-[270px] ltr:md:border-r rtl:md:border-l md:border-gray-100 bg-white max-md:w-full max-md:max-w-xs max-md:transition-all max-md:duration-500 max-md:-translate-x-full">
                         <div class="max-md:h-dvh max-md:overflow-y-auto">
@@ -201,8 +201,13 @@
                         <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
                     </div>
 
-                    <PaginationComponent @pagination-change-page="products" :data="pagination" :limit="1"
-                        :keep-length="false" />
+                    <!-- Infinite Scroll Trigger & Loading -->
+                    <div ref="infiniteScrollTrigger" class="w-full h-10 flex items-center justify-center my-4">
+                        <div v-if="isLoadingMore" class="flex items-center gap-2 text-primary font-medium">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <span>{{ $t('label.loading') }}...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -230,8 +235,7 @@ export default {
         LoadingContentComponent,
         LoadingComponent,
         ProductListComponent,
-        VueSimpleRangeSlider,
-        PaginationComponent
+        VueSimpleRangeSlider
     },
     data() {
         return {
@@ -258,7 +262,9 @@ export default {
                 variation: [],
                 min_price: null,
                 max_price: null
-            }
+            },
+            isLoadingMore: false,
+            observer: null
         }
     },
     computed: {
@@ -280,6 +286,24 @@ export default {
     },
     mounted() {
         this.ancestorsAndSelf();
+        
+        // Setup Infinite Scroll Observer
+        this.observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !this.loadingContent.isActive && !this.isLoadingMore) {
+                if (this.pagination.meta && this.pagination.meta.current_page < this.pagination.meta.last_page) {
+                    this.loadMoreProducts();
+                }
+            }
+        }, { rootMargin: '200px' });
+        
+        if (this.$refs.infiniteScrollTrigger) {
+            this.observer.observe(this.$refs.infiniteScrollTrigger);
+        }
+    },
+    beforeUnmount() {
+        if (this.observer) {
+            this.observer.disconnect();
+        }
     },
     methods: {
         onlyNumber: function (e) {
@@ -338,6 +362,15 @@ export default {
                 this.loadingContent.isActive = false;
             }).catch((err) => {
                 this.loadingContent.isActive = false;
+            });
+        },
+        async loadMoreProducts() {
+            this.isLoadingMore = true;
+            this.productSearchForm.page += 1;
+            await this.$store.dispatch("frontendProduct/categoryWiseProducts", this.productSearchForm).then(res => {
+                this.isLoadingMore = false;
+            }).catch((err) => {
+                this.isLoadingMore = false;
             });
         },
         sortByOption: function (event, sortBy) {

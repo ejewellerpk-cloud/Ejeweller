@@ -201,7 +201,7 @@ class OrderService
                             'item_type'       => $product->variation_id > 0 ? ProductVariation::class : Product::class,
                             'item_id'         => $product->variation_id > 0 ? $product->variation_id : $product->product_id,
                             'variation_names' => $product->variation_names,
-                            'sku'             => $product->sku,
+                            'sku'             => $product->sku ?? null,
                             'price'           => $product->price,
                             'quantity'        => -$product->quantity,
                             'discount'        => $product->discount,
