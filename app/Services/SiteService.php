@@ -49,6 +49,19 @@ class SiteService
             $data = $request->validated();
             $data['site_default_currency_symbol'] = $currency_symbol;
             $data['site_app_debug'] = $app_debug;
+            
+            // Ensure newly added keys exist in DB so the package can update them
+            $newKeys = ['site_facebook_pixel_id', 'site_facebook_capi_token', 'site_facebook_capi_status'];
+            foreach ($newKeys as $key) {
+                \Illuminate\Support\Facades\DB::table('settings')->insertOrIgnore([
+                    'group' => 'site',
+                    'key' => $key,
+                    'payload' => json_encode(''),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
             Settings::group('site')->set($data);
 
             $this->envService->addData([

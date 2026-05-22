@@ -42,7 +42,7 @@ export const pixelService = {
 
     sendCapiEvent: function(eventName, customData) {
         // Send event to backend API for Server-Side tracking
-        axios.post('/api/frontend/capi/event', {
+        axios.post('frontend/capi/event', {
             event_name: eventName,
             custom_data: customData,
             event_id: eventName.toLowerCase() + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
