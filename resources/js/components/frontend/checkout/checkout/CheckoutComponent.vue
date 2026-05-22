@@ -2,7 +2,7 @@
     <LoadingComponent :props="loading"/>
     <div class="row">
         <div class="col-12 lg:col-8">
-            <div class="flex items-center rounded-2xl w-fit mb-6 text-focus bg-[#EAF6FF]">
+            <div class="flex items-center rounded-2xl w-fit mb-6 text-focus bg-[#EAF6FF]" v-if="outlets && outlets.length > 0">
                 <div class="relative cursor-pointer">
                     <input @change="changeOrderType(orderTypeEnum.DELIVERY)" id="checkout-delivery"
                            :checked="orderType === orderTypeEnum.DELIVERY"
@@ -13,13 +13,13 @@
                            for="checkout-delivery">{{ $t('label.delivery') }}</label>
                 </div>
                 <div class="relative cursor-pointer">
-                    <input @change="changeOrderType(orderTypeEnum.PICK_UP)" id="checkout-delivery"
+                    <input @change="changeOrderType(orderTypeEnum.PICK_UP)" id="checkout-pickup"
                            :checked="orderType === orderTypeEnum.PICK_UP"
                            :value="orderTypeEnum.PICK_UP"
                            class="cart-switch w-full h-full absolute top-0 left-0 opacity-0 cursor-pointer"
                            type="radio">
                     <label class="py-1.5 px-3.5 rounded-2xl text-sm font-semibold capitalize transition cursor-pointer"
-                           for="checkout-delivery">{{ $t('label.pick_up') }}</label>
+                           for="checkout-pickup">{{ $t('label.pick_up') }}</label>
                 </div>
             </div>
 
@@ -53,15 +53,53 @@
                               :title="$t('label.billing_address')" :show="billingStatus"
                               :selectedAddress="getBillingAddress" :method="billingAddress"/>
 
+            <div class="mb-6 mt-6 rounded-2xl shadow-card">
+                <h4 class="font-bold capitalize p-4 border-b border-gray-100">
+                    {{ $t('label.select_payment_method') }}
+                </h4>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 p-4">
+                    <div v-if="Object.keys(cashOnDelivery).length > 0 && setting.site_cash_on_delivery === ActivityEnum.ENABLE"
+                        @click.prevent="selectPaymentMethod(cashOnDelivery)"
+                        :class="Object.keys(paymentMethod).length > 0 && cashOnDelivery.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
+                        class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
+                        <img class="h-6" :src="cashOnDelivery.image" alt="payment" />
+                        <span class="text-xs font-medium">{{ cashOnDelivery.name }}</span>
+                    </div>
+
+                    <div v-if="profile.balance >= total" @click.prevent="selectPaymentMethod(credit)"
+                        :class="Object.keys(paymentMethod).length > 0 && credit.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
+                        class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
+                        <img class="h-6" :src="credit.image" alt="payment" />
+                        <span class="text-xs font-medium">{{ credit.name }} ({{ profile.balance }})</span>
+                    </div>
+
+                    <div v-if="setting.site_online_payment_gateway === ActivityEnum.ENABLE"
+                        v-for="paymentGateway in paymentGateways" @click.prevent="selectPaymentMethod(paymentGateway)"
+                        :class="Object.keys(paymentMethod).length > 0 && paymentGateway.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
+                        class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
+                        <img class="h-6" :src="paymentGateway.image" alt="payment" />
+                        <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="max-lg:hidden flex items-center justify-between gap-5 mt-10">
                 <router-link :to="{ name: 'frontend.checkout.cartList' }"
                              class="field-button w-fit font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
                     {{ $t('button.back_to_cart') }}
                 </router-link>
 
-                <button @click.prevent="selectAddress"
-                        class="field-button w-fit font-semibold tracking-wide normal-case">
-                    {{ $t('button.save_and_pay') }}
+                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE"
+                    class="field-button w-fit font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
+                    @click.prevent="confirmOrder">
+                    <i class="lab lab-whatsapp text-sm"></i>
+                    {{ $t('button.proceed_to_whatsapp') }}
+                </button>
+
+                <button v-else @click.prevent="confirmOrder"
+                    class="field-button w-fit font-semibold tracking-wide normal-case">
+                    {{ $t('button.confirm_order') }}
                 </button>
             </div>
         </div>
@@ -76,8 +114,16 @@
                     {{ $t('button.back_to_cart') }}
                 </router-link>
 
-                <button @click.prevent="selectAddress" class="field-button font-semibold tracking-wide normal-case">
-                    {{ $t('button.save_and_pay') }}
+                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE"
+                    class="field-button font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
+                    @click.prevent="confirmOrder($event)">
+                    <i class="lab lab-whatsapp text-sm"></i>
+                    {{ $t('button.proceed_to_whatsapp') }}
+                </button>
+
+                <button v-else @click.prevent="confirmOrder($event)"
+                    class="field-button font-semibold tracking-wide normal-case">
+                    {{ $t('button.confirm_order') }}
                 </button>
             </div>
         </div>
@@ -94,6 +140,10 @@ import alertService from "../../../../services/alertService";
 import { pixelService } from "../../../../services/pixelService";
 import LoadingComponent from "../../components/LoadingComponent.vue";
 import statusEnum from "../../../../enums/modules/statusEnum";
+import sourceEnum from "../../../../enums/modules/sourceEnum";
+import ENV from "../../../../config/env";
+import ActivityEnum from "../../../../enums/modules/activityEnum";
+import _ from "lodash";
 
 
 export default {
@@ -110,7 +160,13 @@ export default {
             orderTypeEnum: orderTypeEnum,
             shippingAndBillingCheck: true,
             billingStatus: false,
-            modelOutlet: 0
+            modelOutlet: 0,
+            paymentGateways: [],
+            credit: {},
+            cashOnDelivery: {},
+            sourceEnum: sourceEnum,
+            ActivityEnum: ActivityEnum,
+            form: {}
         }
     },
     computed: {
@@ -128,7 +184,37 @@ export default {
         },
         outlets: function () {
             return this.$store.getters['frontendOutlet/lists'];
-        }
+        },
+        profile: function () {
+            return this.$store.getters.authInfo;
+        },
+        paymentMethod: function () {
+            return this.$store.getters['frontendCart/paymentMethod'];
+        },
+        subtotal: function () {
+            return this.$store.getters['frontendCart/subtotal'];
+        },
+        discount: function () {
+            return this.$store.getters['frontendCart/discount'];
+        },
+        total: function () {
+            return this.$store.getters['frontendCart/total'];
+        },
+        getOutletAddress: function () {
+            return this.$store.getters['frontendCart/outletAddress'];
+        },
+        cartCoupon: function () {
+            return this.$store.getters['frontendCart/coupon'];
+        },
+        products: function () {
+            return this.$store.getters['frontendCart/lists'];
+        },
+        shippingCharge: function () {
+            return this.$store.getters['frontendCart/shippingCharge'];
+        },
+        totalTax: function () {
+            return this.$store.getters['frontendCart/totalTax'];
+        },
     },
     mounted() {
         // Track Initiate Checkout event
@@ -147,6 +233,27 @@ export default {
         this.$store.dispatch('frontendOutlet/lists', {
             status : this.enums.statusEnum.ACTIVE
         }).then(res => {
+            this.loading.isActive = false;
+        }).catch((err) => {
+            this.loading.isActive = false;
+        });
+
+        this.loading.isActive = true;
+        this.$store.dispatch('frontendPaymentGateway/lists', { status: this.enums.statusEnum.ACTIVE }).then(res => {
+            if (res.data.data.length > 0) {
+                _.forEach(res.data.data, (gateway) => {
+                    if (gateway.slug === "credit") {
+                        this.credit = gateway;
+                    } else if (gateway.slug === "cashondelivery") {
+                        this.cashOnDelivery = gateway;
+                        if (this.setting.site_cash_on_delivery === this.ActivityEnum.ENABLE) {
+                            this.selectPaymentMethod(this.cashOnDelivery);
+                        }
+                    } else {
+                        this.paymentGateways.push(gateway);
+                    }
+                });
+            }
             this.loading.isActive = false;
         }).catch((err) => {
             this.loading.isActive = false;
@@ -180,7 +287,11 @@ export default {
                 this.shippingAndBillingCheck = false;
             }
         },
-        selectAddress: function () {
+        selectPaymentMethod: function (paymentMethod) {
+            this.$store.dispatch("frontendCart/paymentMethod", paymentMethod);
+        },
+        confirmOrder: function (e) {
+            // Address Validation First
             if (this.orderType === orderTypeEnum.DELIVERY) {
                 const shipping = this.getShippingAddress;
                 const billing = this.getBillingAddress;
@@ -197,11 +308,74 @@ export default {
                         return;
                     }
                 }
-                
-                router.push({name: "frontend.checkout.payment"});
-            } else {
-                router.push({name: "frontend.checkout.payment"});
+            } else if (this.orderType === orderTypeEnum.PICK_UP) {
+                const outletAddress = this.getOutletAddress;
+                if (!outletAddress || Object.keys(outletAddress).length === 0) {
+                    alertService.error(this.$t("message.please_select_an_outlet"));
+                    return;
+                }
             }
+
+            if (Object.keys(this.paymentMethod).length === 0) {
+                alertService.error(this.$t('message.payment_method_required'));
+                return;
+            }
+
+            if (e && e.target) {
+                e.target.disabled = true;
+            }
+            this.loading.isActive = true;
+
+            this.form = {
+                subtotal: this.subtotal,
+                discount: this.discount,
+                tax: this.totalTax,
+                shipping_charge: this.shippingCharge,
+                total: this.total,
+                order_type: this.orderType,
+                shipping_id: Object.keys(this.getShippingAddress).length > 0 ? (this.getShippingAddress.id ? this.getShippingAddress.id : 0) : 0,
+                billing_id: Object.keys(this.getBillingAddress).length > 0 ? (this.getBillingAddress.id ? this.getBillingAddress.id : 0) : 0,
+                guest_info: !this.$store.getters.authStatus ? JSON.stringify(this.getShippingAddress) : null,
+                outlet_id: Object.keys(this.getOutletAddress).length > 0 ? this.getOutletAddress.id : 0,
+                coupon_id: Object.keys(this.cartCoupon).length > 0 ? this.cartCoupon.id : 0,
+                source: sourceEnum.WEB,
+                payment_method: Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.id : 0,
+                products: JSON.stringify(this.products)
+            }
+
+            this.$store.dispatch('frontendOrder/save', this.form).then(orderResponse => {
+                this.loading.isActive = false;
+                
+                if (orderResponse.data.data.guest_token) {
+                    this.$store.commit('authLogin', {
+                        token: orderResponse.data.data.guest_token,
+                        user: orderResponse.data.data.guest_user,
+                        menu: orderResponse.data.data.guest_menu,
+                        permission: orderResponse.data.data.guest_permission,
+                        defaultPermission: orderResponse.data.data.guest_defaultPermission,
+                        defaultMenu: orderResponse.data.data.guest_defaultMenu
+                    });
+                }
+
+                let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
+                if (paymentSlug) {
+                    window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;
+                } else {
+                    alertService.error(this.$t('message.payment_method_required'));
+                }
+            }).catch((err) => {
+                this.loading.isActive = false;
+                if (e && e.target) {
+                    e.target.disabled = false;
+                }
+                if (typeof err.response.data.errors === 'object') {
+                    _.forEach(err.response.data.errors, (error) => {
+                        alertService.error(error[0]);
+                    });
+                } else {
+                    alertService.error(err.response.data.message);
+                }
+            });
         }
     }
 }

@@ -22,8 +22,6 @@ const  CheckoutCartListComponent = () => import("../../components/frontend/check
 const  CartListHeaderComponent = () => import("../../components/frontend/checkout/cartList/HeaderComponent");
 const  CheckoutCheckoutComponent = () => import("../../components/frontend/checkout/checkout/CheckoutComponent");
 const  CheckoutHeaderComponent = () => import("../../components/frontend/checkout/checkout/HeaderComponent");
-const  CheckoutPaymentComponent = () => import("../../components/frontend/checkout/payment/PaymentComponent");
-const  PaymentHeaderComponent = () => import("../../components/frontend/checkout/payment/HeaderComponent");
 const  ProductReviewComponent = () => import("../../components/frontend/account/review/ProductReviewComponent");
 const  MostPopularProductComponent = () => import("../../components/frontend/product/MostPopularProductComponent.vue");
 
@@ -253,15 +251,6 @@ export default [
                 path: "checkout",
                 components: {default: CheckoutCheckoutComponent, header: CheckoutHeaderComponent},
                 name: "frontend.checkout.checkout",
-                meta: {
-                    isFrontend: true,
-                    auth: false
-                }
-            },
-            {
-                path: "payment",
-                components: {default: CheckoutPaymentComponent, header: PaymentHeaderComponent},
-                name: "frontend.checkout.payment",
                 meta: {
                     isFrontend: true,
                     auth: false

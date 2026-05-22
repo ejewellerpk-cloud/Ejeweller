@@ -12,12 +12,12 @@
             <!--  Header Route Close -->
 
             <!--  Checkbox Start -->
-            <ul class="multi-step w-full max-w-lg mx-auto my-12 pt-2 pb-5 px-4 flex items-center justify-center">
+            <ul class="multi-step w-full max-w-sm mx-auto my-12 pt-2 pb-5 px-4 flex items-center justify-center">
                 <li class="list-none w-full flex after:content-[''] after:w-full after:h-1 last:after:hidden last:w-fit"
-                    :class="currentRoute === '/checkout/checkout' || currentRoute === '/checkout/payment' ? 'after:bg-success' : 'after:bg-[#EFF0F6]'">
+                    :class="currentRoute === '/checkout/checkout' ? 'after:bg-success' : 'after:bg-[#EFF0F6]'">
                     <router-link :to="{ name: 'frontend.checkout.cartList' }"
                         class="flex flex-col items-center gap-4 -mt-[13px] relative">
-                        <i v-if="currentRoute === '/checkout/checkout' || currentRoute === '/checkout/payment'"
+                        <i v-if="currentRoute === '/checkout/checkout'"
                             class="lab lab-fill-save text-lg w-[30px] h-[30px] !leading-[30px] text-center rounded-full text-white bg-success"></i>
                         <span v-else class="w-[30px] h-[30px] border-[4px] rounded-full border-success bg-white"></span>
                         <small :class="currentRoute === '/checkout/cart-list' ? 'text-success' : 'text-secondary'"
@@ -27,29 +27,15 @@
                     </router-link>
                 </li>
 
-                <li class="list-none w-full flex after:content-[''] after:w-full after:h-1 last:after:hidden last:w-fit"
-                    :class="currentRoute === '/checkout/payment' ? 'after:bg-success' : 'after:bg-[#EFF0F6]'">
+                <li
+                    class="list-none w-full flex after:content-[''] after:w-full after:h-1 last:after:hidden last:w-fit after:bg-[#EFF0F6]">
                     <router-link :to="{ name: 'frontend.checkout.checkout' }"
                         class="flex flex-col items-center gap-4 -mt-[13px] relative">
-                        <i v-if="currentRoute === '/checkout/payment'"
-                            class="lab lab-fill-save text-lg w-[30px] h-[30px] !leading-[30px] text-center rounded-full text-white bg-success"></i>
-                        <span v-else
-                            class="w-[30px] h-[30px] border-[4px] rounded-full border-[#D9DBE9] bg-[#D9DBE9]"></span>
+                        <span class="w-[30px] h-[30px] border-[4px] rounded-full"
+                              :class="currentRoute === '/checkout/checkout' ? 'border-success bg-white' : 'border-[#D9DBE9] bg-[#D9DBE9]'"></span>
                         <small :class="currentRoute === '/checkout/checkout' ? 'text-success' : 'text-secondary'"
                             class="text-sm font-medium capitalize absolute -bottom-8">
                             {{ $t('label.checkout') }}
-                        </small>
-                    </router-link>
-                </li>
-
-                <li
-                    class="list-none w-full flex after:content-[''] after:w-full after:h-1 last:after:hidden last:w-fit after:bg-[#EFF0F6]">
-                    <router-link :to="{ name: 'frontend.checkout.payment' }"
-                        class="flex flex-col items-center gap-4 -mt-[13px] relative">
-                        <span class="w-[30px] h-[30px] border-[4px] rounded-full border-[#D9DBE9] bg-[#D9DBE9]"></span>
-                        <small :class="currentRoute === '/checkout/payment' ? 'text-success' : 'text-secondary'"
-                            class="text-sm font-medium capitalize absolute -bottom-8">
-                            {{ $t('label.payment') }}
                         </small>
                     </router-link>
                 </li>

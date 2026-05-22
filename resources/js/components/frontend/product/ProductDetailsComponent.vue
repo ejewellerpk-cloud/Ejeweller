@@ -402,7 +402,7 @@
         <!-- Swiper Container (Full Screen) -->
         <div class="w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
             <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full review-preview-swiper">
-                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full flex items-center justify-center pb-[280px] sm:pb-[220px]" @click.self="hidePreviewImage">
+                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full flex items-center justify-center" @click.self="hidePreviewImage">
                     <img :src="img" alt="review" class="max-w-full max-h-full object-contain pointer-events-none" loading="lazy" />
                 </SwiperSlide>
             </Swiper>
