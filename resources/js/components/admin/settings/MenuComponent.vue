@@ -137,6 +137,10 @@
                 <i class="text-sm lab lab-line-social"></i>
                 {{ $t("menu.social_login") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.facebookCapi' }" class="db-tab-btn">
+                <i class="text-sm lab lab-line-social"></i>
+                Facebook CAPI
+            </router-link>
             <router-link :to="{ name: 'admin.settings.license' }" class="db-tab-btn">
                 <i class="text-sm lab-line-license-code"></i>
                 {{ $t("menu.license") }}

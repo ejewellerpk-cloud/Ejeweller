@@ -11,6 +11,7 @@ const SocialMediaComponent = () =>  import("../../components/admin/settings/Soci
 const LicenseComponent = () =>  import("../../components/admin/settings/License/LicenseComponent");
 const CookiesComponent = () =>  import("../../components/admin/settings/Cookies/CookiesComponent");
 const AnalyticComponent = () =>  import("../../components/admin/settings/analytics/AnalyticComponent");
+const FacebookCapiComponent = () =>  import("../../components/admin/settings/FacebookCapi/FacebookCapiComponent");
 const AnalyticListComponent = () =>  import("../../components/admin/settings/analytics/AnalyticListComponent");
 const AnalyticShowComponent = () =>  import("../../components/admin/settings/analytics/AnalyticShowComponent");
 const ThemeComponent = () =>  import("../../components/admin/settings/Theme/ThemeComponent");
@@ -166,6 +167,17 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "social_login",
+                },
+            },
+            {
+                path: "facebook-capi",
+                component: FacebookCapiComponent,
+                name: "admin.settings.facebookCapi",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "facebook_capi",
                 },
             },
             {
