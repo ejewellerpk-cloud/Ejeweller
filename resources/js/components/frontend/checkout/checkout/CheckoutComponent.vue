@@ -326,6 +326,14 @@ export default {
                         return;
                     }
                 }
+                // Logged in user validation
+                if (this.$store.getters.authStatus) {
+                    if (!shipping.id || shipping.id === 0) {
+                        alertService.error(this.$t("message.please_select_shipping_address") || "Please select a valid shipping address from your address book.");
+                        this.loading.isActive = false;
+                        return;
+                    }
+                }
             } else if (this.orderType === orderTypeEnum.PICK_UP) {
                 const outletAddress = this.getOutletAddress;
                 if (!outletAddress || Object.keys(outletAddress).length === 0) {
@@ -377,7 +385,7 @@ export default {
 
                 let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
                 if (orderResponse.data.data.is_cod) {
-                    this.$router.push({ path: '/account/order-details/' + orderResponse.data.data.id, query: { status: 'success' } });
+                    this.$router.push({ name: 'frontend.account.orderDetails', params: { id: orderResponse.data.data.id }, query: { status: 'success' } });
                 } else if (paymentSlug) {
                     window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;
                 } else {

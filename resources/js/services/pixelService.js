@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const pixelService = {
     init: function() {
         // If fbq is already defined globally, do nothing
@@ -40,17 +42,10 @@ export const pixelService = {
 
     sendCapiEvent: function(eventName, customData) {
         // Send event to backend API for Server-Side tracking
-        fetch('/api/frontend/capi/event', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                event_name: eventName,
-                custom_data: customData,
-                event_id: eventName.toLowerCase() + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
-            })
+        axios.post('/api/frontend/capi/event', {
+            event_name: eventName,
+            custom_data: customData,
+            event_id: eventName.toLowerCase() + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
         }).catch(err => console.error('CAPI Event Error:', err));
     },
 

@@ -76,9 +76,13 @@ class FbCapiService
             }
         }
 
+        $currencyId = \Dipokhalder\Settings\Facades\Settings::group('site')->get('site_default_currency');
+        $currency = \App\Models\Currency::find($currencyId);
+        $currencyCode = $currency ? $currency->code : 'PKR';
+
         $customData = [
             'value' => (float) $order->total,
-            'currency' => \App\Models\Setting::group('site')->get('site_default_currency_code', 'PKR'),
+            'currency' => $currencyCode,
             'content_type' => 'product',
             'content_ids' => $contentIds,
             'order_id' => $order->order_serial_no

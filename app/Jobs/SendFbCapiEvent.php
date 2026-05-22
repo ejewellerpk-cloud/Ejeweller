@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
-use App\Models\Setting;
+
 use Illuminate\Support\Facades\Log;
 
 class SendFbCapiEvent implements ShouldQueue
@@ -40,7 +40,7 @@ class SendFbCapiEvent implements ShouldQueue
      */
     public function handle()
     {
-        $settings = Setting::whereIn('key', ['site_facebook_pixel_id', 'site_facebook_capi_token', 'site_facebook_capi_status'])->pluck('value', 'key');
+        $settings = \Dipokhalder\Settings\Facades\Settings::group('site')->all();
         
         $pixelId = $settings['site_facebook_pixel_id'] ?? null;
         $token = $settings['site_facebook_capi_token'] ?? null;
