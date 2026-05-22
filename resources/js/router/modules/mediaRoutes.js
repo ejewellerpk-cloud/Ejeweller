@@ -1,4 +1,4 @@
-import MediaGalleryComponent from "../../components/admin/media/MediaGalleryComponent";
+const MediaGalleryComponent = () => import("../../components/admin/media/MediaGalleryComponent");
 
 export default [
     {

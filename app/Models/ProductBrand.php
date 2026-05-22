@@ -42,8 +42,8 @@ class ProductBrand extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Fill, 108, 108)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->width(450)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->fit(Fit::Fill, 108, 108)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->width(450)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function products(): \Illuminate\Database\Eloquent\Relations\HasMany

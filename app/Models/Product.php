@@ -181,9 +181,9 @@ class Product extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->width(168)->height(180)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->width(372)->height(405)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('preview')->width(1536)->height(1536)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->width(168)->height(180)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->width(372)->height(405)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('preview')->width(1536)->height(1536)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo

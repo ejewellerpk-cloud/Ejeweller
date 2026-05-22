@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\StateController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\TopBarController;
 use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DamageController;
@@ -223,6 +224,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::prefix('theme')->name('theme.')->group(function () {
             Route::get('/', [ThemeController::class, 'index']);
             Route::post('/', [ThemeController::class, 'update']);
+        });
+
+        Route::prefix('top-bar')->name('topBar.')->group(function () {
+            Route::get('/', [TopBarController::class, 'index']);
+            Route::post('/', [TopBarController::class, 'update']);
         });
 
         Route::prefix('pwa')->name('pwa')->group(function () {

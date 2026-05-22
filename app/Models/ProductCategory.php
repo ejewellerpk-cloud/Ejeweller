@@ -48,8 +48,8 @@ class ProductCategory extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->width(252)->height(183)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->width(960)->height(1440)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->width(252)->height(183)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->width(960)->height(1440)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function products(): \Illuminate\Database\Eloquent\Relations\HasMany

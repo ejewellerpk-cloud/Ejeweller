@@ -3,7 +3,7 @@
         <LoadingComponent :props="{isActive:true}" />
     </div>
     <div v-if="theme === 'frontend'">
-        <main class="pb-20">
+        <main class="">
             <FrontendNavbarComponent />
             <FrontendCartComponent />
             <router-view></router-view>
@@ -29,8 +29,8 @@
     </div>
 
     <!-- Abandoned Cart Checkout Reminder Banner -->
-    <transition name="slide-up-fade">
-        <div v-if="showCheckoutReminder && theme === 'frontend'" class="fixed bottom-[220px] left-4 z-50 w-[70%] max-w-[240px] sm:bottom-[280px] sm:left-6 sm:right-auto sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
+    <transition name="slide-left-fade">
+        <div v-if="showCheckoutReminder && theme === 'frontend'" class="fixed top-[100px] sm:top-[120px] right-4 sm:right-6 z-50 w-[70%] max-w-[240px] sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
             <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500 animate-pulse text-base">
                 <i class="lab-line-bag"></i>
             </div>
@@ -288,13 +288,13 @@ export default {
 </script>
 
 <style scoped>
-.slide-up-fade-enter-active,
-.slide-up-fade-leave-active {
+.slide-left-fade-enter-active,
+.slide-left-fade-leave-active {
     transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-.slide-up-fade-enter-from,
-.slide-up-fade-leave-to {
-    transform: translateY(20px);
+.slide-left-fade-enter-from,
+.slide-left-fade-leave-to {
+    transform: translateX(20px);
     opacity: 0;
 }
 </style>

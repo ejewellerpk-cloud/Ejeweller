@@ -120,17 +120,20 @@ class ProductSectionService
     public function productSectionWithProduct()
     {
         try {
-            return ProductSection::select('product_sections.id', 'product_sections.name', 'product_sections.slug', 'product_sections.status')->with(['products' => function ($query) {
-                $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity')
-                    ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                    ->withReviewRating()
-                    ->with('media', 'variations', 'reviews')
-                    ->active('products.status')
-                    ->whereNull('deleted_at')
-                    ->inRandomOrder();
-            }])->active('product_sections.status')->orderBy('id', 'asc')->get()->map(function ($query) {
-                $query->setRelation('products', $query->products->take(8));
-                return $query;
+            $userId = Auth::id() ?? 0;
+            return \Illuminate\Support\Facades\Cache::remember('product_sections_user_' . $userId, 3600, function () {
+                return ProductSection::select('product_sections.id', 'product_sections.name', 'product_sections.slug', 'product_sections.status')->with(['products' => function ($query) {
+                    $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity')
+                        ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
+                        ->withReviewRating()
+                        ->with('media', 'variations', 'reviews')
+                        ->active('products.status')
+                        ->whereNull('deleted_at')
+                        ->inRandomOrder();
+                }])->active('product_sections.status')->orderBy('id', 'asc')->get()->map(function ($query) {
+                    $query->setRelation('products', $query->products->take(8));
+                    return $query;
+                });
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

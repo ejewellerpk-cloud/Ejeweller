@@ -10,7 +10,9 @@
                     <SwiperSlide v-for="brand in brands" class="mobile:!w-[120px]">
                         <router-link :to="{name: 'frontend.product', query:{ brand: brand.slug }}" class="w-full rounded-2xl shadow-xs group border border-gray-100">
                             <figure class="w-full h-[120px] flex items-center justify-center">
-                                <img :src="brand.cover" alt="brand" class="w-14">
+                                <img v-if="brand.cover && !brand.cover.includes('default/brand')" :src="brand.cover" alt="brand" class="w-14" loading="lazy"
+                                    @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('w-14'); $event.target.classList.add('w-10', 'opacity-40')">
+                                <img v-else :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-10 object-contain opacity-40">
                             </figure>
                             <span class="text-sm sm:text-lg font-medium capitalize text-center pb-3 block group-hover:text-primary">
                                     {{ brand.name }}

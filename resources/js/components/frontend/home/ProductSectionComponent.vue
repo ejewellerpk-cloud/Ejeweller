@@ -43,7 +43,11 @@
                 <section v-if="key === promotionKey" class="mb-10 sm:mb-20">
                     <div class="container">
                         <router-link :to="{ name: 'frontend.promotion.products', params: { slug: promotion.slug } }">
-                            <img class="w-full rounded-3xl" :src="promotion.preview" alt="promotion">
+                            <img v-if="promotion.preview && !promotion.preview.includes('default/promotion')" class="w-full rounded-3xl" :src="promotion.preview" alt="promotion" loading="lazy"
+                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('w-full', 'rounded-3xl'); $event.target.classList.add('w-1/2', 'mx-auto', 'object-contain', 'opacity-40')">
+                            <div v-else class="w-full rounded-3xl flex items-center justify-center bg-gray-50/50 py-10">
+                                <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/4 object-contain opacity-40">
+                            </div>
                         </router-link>
                     </div>
                 </section>
@@ -91,7 +95,11 @@
             <section v-for="promotion in promotions" class="mb-10 sm:mb-20">
                 <div class="container">
                     <router-link :to="{ name: 'frontend.promotion.products', params: { slug: promotion.slug } }">
-                        <img class="w-full rounded-3xl" :src="promotion.preview" alt="promotion">
+                        <img v-if="promotion.preview && !promotion.preview.includes('default/promotion')" class="w-full rounded-3xl" :src="promotion.preview" alt="promotion" loading="lazy"
+                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('w-full', 'rounded-3xl'); $event.target.classList.add('w-1/2', 'mx-auto', 'object-contain', 'opacity-40')">
+                        <div v-else class="w-full rounded-3xl flex items-center justify-center bg-gray-50/50 py-10">
+                            <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/4 object-contain opacity-40">
+                        </div>
                     </router-link>
                 </div>
             </section>

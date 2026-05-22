@@ -1,4 +1,14 @@
 <template>
+    <div v-if="setting.top_bar_status === 'active'" 
+         :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
+         class="w-full py-2 px-4 text-center text-sm font-medium z-40 relative">
+        <a v-if="setting.top_bar_link" :href="setting.top_bar_link" class="hover:underline transition-all block w-full">
+            <span class="inline-block animate-marquee sm:animate-none">{{ setting.top_bar_text }}</span>
+        </a>
+        <div v-else class="block w-full overflow-hidden">
+            <span class="inline-block animate-marquee sm:animate-none">{{ setting.top_bar_text }}</span>
+        </div>
+    </div>
 
     <header
         :class="isSticky === true ? 'fixed top-0 left-0 z-30 w-full mb-5 sm:mb-8 shadow-xs bg-white' : 'mb-5 sm:mb-8 shadow-xs bg-white'">
@@ -13,7 +23,7 @@
 
                     <router-link :to="{ name: 'frontend.home' }"
                         class="router-link-active router-link-exact-active flex-shrink-0">
-                        <img class="w-28 sm:w-32" :src="setting.theme_logo" alt="logo">
+                        <img class="w-28 sm:w-32" :src="setting.theme_logo" alt="logo" loading="lazy">
                     </router-link>
                 </div>
 
@@ -25,7 +35,7 @@
 
                     <button v-if="logged" @click.prevent="showTarget('mobile-profile-canvas', 'canvas-active')" type="button"
                         class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
-                        <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" />
+                        <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" loading="lazy" />
                         <i v-else class="lab-line-user text-xl text-heading"></i>
                     </button>
 
@@ -70,7 +80,7 @@
                                                 @mouseover.prevent="activeTab = 'category_' + category.slug"
                                                 class="capitalize text-sm font-semibold tracking-wide px-5 py-4 transition-all duration-300 relative before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-0.5 before:bg-primary hover:text-primary flex items-center gap-2"
                                                 :class="{ 'text-primary before:w-full before:transition-all before:duration-300': activeTab === 'category_' + category.slug }">
-                                                <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-sm" />
+                                                <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-sm" loading="lazy" />
                                                 {{ category.name }}
                                             </router-link>
                                         </nav>
@@ -79,7 +89,7 @@
                                                 :class="{ 'block': activeTab === 'category_' + category.slug, 'hidden': activeTab !== 'category_' + category.slug }"
                                                 class="flex items-start gap-5 pb-5 border-t border-gray-200">
                                                 <div class="w-60 h-80 flex-shrink-0 pt-5 ltr:pl-5 rtl:pr-5">
-                                                    <img class="w-full h-full object-top object-cover rounded-lg"
+                                                    <img class="w-full h-full object-top object-cover rounded-lg" loading="lazy"
                                                         :src="category.cover" alt="category" />
                                                 </div>
                                                 <div class="w-full h-80 thin-scrolling pt-5 ltr:pr-5 rtl:pl-5">
@@ -189,7 +199,7 @@
                     <div v-if="logged"
                         class="w-60 absolute top-15 ltr:-right-10 rtl:-left-10  z-10 rounded-2xl overflow-hidden shadow-card bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
                         <div class="flex items-center gap-3 p-4 border-b border-[#EFF0F6]">
-                            <img :src="profile.image" alt="avatar"
+                            <img :src="profile.image" alt="avatar" loading="lazy"
                                 class="w-11 h-11 rounded-full object-cover flex-shrink-0">
                             <dl class="w-full">
                                 <dt class="font-semibold capitalize whitespace-nowrap mb-0.5">
@@ -304,7 +314,7 @@
         <div class="flex items-center justify-between mb-4">
             <router-link :to="{ name: 'frontend.home' }"
                 class="router-link-active router-link-exact-active flex-shrink-0">
-                <img class="w-28 sm:w-32" :src="setting.theme_logo" alt="logo">
+                <img class="w-28 sm:w-32" :src="setting.theme_logo" alt="logo" loading="lazy">
             </router-link>
             <button type="button">
                 <i @click.prevent="hideTarget('search', 'search-active')"
@@ -645,3 +655,19 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+@keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+    animation: marquee 15s linear infinite;
+    white-space: nowrap;
+}
+@media (min-width: 640px) {
+    .sm\:animate-none {
+        animation: none;
+    }
+}
+</style>

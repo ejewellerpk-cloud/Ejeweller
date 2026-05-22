@@ -34,14 +34,14 @@
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
 
-                    <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="{ clickable: true }" :thumbs="{ swiper: thumbsSwiper }"
+                    <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="getPaginationConfig()" :thumbs="{ swiper: thumbsSwiper }"
                         :modules="modules" :loop="true" class="gallery-swiper mb-4">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
                                 <div @click="handleImageClick(index)" @dblclick="toggleZoom(index)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
-                                    <img :src="media.url" alt="product" 
+                                    <img :src="media.url" alt="product" loading="lazy"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                                         :class="zoomedIndex === index ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                                         class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
@@ -61,7 +61,7 @@
                             @mouseover="thumbsSwiper ? thumbsSwiper.slideTo(index) : null"
                             class="w-full cursor-pointer rounded-lg border border-gray-200 transition-all duration-500 bg-black flex items-center justify-center aspect-square relative" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <img class="w-full h-full rounded-lg border-2 border-gray-200 transition-all duration-500 object-cover"
+                                <img class="w-full h-full rounded-lg border-2 border-gray-200 transition-all duration-500 object-cover" loading="lazy"
                                     @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
                                     :src="media.url" alt="gallery" />
                             </template>
@@ -71,7 +71,7 @@
                                 </div>
                                 <!-- YouTube Video Thumbnail -->
                                 <template v-if="media.data.video_provider === 5">
-                                    <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover"
+                                    <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover" loading="lazy"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
                                         :src="getVideoThumbnail(media)" alt="video thumbnail" />
                                 </template>
@@ -113,7 +113,7 @@
                     <div @click="handleImageClick(999)" @dblclick="toggleZoom(999)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
-                        <img :src="product.image" alt="products" 
+                        <img :src="product.image" alt="products" loading="lazy"
                             @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                             :class="zoomedIndex === 999 ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
@@ -284,10 +284,16 @@
 
                     <!-- Reviews Section -->
                     <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-6 sm:p-8">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3 text-heading border-b border-gray-100 pb-4">
-                            <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
-                            {{ $t('label.product_reviews') }}
-                        </h3>
+                        <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                            <h3 class="capitalize text-2xl sm:text-3xl font-bold flex items-center gap-3 text-heading">
+                                <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
+                                {{ $t('label.product_reviews') }}
+                            </h3>
+                            <button v-if="product.rating_star_count > reviews.length" @click.prevent="readMore"
+                                type="button" class="text-primary font-bold hover:underline transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
+                                View All
+                            </button>
+                        </div>
                         
                         <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 mb-8 pb-6">
                             <starRating border-color="#FFBC1F" :rounded-corners="true" :padding="2.5"
@@ -320,17 +326,12 @@
                                 <p class="text-base text-gray-600 leading-relaxed mb-4">{{ review.review }}</p>
 
                                 <div class="flex flex-wrap gap-3" v-if="review.images && review.images.length > 0">
-                                    <img v-for="(reviewImage, imgIndex) in review.images" :key="imgIndex" :src="reviewImage" alt="review image"
+                                    <img v-for="(reviewImage, imgIndex) in review.images" :key="imgIndex" :src="reviewImage" alt="review image" loading="lazy"
                                         class="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-85 transition-all duration-300 border border-gray-200" 
-                                        @click="previewImage(reviewImage)">
+                                        @click="previewImage(review.images, imgIndex, review)" data-modal="imagePreviewModal">
                                 </div>
                             </div>
 
-                            <button v-if="product.rating_star_count > reviews.length" @click.prevent="readMore"
-                                type="button" class="flex items-center justify-center gap-2 w-fit mx-auto mt-8 py-2.5 px-6 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-all duration-300">
-                                <span class="capitalize text-base">{{ $t('label.read_more') }}</span>
-                                <i class="lab-line-down-arrow text-xs"></i>
-                            </button>
                         </div>
                     </div>
 
@@ -361,8 +362,9 @@
                     :dir="'ltr'"
                     :slides-per-view="2"
                     :space-between="16"
-                    :navigation="true"
-                    :autoplay="{ delay: 2500, disableOnInteraction: false }"
+                    :navigation="false"
+                    :autoplay="{ delay: 0, disableOnInteraction: false }"
+                    :speed="4000"
                     :loop="true"
                     :modules="modules"
                     :breakpoints="{
@@ -370,7 +372,7 @@
                         '768': { slidesPerView: 3, spaceBetween: 24 },
                         '1024': { slidesPerView: 4, spaceBetween: 24 }
                     }"
-                    class="product-section-swiper !pb-10"
+                    class="product-section-swiper continuous-slider !pb-10"
                 >
                     <SwiperSlide v-for="product in relatedProducts" :key="product.id">
                         <ProductListComponent :products="[product]" />
@@ -380,14 +382,90 @@
         </div>
     </section>
 
-     <div id="imagePreviewModal" class="modal flex items-center"  @click="hidePreviewImage">
-            <div class="max-w-lg w-full mx-auto relative ">
-                        <button 
-                            @click="hidePreviewImage" 
-                            class="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 hover:bg-opacity-75"
-                        >  ✕</button>
-                <img data-modal="imagePreviewModal" :src="previewImg" alt="return" class="w-full h-full rounded-lg object-cover" />
+     <!-- Full Screen Review Image Viewer Modal (Temu Style) -->
+     <div id="imagePreviewModal" class="modal fixed !inset-0 z-[9999] bg-black !left-0 !translate-x-0 flex items-center justify-center" @click.self="hidePreviewImage">
+        
+        <!-- Header: Close & Pagination -->
+        <div class="absolute top-0 left-0 w-full p-4 sm:p-6 flex items-center justify-between z-20 pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
+            <button @click="hidePreviewImage" class="text-white hover:text-gray-300 transition-colors pointer-events-auto p-2">
+                <i class="fa-solid fa-xmark text-xl sm:text-2xl"></i>
+            </button>
+            <div class="text-white text-sm sm:text-base font-medium tracking-wide drop-shadow-md">
+                <span v-if="previewImages && previewImages.length > 0">
+                    {{ previewIndex + 1 }} / {{ previewImages.length }}
+                </span>
             </div>
+            <!-- Empty div for flex balance -->
+            <div class="w-10"></div>
+        </div>
+
+        <!-- Swiper Container (Full Screen) -->
+        <div class="w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
+            <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full review-preview-swiper">
+                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full flex items-center justify-center pb-[280px] sm:pb-[220px]" @click.self="hidePreviewImage">
+                    <img :src="img" alt="review" class="max-w-full max-h-full object-contain pointer-events-none" loading="lazy" />
+                </SwiperSlide>
+            </Swiper>
+        </div>
+
+        <!-- Review Info & Action Area (Floating at Bottom) -->
+        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-12 pb-4 sm:pb-6 px-4 sm:px-6 pointer-events-none z-10 flex flex-col justify-end">
+            
+            <div class="w-full max-w-4xl mx-auto pointer-events-auto flex flex-col gap-4">
+                <!-- Review Details (Name, Date, Stars, Text) -->
+                <div v-if="previewReview" class="text-white flex flex-col gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 text-white flex-shrink-0">
+                            <i class="lab-line-user text-base sm:text-lg"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-sm sm:text-base capitalize">{{ previewReview.name }}</span>
+                                <span class="text-xs text-gray-400">on {{ previewReview.date }}</span>
+                            </div>
+                            <div class="flex items-center gap-1 mt-0.5">
+                                <starRating border-color="#FFBC1F" inactive-color="rgba(255,255,255,0.2)" active-color="#FFBC1F"
+                                    :rounded-corners="true" :padding="2" :border-width="0" :star-size="10"
+                                    :round-start-rating="false" :show-rating="false"
+                                    :read-only="true" :max-rating="5" :rating="previewReview.star" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm sm:text-base text-gray-200 leading-snug drop-shadow-md mt-1">{{ previewReview.review }}</p>
+                </div>
+
+                <!-- Product Info & Actions Line -->
+                <div class="flex items-center justify-between border-t border-white/10 pt-4 mt-1 gap-4">
+                    <!-- Price Snippet -->
+                    <div class="flex flex-col">
+                        <span class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Total Price</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg sm:text-xl font-black text-white leading-none drop-shadow-md">
+                                {{ currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                            </span>
+                            <span v-if="product.is_offer" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none shadow-sm border border-primary/30">
+                                -{{ discountPercentageDetail() }}%
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
+                            :class="enableAddToCardButton === false ? 'bg-[#FF8A00] hover:bg-[#ff9d2e] shadow-[0_4px_15px_rgba(255,138,0,0.4)] hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                            <span class="text-sm">Add to cart</span>
+                        </button>
+                        <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
+                            :class="enableAddToCardButton === false ? 'bg-[#FF3B30] hover:bg-[#ff4e45] shadow-[0_4px_15px_rgba(255,59,48,0.4)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                            <span class="text-sm">Buy Now</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="fixed bottom-[78px] left-4 right-4 z-20 p-3 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex items-center justify-between gap-3">
@@ -518,7 +596,7 @@ export default {
             props: {
                 search: {
                     slug: null,
-                    review_limit: 3
+                    review_limit: 5
                 }
             },
             enableAddToCardButton: false,
@@ -554,7 +632,9 @@ export default {
                 totalPrice: 0,
                 maximum_purchase_quantity: 0
             },
-            previewImg:null,
+            previewImages: [],
+            previewIndex: 0,
+            previewReview: null,
             shareUrl: "",
             copyText: "Copy",
             zoomedIndex: null,
@@ -819,11 +899,13 @@ export default {
             }
         },
         readMore: function () {
-            this.props.search.review_limit += 1;
+            this.props.search.review_limit = this.product.rating_star_count;
             this.show();
         },
-        previewImage: function (img) {
-            this.previewImg = img;
+        previewImage: function (images, index, reviewObj = null) {
+            this.previewImages = images || [];
+            this.previewIndex = index || 0;
+            this.previewReview = reviewObj;
             appService.modalShow('#imagePreviewModal');
         },
         hidePreviewImage: function () {
@@ -1295,7 +1377,30 @@ export default {
                 return 'FREE Delivery';
             }
             
+            
             return 'FREE Delivery';
+        },
+        getPaginationConfig: function () {
+            const videoIndices = [];
+            if (this.combinedMedia && this.combinedMedia.length > 0) {
+                this.combinedMedia.forEach((media, index) => {
+                    if (media.type === 'video') {
+                        videoIndices.push(index);
+                    }
+                });
+            }
+            if (videoIndices.length === 0) {
+                return { clickable: true };
+            }
+            return {
+                clickable: true,
+                renderBullet: function (index, className) {
+                    if (videoIndices.includes(index)) {
+                        return `<span class="${className} video-dot"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
+                    }
+                    return `<span class="${className}"></span>`;
+                }
+            };
         }
     },
     watch: {
@@ -1308,6 +1413,9 @@ export default {
 </script>
 
 <style scoped>
+.continuous-slider :deep(.swiper-wrapper) {
+    transition-timing-function: linear !important;
+}
 .gallery-swiper :deep(.swiper-pagination) {
     bottom: 10px !important;
 }

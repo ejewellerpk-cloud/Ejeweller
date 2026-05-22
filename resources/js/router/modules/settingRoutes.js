@@ -1,4 +1,5 @@
-import AiAgentComponent from "../../components/admin/settings/AiAgent/AiAgentComponent.vue";
+const AiAgentComponent = () => import("../../components/admin/settings/AiAgent/AiAgentComponent.vue");
+const TopBarComponent = () =>  import("../../components/admin/settings/TopBar/TopBarComponent");
 
 const SettingsComponent = () =>  import("../../components/admin/settings/SettingsComponent");
 const CompanyComponent = () =>  import("../../components/admin/settings/Company/CompanyComponent");
@@ -224,6 +225,17 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "theme",
+                },
+            },
+            {
+                path: "top-bar",
+                component: TopBarComponent,
+                name: "admin.settings.topBar",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "top_bar",
                 },
             },
             {

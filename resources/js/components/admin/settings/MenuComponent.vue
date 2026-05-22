@@ -53,6 +53,10 @@
                 <i class="text-sm lab lab-line-theme"></i>
                 {{ $t("menu.theme") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.topBar' }" class="db-tab-btn">
+                <i class="text-sm lab lab-line-promotion"></i>
+                {{ $t("menu.top_bar") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.slider' }" class="db-tab-btn">
                 <i class="text-sm lab lab-line-sliders"></i>
                 {{ $t("menu.sliders") }}

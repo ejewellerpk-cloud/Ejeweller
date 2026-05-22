@@ -60,7 +60,9 @@ class ProductCategoryService
     public function tree()
     {
         try {
-            return ProductCategory::active()->tree()->get();
+            return \Illuminate\Support\Facades\Cache::remember('product_categories_tree', 3600, function () {
+                return ProductCategory::active()->tree()->get();
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

@@ -7,7 +7,11 @@
                 <SwiperSlide v-for="category in categories" class="mobile:!w-24">
                     <router-link :to="{name: 'frontend.product', query:{ category: category.slug}}"
                                  class="w-full rounded-2xl shadow-xs group">
-                        <img class="w-full aspect-square object-cover block rounded-tl-2xl rounded-tr-2xl" :src="category.thumb" alt="category" >
+                        <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full aspect-square object-cover block rounded-tl-2xl rounded-tr-2xl" :src="category.thumb" alt="category" loading="lazy"
+                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')">
+                        <div v-else class="w-full aspect-square flex items-center justify-center bg-gray-50/50 rounded-tl-2xl rounded-tr-2xl">
+                            <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40">
+                        </div>
                         <span class="text-sm sm:text-xl font-medium capitalize text-center py-2 px-3 overflow-hidden whitespace-nowrap text-ellipsis block rounded-bl-2xl rounded-br-2xl group-hover:text-primary">
                             {{ category.name }}
                         </span>

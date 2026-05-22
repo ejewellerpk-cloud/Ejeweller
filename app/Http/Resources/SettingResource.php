@@ -76,7 +76,12 @@ class SettingResource extends JsonResource
             'image_403'                             => asset('/images/required/403.png'),
             'image_404'                             => asset('/images/required/404.png'),
             'not_found'                             => asset('/images/default/not-found/not_found.png'),
-            'site_facebook_pixel_id'                => $this->info['site_facebook_pixel_id'] ?? ''
+            'site_facebook_pixel_id'                => $this->info['site_facebook_pixel_id'] ?? '',
+            'top_bar_status'                        => $this->info['top_bar_status'] ?? 'inactive',
+            'top_bar_text'                          => $this->info['top_bar_text'] ?? '',
+            'top_bar_link'                          => $this->info['top_bar_link'] ?? '',
+            'top_bar_bg_color'                      => $this->info['top_bar_bg_color'] ?? '#ff5c00',
+            'top_bar_text_color'                    => $this->info['top_bar_text_color'] ?? '#ffffff'
         ];
     }
 

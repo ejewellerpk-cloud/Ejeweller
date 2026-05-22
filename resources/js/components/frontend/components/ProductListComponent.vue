@@ -44,7 +44,7 @@
                     <!-- 1st Slide: First Image -->
                     <SwiperSlide v-if="product.previews.length > 0">
                         <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
-                            <img :src="product.previews[0]" alt="product" 
+                            <img :src="product.previews[0]" alt="product" loading="lazy"
                                 @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')" 
                                 class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
@@ -69,7 +69,7 @@
                     <!-- Rest of Slides: Remaining Images -->
                     <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
                         <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
-                            <img :src="image" alt="product" 
+                            <img :src="image" alt="product" loading="lazy"
                                 @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
                                 class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
@@ -80,9 +80,13 @@
                 <!-- Single Image Fallback (no video, only 1 image) -->
                 <router-link v-else class="w-full h-full block"
                     :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
-                    <img :src="product.cover" alt="product"
+                    <img v-if="product.cover && !product.cover.includes('default/product')" :src="product.cover" alt="product" loading="lazy"
                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
                         class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50">
+                        <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy"
+                            class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 group-hover:scale-105 group-hover:opacity-70">
+                    </div>
                 </router-link>
             </div>
         </div><!-- /.relative.overflow-hidden.rounded-xl.isolate -->
