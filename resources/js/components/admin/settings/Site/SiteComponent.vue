@@ -666,7 +666,7 @@ export default {
                     site_whatsapp_status: res.data.data.site_whatsapp_status,
                     site_facebook_pixel_id: res.data.data.site_facebook_pixel_id,
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
-                    site_facebook_capi_status: res.data.data.site_facebook_capi_status,
+                    site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                 }
                 this.loading.isActive = false;
