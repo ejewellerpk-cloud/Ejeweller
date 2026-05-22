@@ -9,6 +9,8 @@ use App\Models\Stock;
 use App\Models\Outlet;
 use App\Models\Address;
 use App\Models\Product;
+use App\Enums\Ask;
+use App\Models\PaymentGateway;
 use App\Enums\OrderType;
 use App\Models\StockTax;
 use App\Enums\AddressType;
@@ -99,7 +101,10 @@ class FrontendOrderService
     public function myOrderStore(OrderRequest $request): object
     {
         try {
-            DB::transaction(function () use ($request) {
+            $paymentGateway = PaymentGateway::find($request->payment_method);
+            $isCod = $paymentGateway && $paymentGateway->slug === 'cashondelivery';
+
+            DB::transaction(function () use ($request, $isCod) {
                 if (auth('sanctum')->check()) {
                     $oldOrder     = Order::where(['user_id' => auth('sanctum')->user()->id, 'active' => Status::INACTIVE]);
                     $orderReplace = $oldOrder;
@@ -151,7 +156,8 @@ class FrontendOrderService
                         'user_id'        => $userId,
                         'status'         => OrderStatus::PENDING,
                         'payment_status' => PaymentStatus::UNPAID,
-                        'order_datetime' => date('Y-m-d H:i:s')
+                        'order_datetime' => date('Y-m-d H:i:s'),
+                        'active'         => $isCod ? Ask::YES : Ask::NO
                     ]
                 );
 
@@ -172,7 +178,7 @@ class FrontendOrderService
                             'tax'             => number_format($product->total_tax, (int)env('CURRENCY_DECIMAL_POINT'), '.', ''),
                             'subtotal'        => $product->subtotal,
                             'total'           => $product->total,
-                            'status'          => Status::INACTIVE,
+                            'status'          => $isCod ? Status::ACTIVE : Status::INACTIVE,
                         ]);
                         if ($product->taxes) {
                             $j               = 0;
@@ -304,6 +310,28 @@ class FrontendOrderService
                     ]);
                 }
             });
+
+            try {
+                app(\App\Services\FbCapiService::class)->sendPurchaseEvent($this->order);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('FB CAPI Dispatch Error: ' . $e->getMessage());
+            }
+
+            if ($isCod) {
+                try {
+                    SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+                    SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+                    SendOrderPush::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+
+                    \App\Events\SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
+                    \App\Events\SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
+                    \App\Events\SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Order Notification Dispatch Error: ' . $e->getMessage());
+                }
+                $this->order->is_cod = true; // Add flag for frontend
+            }
+
             return $this->order;
         } catch (Exception $exception) {
             DB::rollBack();

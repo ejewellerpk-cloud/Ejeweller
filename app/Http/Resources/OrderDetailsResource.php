@@ -77,6 +77,7 @@ class OrderDetailsResource extends JsonResource
             "pos_received_amount"            => AppLibrary::flatAmountFormat($this->pos_received_amount),
             "pos_currency_received_amount"   => AppLibrary::currencyAmountFormat($this->pos_received_amount),
             "change_currency_amount"         => AppLibrary::currencyAmountFormat($this->pos_received_amount-$this->total),
+            "is_cod"                         => $this->is_cod ?? false,
         ] + $guestPayload;
     }
 }

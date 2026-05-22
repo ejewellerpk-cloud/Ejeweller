@@ -28,9 +28,30 @@ export const pixelService = {
 
     track: function(eventName, properties = {}) {
         this.init(); // Auto-init if not already done
+        
+        // Dispatch to Facebook Pixel (Browser)
         if (typeof window.fbq === 'function') {
             window.fbq('track', eventName, properties);
         }
+
+        // Dispatch to Server for Facebook CAPI
+        this.sendCapiEvent(eventName, properties);
+    },
+
+    sendCapiEvent: function(eventName, customData) {
+        // Send event to backend API for Server-Side tracking
+        fetch('/api/frontend/capi/event', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                event_name: eventName,
+                custom_data: customData,
+                event_id: eventName.toLowerCase() + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
+            })
+        }).catch(err => console.error('CAPI Event Error:', err));
     },
 
     trackPageView: function() {

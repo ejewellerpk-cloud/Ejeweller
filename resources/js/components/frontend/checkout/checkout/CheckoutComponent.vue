@@ -376,7 +376,9 @@ export default {
                 }
 
                 let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
-                if (paymentSlug) {
+                if (orderResponse.data.data.is_cod) {
+                    this.$router.push({ path: '/account/order-details/' + orderResponse.data.data.id, query: { status: 'success' } });
+                } else if (paymentSlug) {
                     window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;
                 } else {
                     alertService.error(this.$t('message.payment_method_required'));

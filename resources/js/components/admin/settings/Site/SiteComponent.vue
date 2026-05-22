@@ -469,6 +469,46 @@
                         </small>
                     </div>
 
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="site_facebook_capi_token" class="db-field-title">
+                            Facebook CAPI Token
+                        </label>
+                        <input v-model="form.site_facebook_capi_token" v-bind:class="errors.site_facebook_capi_token ? 'invalid' : ''"
+                            type="text" id="site_facebook_capi_token" class="db-field-control" />
+                        <small class="db-field-alert" v-if="errors.site_facebook_capi_token">
+                            {{ errors.site_facebook_capi_token[0] }}
+                        </small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title required" for="facebook_capi_status_enable">Facebook CAPI Status</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.ENABLE" v-model="form.site_facebook_capi_status"
+                                        id="facebook_capi_status_enable" type="radio" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="facebook_capi_status_enable" class="db-field-label">
+                                    {{ $t("label.enable") }}
+                                </label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.DISABLE" v-model="form.site_facebook_capi_status"
+                                        type="radio" id="facebook_capi_status_disable" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="facebook_capi_status_disable" class="db-field-label">
+                                    {{ $t("label.disable") }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.site_facebook_capi_status">
+                            {{ errors.site_facebook_capi_status[0] }}
+                        </small>
+                    </div>
+
                     <div class="form-col-12">
                         <button type="submit" class="text-white db-btn bg-primary">
                             <i class="lab lab-fill-save"></i>
@@ -526,6 +566,8 @@ export default {
                 site_is_return_product_price_add_to_credit: null,
                 site_whatsapp_status: null,
                 site_facebook_pixel_id: null,
+                site_facebook_capi_token: null,
+                site_facebook_capi_status: null,
                 site_guest_checkout: null,
             },
             enums: {
@@ -623,6 +665,8 @@ export default {
                     site_is_return_product_price_add_to_credit: res.data.data.site_is_return_product_price_add_to_credit,
                     site_whatsapp_status: res.data.data.site_whatsapp_status,
                     site_facebook_pixel_id: res.data.data.site_facebook_pixel_id,
+                    site_facebook_capi_token: res.data.data.site_facebook_capi_token,
+                    site_facebook_capi_status: res.data.data.site_facebook_capi_status,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                 }
                 this.loading.isActive = false;

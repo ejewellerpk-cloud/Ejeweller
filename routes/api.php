@@ -119,6 +119,7 @@ use App\Http\Controllers\Frontend\CountryStateCityController as FrontendCountryS
 use App\Http\Controllers\Frontend\ProductVariationController as FrontendProductVariationController;
 use App\Http\Controllers\Frontend\PromotionProductController as FrontendPromotionProductController;
 use App\Http\Controllers\Frontend\ProductSectionProductController as FrontendProductSectionProductController;
+use App\Http\Controllers\Frontend\FbCapiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -793,6 +794,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::get('/', [FrontendSettingController::class, 'index']);
     });
+
+    Route::post('/capi/event', [FbCapiController::class, 'track']);
 
     Route::prefix('country-code')->name('country-code.')->group(function () {
         Route::get('/', [FrontendCountryCodeController::class, 'index']);
