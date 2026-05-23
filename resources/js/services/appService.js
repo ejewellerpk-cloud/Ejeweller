@@ -46,53 +46,37 @@ export default {
         return parseFloat(amount || 0).toFixed(dec);
     },
 
-    sideDrawerShow: function (id = "sideDrawer") {
-        const drawerDivs = document?.querySelectorAll(".drawer");
-        const drawerSets = document?.querySelectorAll("[data-drawer]");
-        drawerSets?.forEach((drawerSet) => {
-            const targetElm = document?.querySelector(
-                drawerSet?.dataset?.drawer
-            );
-            drawerSets?.forEach((drawerBtn) =>
-                drawerBtn?.classList?.remove("active")
-            );
-            drawerDivs?.forEach((drawerDiv) =>
-                drawerDiv?.classList?.remove("active")
-            );
-            targetElm?.classList?.add("active");
-            drawerSet?.classList?.add("active");
+    sideDrawerShow: function (id = "#sideDrawer") {
+        const targetElm = document?.querySelector(id);
+        if (targetElm) {
+            targetElm.classList.add("active");
             document.body.style.overflowY = "hidden";
             document?.querySelector(".backdrop")?.classList?.add("active");
-        });
+        }
     },
-    sideDrawerHide: function (id = "sideDrawer") {
-        const drawerDivs = document?.querySelectorAll(".drawer");
-        const drawerSets = document?.querySelectorAll("[data-drawer]");
-        document?.querySelectorAll("#sidebar")?.forEach((closeBtn) => {
-            drawerSets?.forEach((drawerBtn) =>
-                drawerBtn?.classList?.remove("active")
-            );
-            drawerDivs?.forEach((drawerDiv) =>
-                drawerDiv?.classList?.remove("active")
-            );
-            document?.querySelector(".backdrop")?.classList?.remove("active");
-            document.body.style.overflowY = "auto";
-        });
-    },
-
-    modalShow: function (id = ".modal") {
-        let modalButton = document?.querySelectorAll("[data-modal]");
-        modalButton?.forEach((modalBtn) => {
-            const modalTarget = document?.querySelector(id);
-            modalTarget?.classList?.add("active");
-            document.body.style.overflowY = "hidden";
-        });
-    },
-
-    modalHide: function (id = ".modal") {
-        let modalDivs = document?.querySelectorAll(id);
+    sideDrawerHide: function (id = "#sideDrawer") {
+        const drawerDivs = document?.querySelectorAll(id);
+        drawerDivs?.forEach((drawerDiv) => drawerDiv?.classList?.remove("active"));
         document.body.style.overflowY = "auto";
+        document?.querySelector(".backdrop")?.classList?.remove("active");
+    },
+
+    modalShow: function (id = "#modal") {
+        console.log("modalShow called with id:", id);
+        const modalDivs = document?.querySelectorAll(id);
+        console.log("modalTargets found:", modalDivs);
+        if (modalDivs && modalDivs.length > 0) {
+            modalDivs.forEach((modalDiv) => modalDiv?.classList?.add("active"));
+            document.body.style.overflowY = "hidden";
+        } else {
+            console.error("No element found for selector:", id);
+        }
+    },
+
+    modalHide: function (id = "#modal") {
+        const modalDivs = document?.querySelectorAll(id);
         modalDivs?.forEach((modalDiv) => modalDiv?.classList?.remove("active"));
+        document.body.style.overflowY = "auto";
     },
 
     recursiveRouter: function (routes, permission) {

@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-C3iFuo68.js";import{l as r,f as t,z as n}from"./vendor-vue-core-D7WP7ZTL.js";import"./vendor-8yHaUXFb.js";const s={name:"SliderComponent"};function c(p,a,_,m,i,f){const o=r("router-view");return t(),n(o)}const $=e(s,[["render",c]]);export{$ as default};

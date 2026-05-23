@@ -100,13 +100,13 @@ export default {
     },
     methods: {
         add: function () {
-            appService.modalShow();
+            appService.modalShow('#addonModal');
         },
         numberOnly: function (e) {
             return appService.floatNumber(e);
         },
         reset: function () {
-            appService.modalHide();
+            appService.modalHide('#addonModal');
             this.$store.dispatch("promotionProduct/reset").then().catch();
             this.errors = {};
             this.$props.props.form = {
@@ -119,7 +119,7 @@ export default {
                 const tempId = this.$store.getters["promotionProduct/temp"].temp_id;
                 this.loading.isActive = true;
                 this.$store.dispatch("promotionProduct/save", this.props).then((res) => {
-                    appService.modalHide();
+                    appService.modalHide('#addonModal');
                     this.loading.isActive = false;
                     alertService.successFlip(
                         tempId === null ? 0 : 1,

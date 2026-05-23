@@ -104,16 +104,20 @@ export default {
         },
         list: function () {
             this.$store.dispatch('productSeo/lists', this.productId).then(res => {
-                this.preview = res.data.data.thumb;
-                this.form = {
-                    title: res.data.data.title,
-                    description: res.data.data.description,
-                };
-                this.tags = res.data.data.meta_keyword.length !== 0 ? this.seoTag(res.data.data.meta_keyword) : [];
+                if (res?.data?.data) {
+                    this.preview = res.data.data.thumb || "";
+                    this.form = {
+                        title: res.data.data.title || "",
+                        description: res.data.data.description || "",
+                    };
+                    this.tags = (res.data.data.meta_keyword && res.data.data.meta_keyword.length !== 0) 
+                        ? this.seoTag(res.data.data.meta_keyword) 
+                        : [];
+                }
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err.response?.data?.message || err.message);
             });
         },
         seoTag: function (objects) {
@@ -149,7 +153,7 @@ export default {
                     this.list();
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    this.errors = err.response.data.errors;
+                    this.errors = err.response?.data?.errors || {};
                 })
             } catch (err) {
                 this.loading.isActive = false;

@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent :props="loading" />
-    <SmModalCreateComponent :props="addButton" />
+    <SmModalCreateComponent :props="addButton" @click="logClick" />
 
     <div id="modal" class="modal">
         <div class="modal-dialog">
@@ -62,6 +62,9 @@ export default {
         }
     },
     methods: {
+        logClick: function() {
+            console.log("Add Product Attribute Button Clicked");
+        },
         reset: function () {
             appService.modalHide();
             this.$store.dispatch("productAttribute/reset").then().catch();

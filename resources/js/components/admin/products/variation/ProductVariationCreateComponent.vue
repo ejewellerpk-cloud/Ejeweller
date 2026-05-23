@@ -5,7 +5,8 @@
         <span>{{ addButton.title }}</span>
     </button>
 
-    <div id="variationModal" class="modal">
+    <Teleport to="body">
+        <div id="variationModal" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.variations") }}</h3>
@@ -77,6 +78,7 @@
             </div>
         </div>
     </div>
+    </Teleport>
 </template>
 <script>
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";

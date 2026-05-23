@@ -5,15 +5,26 @@ export function useCanvas() {
     const hiddenClass = ref('overflow-hidden')
 
     function openCanvas(targetID) {
+        console.log("canvas.js: openCanvas called for targetID:", targetID);
         const targetElement = document.querySelector(`#${targetID}`);
-        targetElement.classList.add(activeClass.value);
-        document.body.classList.add(hiddenClass.value);
+        console.log("canvas.js: targetElement found:", targetElement);
+        if (targetElement) {
+            targetElement.classList.add(activeClass.value);
+            document.body.classList.add(hiddenClass.value);
+            console.log("canvas.js: Classes added successfully.");
+        } else {
+            console.error("canvas.js: targetElement NOT FOUND!");
+        }
     }
 
     function closeCanvas(targetID) {
+        console.log("canvas.js: closeCanvas called for targetID:", targetID);
         const targetElement = document.querySelector(`#${targetID}`);
-        targetElement.classList.remove(activeClass.value);
-        document.body.classList.remove(hiddenClass.value);
+        if (targetElement) {
+            targetElement.classList.remove(activeClass.value);
+            document.body.classList.remove(hiddenClass.value);
+            console.log("canvas.js: Classes removed successfully.");
+        }
     }
 
     function closeBackdrop(event) {
