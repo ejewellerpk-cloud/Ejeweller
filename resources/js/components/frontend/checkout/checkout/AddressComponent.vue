@@ -80,6 +80,14 @@
                         </div>
                     </div>
 
+                    <div class="form-col-12">
+                        <label class="text-sm font-medium capitalize mb-1 field-title required" for="street_address">
+                            {{ $t('label.street_address') }}
+                        </label>
+                        <input type="text" v-model="address.form.address"
+                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 shadow-sm">
+                    </div>
+
                     <div class="form-col-12 sm:form-col-6">
                         <label class="text-sm font-medium capitalize mb-1 field-title required" for="country">
                             {{ $t('label.country') }}
@@ -115,13 +123,7 @@
                             :searchable="true" :clearOnClose="true" placeholder="--" search-placeholder="--" />
                     </div>
 
-                    <div class="form-col-12">
-                        <label class="text-sm font-medium capitalize mb-1 field-title required" for="street_address">
-                            {{ $t('label.street_address') }}
-                        </label>
-                        <input type="text" v-model="address.form.address"
-                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 shadow-sm">
-                    </div>
+
                 </div>
             </form>
         </div>
@@ -191,6 +193,17 @@
                         </small>
                     </div>
 
+                    <div class="form-col-12">
+                        <label class="text-sm font-medium capitalize mb-1 field-title required" for="street_address">
+                            {{ $t('label.street_address') }}
+                        </label>
+                        <input type="text" :class="errors.address ? 'invalid' : ''" v-model="address.form.address"
+                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
+                        <small class="db-field-alert" v-if="errors.address">
+                            {{ errors.address[0] }}
+                        </small>
+                    </div>
+
                     <div class="form-col-12 sm:form-col-6">
                         <label class="text-sm font-medium capitalize mb-1 field-title required" for="country">
                             {{ $t('label.country') }}
@@ -235,27 +248,7 @@
                         </small>
                     </div>
 
-                    <div class="form-col-12 sm:form-col-6">
-                        <label class="text-sm font-medium capitalize mb-1" for="zip_code">
-                            {{ $t('label.zip_code') }}
-                        </label>
-                        <input type="text" v-model="address.form.zip_code" :class="errors.zip_code ? 'invalid' : ''"
-                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
-                        <small class="db-field-alert" v-if="errors.zip_code">
-                            {{ errors.zip_code[0] }}
-                        </small>
-                    </div>
 
-                    <div class="form-col-12 sm:form-col-6">
-                        <label class="text-sm font-medium capitalize mb-1 field-title required" for="street_address">
-                            {{ $t('label.street_address') }}
-                        </label>
-                        <input type="text" :class="errors.address ? 'invalid' : ''" v-model="address.form.address"
-                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
-                        <small class="db-field-alert" v-if="errors.address">
-                            {{ errors.address[0] }}
-                        </small>
-                    </div>
 
                     <div class="form-col-12 sm:form-col-6">
                         <div class="flex flex-wrap gap-6 mt-2">

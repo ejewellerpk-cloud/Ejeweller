@@ -71,10 +71,28 @@
                         <div v-for="product in popularProducts" :key="product.id"
                              @click.prevent="goToProduct(product.slug)"
                              class="flex-shrink-0 w-[100px] cursor-pointer group">
-                            <div class="w-[100px] h-[100px] rounded-lg overflow-hidden bg-gray-50 mb-1.5">
-                                <img :src="product.cover" :alt="product.name"
-                                     @error="$event.target.src = setting.theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'p-3')"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div class="w-[100px] h-[100px] rounded-lg overflow-hidden bg-gray-50 mb-1.5 relative">
+                                
+                                <!-- Fallback if no valid cover exists -->
+                                <div v-if="!product.cover || product.cover.includes('default/product')" class="absolute inset-0 flex items-center justify-center bg-gray-50/50 z-10">
+                                    <img :src="setting.theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40 group-hover:scale-105 group-hover:opacity-70 transition-all duration-300" />
+                                </div>
+                                
+                                <template v-else>
+                                    <!-- Dot Loading Indicator -->
+                                    <div class="absolute inset-0 flex items-center justify-center z-0" v-if="!loadedImages[product.id]">
+                                        <div class="flex gap-1">
+                                            <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"></div>
+                                            <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                            <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                        </div>
+                                    </div>
+                                    <img :src="product.cover" :alt="product.name" loading="lazy"
+                                         @load="onImageLoad(product.id)"
+                                         @error="onImageError($event, product.id)"
+                                         :class="loadedImages[product.id] ? 'opacity-100' : 'opacity-0'"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-all duration-300 relative z-10" />
+                                </template>
                             </div>
                             <h5 class="text-[11px] font-medium text-gray-700 leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">{{ product.name }}</h5>
                             <div class="flex items-center gap-1 mt-0.5">
@@ -126,7 +144,9 @@ import router from "../../../router";
 export default {
     name: "FrontendCartComponent",
     data() {
-        return {}
+        return {
+            loadedImages: {}
+        }
     },
     setup() {
         const {closeCanvas, closeBackdrop} = useCanvas();
@@ -166,6 +186,15 @@ export default {
         }).catch();
     },
     methods: {
+        onImageLoad(key) {
+            this.loadedImages[key] = true;
+        },
+        onImageError(event, key) {
+            this.loadedImages[key] = true;
+            event.target.src = this.setting.theme_logo;
+            event.target.classList.remove('object-cover');
+            event.target.classList.add('object-contain', 'p-3', 'opacity-40');
+        },
         hideTarget: function (id, cClass) {
             targetService.hideTarget(id, cClass);
         },

@@ -5,17 +5,20 @@
         <div id="product" class="db-tab-div active">
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-5">
 
-                <button @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'information')"
-                    class="tab-action active w-full flex items-center gap-3 h-10 px-4 rounded-lg bg-white hover:text-primary hover:bg-primary/5">
+                <button @click.prevent="activeTab = 'information'"
+                    :class="{ 'active': activeTab === 'information' }"
+                    class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg bg-white hover:text-primary hover:bg-primary/5">
                     <i class="lab lab-fill-info lab-font-size-16"></i>
                     {{ $t("label.information") }}
                 </button>
-                <button type="button" @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'image')"
+                <button type="button" @click.prevent="activeTab = 'image'"
+                    :class="{ 'active': activeTab === 'image' }"
                     class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                     <i class="lab lab-fill-image lab-font-size-16"></i>
                     {{ $t("label.images") }}
                 </button>
-                <button type="button" @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'variations')"
+                <button type="button" @click.prevent="activeTab = 'variations'"
+                    :class="{ 'active': activeTab === 'variations' }"
                     class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                     <i class="lab lab-fill-variation lab-font-size-16"></i>
                     {{ $t("label.variation") }}
@@ -29,34 +32,39 @@
                             class="lab lab-fill-circle-chevron-down text-sm transition-all duration-500"></i>
                         <span class="capitalize tracking-wide">{{ $t('label.more') }}</span>
                     </button>
-                    <!-- :class="{ 'scale-y-100': tabMore == true, 'scale-y-0': tabMore == false }" -->
-                    <div 
+                    <!-- 'active' class triggers scale-y-100 in CSS to open dropdown -->
+                    <div :class="{ 'active': tabMore }"
                         class="dropdown-list absolute top-11 right-0 w-full z-30 p-2 rounded-md origin-top bg-white shadow-lg transition-all duration-500">
                         <button type="button"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5"
-                            @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'barcode')">
+                            :class="{ 'active': activeTab === 'barcode' }"
+                            @click.prevent="activeTab = 'barcode'; tabMore = false">
                             <i class="lab lab-fill-scan-barcode lab-font-size-16"></i>
                             {{ $t("label.barcode") }}
                         </button>
                         <button type="button"
-                            @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'offer')"
+                            @click.prevent="activeTab = 'offer'; tabMore = false"
+                            :class="{ 'active': activeTab === 'offer' }"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                             <i class="lab lab-fill-offers lab-font-size-16"></i>
                             {{ $t("label.offer") }}
                         </button>
                         <button type="button"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5"
-                            @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'video')">
+                            :class="{ 'active': activeTab === 'video' }"
+                            @click.prevent="activeTab = 'video'; tabMore = false">
                             <i class="lab lab-fill-video lab-font-size-16"></i>
                             {{ $t("label.video") }}
                         </button>
                         <button type="button"
-                            @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'shippingReturn')"
+                            @click.prevent="activeTab = 'shippingReturn'; tabMore = false"
+                            :class="{ 'active': activeTab === 'shippingReturn' }"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                             <i class="lab lab-fill-shipping lab-font-size-16"></i>
                             {{ $t("label.shipping_and_return") }}
                         </button>
-                        <button type="button" @click.prevent="multiTargets($event, 'tab-action', 'tab-content', 'seo')"
+                        <button type="button" @click.prevent="activeTab = 'seo'; tabMore = false"
+                            :class="{ 'active': activeTab === 'seo' }"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                             <i class="lab lab-fill-seo lab-font-size-16"></i>
                             {{ $t("label.seo") }}
@@ -65,7 +73,7 @@
                 </div>
             </div>
 
-            <div class="db-card tab-content active" id="information">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'information' }" id="information">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('label.information') }}</h3>
                 </div>
@@ -228,7 +236,7 @@
                 </div>
             </div>
 
-            <div class="db-card tab-content px-4" id="image">
+            <div class="db-card tab-content px-4" :class="{ 'active': activeTab === 'image' }" id="image">
                 <div class="row py-4 p-3">
                     <div class="w-full max-w-[680px] flex flex-col gap-5">
 
@@ -328,11 +336,11 @@
 
             <MediaPickerComponent :show="showMediaPicker" @close="showMediaPicker = false" @selected="handleMediaSelected" />
 
-            <div class="db-card tab-content" id="variations">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'variations' }" id="variations">
                 <ProductVariationListComponent />
             </div>
 
-            <div class="db-card tab-content" id="barcode">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'barcode' }" id="barcode">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('label.barcode') }}</h3>
                 </div>
@@ -357,7 +365,7 @@
                 </div>
             </div>
 
-            <div class="db-card tab-content" id="offer">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'offer' }" id="offer">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('label.offer') }}</h3>
                 </div>
@@ -444,11 +452,11 @@
                 </div>
             </div>
 
-            <div class="db-card tab-content" id="video">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'video' }" id="video">
                 <ProductVideoListComponent />
             </div>
 
-            <div class="db-card tab-content" id="shippingReturn">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'shippingReturn' }" id="shippingReturn">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('label.shipping_and_return') }}</h3>
                 </div>
@@ -546,7 +554,7 @@
                 </div>
             </div>
 
-            <div class="db-card tab-content" id="seo">
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'seo' }" id="seo">
                 <ProductSeoComponent />
             </div>
         </div>
@@ -592,6 +600,7 @@ export default {
                 popTitle: this.$t('menu.products')
             },
             tabMore: false,
+            activeTab: 'information',
             enums: {
                 statusEnum: statusEnum,
                 askEnum: askEnum,
@@ -650,9 +659,7 @@ export default {
         this.show();
     },
     methods: {
-        multiTargets: function (event, commonBtnClass, commonDivClass, targetID) {
-            targetService.multiTargets(event, commonBtnClass, commonDivClass, targetID);
-        },
+        // Removed manual multiTargets in favor of Vue reactive activeTab state
         floatNumber(e) {
             return appService.floatNumber(e);
         },

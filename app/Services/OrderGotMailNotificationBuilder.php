@@ -47,11 +47,12 @@ class OrderGotMailNotificationBuilder
             }
 
             if (count($emailArray) > 0) {
+                $emailArray = array_unique($emailArray);
                 try {
                     $notificationAlert = NotificationAlert::where(['language' => 'admin_and_manager_new_order_message'])->first();
                     if ($notificationAlert && $notificationAlert->mail == SwitchBox::ON) {
                         try {
-                            Mail::to($emailArray)->send(new OrderGotMail($this->order->order_serial_no, $notificationAlert->mail_message));
+                            Mail::to($emailArray)->send(new OrderGotMail($this->order, $notificationAlert->mail_message));
                         } catch (Exception $e) {
                             Log::info($e->getMessage());
                         }

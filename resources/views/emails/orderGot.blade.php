@@ -73,6 +73,44 @@
             color: #475569;
             margin: 0;
         }
+        .order-details-box {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+        .order-details-box h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #0f172a;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #475569;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #334155;
+        }
+        .product-list {
+            margin-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
         .footer {
             background-color: #f8fafc;
             padding: 30px;
@@ -103,8 +141,53 @@
                 <p>A new order has been placed on the store. Below are the details:</p>
                 
                 <div class="order-highlight">
-                    <div class="order-id">Order ID: #{{ $orderId }}</div>
+                    <div class="order-id">Order ID: #{{ $order->order_serial_no }}</div>
                     <div class="order-message">{{ $message }}</div>
+                </div>
+
+                <div class="order-details-box">
+                    <h3>Order Summary</h3>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Customer Name:</span>
+                        <span>{{ $order->user?->name ?? 'Guest' }}</span>
+                    </div>
+                    
+                    @if($order->user?->email)
+                    <div class="detail-row">
+                        <span class="detail-label">Email:</span>
+                        <span>{{ $order->user->email }}</span>
+                    </div>
+                    @endif
+                    
+                    @if($order->user?->phone)
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span>{{ $order->user->phone }}</span>
+                    </div>
+                    @endif
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Total Amount:</span>
+                        <span>{{ App\Libraries\AppLibrary::currencyAmountFormat($order->total) }}</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method:</span>
+                        <span>{{ $order->paymentMethod?->name ?? 'N/A' }}</span>
+                    </div>
+
+                    @if($order->orderProducts && $order->orderProducts->count() > 0)
+                        <div class="product-list">
+                            <span class="detail-label" style="display:block; margin-bottom: 10px;">Items Ordered:</span>
+                            @foreach($order->orderProducts as $stock)
+                                <div class="product-item">
+                                    <span>{{ $stock->product?->name ?? 'Product' }} (x{{ abs($stock->quantity) }})</span>
+                                    <span>{{ App\Libraries\AppLibrary::currencyAmountFormat($stock->total) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
                 
                 <p>Please log in to your admin panel to manage, fulfill, and review this order.</p>

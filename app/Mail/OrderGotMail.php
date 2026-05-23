@@ -16,12 +16,12 @@ class OrderGotMail extends Mailable
      * @return void
      */
 
-    public string|int $orderId;
+    public object $order;
     public mixed $message;
 
-    public function __construct($orderId, $message)
+    public function __construct($order, $message)
     {
-        $this->orderId = $orderId;
+        $this->order = $order;
         $this->message = $message;
     }
 

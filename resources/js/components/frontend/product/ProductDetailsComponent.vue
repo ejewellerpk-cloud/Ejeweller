@@ -350,14 +350,20 @@
 
     <div id="related-products-trigger" class="w-full h-1"></div>
 
-    <section v-if="relatedProducts.length > 0" class="mb-24 sm:mb-20">
+    <section v-if="relatedProductsLoading || relatedProducts.length > 0" class="mb-24 sm:mb-20">
         <div class="container">
             <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7">
                 <h2 class="text-2xl sm:text-4xl font-bold capitalize">
                     {{ $t('label.related_products') }}
                 </h2>
             </div>
-            <div class="product-section-slider-container relative">
+            
+            <!-- Inline Loading Indicator for Related Products -->
+            <div v-if="relatedProductsLoading" class="flex items-center justify-center py-16 w-full">
+                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <div v-else class="product-section-slider-container relative">
                     <Swiper v-if="relatedProducts.length > 0"
                         :dir="'ltr'"
                         :slides-per-view="2"
@@ -649,7 +655,8 @@ export default {
             badgeIndex: 0,
             badgeInterval: null,
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
-            isRelatedProductsLoaded: false
+            isRelatedProductsLoaded: false,
+            relatedProductsLoading: false
         }
     },
     computed: {
@@ -1031,15 +1038,15 @@ export default {
         },
         showRelatedProduct: function () {
             if (typeof this.$route.params.slug !== "undefined") {
-                this.loading.isActive = true;
+                this.relatedProductsLoading = true;
                 this.props.search.slug = this.$route.params.slug;
                 this.$store.dispatch("frontendProduct/relatedProducts", {
                     slug: this.$route.params.slug,
                     rand: 8
                 }).then((res) => {
-                    this.loading.isActive = false;
+                    this.relatedProductsLoading = false;
                 }).catch((err) => {
-                    this.loading.isActive = false;
+                    this.relatedProductsLoading = false;
                 });
             }
         },

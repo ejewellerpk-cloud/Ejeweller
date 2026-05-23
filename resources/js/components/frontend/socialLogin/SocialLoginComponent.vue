@@ -21,7 +21,8 @@ export default {
         return {
             loading: {
                 isActive: true,
-            }
+            },
+            isCalled: false
         };
     },
     computed: {
@@ -32,7 +33,8 @@ export default {
     },
     created() {
         this.loading.isActive = true;
-        if (this.$route.query.code) {
+        if (this.$route.query.code && !this.isCalled) {
+            this.isCalled = true;
             this.loading.isActive = true;
             this.$store.dispatch("verifySocialLogin", { code: { code: this.$route.query.code }, provider: 'google' }).then(res => {
                 this.loading.isActive = false;
@@ -43,7 +45,6 @@ export default {
                 } else {
                     router.push({ name: "frontend.home" });
                 }
-                router.push({ name: "frontend.home" });
                 setTimeout(() => {
                     appService.recursiveRouter(router.options.routes, this.$store.getters.authPermission);
                 }, 1000);

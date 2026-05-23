@@ -99,16 +99,9 @@ class PaymentController extends Controller
 
     public function successful(Order $order): \Illuminate\Foundation\Application|\Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse|\Illuminate\Contracts\Foundation\Application
     {
-        try {
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-
-            SendOrderGotMail::dispatch(['order_id' => $order->id]);
-            SendOrderGotSms::dispatch(['order_id' => $order->id]);
-            SendOrderGotPush::dispatch(['order_id' => $order->id]);
-        } catch (\Exception $e) {
-        }
+        // Events (SendOrderMail, SendOrderGotMail, SMS, Push) are already dispatched 
+        // in PaymentService::payment() or FrontendOrderService::myOrderStore(). 
+        // Dispatching them here again caused duplicate emails for online payments.
 
         return redirect('/account/order-details/' . $order->id . '?status=success');
     }

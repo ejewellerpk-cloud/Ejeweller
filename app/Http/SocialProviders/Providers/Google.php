@@ -32,10 +32,12 @@ class Google extends SocialLoginAbstract
         parent::__construct($menuService, $permissionService);
         
         $this->provider = SocialLogin::where(['slug' => 'google'])->first();
-        $this->gatewayOptions = $this->provider->gatewayOptions->pluck('value', 'option');
-        Config::set('services.google.client_id', $this->gatewayOptions['google_client_id']);
-        Config::set('services.google.client_secret', $this->gatewayOptions['google_client_secret']);
-        Config::set('services.google.redirect', config('app.url') . '/login/google/callback');
+        if ($this->provider) {
+            $this->gatewayOptions = $this->provider->gatewayOptions->pluck('value', 'option');
+            Config::set('services.google.client_id', $this->gatewayOptions['google_client_id'] ?? '');
+            Config::set('services.google.client_secret', $this->gatewayOptions['google_client_secret'] ?? '');
+            Config::set('services.google.redirect', config('app.url') . '/login/google/callback');
+        }
     }
 
     public function getUrl(): JsonResponse
@@ -46,8 +48,9 @@ class Google extends SocialLoginAbstract
                 'url' => $url
             ], 200);
         } catch (Exception $exception) {
+            \Illuminate\Support\Facades\Log::error('Google Social Login Error: ' . $exception->getMessage());
             return new JsonResponse([
-                'errors' => ['server_error' => $exception->getMessage()]
+                'errors' => ['server_error' => 'Please configure Google Login settings properly or try again later. Details: ' . $exception->getMessage()]
             ], 500);
         }
     }
@@ -73,8 +76,9 @@ class Google extends SocialLoginAbstract
             }
             return $this->Login($user);
         } catch (Exception $exception) {
+            \Illuminate\Support\Facades\Log::error('Google Social Login Verify Error: ' . $exception->getMessage() . ' Trace: ' . $exception->getTraceAsString());
             return new JsonResponse([
-                'errors' => ['server_error' => $exception->getMessage()]
+                'errors' => ['server_error' => 'Verification failed. Details: ' . $exception->getMessage()]
             ], 500);
         }
     }

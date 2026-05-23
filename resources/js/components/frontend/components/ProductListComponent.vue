@@ -47,10 +47,21 @@
                     
                     <!-- 1st Slide: First Image -->
                     <SwiperSlide v-if="product.previews.length > 0">
-                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
+                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative bg-gray-50">
+                            <!-- Loading Dots Indicator -->
+                            <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-0']">
+                                <div class="flex gap-1.5">
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                </div>
+                            </div>
+                            
                             <img :src="product.previews[0]" alt="product" loading="lazy"
-                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')" 
-                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
+                                @load="onImageLoad(product.id + '-img-0')"
+                                @error="onImageError($event, product.id + '-img-0')" 
+                                :class="loadedImages[product.id + '-img-0'] ? 'opacity-100' : 'opacity-0'"
+                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
                         </router-link>
                     </SwiperSlide>
@@ -72,22 +83,47 @@
 
                     <!-- Rest of Slides: Remaining Images -->
                     <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
-                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
+                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative bg-gray-50">
+                            <!-- Loading Dots Indicator -->
+                            <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + (index + 1)]">
+                                <div class="flex gap-1.5">
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                </div>
+                            </div>
+
                             <img :src="image" alt="product" loading="lazy"
-                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
-                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
+                                @load="onImageLoad(product.id + '-img-' + (index + 1))"
+                                @error="onImageError($event, product.id + '-img-' + (index + 1))"
+                                :class="loadedImages[product.id + '-img-' + (index + 1)] ? 'opacity-100' : 'opacity-0'"
+                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
                         </router-link>
                     </SwiperSlide>
                 </Swiper>
                 
                 <!-- Single Image Fallback (no video, only 1 image) -->
-                <router-link v-else class="w-full h-full block"
+                <router-link v-else class="w-full h-full block relative bg-gray-50"
                     :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
-                    <img v-if="product.cover && !product.cover.includes('default/product')" :src="product.cover" alt="product" loading="lazy"
-                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')"
-                        class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105">
-                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50">
+                    
+                    <template v-if="product.cover && !product.cover.includes('default/product')">
+                        <!-- Loading Dots Indicator -->
+                        <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-cover']">
+                            <div class="flex gap-1.5">
+                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                            </div>
+                        </div>
+
+                        <img :src="product.cover" alt="product" loading="lazy"
+                            @load="onImageLoad(product.id + '-cover')"
+                            @error="onImageError($event, product.id + '-cover')"
+                            :class="loadedImages[product.id + '-cover'] ? 'opacity-100' : 'opacity-0'"
+                            class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
+                    </template>
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50 absolute inset-0 z-10">
                         <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy"
                             class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 group-hover:scale-105 group-hover:opacity-70">
                     </div>
@@ -183,10 +219,20 @@ export default {
         return {
             swiperInstances: {},
             animatingWishlists: {},
-            localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]')
+            localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
+            loadedImages: {}
         }
     },
     methods: {
+        onImageLoad(key) {
+            this.loadedImages[key] = true;
+        },
+        onImageError(event, key) {
+            this.loadedImages[key] = true;
+            event.target.src = this.$store.getters['frontendSetting/lists'].theme_logo;
+            event.target.classList.remove('object-cover');
+            event.target.classList.add('object-contain', 'bg-white', 'p-4');
+        },
         onSwiperInit(swiper, productId) {
             this.swiperInstances[productId] = swiper;
         },

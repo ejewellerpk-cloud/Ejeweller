@@ -175,17 +175,10 @@ export default {
         },
         displayModeDefine: function () {
             let dir = "ltr";
-            const attributes = {
-                dir: "ltr",
-            };
-            if (this.$store.getters['globalState/lists'].display_mode === DisplayModeEnum.LTR) {
-                dir = "ltr";
-            } else {
+            if (this.$store.getters['globalState/lists'].display_mode === DisplayModeEnum.RTL) {
                 dir = "rtl";
             }
-            Object.keys(attributes).forEach(attr => {
-                document.documentElement.setAttribute(attr, dir);
-            });
+            document.documentElement.setAttribute("dir", dir);
         },
         startAbandonedCartTimer() {
             this.stopAbandonedCartTimer();
