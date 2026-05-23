@@ -14,6 +14,7 @@ use App\Enums\Role as EnumRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use App\Services\SocialLoginAbstract;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -63,10 +64,12 @@ class Google extends SocialLoginAbstract
 
             $user = User::where('email', $this->email)->first();
             if (!$user) {
+                // If by any chance a concurrent request occurs, Laravel will attempt to create it.
+                // Since 'email' is not unique in DB, duplicate might occur, but we fixed the double request in Vue.
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'username' => Str::slug($socialUser->getName()) . rand(1, 500),
-                    'email' => $socialUser->getEmail(),
+                    'email' => $this->email,
                     'email_verified_at' => Carbon::now()->getTimestamp(),
                     'is_guest' => Ask::NO,
                     'password' => Hash::make(Str::random(12))

@@ -11,6 +11,8 @@ import LoadingComponent from "../components/LoadingComponent";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 
+let isRequestSent = false;
+
 export default {
 
     name: "SocialLoginComponent",
@@ -21,8 +23,7 @@ export default {
         return {
             loading: {
                 isActive: true,
-            },
-            isCalled: false
+            }
         };
     },
     computed: {
@@ -33,8 +34,8 @@ export default {
     },
     created() {
         this.loading.isActive = true;
-        if (this.$route.query.code && !this.isCalled) {
-            this.isCalled = true;
+        if (this.$route.query.code && !isRequestSent) {
+            isRequestSent = true;
             this.loading.isActive = true;
             this.$store.dispatch("verifySocialLogin", { code: { code: this.$route.query.code }, provider: 'google' }).then(res => {
                 this.loading.isActive = false;
@@ -49,6 +50,7 @@ export default {
                     appService.recursiveRouter(router.options.routes, this.$store.getters.authPermission);
                 }, 1000);
             }).catch((error) => {
+                isRequestSent = false;
                 this.loading.isActive = false;
                 alertService.error(error.response.data.message);
             });
