@@ -60,6 +60,32 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Variation Image Selection -->
+                        <div class="form-col-12 mt-4" v-if="productImages && productImages.length > 0">
+                            <label class="db-field-title">{{ $t("label.variation_image") }} (Optional)</label>
+                            <div class="flex flex-wrap gap-3 mt-2">
+                                <div v-for="(imgUrl, index) in productImages" :key="index" 
+                                    @click="selectImage(imgUrl)"
+                                    class="relative cursor-pointer rounded-lg border-2 transition-all p-1"
+                                    :class="attributeProps.image === imgUrl ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50'">
+                                    
+                                    <img :src="imgUrl" class="w-16 h-16 object-cover rounded-md" alt="Product Image">
+                                    
+                                    <div v-if="attributeProps.image === imgUrl" 
+                                        class="absolute -top-2 -right-2 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md">
+                                        <i class="fa-solid fa-check"></i>
+                                    </div>
+                                </div>
+                                <div @click="selectImage(null)" 
+                                    class="cursor-pointer rounded-lg border-2 border-dashed transition-all flex flex-col items-center justify-center w-[76px] h-[76px]"
+                                    :class="!attributeProps.image ? 'border-primary bg-primary/5 text-primary' : 'border-gray-300 hover:border-primary/50 text-gray-400'">
+                                    <i class="fa-solid fa-xmark text-lg"></i>
+                                    <span class="text-[10px] mt-1 font-medium">None</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Select an image from the product's gallery to show when this variation is selected.</p>
+                        </div>
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -112,6 +138,10 @@ export default {
         },
         addButton: function () {
               return {title: this.$t("button.add_variation")}
+        },
+        productImages: function () {
+            const product = this.$store.getters['product/show'];
+            return product && product.images ? product.images : [];
         }
     },
     mounted() {
@@ -120,6 +150,9 @@ export default {
         this.attributeList();
     },
     methods: {
+        selectImage(url) {
+            this.attributeProps.image = url;
+        },
         numberOnly: function (e) {
             return appService.floatNumber(e);
         },
@@ -147,6 +180,7 @@ export default {
             this.variationProps.form.attribute = null;
             this.attributeProps.price = null;
             this.attributeProps.sku = null;
+            this.attributeProps.image = null;
             this.attributeProps.elements = {};
             this.attributeProps.attribute = [];
             this.getSku();
@@ -169,7 +203,8 @@ export default {
                             "product_attribute_id": index,
                             "product_attribute_option_id": element,
                             "price": this.attributeProps.price,
-                            "sku": this.attributeProps.sku
+                            "sku": this.attributeProps.sku,
+                            "image": this.attributeProps.image
                         });
                     }
                 });
@@ -184,6 +219,7 @@ export default {
                     this.errors = {};
 
                     this.attributeProps.price = null;
+                    this.attributeProps.image = null;
                     this.attributeProps.elements = {};
                     this.attributeProps.attribute = [];
                     this.getSku();

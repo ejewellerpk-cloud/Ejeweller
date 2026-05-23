@@ -263,10 +263,16 @@ class ProductVariationService
                         }
 
                         if ($productVariationExistCheck) {
-                            $productVariationExistCheck->update(['price' => $variation->price]);
+                            $updateData = ['price' => $variation->price];
                             if ($key != $variationsCount) {
-                                $productVariationExistCheck->update(['sku' => null]);
+                                $updateData['sku'] = null;
+                                $updateData['image'] = null;
+                            } else {
+                                if (isset($variation->image)) {
+                                    $updateData['image'] = $variation->image;
+                                }
                             }
+                            $productVariationExistCheck->update($updateData);
 
                             $parentId     = $productVariationExistCheck->id;
                             $collection[] = $productVariationExistCheck;
@@ -279,6 +285,7 @@ class ProductVariationService
                             'product_attribute_option_id' => $variation->product_attribute_option_id,
                             'price'                       => $variation->price,
                             'sku'                         => ($key == $variationsCount ? $variation->sku : null),
+                            'image'                       => ($key == $variationsCount && isset($variation->image) ? $variation->image : null),
                             'parent_id'                   => $parentId,
                             'order'                       => $order
                         ];
@@ -376,9 +383,13 @@ class ProductVariationService
                             $productVariationExistCheck->update(['price' => $variation->price]);
 
                             if ($key != $variationsCount) {
-                                $productVariationExistCheck->update(['sku' => null]);
+                                $productVariationExistCheck->update(['sku' => null, 'image' => null]);
                             } else {
-                                $productVariationExistCheck->update(['sku' => $variation->sku]);
+                                $updateData = ['sku' => $variation->sku];
+                                if (isset($variation->image)) {
+                                    $updateData['image'] = $variation->image;
+                                }
+                                $productVariationExistCheck->update($updateData);
 
                                 $generator = new BarcodeGeneratorJPG();
                                 if ($product->barcode_id === BarcodeType::EAN_13) {
@@ -409,7 +420,8 @@ class ProductVariationService
                                     'price'                       => $variation->price,
                                     'parent_id'                   => $parentId,
                                     'order'                       => $order,
-                                    'sku'                         => $variation->sku
+                                    'sku'                         => $variation->sku,
+                                    'image'                       => isset($variation->image) ? $variation->image : null
                                 ]);
                                 $collection[] = $productVariation;
                                 continue;
@@ -423,6 +435,7 @@ class ProductVariationService
                             'product_attribute_option_id' => $variation->product_attribute_option_id,
                             'price'                       => $variation->price,
                             'sku'                         => ($key == $variationsCount ? $sku : null),
+                            'image'                       => ($key == $variationsCount && isset($variation->image) ? $variation->image : null),
                             'parent_id'                   => $parentId,
                             'order'                       => $order
                         ]);

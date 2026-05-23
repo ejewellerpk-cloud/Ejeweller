@@ -60,6 +60,7 @@ export default {
             attributeProps: {
                 price: null,
                 sku: null,
+                image: null,
                 elements: {},
                 attribute: []
             },
@@ -137,6 +138,9 @@ export default {
             if (data.sku !== null) {
                 this.attributeProps.price = data.price;
                 this.attributeProps.sku = data.sku;
+                if (data.image) {
+                    this.attributeProps.image = data.image;
+                }
             }
             if (data.children) {
                 _.forEach(data.children, (element) => {

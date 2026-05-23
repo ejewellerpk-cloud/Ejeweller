@@ -35,7 +35,7 @@
                     </button>
 
                     <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="getPaginationConfig()" :thumbs="{ swiper: thumbsSwiper }"
-                        :modules="modules" :loop="true" class="gallery-swiper mb-4">
+                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
                                 <div @click="handleImageClick(index)" @dblclick="toggleZoom(index)"
@@ -588,12 +588,18 @@ export default {
     },
     setup() {
         const thumbsSwiper = ref(null);
+        const mainSwiper = ref(null);
         const setThumbsSwiper = (swiper) => {
             thumbsSwiper.value = swiper;
         };
+        const setMainSwiper = (swiper) => {
+            mainSwiper.value = swiper;
+        };
         return {
             thumbsSwiper,
+            mainSwiper,
             setThumbsSwiper,
+            setMainSwiper,
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
         }
     },
@@ -1081,6 +1087,13 @@ export default {
 
                 if (variation.stock > 0) {
                     this.enableAddToCardButton = false;
+                }
+
+                if (variation.image) {
+                    const imageIndex = this.combinedMedia.findIndex(media => media.url === variation.image);
+                    if (imageIndex !== -1 && this.mainSwiper) {
+                        this.mainSwiper.slideToLoop(imageIndex);
+                    }
                 }
             }
         },

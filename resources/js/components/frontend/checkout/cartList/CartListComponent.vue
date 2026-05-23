@@ -6,7 +6,18 @@
                     :key="index"
                     class="flex items-start gap-3 pb-4 mb-4 border-b last:mb-0 last:pb-0 last:border-none border-gray-100">
 
-                    <img :src="cart.image" alt="products" class="w-28 rounded-lg flex-shrink-0" />
+                    <div class="relative w-28 aspect-square flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                        <!-- LAZY LOAD INDICATOR -->
+                        <div v-show="!loadedImages[index]" class="absolute inset-0 flex flex-col items-center justify-center opacity-40">
+                            <i class="fa-solid fa-spinner fa-spin text-xl text-primary mb-1"></i>
+                        </div>
+                        <img :src="cart.image" alt="products" 
+                             loading="lazy"
+                             @load="onImageLoad(index)"
+                             @error="onImageError($event, index)"
+                             :class="loadedImages[index] ? 'opacity-100' : 'opacity-0'"
+                             class="w-full h-full object-cover transition-opacity duration-300 relative z-10" />
+                    </div>
 
                     <div class="relative w-full overflow-hidden">
                         <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1">
@@ -135,6 +146,12 @@ export default {
         CouponComponent
     },
 
+    data() {
+        return {
+            loadedImages: {}
+        };
+    },
+
     computed: {
         setting() {
             return this.$store.getters['frontendSetting/lists'];
@@ -146,6 +163,15 @@ export default {
     },
 
     methods: {
+        onImageLoad(index) {
+            this.loadedImages[index] = true;
+        },
+        onImageError(e, index) {
+            this.loadedImages[index] = true;
+            e.target.src = this.setting.theme_logo;
+            e.target.classList.remove('object-cover');
+            e.target.classList.add('object-contain', 'bg-white', 'p-2');
+        },
 
         onlyNumber(e) {
             return appService.onlyNumber(e);

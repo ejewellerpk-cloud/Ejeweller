@@ -23,6 +23,7 @@ class ProductVariationResource extends JsonResource
             'product_attribute_option_id'   => $this->product_attribute_option_id,
             'price'                         => AppLibrary::flatAmountFormat($this->price),
             'sku'                           => $this->sku,
+            'image'                         => $this->image,
             'parent_id'                     => $this->parent_id,
             'order'                         => $this->order,
             'product'                       => $this->product->name,

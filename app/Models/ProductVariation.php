@@ -19,7 +19,8 @@ class ProductVariation extends Model implements HasMedia
         'price',
         'sku',
         'parent_id',
-        'order'
+        'order',
+        'image'
     ];
 
     protected $casts = [
@@ -30,7 +31,8 @@ class ProductVariation extends Model implements HasMedia
         'price'                        => 'decimal:6',
         'sku'                          => 'string',
         'parent_id'                    => 'integer',
-        'order'                        => 'integer'
+        'order'                        => 'integer',
+        'image'                        => 'string'
     ];
 
     public function getMediaUrlAttribute(): string

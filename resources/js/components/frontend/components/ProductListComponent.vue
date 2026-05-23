@@ -315,6 +315,7 @@ export default {
         },
         buyNow: function (product) {
             if (product.variation_count > 0) {
+                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
             } else {
                 // Increment social proof sold count
@@ -359,6 +360,7 @@ export default {
         addToCart: function (product) {
             // If product has variations, redirect to detail page (same as ProductDetailsComponent)
             if (product.variation_count > 0) {
+                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
                 return;
             }
