@@ -137,6 +137,16 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12" v-if="order.note">
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <h3 class="db-card-title">Order Note</h3>
+                    </div>
+                    <div class="db-card-body">
+                        <p>{{ order.note }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>

@@ -1,6 +1,6 @@
 <template>
     <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" />
         <section v-if="promotions.length > 0" class="mb-10 sm:mb-20">
             <div class="container">
                 <Swiper dir="ltr" :speed="1000" class="ad-swiper" :breakpoints="breakpoints">

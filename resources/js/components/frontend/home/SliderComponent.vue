@@ -1,8 +1,7 @@
 <template>
-    <LoadingComponent :props="loading" />
-    <section class="mb-10 sm:mb-20 w-full overflow-hidden">
+    <div v-if="loading.isActive" class="w-full aspect-[21/9] bg-gray-200 animate-pulse mb-10 sm:mb-20"></div>
+    <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden">
         <Swiper
-            v-if="sliders.length > 0"
             dir="ltr"
             :slides-per-view="1"
             :speed="1000"

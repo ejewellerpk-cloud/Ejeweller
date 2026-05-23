@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-BamKs-pO.js";import{l as n,f as t,z as r}from"./vendor-vue-core-C3mSXxjw.js";import"./vendor-8yHaUXFb.js";const s={name:"ReturnReasonComponent"};function a(c,p,_,m,f,i){const o=n("router-view");return t(),r(o)}const R=e(s,[["render",a]]);export{R as default};

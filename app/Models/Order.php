@@ -29,6 +29,7 @@ class Order extends Model
         'pos_payment_method',
         'pos_payment_note',
         'pos_received_amount',
+        'note',
         'active'
     ];
 
@@ -51,6 +52,7 @@ class Order extends Model
         'pos_payment_method'  => 'integer',
         'pos_payment_note'    => 'string',
         'pos_received_amount' => 'decimal:6',
+        'note'                => 'string',
         'active'              => 'integer'
     ];
 

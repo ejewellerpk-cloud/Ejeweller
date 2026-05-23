@@ -52,6 +52,8 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
+            hideTopBar: true,
+            hideFooter: true
         },
     },
     {
@@ -246,6 +248,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
+            hideFooter: true
         },
         children: [
             {

@@ -46,8 +46,8 @@ class SiteRequest extends FormRequest
             'site_non_purchase_product_maximum_quantity'  => ['required', 'numeric'],
             'site_is_return_product_price_add_to_credit' => ['required', 'numeric'],
             'site_whatsapp_status'                        => ['required', 'numeric'],
-            'site_facebook_pixel_id'                      => ['nullable', 'string', 'max:190'],
-            'site_facebook_capi_token'                    => ['nullable', 'string', 'max:500'],
+            'site_facebook_pixel_id'                      => ['required_if:site_facebook_capi_status,' . \App\Enums\Activity::ENABLE, 'nullable', 'string', 'max:190'],
+            'site_facebook_capi_token'                    => ['required_if:site_facebook_capi_status,' . \App\Enums\Activity::ENABLE, 'nullable', 'string', 'max:500'],
             'site_facebook_capi_status'                   => ['nullable', 'numeric'],
             'site_guest_checkout'                         => ['nullable', 'numeric'],
         ];

@@ -45,8 +45,17 @@
     @laravelPWA
     <script>
         if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            let hasController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
+                if (!hasController) {
+                    hasController = true;
+                    return;
+                }
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
             });
         }
     </script>

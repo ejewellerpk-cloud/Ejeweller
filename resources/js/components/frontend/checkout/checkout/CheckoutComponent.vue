@@ -55,6 +55,15 @@
 
             <div class="mb-6 mt-6 rounded-2xl shadow-card">
                 <h4 class="font-bold capitalize p-4 border-b border-gray-100">
+                    Order Note
+                </h4>
+                <div class="p-4">
+                    <textarea v-model="orderNote" class="w-full border rounded-lg p-3 text-sm focus:outline-none focus:border-primary" rows="3" placeholder="Write any specific instructions or notes for your order here..."></textarea>
+                </div>
+            </div>
+
+            <div class="mb-6 mt-6 rounded-2xl shadow-card">
+                <h4 class="font-bold capitalize p-4 border-b border-gray-100">
                     {{ $t('label.select_payment_method') }}
                 </h4>
 
@@ -166,7 +175,8 @@ export default {
             cashOnDelivery: {},
             sourceEnum: sourceEnum,
             ActivityEnum: ActivityEnum,
-            form: {}
+            form: {},
+            orderNote: ""
         }
     },
     computed: {
@@ -366,6 +376,7 @@ export default {
                 coupon_id: Object.keys(this.cartCoupon).length > 0 ? this.cartCoupon.id : 0,
                 source: sourceEnum.WEB,
                 payment_method: Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.id : 0,
+                note: this.orderNote,
                 products: JSON.stringify(this.products)
             }
 

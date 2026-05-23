@@ -60,6 +60,7 @@ class OrderDetailsResource extends JsonResource
             'status'                         => $this->status,
             'reason'                         => $this->reason,
             'source'                         => $this->source,
+            'note'                           => $this->note,
             'active'                         => (int) $this->active,
             'return_and_refund'              => !$this->returnAndRefund,
             'user'                           => [

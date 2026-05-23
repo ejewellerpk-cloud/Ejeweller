@@ -2,7 +2,7 @@
     <div v-if="theme === 'loading'">
         <LoadingComponent :props="{isActive:true}" />
     </div>
-    <div v-if="theme === 'frontend'">
+    <div v-show="theme === 'frontend'">
         <main class="">
             <FrontendNavbarComponent />
             <FrontendCartComponent />
@@ -12,7 +12,7 @@
             <FrontendMobileCategoryComponent />
             <FrontendMobileAccountComponent />
             <FrontendCookiesComponent />
-            <FrontendFooterComponent />
+            <FrontendFooterComponent v-if="!$route.meta.hideFooter" />
         </main>
     </div>
 

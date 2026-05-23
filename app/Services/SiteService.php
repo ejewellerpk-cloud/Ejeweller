@@ -54,7 +54,7 @@ class SiteService
             // Ensure newly added keys exist in DB and update them manually
             $newKeys = ['site_facebook_pixel_id', 'site_facebook_capi_token', 'site_facebook_capi_status'];
             foreach ($newKeys as $key) {
-                if (isset($data[$key])) {
+                if (array_key_exists($key, $data)) {
                     $exists = \Illuminate\Support\Facades\DB::table(config('settings.repositories.database.table', 'settings'))
                         ->where('group', 'site')
                         ->where('key', $key)

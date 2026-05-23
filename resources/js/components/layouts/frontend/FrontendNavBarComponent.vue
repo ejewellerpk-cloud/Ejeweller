@@ -1,5 +1,5 @@
 <template>
-    <div v-if="setting.top_bar_status === 'active'" 
+    <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar" 
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
          class="w-full py-2 px-4 text-center text-sm font-medium z-40 relative">
         <a v-if="setting.top_bar_link" :href="setting.top_bar_link" class="hover:underline transition-all block w-full">

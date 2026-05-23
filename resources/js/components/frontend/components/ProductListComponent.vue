@@ -22,6 +22,10 @@
                     class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-secondary text-white">
                     {{ $t('label.flash_sale') }}
                 </span>
+                <span v-if="product.is_offer && product.is_last_day_of_sale"
+                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-red-600 text-white animate-pulse">
+                    Last day of sale
+                </span>
             </div>
  
             <button type="button" @click.prevent.stop="wishlist(product)"
