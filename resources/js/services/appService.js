@@ -456,17 +456,21 @@ export default {
 
     openCanvas: function (targetID) {
         setTimeout(() => {
-            const targetElement = document.getElementById(targetID);
-            targetElement.classList.add('active');
-            document.body.classList.add('overflow-hidden');
-            document.body.style.overflowY = 'hidden';
+            const targetElements = document.querySelectorAll(`#${targetID}`);
+            if (targetElements.length > 0) {
+                targetElements.forEach(el => el.classList.add('active'));
+                document.body.classList.add('overflow-hidden');
+                document.body.style.overflowY = 'hidden';
+            }
         }, 50);
     },
 
     closeCanvas: function (targetID) {
-        const targetElement = document.getElementById(targetID);
-        targetElement.classList.remove('active');
-        document.body.classList.remove('overflow-hidden');
-        document.body.style.overflowY = 'auto'
+        const targetElements = document.querySelectorAll(`#${targetID}`);
+        if (targetElements.length > 0) {
+            targetElements.forEach(el => el.classList.remove('active'));
+            document.body.classList.remove('overflow-hidden');
+            document.body.style.overflowY = 'auto';
+        }
     },
 };

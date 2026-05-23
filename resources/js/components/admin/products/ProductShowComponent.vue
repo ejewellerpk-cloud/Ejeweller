@@ -25,16 +25,18 @@
                 </button>
 
 
-                <div class="relative w-full dropdown-group">
+                <div class="relative w-full">
                     <button @click.prevent="tabMore = !tabMore"
-                        class="dropdown-btn tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg bg-white hover:text-primary hover:bg-primary/5">
+                        class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg bg-white hover:text-primary hover:bg-primary/5 cursor-pointer">
                         <i :class="{ 'rotate-180': tabMore }"
                             class="lab lab-fill-circle-chevron-down text-sm transition-all duration-500"></i>
                         <span class="capitalize tracking-wide">{{ $t('label.more') }}</span>
                     </button>
+                    <!-- Transparent backdrop for closing on outside click -->
+                    <div v-if="tabMore" @click="tabMore = false" class="fixed inset-0 z-20"></div>
                     <!-- 'active' class triggers scale-y-100 in CSS to open dropdown -->
-                    <div :class="{ 'active': tabMore }"
-                        class="dropdown-list absolute top-11 right-0 w-full z-30 p-2 rounded-md origin-top bg-white shadow-lg transition-all duration-500">
+                    <div :class="{ 'scale-y-100': tabMore, 'scale-y-0': !tabMore }"
+                        class="absolute top-11 right-0 w-full z-30 p-2 rounded-md origin-top bg-white shadow-lg transition-all duration-500">
                         <button type="button"
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5"
                             :class="{ 'active': activeTab === 'barcode' }"

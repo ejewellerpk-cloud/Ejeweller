@@ -141,7 +141,7 @@ export default {
             }
         },
         reset: function () {
-            appService.modalHide();
+            appService.modalHide('#variationModal');
             this.$store.dispatch('productVariation/reset').then().catch();
             this.errors = {};
             this.variationProps.form.attribute = null;
@@ -177,7 +177,7 @@ export default {
                 this.variationProps.productId = this.productId;
                 this.variationProps.form.attribute = JSON.stringify(this.attributeProps.attribute);
                 this.$store.dispatch('productVariation/save', this.variationProps).then((res) => {
-                    appService.modalHide();
+                    appService.modalHide('#variationModal');
                     this.loading.isActive = false;
                     alertService.successFlip(tempId === null ? 0 : 1, this.$t("label.variation"));
                     this.variationProps.form.attribute = null;

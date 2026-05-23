@@ -6,10 +6,9 @@ export function useCanvas() {
 
     function openCanvas(targetID) {
         console.log("canvas.js: openCanvas called for targetID:", targetID);
-        const targetElement = document.querySelector(`#${targetID}`);
-        console.log("canvas.js: targetElement found:", targetElement);
-        if (targetElement) {
-            targetElement.classList.add(activeClass.value);
+        const targetElements = document.querySelectorAll(`#${targetID}`);
+        if (targetElements.length > 0) {
+            targetElements.forEach(el => el.classList.add(activeClass.value));
             document.body.classList.add(hiddenClass.value);
             console.log("canvas.js: Classes added successfully.");
         } else {
@@ -19,9 +18,9 @@ export function useCanvas() {
 
     function closeCanvas(targetID) {
         console.log("canvas.js: closeCanvas called for targetID:", targetID);
-        const targetElement = document.querySelector(`#${targetID}`);
-        if (targetElement) {
-            targetElement.classList.remove(activeClass.value);
+        const targetElements = document.querySelectorAll(`#${targetID}`);
+        if (targetElements.length > 0) {
+            targetElements.forEach(el => el.classList.remove(activeClass.value));
             document.body.classList.remove(hiddenClass.value);
             console.log("canvas.js: Classes removed successfully.");
         }

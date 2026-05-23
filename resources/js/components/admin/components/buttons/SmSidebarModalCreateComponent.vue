@@ -21,10 +21,6 @@ export default {
     },
     methods: {
         handleClick() {
-            const sidebars = document.querySelectorAll('#sidebar');
-            console.log(`SmSidebarModalCreateComponent: Found ${sidebars.length} elements with id="sidebar".`);
-            sidebars.forEach((el, i) => console.log(`Sidebar ${i}:`, el.closest('.db-main') ? 'Inside .db-main' : 'Outside .db-main', el));
-            console.log("SmSidebarModalCreateComponent: 'Add Product' button clicked! Opening sidebar...");
             this.openCanvas('sidebar');
         }
     }

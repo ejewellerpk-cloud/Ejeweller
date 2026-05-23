@@ -66,6 +66,7 @@ import alertService from "../../../../services/alertService";
 import LoadingComponent from "../../components/LoadingComponent";
 import VueTagsInput from "@sipec/vue3-tags-input";
 import { quillEditor } from 'vue3-quill'
+import _ from "lodash";
 
 export default {
     name: "ProductSeoComponent",
