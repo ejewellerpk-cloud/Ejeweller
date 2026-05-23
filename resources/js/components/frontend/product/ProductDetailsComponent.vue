@@ -1124,6 +1124,11 @@ export default {
             this.temp.totalPrice = (this.temp.price * this.temp.quantity);
         },
         addToCart: function () {
+            if (this.variationComponent && !this.selectedVariation) {
+                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+                return;
+            }
+
             // Increment social proof sold count
             if (this.temp.productId) {
                 const storageKey = 'sold_count_' + this.temp.productId;
@@ -1209,6 +1214,11 @@ export default {
             }
         },
         buyNow: function () {
+            if (this.variationComponent && !this.selectedVariation) {
+                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+                return;
+            }
+
             // Increment social proof sold count
             if (this.temp.productId) {
                 const storageKey = 'sold_count_' + this.temp.productId;
