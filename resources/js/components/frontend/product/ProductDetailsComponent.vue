@@ -38,7 +38,7 @@
                         :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <div @click="handleImageClick(index)" @dblclick="toggleZoom(index)"
+                                <div @click="handleImageClick(index, $event)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
                                     <img :src="media.url" alt="product" loading="lazy"
@@ -110,7 +110,7 @@
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
-                    <div @click="handleImageClick(999)" @dblclick="toggleZoom(999)"
+                    <div @click="handleImageClick(999, $event)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
                         <img :src="product.image" alt="products" loading="lazy"
@@ -985,10 +985,11 @@ export default {
                 this.zoomedIndex = index;
             }
         },
-        handleImageClick: function (index) {
+        handleImageClick: function (index, event) {
             const now = new Date().getTime();
             const timespan = now - this.lastTap;
-            if (timespan < 300 && timespan > 0) {
+            if (timespan < 500 && timespan > 0) {
+                if (event) event.preventDefault();
                 this.toggleZoom(index);
                 this.lastTap = 0;
             } else {

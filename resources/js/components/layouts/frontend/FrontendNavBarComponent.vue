@@ -1,12 +1,12 @@
 <template>
     <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar && topBarTitles.length > 0" 
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
-         class="w-full py-2 px-4 z-40 relative flex items-center justify-center min-h-[40px]">
+         class="w-full py-2 px-4 z-40 relative flex items-center justify-center min-h-[40px] overflow-hidden group">
         
         <!-- Left Back Button -->
         <button v-if="topBarTitles.length > 1" 
                 @click="prevSlide" 
-                class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/10 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none"
+                class="absolute left-2 sm:left-4 z-10 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-black/5 hover:bg-black/20 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none backdrop-blur-sm"
                 aria-label="Previous Slide">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -14,13 +14,19 @@
         </button>
 
         <!-- Dynamic Promotional Content -->
-        <div class="relative w-full max-w-4xl overflow-hidden px-10 text-center text-sm font-medium tracking-wide">
-            <transition name="topbar-fade" mode="out-in">
-                <a v-if="setting.top_bar_link" :href="setting.top_bar_link" :key="'link_' + currentSlideIndex" class="hover:underline transition-all inline-block py-0.5">
-                    <span>{{ topBarTitles[currentSlideIndex] }}</span>
-                </a>
-                <div v-else :key="'text_' + currentSlideIndex" class="inline-block py-0.5">
-                    <span>{{ topBarTitles[currentSlideIndex] }}</span>
+        <div class="relative w-full max-w-[85%] sm:max-w-4xl overflow-hidden flex items-center justify-center text-sm font-medium tracking-wide h-6" ref="topbarTextContainer">
+            <transition name="topbar-fade" mode="out-in" @after-enter="checkOverflow">
+                <div :key="'wrapper_' + currentSlideIndex" class="w-full h-full flex items-center justify-center" :class="{ 'marquee-wrapper': isTextOverflowing }">
+                    <component 
+                        :is="setting.top_bar_link ? 'a' : 'div'"
+                        :href="setting.top_bar_link ? setting.top_bar_link : undefined"
+                        ref="topbarTextContent"
+                        class="inline-block whitespace-nowrap transition-all py-0.5"
+                        :class="[isTextOverflowing ? 'animate-marquee' : 'text-center', setting.top_bar_link ? 'hover:underline' : '']"
+                    >
+                        <span>{{ topBarTitles[currentSlideIndex] }}</span>
+                        <span v-if="isTextOverflowing" class="pl-10">{{ topBarTitles[currentSlideIndex] }}</span>
+                    </component>
                 </div>
             </transition>
         </div>
@@ -28,7 +34,7 @@
         <!-- Right Forward Button -->
         <button v-if="topBarTitles.length > 1" 
                 @click="nextSlide" 
-                class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/10 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none"
+                class="absolute right-2 sm:right-4 z-10 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-black/5 hover:bg-black/20 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none backdrop-blur-sm"
                 aria-label="Next Slide">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -114,7 +120,7 @@
                                             <router-link v-for="(category, index) in categories" :key="index"
                                                 :to="{ name: 'frontend.product', query: { category: category.slug } }"
                                                 @mouseover.prevent="activeTab = 'category_' + category.slug"
-                                                class="capitalize text-sm font-semibold tracking-wide px-5 py-4 transition-all duration-300 relative before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-0.5 before:bg-primary hover:text-primary flex items-center gap-2"
+                                                class="capitalize text-base font-bold tracking-wide px-5 py-4 transition-all duration-300 relative before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-0.5 before:bg-primary hover:text-primary flex items-center gap-2"
                                                 :class="{ 'text-primary before:w-full before:transition-all before:duration-300': activeTab === 'category_' + category.slug }">
                                                 <img v-if="category.thumb" :src="category.thumb" alt="category" class="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-sm" loading="lazy" />
                                                 {{ category.name }}
@@ -434,6 +440,7 @@ export default {
     },
     data() {
         return {
+            isTextOverflowing: false,
             currentSlideIndex: 0,
             slideInterval: null,
             loading: {
@@ -612,6 +619,18 @@ export default {
         this.stopSlideShow();
     },
     methods: {
+        checkOverflow: function () {
+            this.$nextTick(() => {
+                const container = this.$refs.topbarTextContainer;
+                const content = this.$refs.topbarTextContent;
+                if (container && content) {
+                    // $el might be needed if component is used instead of div/a
+                    const contentEl = content.$el || content;
+                    // If content width is greater than container width, it's overflowing
+                    this.isTextOverflowing = contentEl.scrollWidth > container.clientWidth;
+                }
+            });
+        },
         startSlideShow: function () {
             this.stopSlideShow();
             if (this.topBarTitles.length > 1) {
@@ -749,6 +768,7 @@ export default {
                 if (newVal && newVal.length > 0) {
                     this.startSlideShow();
                 }
+                this.checkOverflow();
             }
         }
     }

@@ -14,7 +14,7 @@
                                 <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40">
                             </div>
                         </div>
-                        <span class="text-[11px] sm:text-xs md:text-sm font-semibold capitalize text-center leading-snug group-hover:text-primary transition-colors px-1 whitespace-normal">
+                        <span class="text-xs sm:text-sm md:text-base font-bold capitalize text-center leading-snug group-hover:text-primary transition-colors px-1 whitespace-normal">
                             {{ category.name }}
                         </span>
                     </router-link>

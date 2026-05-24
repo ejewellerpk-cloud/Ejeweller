@@ -1,47 +1,55 @@
 <template>
     <LoadingComponent :props="loading" />
-    <section class="mb-10 sm:mb-20">
-        <div class="container">
+    <section class="mb-6 sm:mb-10">
+        <div class="container mt-4 sm:mt-6">
             <!-- Category Breadcrumb -->
             <CategoryBreadcrumbComponent
                 v-if="typeof $route.query.category !== 'undefined' && $route.query.category !== ''"
-                :categories="ancestorsAndSelfCategories" />
+                :categories="ancestorsAndSelfCategories" class="mb-4" />
 
-            <!-- Page Title Header -->
-            <div class="flex items-center justify-between gap-5 mb-6">
-                <div class="flex flex-wrap items-end gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5">
-                    <h3 class="text-3xl font-bold capitalize max-sm:text-xl">
-                        {{ $t('label.explore_all_products') }}
-                    </h3>
-                    <span class="text-xl font-medium capitalize max-sm:text-sm text-gray-500">
-                        ({{
-                            pagination.meta ? pagination.meta.total : 0
-                        }} {{
-                            categoryWiseProducts.length > 1 ? $t('label.products_found') : $t('label.product_found')
-                        }})
-                    </span>
-                </div>
-            </div>
-
-            <!-- Premium Full-Width Search Bar -->
-            <div class="w-full mb-6 relative">
-                <div class="relative w-full shadow-sm rounded-2xl bg-white border border-gray-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-300">
-                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+            <!-- New Search Bar Layout -->
+            <div class="w-full mb-4 relative flex items-center gap-2 sm:gap-3 z-40">
+                <button @click="$router.go(-1)" type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa-solid fa-chevron-left text-xl text-gray-700"></i>
+                </button>
+                <div class="relative w-full rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1.5 h-[46px] sm:h-12">
                     <input 
                         type="text" 
                         v-model="productSearchForm.name" 
-                        @input="debounceSearch"
+                        @input="handleSearchInput"
+                        @keyup.enter="executeSearch"
+                        @focus="showSuggestions = true"
+                        @blur="hideSuggestions"
                         placeholder="Search our premium collection..." 
-                        class="w-full pl-14 pr-12 py-4 bg-transparent outline-none text-heading font-semibold text-base placeholder:text-gray-400 placeholder:font-normal rounded-2xl"
+                        class="w-full pl-5 pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
                     />
                     <button 
                         v-if="productSearchForm.name" 
-                        @click="clearSearch" 
+                        @mousedown.prevent="clearNewSearch" 
                         type="button" 
-                        class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                        class="text-gray-400 hover:text-gray-600 transition-colors px-2"
                     >
                         <i class="fa-solid fa-circle-xmark text-lg"></i>
                     </button>
+                    <button 
+                        @mousedown.prevent="executeSearch" 
+                        type="button" 
+                        class="w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] flex-shrink-0 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors ml-1"
+                    >
+                        <i class="fa-solid fa-magnifying-glass text-sm sm:text-base"></i>
+                    </button>
+
+                    <!-- Suggestions Dropdown -->
+                    <div v-if="showSuggestions && searchSuggestions.length > 0" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                        <ul class="max-h-60 overflow-y-auto">
+                            <li v-for="(suggestion, index) in searchSuggestions" :key="index"
+                                @mousedown.prevent="selectSuggestion(suggestion.name)"
+                                class="px-5 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors">
+                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                                <span class="font-medium text-gray-700">{{ suggestion.name }}</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -49,15 +57,25 @@
             <div v-if="activeDropdown" @click="activeDropdown = null" class="fixed inset-0 z-40 bg-transparent"></div>
 
             <!-- Premium Horizontal Filter Row (Always Visible, Scrollable) -->
-            <div class="relative mb-8 z-50">
-                <div class="flex items-center gap-3 overflow-x-auto pb-3 pt-1 whitespace-nowrap scrollbar-none scroll-smooth">
+            <div class="relative mb-4 z-30">
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap scrollbar-none scroll-smooth">
                     
+                    <!-- Filters Button (Reset Filters) -->
+                    <div class="shrink-0">
+                        <button type="button" @click="clearAllFilters"
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gray-200 bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95"
+                            :class="hasActiveFilters ? 'text-primary border-primary bg-primary/5' : 'text-gray-700'">
+                            <i class="fa-solid fa-filter text-[11px]"></i>
+                            <span>{{ hasActiveFilters ? 'Clear Filters' : 'Filters' }}</span>
+                        </button>
+                    </div>
+
                     <!-- 1. Sort By Dropdown -->
                     <div class="relative inline-block text-left shrink-0">
                         <button @click.prevent="toggleDropdown('sortBy')" type="button"
-                            :class="productSearchForm.sort_by ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-arrow-down-wide-short text-xs"></i>
+                            :class="productSearchForm.sort_by ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
+                            <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
                             <span>{{ getSortLabel() }}</span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'sortBy' }"></i>
                         </button>
@@ -105,9 +123,9 @@
                     <!-- 2. Price Range Dropdown -->
                     <div class="relative inline-block text-left shrink-0">
                         <button @click.prevent="toggleDropdown('price')" type="button"
-                            :class="(productSearchForm.min_price !== null || productSearchForm.max_price !== null) ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-dollar-sign text-xs"></i>
+                            :class="(productSearchForm.min_price !== null || productSearchForm.max_price !== null) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
+                            <i class="fa-solid fa-dollar-sign text-[11px]"></i>
                             <span>{{ getPriceLabel() }}</span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'price' }"></i>
                         </button>
@@ -135,9 +153,9 @@
                     <!-- 3. Brand Dropdown -->
                     <div v-if="categoryWiseBands.length > 0" class="relative inline-block text-left shrink-0">
                         <button @click.prevent="toggleDropdown('brand')" type="button"
-                            :class="productBrands.length > 0 ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-tags text-xs"></i>
+                            :class="productBrands.length > 0 ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
+                            <i class="fa-solid fa-tags text-[11px]"></i>
                             <span>{{ $t('label.brand') }}{{ getBrandLabel() }}</span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
                         </button>
@@ -160,15 +178,14 @@
                         </div>
                     </div>
 
-                    <!-- 4. Dynamic Variation Dropdowns -->
+                    <!-- 4. Dynamic Variations Dropdown -->
                     <div v-if="Object.keys(categoryWiseVariations).length > 0"
                         v-for="(categoryWiseVariation, categoryWiseVariationKey) in categoryWiseVariations"
                         :key="categoryWiseVariationKey"
                         class="relative inline-block text-left shrink-0">
                         <button @click.prevent="toggleDropdown(categoryWiseVariationKey)" type="button"
-                            :class="getVariationLabel(categoryWiseVariationKey) ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-sliders text-xs"></i>
+                            :class="getVariationLabel(categoryWiseVariationKey) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
                             <span>{{ underscoreToSpace(categoryWiseVariationKey) }}{{ getVariationLabel(categoryWiseVariationKey) }}</span>
                             <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === categoryWiseVariationKey }"></i>
                         </button>
@@ -198,7 +215,7 @@
             </div>
 
             <!-- Product Grid Section (Full-Width) -->
-            <div class="w-full border-t border-gray-100 pt-6">
+            <div class="w-full mt-2">
                 <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 componentLoading">
                     <LoadingContentComponent :props="loadingContent" />
                     <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
@@ -268,7 +285,9 @@ export default {
             isLoadingMore: false,
             observer: null,
             activeDropdown: null,
-            searchTimeout: null
+            searchTimeout: null,
+            showSuggestions: false,
+            searchSuggestions: []
         }
     },
     computed: {
@@ -286,6 +305,13 @@ export default {
         },
         categoryWiseVariations: function () {
             return this.$store.getters["frontendProduct/categoryWiseVariations"];
+        },
+        hasActiveFilters() {
+            return this.productSearchForm.sort_by !== null ||
+                   this.productSearchForm.min_price !== null ||
+                   this.productSearchForm.max_price !== null ||
+                   this.productBrands.length > 0 ||
+                   this.productVariations.length > 0;
         }
     },
     mounted() {
@@ -345,14 +371,42 @@ export default {
                 this.activeDropdown = dropdownName;
             }
         },
-        debounceSearch: function () {
-            if (this.searchTimeout) clearTimeout(this.searchTimeout);
+        handleSearchInput() {
+            this.showSuggestions = true;
+            clearTimeout(this.searchTimeout);
             this.searchTimeout = setTimeout(() => {
-                this.products();
-            }, 400);
+                this.fetchSuggestions();
+            }, 300);
         },
-        clearSearch: function () {
+        fetchSuggestions() {
+            if (this.productSearchForm.name && this.productSearchForm.name.length > 1) {
+                this.$store.dispatch("frontendProduct/lists", {
+                    name: this.productSearchForm.name,
+                    paginate: 0
+                }).then(res => {
+                    this.searchSuggestions = res.data.data.slice(0, 8);
+                });
+            } else {
+                this.searchSuggestions = [];
+            }
+        },
+        executeSearch() {
+            this.showSuggestions = false;
+            this.products();
+        },
+        selectSuggestion(name) {
+            this.productSearchForm.name = name;
+            this.showSuggestions = false;
+            this.products();
+        },
+        hideSuggestions() {
+            setTimeout(() => {
+                this.showSuggestions = false;
+            }, 200);
+        },
+        clearNewSearch() {
             this.productSearchForm.name = null;
+            this.searchSuggestions = [];
             this.products();
         },
         onlyNumber: function (e) {
@@ -435,6 +489,17 @@ export default {
             this.productPrice.range = [this.productPrice.range[0], this.productPrice.range[1]];
             this.productSearchForm.min_price = this.productPrice.range[0];
             this.productSearchForm.max_price = this.productPrice.range[1];
+            this.products();
+        },
+        clearAllFilters() {
+            this.productSearchForm.sort_by = null;
+            this.productSearchForm.min_price = null;
+            this.productSearchForm.max_price = null;
+            this.productSearchForm.brand = [];
+            this.productSearchForm.variation = [];
+            this.productBrands = [];
+            this.productVariations = [];
+            this.productPrice.range = [0, this.maxRange];
             this.products();
         },
         brandOption: function (event, brand) {

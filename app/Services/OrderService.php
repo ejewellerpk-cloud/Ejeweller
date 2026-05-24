@@ -61,7 +61,7 @@ class OrderService
             $orderType   = $request->get('order_by') ?? 'desc';
 
             return Order::with('transaction', 'orderProducts')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date  = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
@@ -71,23 +71,25 @@ class OrderService
                     );
                 }
                 foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->orderFilter)) {
-                        if ($key === "status") {
-                            $query->where($key, (int)$request);
-                        } else if ($key === 'payment_method' && (int)$request < 0) {
-                            $query->where('pos_payment_method', abs($request));
-                        } else if ($key === 'source') {
-                            $query->where($key, $request);
-                        } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                    if ($request !== null && $request !== '') {
+                        if (in_array($key, $this->orderFilter)) {
+                            if ($key === "status") {
+                                $query->where($key, (int)$request);
+                            } else if ($key === 'payment_method' && (int)$request < 0) {
+                                $query->where('pos_payment_method', abs($request));
+                            } else if ($key === 'source') {
+                                $query->where($key, $request);
+                            } else {
+                                $query->where($key, 'like', '%' . $request . '%');
+                            }
                         }
-                    }
 
-                    if (in_array($key, $this->exceptFilter)) {
-                        $explodes = explode('|', $request);
-                        if (is_array($explodes)) {
-                            foreach ($explodes as $explode) {
-                                $query->where('order_type', '!=', $explode);
+                        if (in_array($key, $this->exceptFilter)) {
+                            $explodes = explode('|', $request);
+                            if (is_array($explodes)) {
+                                foreach ($explodes as $explode) {
+                                    $query->where('order_type', '!=', $explode);
+                                }
                             }
                         }
                     }
@@ -116,14 +118,16 @@ class OrderService
             return Order::where('order_type', "!=", OrderType::POS)->where(function ($query) use ($requests) {
                 $query->where('user_id', auth()->user()->id);
                 foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->orderFilter)) {
-                        $query->where($key, 'like', '%' . $request . '%');
-                    }
-                    if (in_array($key, $this->exceptFilter)) {
-                        $explodes = explode('|', $request);
-                        if (is_array($explodes)) {
-                            foreach ($explodes as $explode) {
-                                $query->where('status', '!=', $explode);
+                    if ($request !== null && $request !== '') {
+                        if (in_array($key, $this->orderFilter)) {
+                            $query->where($key, 'like', '%' . $request . '%');
+                        }
+                        if (in_array($key, $this->exceptFilter)) {
+                            $explodes = explode('|', $request);
+                            if (is_array($explodes)) {
+                                foreach ($explodes as $explode) {
+                                    $query->where('status', '!=', $explode);
+                                }
                             }
                         }
                     }
@@ -152,14 +156,16 @@ class OrderService
             return Order::where(function ($query) use ($requests, $user) {
                 $query->where('user_id', $user->id);
                 foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->orderFilter)) {
-                        $query->where($key, 'like', '%' . $request . '%');
-                    }
-                    if (in_array($key, $this->exceptFilter)) {
-                        $explodes = explode('|', $request);
-                        if (is_array($explodes)) {
-                            foreach ($explodes as $explode) {
-                                $query->where('status', '!=', $explode);
+                    if ($request !== null && $request !== '') {
+                        if (in_array($key, $this->orderFilter)) {
+                            $query->where($key, 'like', '%' . $request . '%');
+                        }
+                        if (in_array($key, $this->exceptFilter)) {
+                            $explodes = explode('|', $request);
+                            if (is_array($explodes)) {
+                                foreach ($explodes as $explode) {
+                                    $query->where('status', '!=', $explode);
+                                }
                             }
                         }
                     }
@@ -411,7 +417,7 @@ class OrderService
             $orderType   = $request->get('order_by') ?? 'desc';
 
             $orders = Order::with('transaction', 'orderProducts')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date  = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
@@ -421,23 +427,25 @@ class OrderService
                     );
                 }
                 foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->orderFilter)) {
-                        if ($key === "status") {
-                            $query->where($key, (int)$request);
-                        } else if ($key === 'payment_method' && (int)$request < 0) {
-                            $query->where('pos_payment_method', abs($request));
-                        } else if ($key === 'source') {
-                            $query->where($key, $request);
-                        } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                    if ($request !== null && $request !== '') {
+                        if (in_array($key, $this->orderFilter)) {
+                            if ($key === "status") {
+                                $query->where($key, (int)$request);
+                            } else if ($key === 'payment_method' && (int)$request < 0) {
+                                $query->where('pos_payment_method', abs($request));
+                            } else if ($key === 'source') {
+                                $query->where($key, $request);
+                            } else {
+                                $query->where($key, 'like', '%' . $request . '%');
+                            }
                         }
-                    }
 
-                    if (in_array($key, $this->exceptFilter)) {
-                        $explodes = explode('|', $request);
-                        if (is_array($explodes)) {
-                            foreach ($explodes as $explode) {
-                                $query->where('order_type', '!=', $explode);
+                        if (in_array($key, $this->exceptFilter)) {
+                            $explodes = explode('|', $request);
+                            if (is_array($explodes)) {
+                                foreach ($explodes as $explode) {
+                                    $query->where('order_type', '!=', $explode);
+                                }
                             }
                         }
                     }
