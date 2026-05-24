@@ -24,7 +24,7 @@ class TrackOrderController extends Controller
 
             // Find order by order_serial_no
             $order = Order::where('order_serial_no', $orderSerialNo)
-                          ->with(['orderAddress'])
+                          ->with(['shippingAddress'])
                           ->first();
 
             if (!$order) {
@@ -32,7 +32,7 @@ class TrackOrderController extends Controller
             }
 
             // Verify phone or email from order address or user
-            $address = $order->orderAddress;
+            $address = $order->shippingAddress;
             if ($address) {
                 if ($address->phone !== $phoneOrEmail && $address->email !== $phoneOrEmail && $order->user?->phone !== $phoneOrEmail && $order->user?->email !== $phoneOrEmail) {
                     throw new Exception('Order ID found, but Phone/Email does not match our records.', 403);

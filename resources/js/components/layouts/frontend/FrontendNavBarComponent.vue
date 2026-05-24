@@ -1,13 +1,39 @@
 <template>
-    <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar" 
+    <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar && topBarTitles.length > 0" 
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
-         class="w-full py-2 px-4 text-center text-sm font-medium z-40 relative">
-        <a v-if="setting.top_bar_link" :href="setting.top_bar_link" class="hover:underline transition-all block w-full">
-            <span class="inline-block animate-marquee sm:animate-none">{{ setting.top_bar_text }}</span>
-        </a>
-        <div v-else class="block w-full overflow-hidden">
-            <span class="inline-block animate-marquee sm:animate-none">{{ setting.top_bar_text }}</span>
+         class="w-full py-2 px-4 z-40 relative flex items-center justify-center min-h-[40px]">
+        
+        <!-- Left Back Button -->
+        <button v-if="topBarTitles.length > 1" 
+                @click="prevSlide" 
+                class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/10 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none"
+                aria-label="Previous Slide">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+        </button>
+
+        <!-- Dynamic Promotional Content -->
+        <div class="relative w-full max-w-4xl overflow-hidden px-10 text-center text-sm font-medium tracking-wide">
+            <transition name="topbar-fade" mode="out-in">
+                <a v-if="setting.top_bar_link" :href="setting.top_bar_link" :key="'link_' + currentSlideIndex" class="hover:underline transition-all inline-block py-0.5">
+                    <span>{{ topBarTitles[currentSlideIndex] }}</span>
+                </a>
+                <div v-else :key="'text_' + currentSlideIndex" class="inline-block py-0.5">
+                    <span>{{ topBarTitles[currentSlideIndex] }}</span>
+                </div>
+            </transition>
         </div>
+
+        <!-- Right Forward Button -->
+        <button v-if="topBarTitles.length > 1" 
+                @click="nextSlide" 
+                class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/10 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none"
+                aria-label="Next Slide">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+        </button>
     </div>
 
     <header
@@ -408,6 +434,8 @@ export default {
     },
     data() {
         return {
+            currentSlideIndex: 0,
+            slideInterval: null,
             loading: {
                 isActive: false,
             },
@@ -468,6 +496,20 @@ export default {
         },
         defaultMenu: function () {
             return this.$store.getters.authDefaultMenu;
+        },
+        topBarTitles: function () {
+            if (this.setting && this.setting.top_bar_text) {
+                try {
+                    const parsed = JSON.parse(this.setting.top_bar_text);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                    return [this.setting.top_bar_text];
+                } catch (e) {
+                    return [this.setting.top_bar_text];
+                }
+            }
+            return [];
         },
     },
     mounted() {
@@ -566,7 +608,46 @@ export default {
             });
         }
     },
+    beforeUnmount() {
+        this.stopSlideShow();
+    },
     methods: {
+        startSlideShow: function () {
+            this.stopSlideShow();
+            if (this.topBarTitles.length > 1) {
+                this.slideInterval = setInterval(() => {
+                    this.nextSlide();
+                }, 5000);
+            }
+        },
+        stopSlideShow: function () {
+            if (this.slideInterval) {
+                clearInterval(this.slideInterval);
+                this.slideInterval = null;
+            }
+        },
+        prevSlide: function () {
+            this.stopSlideShow();
+            if (this.topBarTitles.length > 0) {
+                if (this.currentSlideIndex === 0) {
+                    this.currentSlideIndex = this.topBarTitles.length - 1;
+                } else {
+                    this.currentSlideIndex--;
+                }
+            }
+            this.startSlideShow();
+        },
+        nextSlide: function () {
+            this.stopSlideShow();
+            if (this.topBarTitles.length > 0) {
+                if (this.currentSlideIndex === this.topBarTitles.length - 1) {
+                    this.currentSlideIndex = 0;
+                } else {
+                    this.currentSlideIndex++;
+                }
+            }
+            this.startSlideShow();
+        },
         async installPWA() {
             if (!this.pwaInstallPrompt) {
                 this.closePwaModal();
@@ -662,6 +743,14 @@ export default {
         $route(to, from) {
             this.currentRoute = to.path;
         },
+        topBarTitles: {
+            immediate: true,
+            handler(newVal) {
+                if (newVal && newVal.length > 0) {
+                    this.startSlideShow();
+                }
+            }
+        }
     }
 }
 </script>
@@ -679,5 +768,21 @@ export default {
     .sm\:animate-none {
         animation: none;
     }
+}
+
+/* Topbar Fade Animation */
+.topbar-fade-enter-active,
+.topbar-fade-leave-active {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar-fade-enter-from,
+.topbar-fade-enter {
+    opacity: 0;
+    transform: translateY(4px);
+}
+.topbar-fade-leave-to,
+.topbar-fade-leave-active-to {
+    opacity: 0;
+    transform: translateY(-4px);
 }
 </style>

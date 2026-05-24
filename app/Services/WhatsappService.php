@@ -34,6 +34,7 @@ class WhatsappService
     {
         try {
             Settings::group('whatsapp')->set($request->validated());
+            \Illuminate\Support\Facades\Cache::forget('global_settings');
             return $this->list();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

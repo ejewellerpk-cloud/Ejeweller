@@ -27,16 +27,22 @@ class WhatsappRequest extends FormRequest
     {
         if (request()->whatsapp_status == Activity::ENABLE) {
             return [
-                'whatsapp_number'       => ['required', 'string', 'max:20'],
-                'whatsapp_status'       => ['required', 'numeric'],
-                'whatsapp_calling_code' => ['required', 'string', 'max:20'],
+                'whatsapp_number'          => ['required', 'string', 'max:20'],
+                'whatsapp_status'          => ['required', 'numeric'],
+                'whatsapp_floating_status' => ['required', 'numeric'],
+                'whatsapp_checkout_status' => ['required', 'numeric'],
+                'whatsapp_product_status'  => ['required', 'numeric'],
+                'whatsapp_calling_code'    => ['required', 'string', 'max:20'],
 
             ];
         } else {
             return [
-                'whatsapp_number'       => ['nullable', 'string', 'max:20'],
-                'whatsapp_status'       => ['required', 'numeric'],
-                'whatsapp_calling_code' => ['nullable', 'string', 'max:20'],
+                'whatsapp_number'          => ['nullable', 'string', 'max:20'],
+                'whatsapp_status'          => ['required', 'numeric'],
+                'whatsapp_floating_status' => ['required', 'numeric'],
+                'whatsapp_checkout_status' => ['required', 'numeric'],
+                'whatsapp_product_status'  => ['required', 'numeric'],
+                'whatsapp_calling_code'    => ['nullable', 'string', 'max:20'],
             ];
         }
     }

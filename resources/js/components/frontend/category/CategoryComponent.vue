@@ -10,16 +10,16 @@
                     <div v-for="category in categories" :key="category.id" class="relative">
                         <router-link
                             :to="{ name: 'frontend.product', query: { category: category.slug } }"
-                            class="w-full block rounded-xl shadow-xs group border border-gray-100 bg-white hover:border-primary transition-all duration-300">
+                            class="w-full flex flex-col items-center gap-2 sm:gap-3 group">
                             
-                            <img class="w-full aspect-square object-cover block rounded-tl-xl rounded-tr-xl" 
-                                :src="category.thumb" :alt="category.name" loading="lazy" />
-                            
-                            <div class="py-3 px-2 flex flex-col items-center justify-center gap-1">
-                                <span class="text-[11px] sm:text-xs md:text-sm font-semibold capitalize overflow-hidden whitespace-nowrap text-ellipsis group-hover:text-primary transition-colors text-center w-full">
-                                    {{ category.name }}
-                                </span>
+                            <div class="w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
+                                <img class="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.05]" 
+                                    :src="category.thumb" :alt="category.name" loading="lazy" />
                             </div>
+                            
+                            <span class="text-[11px] sm:text-xs md:text-sm font-semibold capitalize text-center leading-snug group-hover:text-primary transition-colors px-1 whitespace-normal">
+                                {{ category.name }}
+                            </span>
                         </router-link>
                     </div>
                 </div>

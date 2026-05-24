@@ -6,13 +6,15 @@
             <Swiper dir="ltr" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
                 <SwiperSlide v-for="category in categories" class="mobile:!w-24">
                     <router-link :to="{name: 'frontend.product', query:{ category: category.slug}}"
-                                 class="w-full rounded-2xl shadow-xs group">
-                        <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full aspect-square object-cover block rounded-tl-2xl rounded-tr-2xl" :src="category.thumb" alt="category" loading="lazy"
-                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')">
-                        <div v-else class="w-full aspect-square flex items-center justify-center bg-gray-50/50 rounded-tl-2xl rounded-tr-2xl">
-                            <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40">
+                                 class="w-full flex flex-col items-center gap-2 sm:gap-3 group">
+                        <div class="w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
+                            <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.05]" :src="category.thumb" alt="category" loading="lazy"
+                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')">
+                            <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50">
+                                <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40">
+                            </div>
                         </div>
-                        <span class="text-sm sm:text-xl font-medium capitalize text-center py-2 px-3 overflow-hidden whitespace-nowrap text-ellipsis block rounded-bl-2xl rounded-br-2xl group-hover:text-primary">
+                        <span class="text-[11px] sm:text-xs md:text-sm font-semibold capitalize text-center leading-snug group-hover:text-primary transition-colors px-1 whitespace-normal">
                             {{ category.name }}
                         </span>
                     </router-link>

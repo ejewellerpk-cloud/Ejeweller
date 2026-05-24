@@ -59,8 +59,73 @@
                                 ? 'invalid' : ''" type="text" id="phone" class="pl-2 text-sm w-full h-full" />
                         </div>
 
-                        <small class="db-field-alert" v-if="errors.whatsapp_number">{{ errors.whatsapp_number[0]
-                            }}</small>
+                        <small class="db-field-alert" v-if="errors.whatsapp_number">{{ errors.whatsapp_number[0] }}</small>
+                    </div>
+
+                    <div class="form-col-12" v-if="form.whatsapp_status === enums.activityEnum.ENABLE">
+                        <label class="db-field-title required">Floating Icon Status</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_floating_status" id="floating_open"
+                                        :value="enums.activityEnum.ENABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="floating_open" class="db-field-label">{{ $t('label.enable') }}</label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_floating_status" id="floating_close"
+                                        :value="enums.activityEnum.DISABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="floating_close" class="db-field-label">{{ $t('label.disable') }}</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-col-12" v-if="form.whatsapp_status === enums.activityEnum.ENABLE">
+                        <label class="db-field-title required">Checkout Button Status</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_checkout_status" id="checkout_open"
+                                        :value="enums.activityEnum.ENABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="checkout_open" class="db-field-label">{{ $t('label.enable') }}</label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_checkout_status" id="checkout_close"
+                                        :value="enums.activityEnum.DISABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="checkout_close" class="db-field-label">{{ $t('label.disable') }}</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-col-12" v-if="form.whatsapp_status === enums.activityEnum.ENABLE">
+                        <label class="db-field-title required">Product Details Button Status</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_product_status" id="product_open"
+                                        :value="enums.activityEnum.ENABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="product_open" class="db-field-label">{{ $t('label.enable') }}</label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="form.whatsapp_product_status" id="product_close"
+                                        :value="enums.activityEnum.DISABLE" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="product_close" class="db-field-label">{{ $t('label.disable') }}</label>
+                            </div>
+                        </div>
                     </div>
 
 
@@ -92,6 +157,9 @@ export default {
             },
             form: {
                 whatsapp_status: null,
+                whatsapp_floating_status: null,
+                whatsapp_checkout_status: null,
+                whatsapp_product_status: null,
                 whatsapp_number: null,
                 whatsapp_calling_code: null,
             },
@@ -108,6 +176,9 @@ export default {
             this.$store.dispatch("whatsapp/lists").then((res) => {
                 this.form.whatsapp_calling_code = res.data.data.whatsapp_calling_code;
                 this.form.whatsapp_status = res.data.data.whatsapp_status;
+                this.form.whatsapp_floating_status = res.data.data.whatsapp_floating_status ?? 10;
+                this.form.whatsapp_checkout_status = res.data.data.whatsapp_checkout_status ?? 10;
+                this.form.whatsapp_product_status = res.data.data.whatsapp_product_status ?? 10;
                 this.form.whatsapp_number = res.data.data.whatsapp_number;
                 if (res.data.data.whatsapp_calling_code !== "") {
                     this.$store.dispatch('countryCode/callingCode', res.data.data.whatsapp_calling_code).then(res => {

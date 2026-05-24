@@ -99,7 +99,7 @@
                     {{ $t('button.back_to_cart') }}
                 </router-link>
 
-                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE"
+                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
                     class="field-button w-fit font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
                     @click.prevent="confirmOrder">
                     <i class="lab lab-whatsapp text-sm"></i>
@@ -123,7 +123,7 @@
                     {{ $t('button.back_to_cart') }}
                 </router-link>
 
-                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE"
+                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
                     class="field-button font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
                     @click.prevent="confirmOrder($event)">
                     <i class="lab lab-whatsapp text-sm"></i>

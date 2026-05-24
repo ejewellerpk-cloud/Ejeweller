@@ -2,16 +2,18 @@
     <LoadingComponent :props="loading" />
     <section class="mb-10 sm:mb-20">
         <div class="container">
+            <!-- Category Breadcrumb -->
             <CategoryBreadcrumbComponent
                 v-if="typeof $route.query.category !== 'undefined' && $route.query.category !== ''"
                 :categories="ancestorsAndSelfCategories" />
 
-            <div class="flex items-center justify-between gap-5 mb-6 max-md:mb-8">
+            <!-- Page Title Header -->
+            <div class="flex items-center justify-between gap-5 mb-6">
                 <div class="flex flex-wrap items-end gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5">
-                    <h3 class="text-3xl font-bold capitalize max-sm:text-lg">
+                    <h3 class="text-3xl font-bold capitalize max-sm:text-xl">
                         {{ $t('label.explore_all_products') }}
                     </h3>
-                    <span class="text-xl font-medium capitalize max-sm:text-sm">
+                    <span class="text-xl font-medium capitalize max-sm:text-sm text-gray-500">
                         ({{
                             pagination.meta ? pagination.meta.total : 0
                         }} {{
@@ -19,194 +21,194 @@
                         }})
                     </span>
                 </div>
-                <button @click.prevent="showTarget('filter-canvas', 'canvas-active')" type="button"
-                    class="lab-line-filter md:invisible flex-shrink-0 text-2xl w-9 h-9 leading-9 text-center rounded-full border border-primary text-primary md:hidden"></button>
             </div>
 
-            <div class="flex items-start border-t border-gray-100 max-md:border-none">
-                <div id="filter-canvas" @click.self="hideTarget('filter-canvas', 'canvas-active')"
-                    class="max-md:fixed max-md:inset-0 max-md:z-50 max-md:bg-black/50 max-md:transition-all max-md:duration-500 max-md:opacity-0 max-md:invisible">
-                    <div
-                        class="w-[270px] ltr:md:border-r rtl:md:border-l md:border-gray-100 bg-white max-md:w-full max-md:max-w-xs max-md:transition-all max-md:duration-500 max-md:-translate-x-full">
-                        <div class="max-md:h-dvh max-md:overflow-y-auto">
-                            <div
-                                class="md:hidden flex items-center justify-between py-5 px-4 border-b border-slate-100">
-                                <h3 class="text-[22px] font-bold capitalize">{{ $t('label.filter_and_sorting') }}</h3>
-                                <button @click.prevent="hideTarget('filter-canvas', 'canvas-active')" type="button"
-                                    class="lab-line-circle-cross text-lg text-[#E93C3C]"></button>
-                            </div>
+            <!-- Premium Full-Width Search Bar -->
+            <div class="w-full mb-6 relative">
+                <div class="relative w-full shadow-sm rounded-2xl bg-white border border-gray-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-300">
+                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                    <input 
+                        type="text" 
+                        v-model="productSearchForm.name" 
+                        @input="debounceSearch"
+                        placeholder="Search our premium collection..." 
+                        class="w-full pl-14 pr-12 py-4 bg-transparent outline-none text-heading font-semibold text-base placeholder:text-gray-400 placeholder:font-normal rounded-2xl"
+                    />
+                    <button 
+                        v-if="productSearchForm.name" 
+                        @click="clearSearch" 
+                        type="button" 
+                        class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                        <i class="fa-solid fa-circle-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
 
-                            <div class="filter-group border-b border-gray-100">
-                                <button :key="'eventSortBy'" @click.prevent="colspanHideShow($event, 'sortBy')"
-                                    type="button"
-                                    class="filter-btn active group flex items-center justify-between w-full py-5 px-4 ltr:md:pl-0 rtl:pr-0">
-                                    <span
-                                        class="text-lg font-semibold capitalize transition-all duration-500 group-hover:text-primary">{{
-                                            $t('label.sort_by')
-                                        }}</span>
-                                    <i
-                                        class="lab-line-chevron-up text-base font-semibold transition-all duration-500 group-hover:text-primary"></i>
-                                </button>
-                                <div :key="'eventSortById'" id="sortBy"
-                                    class="h-auto overflow-hidden transition-all duration-500">
-                                    <div class="w-full mb-6 flex flex-col gap-4 px-6 md:px-0">
-                                        <label for="sortByNewest" class="flex items-center gap-3 cursor-pointer group">
-                                            <input @click="sortByOption($event, 'newest')" v-model="productSortBy"
-                                                value="latest" type="radio" id="sortByNewest" class="cs-custom-radio">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ $t('label.newest') }}
-                                            </span>
-                                        </label>
+            <!-- Backdrop for Closing Dropdowns -->
+            <div v-if="activeDropdown" @click="activeDropdown = null" class="fixed inset-0 z-40 bg-transparent"></div>
 
-                                        <label for="priceLowToHigh"
-                                            class="flex items-center gap-3 cursor-pointer group">
-                                            <input @click="sortByOption($event, 'price_low_to_high')"
-                                                v-model="productSortBy" value="price_low_to_high" type="radio"
-                                                id="priceLowToHigh" class="cs-custom-radio">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ $t('label.price_low_to_high') }}
-                                            </span>
-                                        </label>
-
-                                        <label for="priceHighToLow"
-                                            class="flex items-center gap-3 cursor-pointer group">
-                                            <input @click="sortByOption($event, 'price_high_to_low')"
-                                                v-model="productSortBy" value="price_high_to_low" type="radio"
-                                                id="priceHighToLow" class="cs-custom-radio">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ $t('label.price_high_to_low') }}
-                                            </span>
-                                        </label>
-
-                                        <label for="topRated" class="flex items-center gap-3 cursor-pointer group">
-                                            <input @click="sortByOption($event, 'top_rated')" v-model="productSortBy"
-                                                value="top_rated" type="radio" id="topRated" class="cs-custom-radio">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ $t('label.top_rated') }}
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="filter-group border-b border-gray-100">
-                                <button :key="'eventFilterPrice'"
-                                    @click.prevent="colspanHideShow($event, 'filterPrice')" type="button"
-                                    class="filter-btn active group flex items-center justify-between w-full py-5 px-4 ltr:md:pl-0 rtl:pr-0">
-                                    <span
-                                        class="text-lg font-semibold capitalize transition-all duration-500 group-hover:text-primary">{{
-                                            $t('label.price')
-                                        }}</span>
-                                    <i
-                                        class="lab-line-chevron-up text-base font-semibold transition-all duration-500 group-hover:text-primary"></i>
-                                </button>
-                                <div :key="'eventFilterPriceId'" id="filterPrice"
-                                    class="h-auto overflow-hidden transition-all duration-500">
-                                    <div class="w-full mb-6 flex flex-col gap-4 px-6 md:px-0">
-                                        <div class="form-row sm:p-1">
-                                            <div class="form-col-12 sm:form-col-6">
-                                                <input @keyup="priceOptionUpdate" v-on:keypress="onlyNumber($event)"
-                                                    class="db-field-control" type="number"
-                                                    v-model="productPrice.range[0]">
-                                            </div>
-                                            <div class="form-col-12 sm:form-col-6">
-                                                <input @keyup="priceOptionUpdate" v-on:keypress="onlyNumber($event)"
-                                                    class="db-field-control" type="number"
-                                                    v-model="productPrice.range[1]">
-                                            </div>
-                                        </div>
-                                        <VueSimpleRangeSlider @mouseup="priceOptionRange" @touchend="priceOptionRange"
-                                            :keepJustSignificantFigures="true" popover-content-editable="false"
-                                            significant-figures="1" active-bar-color="#FD8B0E" bar-color="#D9DBE9"
-                                            class="p-1 w-full" :min="0" :max="maxRange" v-model="productPrice.range" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="categoryWiseBands.length > 0" class="filter-group border-b border-gray-100">
-                                <button :key="'eventBrand'" @click.prevent="colspanHideShow($event, 'brand')"
-                                    type="button"
-                                    class="filter-btn active group flex items-center justify-between w-full py-5 px-4 ltr:md:pl-0 rtl:pr-0">
-                                    <span
-                                        class="text-lg font-semibold capitalize transition-all duration-500 group-hover:text-primary">
-                                        {{ $t('label.brand') }}
+            <!-- Premium Horizontal Filter Row (Always Visible, Scrollable) -->
+            <div class="relative mb-8 z-50">
+                <div class="flex items-center gap-3 overflow-x-auto pb-3 pt-1 whitespace-nowrap scrollbar-none scroll-smooth">
+                    
+                    <!-- 1. Sort By Dropdown -->
+                    <div class="relative inline-block text-left shrink-0">
+                        <button @click.prevent="toggleDropdown('sortBy')" type="button"
+                            :class="productSearchForm.sort_by ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-arrow-down-wide-short text-xs"></i>
+                            <span>{{ getSortLabel() }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'sortBy' }"></i>
+                        </button>
+                        
+                        <div v-if="activeDropdown === 'sortBy'" 
+                            class="absolute top-full mt-2 left-0 z-50 min-w-[220px] bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
+                            <div class="flex flex-col gap-3.5">
+                                <label for="sortByNewest" class="flex items-center gap-3 cursor-pointer group">
+                                    <input @click="sortByOption($event, 'newest')" v-model="productSortBy"
+                                        value="latest" type="radio" id="sortByNewest" class="cs-custom-radio">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ $t('label.newest') }}
                                     </span>
-                                    <i
-                                        class="lab-line-chevron-up text-base font-semibold transition-all duration-500 group-hover:text-primary"></i>
-                                </button>
+                                </label>
 
-                                <div :key="'eventBrandId'" id="brand"
-                                    class="h-auto overflow-hidden transition-all duration-500">
-                                    <div class="w-full mb-6 flex flex-col gap-4 px-6 md:px-0">
-                                        <label :for="'brand_' + categoryWiseBand.id"
-                                            v-for="categoryWiseBand in categoryWiseBands"
-                                            class="flex items-center gap-3 cursor-pointer group">
-                                            <input @click="brandOption($event, categoryWiseBand.id)" type="checkbox"
-                                                :id="'brand_' + categoryWiseBand.id" class="cs-custom-checkbox">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ categoryWiseBand.name }}
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="Object.keys(categoryWiseVariations).length > 0"
-                                v-for="(categoryWiseVariation, categoryWiseVariationKey) in categoryWiseVariations"
-                                class="filter-group border-b border-gray-100">
-                                <button :key="'variation_' + categoryWiseVariationKey"
-                                    @click.prevent="colspanHideShow($event, 'variation_' + categoryWiseVariationKey)"
-                                    type="button"
-                                    class="filter-btn active group flex items-center justify-between w-full py-5 px-4 ltr:md:pl-0 rtl:pr-0">
-                                    <span
-                                        class="text-lg font-semibold capitalize transition-all duration-500 group-hover:text-primary">
-                                        {{ underscoreToSpace(categoryWiseVariationKey) }}
+                                <label for="priceLowToHigh" class="flex items-center gap-3 cursor-pointer group">
+                                    <input @click="sortByOption($event, 'price_low_to_high')"
+                                        v-model="productSortBy" value="price_low_to_high" type="radio"
+                                        id="priceLowToHigh" class="cs-custom-radio">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ $t('label.price_low_to_high') }}
                                     </span>
-                                    <i
-                                        class="lab-line-chevron-up text-base font-semibold transition-all duration-500 group-hover:text-primary"></i>
-                                </button>
+                                </label>
 
-                                <div :key="'variation_' + categoryWiseVariationKey + 'Id'"
-                                    :id="'variation_' + categoryWiseVariationKey"
-                                    class="h-auto overflow-hidden transition-all duration-500">
-                                    <div class="w-full mb-6 flex flex-col gap-4 px-6 md:px-0">
-                                        <label
-                                            :for="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
-                                            v-for="variation in categoryWiseVariation"
-                                            class="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox"
-                                                @click="variationOption($event, variation.product_attribute_id, variation.product_attribute_option_id)"
-                                                :id="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
-                                                class="cs-custom-checkbox">
-                                            <span
-                                                class="font-medium capitalize transition-all duration-500 group-hover:text-primary">
-                                                {{ variation.attribute_option_name }}
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
+                                <label for="priceHighToLow" class="flex items-center gap-3 cursor-pointer group">
+                                    <input @click="sortByOption($event, 'price_high_to_low')"
+                                        v-model="productSortBy" value="price_high_to_low" type="radio"
+                                        id="priceHighToLow" class="cs-custom-radio">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ $t('label.price_high_to_low') }}
+                                    </span>
+                                </label>
+
+                                <label for="topRated" class="flex items-center gap-3 cursor-pointer group">
+                                    <input @click="sortByOption($event, 'top_rated')" v-model="productSortBy"
+                                        value="top_rated" type="radio" id="topRated" class="cs-custom-radio">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ $t('label.top_rated') }}
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>
+
+                    <!-- 2. Price Range Dropdown -->
+                    <div class="relative inline-block text-left shrink-0">
+                        <button @click.prevent="toggleDropdown('price')" type="button"
+                            :class="(productSearchForm.min_price !== null || productSearchForm.max_price !== null) ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-dollar-sign text-xs"></i>
+                            <span>{{ getPriceLabel() }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'price' }"></i>
+                        </button>
+                        
+                        <div v-if="activeDropdown === 'price'" 
+                            class="absolute top-full mt-2 left-0 z-50 min-w-[280px] bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
+                            <div class="flex flex-col gap-4">
+                                <div class="flex items-center gap-2">
+                                    <input @keyup="priceOptionUpdate" v-on:keypress="onlyNumber($event)"
+                                        class="db-field-control text-center py-1.5 px-2.5 rounded-lg border border-gray-200 outline-none text-sm w-1/2" type="number"
+                                        v-model="productPrice.range[0]">
+                                    <span class="text-gray-400 font-medium text-sm">to</span>
+                                    <input @keyup="priceOptionUpdate" v-on:keypress="onlyNumber($event)"
+                                        class="db-field-control text-center py-1.5 px-2.5 rounded-lg border border-gray-200 outline-none text-sm w-1/2" type="number"
+                                        v-model="productPrice.range[1]">
+                                </div>
+                                <VueSimpleRangeSlider @mouseup="priceOptionRange" @touchend="priceOptionRange"
+                                    :keepJustSignificantFigures="true" popover-content-editable="false"
+                                    significant-figures="1" active-bar-color="#FD8B0E" bar-color="#D9DBE9"
+                                    class="p-1 w-full" :min="0" :max="maxRange" v-model="productPrice.range" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Brand Dropdown -->
+                    <div v-if="categoryWiseBands.length > 0" class="relative inline-block text-left shrink-0">
+                        <button @click.prevent="toggleDropdown('brand')" type="button"
+                            :class="productBrands.length > 0 ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-tags text-xs"></i>
+                            <span>{{ $t('label.brand') }}{{ getBrandLabel() }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
+                        </button>
+                        
+                        <div v-if="activeDropdown === 'brand'" 
+                            class="absolute top-full mt-2 left-0 z-50 min-w-[240px] max-h-[300px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
+                            <div class="flex flex-col gap-3">
+                                <label :for="'brand_' + categoryWiseBand.id"
+                                    v-for="categoryWiseBand in categoryWiseBands"
+                                    :key="categoryWiseBand.id"
+                                    class="flex items-center gap-3 cursor-pointer group">
+                                    <input @click="brandOption($event, categoryWiseBand.id)" type="checkbox"
+                                        :id="'brand_' + categoryWiseBand.id" class="cs-custom-checkbox"
+                                        :checked="productBrands.includes(categoryWiseBand.id)">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ categoryWiseBand.name }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Dynamic Variation Dropdowns -->
+                    <div v-if="Object.keys(categoryWiseVariations).length > 0"
+                        v-for="(categoryWiseVariation, categoryWiseVariationKey) in categoryWiseVariations"
+                        :key="categoryWiseVariationKey"
+                        class="relative inline-block text-left shrink-0">
+                        <button @click.prevent="toggleDropdown(categoryWiseVariationKey)" type="button"
+                            :class="getVariationLabel(categoryWiseVariationKey) ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-heading'"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-white font-semibold text-sm hover:border-primary hover:text-primary transition-all duration-300 active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-sliders text-xs"></i>
+                            <span>{{ underscoreToSpace(categoryWiseVariationKey) }}{{ getVariationLabel(categoryWiseVariationKey) }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === categoryWiseVariationKey }"></i>
+                        </button>
+                        
+                        <div v-if="activeDropdown === categoryWiseVariationKey" 
+                            class="absolute top-full mt-2 left-0 z-50 min-w-[240px] max-h-[300px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
+                            <div class="flex flex-col gap-3">
+                                <label
+                                    :for="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
+                                    v-for="variation in categoryWiseVariation"
+                                    :key="variation.product_attribute_option_id"
+                                    class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox"
+                                        @click="variationOption($event, variation.product_attribute_id, variation.product_attribute_option_id)"
+                                        :id="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
+                                        class="cs-custom-checkbox"
+                                        :checked="productVariations.some(v => v.attribute === variation.product_attribute_id && v.option === variation.product_attribute_option_id)">
+                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
+                                        {{ variation.attribute_option_name }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Product Grid Section (Full-Width) -->
+            <div class="w-full border-t border-gray-100 pt-6">
+                <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 componentLoading">
+                    <LoadingContentComponent :props="loadingContent" />
+                    <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
                 </div>
 
-                <div class="w-full p-4 max-md:p-0">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-6 mb-12 componentLoading">
-                        <LoadingContentComponent :props="loadingContent" />
-                        <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
-                    </div>
-
-                    <!-- Infinite Scroll Trigger & Loading -->
-                    <div ref="infiniteScrollTrigger" class="w-full h-10 flex items-center justify-center my-4">
-                        <div v-if="isLoadingMore" class="flex items-center gap-2 text-primary font-medium">
-                            <i class="fa-solid fa-spinner fa-spin"></i>
-                            <span>{{ $t('label.loading') }}...</span>
-                        </div>
+                <!-- Infinite Scroll Trigger & Loading -->
+                <div ref="infiniteScrollTrigger" class="w-full h-10 flex items-center justify-center my-4">
+                    <div v-if="isLoadingMore" class="flex items-center gap-2 text-primary font-medium">
+                        <i class="fa-solid fa-spinner fa-spin animate-spin"></i>
+                        <span>{{ $t('label.loading') }}...</span>
                     </div>
                 </div>
             </div>
@@ -264,7 +266,9 @@ export default {
                 max_price: null
             },
             isLoadingMore: false,
-            observer: null
+            observer: null,
+            activeDropdown: null,
+            searchTimeout: null
         }
     },
     computed: {
@@ -306,6 +310,51 @@ export default {
         }
     },
     methods: {
+        getSortLabel: function () {
+            if (this.productSearchForm.sort_by === 'newest') return this.$t('label.newest') || 'Newest';
+            if (this.productSearchForm.sort_by === 'price_low_to_high') return this.$t('label.price_low_to_high') || 'Price: Low to High';
+            if (this.productSearchForm.sort_by === 'price_high_to_low') return this.$t('label.price_high_to_low') || 'Price: High to Low';
+            if (this.productSearchForm.sort_by === 'top_rated') return this.$t('label.top_rated') || 'Top Rated';
+            return this.$t('label.sort_by') || 'Sort By';
+        },
+        getPriceLabel: function () {
+            if (this.productSearchForm.min_price !== null || this.productSearchForm.max_price !== null) {
+                let min = this.productSearchForm.min_price || 0;
+                let max = this.productSearchForm.max_price || this.maxRange;
+                return `${min} - ${max}`;
+            }
+            return this.$t('label.price') || 'Price';
+        },
+        getBrandLabel: function () {
+            if (this.productBrands.length > 0) {
+                return ` (${this.productBrands.length})`;
+            }
+            return '';
+        },
+        getVariationLabel: function (key) {
+            const attrOptions = this.categoryWiseVariations[key] || [];
+            const selectedCount = this.productVariations.filter(v => 
+                attrOptions.some(opt => opt.product_attribute_id === v.attribute && opt.product_attribute_option_id === v.option)
+            ).length;
+            return selectedCount > 0 ? ` (${selectedCount})` : '';
+        },
+        toggleDropdown: function (dropdownName) {
+            if (this.activeDropdown === dropdownName) {
+                this.activeDropdown = null;
+            } else {
+                this.activeDropdown = dropdownName;
+            }
+        },
+        debounceSearch: function () {
+            if (this.searchTimeout) clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.products();
+            }, 400);
+        },
+        clearSearch: function () {
+            this.productSearchForm.name = null;
+            this.products();
+        },
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
         },
@@ -425,3 +474,16 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+</style>

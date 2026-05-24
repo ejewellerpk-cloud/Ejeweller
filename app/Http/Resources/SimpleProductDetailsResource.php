@@ -21,6 +21,8 @@ class SimpleProductDetailsResource extends JsonResource
             'use_random_sale'           => (int)$this->use_random_sale,
             'is_show_viewers'           => (int)$this->is_show_viewers,
             'actual_sales'              => (int)abs($this->productOrders()->sum('quantity')),
+            'bought_last_24_hours'      => (int)abs($this->productOrders()->where('created_at', '>=', now()->subDay())->sum('quantity')),
+            'in_baskets'                => (int)$this->cartTrackers()->count(),
             'name'                      => $this->name,
             'slug'                      => $this->slug,
             'price'                     => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date) ? AppLibrary::convertAmountFormat($price - (($price / 100) * $this->discount)) : AppLibrary::convertAmountFormat($price),

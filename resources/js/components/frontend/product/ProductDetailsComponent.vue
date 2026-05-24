@@ -169,6 +169,15 @@
                         </div>
                     </div>
 
+                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm mb-4 flex items-center gap-1.5 animate-pulse">
+                        <i class="fa-solid fa-fire text-red-500 text-xs"></i>
+                        <span>
+                            <span v-if="product.in_baskets > 0">in {{ product.in_baskets }} baskets</span>
+                            <span v-if="product.in_baskets > 0 && product.bought_last_24_hours > 0"> and </span>
+                            <span v-if="product.bought_last_24_hours > 0">{{ product.bought_last_24_hours }} bought in last 24 hours</span>
+                        </span>
+                    </p>
+
                     <!-- Flash Sale Countdown Timer -->
                     <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -199,17 +208,6 @@
                     </div>
 
                     <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-6">{{ product.name }}</h2>
-
-                    <!-- Live Active Viewers Badge -->
-                    <div v-if="product.is_show_viewers === 5" class="flex items-center gap-3 mb-6 px-4 py-2.5 bg-red-50/80 border border-red-100 rounded-xl max-w-fit shadow-sm">
-                        <span class="relative flex h-3 w-3">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
-                        </span>
-                        <span class="text-sm font-black text-red-600 tracking-tight">
-                            {{ activeViewers }} people are viewing this right now
-                        </span>
-                    </div>
 
                     <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
                     <div class="grid grid-cols-3 gap-2 border-y border-gray-100 py-4 my-6 text-center text-xs sm:text-sm">
@@ -249,7 +247,7 @@
 
 
 
-                    <VariationComponent v-if="initialVariations.length > 0 && variationComponent"
+                    <VariationComponent v-if="initialVariations.length > 0 && showVariationComponent"
                         :method="selectedVariationMethod" :variations="initialVariations" />
 
                     <dl class="flex flex-wrap items-center gap-x-6 gap-y-3 mb-8">
@@ -302,6 +300,12 @@
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
                     </div>
+
+                    <button v-if="setting.whatsapp_status === activityEnum.ENABLE && setting.whatsapp_product_status === activityEnum.ENABLE" @click.prevent="orderOnWhatsApp" type="button"
+                        class="w-full h-12 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(37,211,102,0.3)] mb-10">
+                        <i class="lab-fill-whatsapp text-2xl"></i>
+                        <span class="whitespace-nowrap text-sm sm:text-base">Order on WhatsApp</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -652,6 +656,7 @@ import { pixelService } from "../../../services/pixelService";
 import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
 
 import InnerImageZoom from 'vue-inner-image-zoom';
+import activityEnum from "../../../enums/modules/activityEnum";
 
 export default {
     name: "ProductDetailsComponent",
@@ -693,10 +698,11 @@ export default {
                     review_limit: 5
                 }
             },
+            activityEnum: activityEnum,
             enableAddToCardButton: false,
             selectedVariation: null,
             productArray: {},
-            variationComponent: false,
+            showVariationComponent: false,
             initProduct: {
                 isVariation: false,
                 variationId: null,
@@ -1088,6 +1094,18 @@ export default {
         hideShareModal: function () {
             appService.modalHide('#shareModal');
         },
+        orderOnWhatsApp: function () {
+            let phone = this.setting.company_calling_code + this.setting.company_phone;
+            if(phone) {
+                phone = phone.replace(/[^0-9]/g, '');
+            } else {
+                phone = '';
+            }
+            const url = window.location.origin + window.location.pathname;
+            const companyName = this.setting.company_name || 'Jadeno.pk';
+            const text = `Hi, I want to order : ${this.product.name} | ${companyName} URL: ${url}`;
+            window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+        },
         show: function () {
             if (typeof this.$route.params.slug !== "undefined") {
                 this.loading.isActive = true;
@@ -1165,7 +1183,7 @@ export default {
 
                     this.$store.dispatch("frontendProductVariation/initialVariation", res.data.data.id).then((initVariationRes) => {
                         if (initVariationRes.data.data.length > 0) {
-                            this.variationComponent = true;
+                            this.showVariationComponent = true;
                         }
 
                         if (!initVariationRes.data.data.length && res.data.data.stock > 0) {
@@ -1309,7 +1327,7 @@ export default {
             this.temp.totalPrice = (this.temp.price * this.temp.quantity);
         },
         addToCart: function () {
-            if (this.variationComponent && !this.selectedVariation) {
+            if (this.showVariationComponent && !this.selectedVariation) {
                 alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 return;
             }
@@ -1342,9 +1360,9 @@ export default {
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {
                     this.productArray.variation_names = res.data.data;
-                    this.variationComponent = false;
+                    this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
-                        this.variationComponent = true;
+                        this.showVariationComponent = true;
                         this.productArray = {};
                         this.selectedVariation = null;
                         this.temp.isVariation = this.initProduct.isVariation;
@@ -1363,7 +1381,7 @@ export default {
                         } else {
                             alertService.error(this.$t('message.maximum_quantity') || "Maximum purchase quantity reached!");
                         }
-                        this.variationComponent = true;
+                        this.showVariationComponent = true;
                         this.selectedVariation = null;
                         this.temp.stock = this.initProduct.stock;
                         this.temp.quantity = this.initProduct.quantity;
@@ -1399,7 +1417,7 @@ export default {
             }
         },
         buyNow: function () {
-            if (this.variationComponent && !this.selectedVariation) {
+            if (this.showVariationComponent && !this.selectedVariation) {
                 alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 return;
             }
@@ -1433,9 +1451,9 @@ export default {
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {
                     this.productArray.variation_names = res.data.data;
-                    this.variationComponent = false;
+                    this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
-                        this.variationComponent = true;
+                        this.showVariationComponent = true;
                         this.productArray = {};
                         this.selectedVariation = null;
                         this.temp.isVariation = this.initProduct.isVariation;
@@ -1455,7 +1473,7 @@ export default {
                         } else {
                             alertService.error(this.$t('message.maximum_quantity') || "Maximum purchase quantity reached!");
                         }
-                        this.variationComponent = true;
+                        this.showVariationComponent = true;
                         this.selectedVariation = null;
                         this.temp.stock = this.initProduct.stock;
                         this.temp.quantity = this.initProduct.quantity;

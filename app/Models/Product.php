@@ -296,4 +296,9 @@ class Product extends Model implements HasMedia
     {
         return $this->hasOne(ProductReview::class, 'product_id', 'id')->where('user_id', auth()->user() ? auth()->user()->id : null);
     }
+
+    public function cartTrackers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CartTracker::class);
+    }
 }

@@ -18,6 +18,9 @@ class WhatsappTableSeeder extends Seeder
         Settings::group('whatsapp')->set([
             "whatsapp_number"       => "1676667726",
             "whatsapp_status"       => Activity::ENABLE,
+            "whatsapp_floating_status" => Activity::ENABLE,
+            "whatsapp_checkout_status" => Activity::ENABLE,
+            "whatsapp_product_status"  => Activity::ENABLE,
             "whatsapp_calling_code" => "+880"
         ]);
     }

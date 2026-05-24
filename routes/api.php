@@ -798,6 +798,12 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::post('/capi/event', [FbCapiController::class, 'track']);
 
+    Route::prefix('cart-track')->name('cart-track.')->group(function () {
+        Route::post('/add', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'add']);
+        Route::post('/remove', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'remove']);
+        Route::post('/clear', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'clear']);
+    });
+
     Route::prefix('country-code')->name('country-code.')->group(function () {
         Route::get('/', [FrontendCountryCodeController::class, 'index']);
         Route::get('/show/{country}', [FrontendCountryCodeController::class, 'show']);

@@ -7,6 +7,16 @@ import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
 import i18n from "../../../i18n";
 import { pixelService } from "../../../services/pixelService";
+import axios from "axios";
+
+function getSessionId() {
+    let sessionId = localStorage.getItem('cart_session_id');
+    if (!sessionId) {
+        sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('cart_session_id', sessionId);
+    }
+    return sessionId;
+}
 
 
 export const frontendCart = {
@@ -197,6 +207,10 @@ export const frontendCart = {
                 }
                 
                 pixelService.trackAddToCart(payload, payload.quantity);
+                axios.post('frontend/cart-track/add', {
+                    product_id: payload.product_id,
+                    session_id: getSessionId()
+                }).catch(err => console.error("Cart tracking error:", err));
                 resolve({ data: context.state.lists, status: true });
             });
         },
@@ -234,6 +248,13 @@ export const frontendCart = {
             });
         },
         remove: function (context, payload) {
+            const item = context.state.lists[payload.id];
+            if (item) {
+                axios.post('frontend/cart-track/remove', {
+                    product_id: item.product_id,
+                    session_id: getSessionId()
+                }).catch(err => console.error("Cart track remove error:", err));
+            }
             context.commit("remove", payload);
             context.commit("taxCalculation");
             context.commit("shippingCharge", {
@@ -287,6 +308,9 @@ export const frontendCart = {
             context.commit('paymentMethod', payload);
         },
         resetCart: function (context) {
+            axios.post('frontend/cart-track/clear', {
+                session_id: getSessionId()
+            }).catch(err => console.error("Cart track clear error:", err));
             context.commit('resetCart');
         },
     },

@@ -30,8 +30,20 @@
                     </div>
 
                     <div class="form-col-12">
-                        <label for="top_bar_text" class="db-field-title">Promotional Text</label>
-                        <input v-model="form.top_bar_text" id="top_bar_text" type="text" class="db-field-control" placeholder="E.g. Free Delivery on orders over $50!">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="db-field-title mb-0">Promotional Texts / Slider Titles</label>
+                            <button type="button" @click="addTitle" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i> Add Title
+                            </button>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <div v-for="(title, index) in titles" :key="index" class="flex items-center gap-2">
+                                <input v-model="titles[index]" type="text" class="db-field-control" :placeholder="'E.g. Promotional Title ' + (index + 1)">
+                                <button v-if="titles.length > 1" type="button" @click="removeTitle(index)" class="flex-shrink-0 w-10 h-10 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
@@ -80,6 +92,7 @@ export default {
                 top_bar_bg_color: "#ff5c00",
                 top_bar_text_color: "#ffffff",
             },
+            titles: [""],
             errors: {},
         };
     },
@@ -94,7 +107,21 @@ export default {
                 .then((res) => {
                     const data = res.data.data;
                     if(data.top_bar_status) this.form.top_bar_status = data.top_bar_status;
-                    if(data.top_bar_text) this.form.top_bar_text = data.top_bar_text;
+                    if(data.top_bar_text) {
+                        this.form.top_bar_text = data.top_bar_text;
+                        try {
+                            const parsed = JSON.parse(data.top_bar_text);
+                            if (Array.isArray(parsed)) {
+                                this.titles = parsed;
+                            } else {
+                                this.titles = [data.top_bar_text];
+                            }
+                        } catch (e) {
+                            this.titles = [data.top_bar_text];
+                        }
+                    } else {
+                        this.titles = [""];
+                    }
                     if(data.top_bar_link) this.form.top_bar_link = data.top_bar_link;
                     if(data.top_bar_bg_color) this.form.top_bar_bg_color = data.top_bar_bg_color;
                     if(data.top_bar_text_color) this.form.top_bar_text_color = data.top_bar_text_color;
@@ -107,6 +134,14 @@ export default {
         save: function () {
             try {
                 this.loading.isActive = true;
+                
+                // Filter out empty titles
+                const filteredTitles = this.titles.filter(t => t && t.trim() !== '');
+                if (filteredTitles.length === 0) {
+                    filteredTitles.push('Welcome to our store!');
+                }
+                this.form.top_bar_text = JSON.stringify(filteredTitles);
+
                 this.$store
                     .dispatch("topBar/save", this.form)
                     .then((res) => {
@@ -122,6 +157,12 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err);
             }
+        },
+        addTitle: function () {
+            this.titles.push('');
+        },
+        removeTitle: function (index) {
+            this.titles.splice(index, 1);
         },
     },
 };

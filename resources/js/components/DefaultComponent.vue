@@ -50,7 +50,7 @@
     </transition>
 
     <!-- Native Reactive Floating WhatsApp Button -->
-    <a v-if="theme === 'frontend' && setting && setting.whatsapp_status === 5 && setting.whatsapp_number"
+    <a v-if="theme === 'frontend' && setting && setting.whatsapp_status === 5 && setting.whatsapp_floating_status === 5 && setting.whatsapp_number"
        :href="'https://wa.me/' + (setting.whatsapp_calling_code + setting.whatsapp_number).replace(/[^0-9]/g, '')"
        class="whatsapp-btn fixed z-[10000] flex items-center justify-center rounded-full bg-[#25D366] text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_4px_15px_rgba(37,211,102,0.35)]"
        :class="whatsappClass"

@@ -394,7 +394,7 @@ export default {
                     pixelService.trackPurchase(res.data.data);
                 }
 
-                if (this.$route.query.status === "success" && this.setting.whatsapp_status === activityEnum.ENABLE && this.setting.whatsapp_number) {
+                if (this.$route.query.status === "success" && this.setting.whatsapp_status === activityEnum.ENABLE && this.setting.whatsapp_checkout_status === activityEnum.ENABLE && this.setting.whatsapp_number) {
                     this.modal = false;
                     this.handleClick(res.data.data, res.data.data.outlet_address);
                 } else {

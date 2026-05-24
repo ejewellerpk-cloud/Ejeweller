@@ -220,6 +220,19 @@ export const frontendProduct = {
                 });
             });
         },
+        lists: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                let url = `frontend/product`;
+                if (payload) {
+                    url = url + appService.requestHandler(payload);
+                }
+                axios.get(url).then((res) => {
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
         wishlistProducts: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = `frontend/product/wishlist-products`;
