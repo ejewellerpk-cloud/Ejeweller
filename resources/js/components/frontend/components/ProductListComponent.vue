@@ -13,6 +13,14 @@
             </div>
  
             <div class="absolute top-3 left-3 z-10 flex flex-col gap-1.5 items-start">
+                <span v-if="isNew(product)" 
+                    class="bg-blue-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(59,130,246,0.3)] flex items-center gap-1">
+                    <i class="fa-solid fa-sparkles text-[9px] sm:text-[11px]"></i> NEW
+                </span>
+                <span v-if="isTrending(product)" 
+                    class="bg-orange-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(249,115,22,0.3)] flex items-center gap-1 animate-pulse">
+                    <i class="fa-solid fa-fire-flame-curved text-[9px] sm:text-[11px]"></i> HOT
+                </span>
                 <span v-if="product.is_offer && discountPercentage(product) > 0" 
                     class="bg-primary text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
                     <i class="fa-solid fa-tags text-[9px] sm:text-[11px]"></i>
@@ -321,11 +329,7 @@ export default {
                 // Increment social proof sold count
                 if (product.id) {
                     const storageKey = 'sold_count_' + product.id;
-                    let localCount = localStorage.getItem(storageKey);
-                    if (!localCount) {
-                        localCount = (product.id * 53) % 450 + 138;
-                    }
-                    let count = parseInt(localCount) + 1;
+                    let count = this.getProductSoldCount(product) + 1;
                     localStorage.setItem(storageKey, count);
                 }
 
@@ -368,11 +372,7 @@ export default {
             // Increment social proof sold count (exact logic from ProductDetailsComponent)
             if (product.id) {
                 const storageKey = 'sold_count_' + product.id;
-                let localCount = localStorage.getItem(storageKey);
-                if (!localCount) {
-                    localCount = (product.id * 53) % 450 + 138;
-                }
-                let count = parseInt(localCount) + 1;
+                let count = this.getProductSoldCount(product) + 1;
                 localStorage.setItem(storageKey, count);
             }
 
@@ -440,13 +440,17 @@ export default {
             this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
         },
         getProductSoldCount: function (product) {
-            if (product && (parseInt(product.use_random_sale) === 10 || parseInt(product.use_random_sale) === 0)) {
+            const randomSaleValue = parseInt(product.use_random_sale);
+            if (!product || randomSaleValue === 10 || randomSaleValue === 0) {
                 return product.actual_sales || 0;
             }
+            
+            let startingPoint = randomSaleValue === 5 ? ((product.id * 53) % 450 + 138) : randomSaleValue;
+            
             const storageKey = 'sold_count_' + product.id;
             let localCount = localStorage.getItem(storageKey);
-            if (!localCount) {
-                localCount = (product.id * 53) % 450 + 138;
+            if (!localCount || parseInt(localCount) < startingPoint) {
+                localCount = startingPoint + (product.actual_sales || 0);
                 localStorage.setItem(storageKey, localCount);
             }
             return parseInt(localCount);
@@ -476,6 +480,22 @@ export default {
                 }
             };
         },
+        isNew: function (product) {
+            if (!product || !product.created_at) return false;
+            const createdAt = new Date(product.created_at);
+            const now = new Date();
+            const diffTime = Math.abs(now - createdAt);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 7;
+        },
+        isTrending: function (product) {
+            if (!product) return false;
+            const salesCount = this.getProductSoldCount(product);
+            const isHighlyRated = product.rating_star_count > 0 && (product.rating_star / product.rating_star_count) >= 4.5;
+            
+            // It's trending if it has simulated or actual sales over 150 OR high rating with some sales
+            return salesCount >= 150 || (isHighlyRated && salesCount >= 50);
+        }
     }
 }
 </script>

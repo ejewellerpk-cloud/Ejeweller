@@ -50,6 +50,8 @@ class SiteResource extends JsonResource
             "site_guest_checkout"                        => $this->info['site_guest_checkout'] ?? 10,
             "site_whatsapp_status"                       => $this->info['site_whatsapp_status'] ?? 10,
             "site_facebook_pixel_id"                     => $this->info['site_facebook_pixel_id'] ?? '',
+            "site_facebook_capi_token"                   => $this->info['site_facebook_capi_token'] ?? '',
+            "site_facebook_capi_status"                  => $this->info['site_facebook_capi_status'] ?? 10,
         ];
     }
 }

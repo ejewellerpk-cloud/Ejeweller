@@ -346,6 +346,7 @@ export default {
                     show_stock_out: activityEnum.DISABLE,
                     refundable: askEnum.NO,
                     use_random_sale: askEnum.YES,
+                    is_show_viewers: askEnum.YES,
                     maximum_purchase_quantity: "",
                     low_stock_quantity_warning: "",
                     unit_id: null,
@@ -481,6 +482,7 @@ export default {
             this.props.form.show_stock_out = product.show_stock_out;
             this.props.form.refundable = product.refundable;
             this.props.form.use_random_sale = product.use_random_sale;
+            this.props.form.is_show_viewers = product.is_show_viewers;
             this.props.form.maximum_purchase_quantity = product.maximum_purchase_quantity;
             this.props.form.low_stock_quantity_warning = product.low_stock_quantity_warning;
             this.props.form.unit_id = product.unit_id;

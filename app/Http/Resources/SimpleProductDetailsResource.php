@@ -19,6 +19,7 @@ class SimpleProductDetailsResource extends JsonResource
         return [
             'id'                        => $this->id,
             'use_random_sale'           => (int)$this->use_random_sale,
+            'is_show_viewers'           => (int)$this->is_show_viewers,
             'actual_sales'              => (int)abs($this->productOrders()->sum('quantity')),
             'name'                      => $this->name,
             'slug'                      => $this->slug,
@@ -29,6 +30,7 @@ class SimpleProductDetailsResource extends JsonResource
             'discount'                  => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date) ? AppLibrary::convertAmountFormat(($price / 100) * $this->discount) : 0,
             'discount_percentage'       => AppLibrary::convertAmountFormat($this->discount),
             'flash_sale'                => $this->add_to_flash_sale == Ask::YES,
+            'offer_end_date'            => $this->offer_end_date,
             'is_offer'                  => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date),
             'is_last_day_of_sale'       => $this->offer_end_date ? Carbon::parse($this->offer_end_date)->isToday() : false,
             'rating_star'               => $this->rating_star,

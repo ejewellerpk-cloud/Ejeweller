@@ -47,7 +47,7 @@ class Product extends Model implements HasMedia
         'shipping_cost',
         'is_product_quantity_multiply',
         'use_random_sale',
-
+        'is_show_viewers',
     ];
     protected array $dates = ['deleted_at'];
     protected $casts = [
@@ -81,7 +81,7 @@ class Product extends Model implements HasMedia
         'shipping_cost'                => 'string',
         'is_product_quantity_multiply' => 'integer',
         'use_random_sale'              => 'integer',
-
+        'is_show_viewers'              => 'integer',
     ];
 
     public function scopeActive($query, $col = 'status')

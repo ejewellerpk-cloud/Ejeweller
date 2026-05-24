@@ -169,7 +169,47 @@
                         </div>
                     </div>
 
+                    <!-- Flash Sale Countdown Timer -->
+                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-bolt text-2xl animate-pulse text-yellow-300"></i>
+                            <div>
+                                <h3 class="font-black text-lg sm:text-xl leading-none tracking-tight">Flash Sale Ends In</h3>
+                                <p class="text-xs sm:text-sm font-medium text-red-100 mt-1">Don't miss out on this offer!</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 text-center">
+                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Days</span>
+                            </div>
+                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Hrs</span>
+                            </div>
+                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Min</span>
+                            </div>
+                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Sec</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-6">{{ product.name }}</h2>
+
+                    <!-- Live Active Viewers Badge -->
+                    <div v-if="product.is_show_viewers === 5" class="flex items-center gap-3 mb-6 px-4 py-2.5 bg-red-50/80 border border-red-100 rounded-xl max-w-fit shadow-sm">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                        </span>
+                        <span class="text-sm font-black text-red-600 tracking-tight">
+                            {{ activeViewers }} people are viewing this right now
+                        </span>
+                    </div>
 
                     <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
                     <div class="grid grid-cols-3 gap-2 border-y border-gray-100 py-4 my-6 text-center text-xs sm:text-sm">
@@ -382,6 +422,45 @@
                         class="product-section-swiper continuous-slider !pb-10"
                     >
                     <SwiperSlide v-for="product in relatedProducts" :key="product.id">
+                        <ProductListComponent :products="[product]" />
+                    </SwiperSlide>
+                </Swiper>
+            </div>
+        </div>
+    </section>
+
+    <section v-if="recentlyViewedLoading || recentlyViewedProducts.length > 0" class="mb-24 sm:mb-20">
+        <div class="container">
+            <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7 border-t border-gray-100 pt-10">
+                <h2 class="text-2xl sm:text-4xl font-bold capitalize">
+                    Recently Viewed
+                </h2>
+            </div>
+            
+            <!-- Inline Loading Indicator for Recently Viewed Products -->
+            <div v-if="recentlyViewedLoading" class="flex items-center justify-center py-16 w-full">
+                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <div v-else class="product-section-slider-container relative">
+                <Swiper v-if="recentlyViewedProducts.length > 0"
+                    :dir="'ltr'"
+                    :slides-per-view="2"
+                    :space-between="16"
+                    :navigation="false"
+                    :freeMode="true"
+                    :autoplay="{ delay: 0, disableOnInteraction: false, pauseOnMouseEnter: true }"
+                    :speed="4000"
+                    :loop="true"
+                    :modules="modules"
+                    :breakpoints="{
+                        '640': { slidesPerView: 2, spaceBetween: 20 },
+                        '768': { slidesPerView: 3, spaceBetween: 24 },
+                        '1024': { slidesPerView: 4, spaceBetween: 24 }
+                    }"
+                    class="product-section-swiper continuous-slider !pb-10"
+                >
+                    <SwiperSlide v-for="product in recentlyViewedProducts" :key="product.id">
                         <ProductListComponent :products="[product]" />
                     </SwiperSlide>
                 </Swiper>
@@ -658,11 +737,17 @@ export default {
             tickerIndex: 0,
             tickerInterval: null,
             soldCount: 0,
+            flashSaleTimeLeft: null,
+            flashSaleInterval: null,
             badgeIndex: 0,
             badgeInterval: null,
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
             isRelatedProductsLoaded: false,
-            relatedProductsLoading: false
+            relatedProductsLoading: false,
+            activeViewers: 0,
+            viewersInterval: null,
+            recentlyViewedProducts: [],
+            recentlyViewedLoading: false
         }
     },
     computed: {
@@ -792,6 +877,15 @@ export default {
         this.badgeInterval = setInterval(() => {
             this.badgeIndex++;
         }, 3000);
+
+        this.activeViewers = Math.floor(Math.random() * (45 - 15 + 1)) + 15;
+        this.viewersInterval = setInterval(() => {
+            const change = Math.floor(Math.random() * 5) - 2;
+            let newViewers = this.activeViewers + change;
+            if (newViewers < 12) newViewers = 12 + Math.floor(Math.random() * 5);
+            if (newViewers > 75) newViewers = 75 - Math.floor(Math.random() * 5);
+            this.activeViewers = newViewers;
+        }, 5000);
     },
     beforeUnmount() {
         if (this.tickerInterval) {
@@ -799,6 +893,9 @@ export default {
         }
         if (this.badgeInterval) {
             clearInterval(this.badgeInterval);
+        }
+        if (this.viewersInterval) {
+            clearInterval(this.viewersInterval);
         }
     },
     methods: {
@@ -813,6 +910,40 @@ export default {
                 return (this.product.id * 53) % 450 + 138;
             }
             return 138;
+        },
+        stopFlashSaleTimer() {
+            if (this.flashSaleInterval) {
+                clearInterval(this.flashSaleInterval);
+                this.flashSaleInterval = null;
+            }
+        },
+        startFlashSaleTimer(endDate) {
+            this.stopFlashSaleTimer();
+            const end = new Date(endDate).getTime();
+            
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const distance = end - now;
+                
+                if (distance < 0) {
+                    this.flashSaleTimeLeft = null;
+                    this.stopFlashSaleTimer();
+                    return;
+                }
+                
+                this.flashSaleTimeLeft = {
+                    days: Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0'),
+                    hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0'),
+                    minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0'),
+                    seconds: Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0')
+                };
+            };
+            
+            updateTimer();
+            this.flashSaleInterval = setInterval(updateTimer, 1000);
+        },
+        discountPercentageDetail: function () {
+            return Math.round(this.product.discount_percentage);
         },
         shouldShowSoldCount: function () {
             if (!this.product) return false;
@@ -993,14 +1124,38 @@ export default {
                     };
 
                     // Social Proof sold count initialization
-                    const storageKey = 'sold_count_' + res.data.data.id;
-                    let localCount = localStorage.getItem(storageKey);
-                    if (!localCount) {
-                        localCount = (res.data.data.id * 53) % 450 + 138;
-                        localStorage.setItem(storageKey, localCount);
+                    const randomSaleValue = parseInt(res.data.data.use_random_sale);
+                    const isRandomSaleOff = randomSaleValue === 10 || randomSaleValue === 0;
+                    
+                    if (isRandomSaleOff) {
+                        this.soldCount = res.data.data.actual_sales || 0;
+                    } else {
+                        let startingPoint = randomSaleValue === 5 ? ((res.data.data.id * 53) % 450 + 138) : randomSaleValue;
+                        const storageKey = 'sold_count_' + res.data.data.id;
+                        let localCount = localStorage.getItem(storageKey);
+                        if (!localCount || parseInt(localCount) < startingPoint) {
+                            localCount = startingPoint + (res.data.data.actual_sales || 0);
+                            localStorage.setItem(storageKey, localCount);
+                        }
+                        this.soldCount = parseInt(localCount);
                     }
-                    this.soldCount = parseInt(localCount);
                     pixelService.trackViewContent(res.data.data);
+
+                    // Handle Recently Viewed local storage
+                    let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
+                    // remove if exists
+                    localViewed = localViewed.filter(id => id !== res.data.data.id);
+                    // insert at start
+                    localViewed.unshift(res.data.data.id);
+                    // keep only 10
+                    if (localViewed.length > 10) localViewed.pop();
+                    localStorage.setItem('recently_viewed_products', JSON.stringify(localViewed));
+                    
+                    if (res.data.data.flash_sale && res.data.data.offer_end_date) {
+                        this.startFlashSaleTimer(res.data.data.offer_end_date);
+                    }
+                    
+                    this.fetchRecentlyViewed();
 
                     this.$store.dispatch("frontendProductCategory/ancestorsAndSelf", res.data.data.category_slug).then((categoryRes) => {
                         this.loading.isActive = false;
@@ -1053,6 +1208,23 @@ export default {
                     this.relatedProductsLoading = false;
                 }).catch((err) => {
                     this.relatedProductsLoading = false;
+                });
+            }
+        },
+        fetchRecentlyViewed: function () {
+            let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
+            // exclude current product
+            localViewed = localViewed.filter(id => id !== this.product.id);
+            if (localViewed.length > 0) {
+                this.recentlyViewedLoading = true;
+                this.$store.dispatch("frontendProduct/lists", {
+                    ids: localViewed.join(','),
+                    paginate: 0
+                }).then((res) => {
+                    this.recentlyViewedProducts = res.data.data || [];
+                    this.recentlyViewedLoading = false;
+                }).catch((err) => {
+                    this.recentlyViewedLoading = false;
                 });
             }
         },

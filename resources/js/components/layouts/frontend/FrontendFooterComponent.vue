@@ -41,6 +41,9 @@
                         <div class="col-6 sm:col-4 mb-4 sm:mb-0">
                             <h4 class="text-[22px] font-semibold capitalize mb-6 text-white">{{ $t('label.support') }}</h4>
                             <nav v-if="supportPages.length > 0" class="flex flex-col gap-4">
+                                <router-link class="w-fit text-sm font-medium capitalize text-white transition-all duration-300 hover:text-primary" :to="{ name: 'frontend.trackOrder' }">
+                                    Track Order
+                                </router-link>
                                 <router-link v-for="supportPage in supportPages"
                                     class="w-fit text-sm font-medium capitalize text-white transition-all duration-300 hover:text-primary"
                                     :to="{ name: 'frontend.page', params: { slug: supportPage.slug } }">
@@ -137,6 +140,9 @@
                     <div>
                         <h4 class="text-lg font-semibold capitalize mb-4 text-white border-b border-white/10 pb-2 inline-block px-2">{{ $t('label.support') }}</h4>
                         <nav v-if="supportPages.length > 0" class="flex flex-col gap-3">
+                            <router-link class="text-sm font-medium capitalize text-gray-300 transition-colors hover:text-primary" :to="{ name: 'frontend.trackOrder' }">
+                                Track Order
+                            </router-link>
                             <router-link v-for="supportPage in supportPages"
                                 class="text-sm font-medium capitalize text-gray-300 transition-colors hover:text-primary"
                                 :to="{ name: 'frontend.page', params: { slug: supportPage.slug } }">

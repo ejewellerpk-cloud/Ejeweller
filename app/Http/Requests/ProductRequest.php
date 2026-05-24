@@ -57,6 +57,7 @@ class ProductRequest extends FormRequest
             'description'                => ['nullable', 'string', 'max:5000'],
             'tags'                       => ['nullable', 'json'],
             'use_random_sale'            => ['nullable', 'numeric'],
+            'is_show_viewers'            => ['required', 'numeric', 'max:24'],
         ];
     }
 

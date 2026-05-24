@@ -21,6 +21,9 @@ class SimpleProductResource extends JsonResource
         $price = count($this->variations) > 0 ? $this->variation_price : $this->selling_price;
         return [
             'id'                => $this->id,
+            'created_at'        => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'use_random_sale'   => (int)$this->use_random_sale,
+            'actual_sales'      => (int)abs($this->productOrders()->sum('quantity')),
             'name'              => $this->name,
             'slug'              => $this->slug,
             'currency_price'    => AppLibrary::currencyAmountFormat($price),

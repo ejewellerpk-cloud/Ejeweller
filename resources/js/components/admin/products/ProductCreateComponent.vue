@@ -196,23 +196,34 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label class="db-field-title required" for="useRandomSaleYes">{{ $t("label.use_random_sale") || 'Use Random Sold Count' }}</label>
+                        <label class="db-field-title" for="useRandomSale">
+                            Simulated Starting Sales (0 or 10 to disable)
+                        </label>
+                        <input v-on:keypress="onlyNumber($event)" v-model="props.form.use_random_sale"
+                            v-bind:class="errors.use_random_sale ? 'invalid' : ''" type="number" min="0"
+                            id="useRandomSale" class="db-field-control">
+                        <small class="db-field-alert" v-if="errors.use_random_sale">
+                            {{ errors.use_random_sale[0] }}
+                        </small>
+                    </div>
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title required" for="isShowViewersYes">Show Active Viewers</label>
                         <div class="db-field-radio-group">
                             <div class="db-field-radio">
                                 <div class="custom-radio">
-                                    <input type="radio" v-model="props.form.use_random_sale" id="useRandomSaleYes"
+                                    <input type="radio" v-model="props.form.is_show_viewers" id="isShowViewersYes"
                                         :value="enums.askEnum.YES" class="custom-radio-field">
                                     <span class="custom-radio-span"></span>
                                 </div>
-                                <label for="useRandomSaleYes" class="db-field-label">{{ $t('label.yes') }}</label>
+                                <label for="isShowViewersYes" class="db-field-label">{{ $t('label.yes') }}</label>
                             </div>
                             <div class="db-field-radio">
                                 <div class="custom-radio">
-                                    <input type="radio" class="custom-radio-field" v-model="props.form.use_random_sale"
-                                        id="useRandomSaleNo" :value="enums.askEnum.NO">
+                                    <input type="radio" class="custom-radio-field" v-model="props.form.is_show_viewers"
+                                        id="isShowViewersNo" :value="enums.askEnum.NO">
                                     <span class="custom-radio-span"></span>
                                 </div>
-                                <label for="useRandomSaleNo" class="db-field-label">{{ $t('label.no') }}</label>
+                                <label for="isShowViewersNo" class="db-field-label">{{ $t('label.no') }}</label>
                             </div>
                         </div>
                     </div>
@@ -490,6 +501,7 @@ export default {
                 use_random_sale: askEnum.YES,
                 maximum_purchase_quantity: "",
                 low_stock_quantity_warning: "",
+                is_show_viewers: askEnum.YES,
                 unit_id: null,
                 weight: "",
                 warranty: "",
@@ -532,6 +544,7 @@ export default {
                         use_random_sale: askEnum.YES,
                         maximum_purchase_quantity: "",
                         low_stock_quantity_warning: "",
+                        is_show_viewers: askEnum.YES,
                         unit_id: null,
                         weight: "",
                         warranty: "",

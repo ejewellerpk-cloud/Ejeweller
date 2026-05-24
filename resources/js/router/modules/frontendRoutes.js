@@ -25,6 +25,7 @@ const  CheckoutCheckoutComponent = () => import("../../components/frontend/check
 const  CheckoutHeaderComponent = () => import("../../components/frontend/checkout/checkout/HeaderComponent");
 const  ProductReviewComponent = () => import("../../components/frontend/account/review/ProductReviewComponent");
 const  MostPopularProductComponent = () => import("../../components/frontend/product/MostPopularProductComponent.vue");
+const  TrackOrderComponent = () => import("../../components/frontend/trackOrder/TrackOrderComponent.vue");
 
 export default [
     {
@@ -106,6 +107,15 @@ export default [
         path: "/flash-sale",
         component: FlashSaleProductComponent,
         name: "frontend.flashSale.products",
+        meta: {
+            isFrontend: true,
+            auth: false,
+        },
+    },
+    {
+        path: "/track-order",
+        component: TrackOrderComponent,
+        name: "frontend.trackOrder",
         meta: {
             isFrontend: true,
             auth: false,

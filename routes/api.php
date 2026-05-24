@@ -120,6 +120,7 @@ use App\Http\Controllers\Frontend\ProductVariationController as FrontendProductV
 use App\Http\Controllers\Frontend\PromotionProductController as FrontendPromotionProductController;
 use App\Http\Controllers\Frontend\ProductSectionProductController as FrontendProductSectionProductController;
 use App\Http\Controllers\Frontend\FbCapiController;
+use App\Http\Controllers\Frontend\TrackOrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -893,6 +894,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::prefix('order')->name('order.')->group(function () {
         Route::post('/', [FrontendOrderController::class, 'store']);
+        Route::post('/track-order', [TrackOrderController::class, 'track']);
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [FrontendOrderController::class, 'index']);
             Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
