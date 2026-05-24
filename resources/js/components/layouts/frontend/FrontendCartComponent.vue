@@ -126,7 +126,8 @@
                     class="text-center w-full mb-3 h-12 leading-12 px-12 font-semibold tracking-wide rounded-full whitespace-nowrap text-white bg-primary">
                     {{ $t('button.process_to_checkout') }}
                 </router-link>
-                <p class="pb-12 sm:pb-0 capitalize text-xs text-center font-medium">{{ $t('message.checkout_guide') }}
+                <CartTrustBadgesComponent />
+                <p class="pb-12 sm:pb-0 capitalize text-xs text-center font-medium mt-3">{{ $t('message.checkout_guide') }}
                 </p>
             </div>
         </div>
@@ -140,9 +141,13 @@ import alertService from "../../../services/alertService";
 import {useCanvas} from "../../../composables/canvas";
 import statusEnum from "../../../enums/modules/statusEnum";
 import router from "../../../router";
+import CartTrustBadgesComponent from "../../frontend/checkout/CartTrustBadgesComponent.vue";
 
 export default {
     name: "FrontendCartComponent",
+    components: {
+        CartTrustBadgesComponent,
+    },
     data() {
         return {
             loadedImages: {}

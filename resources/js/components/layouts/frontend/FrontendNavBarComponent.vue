@@ -1,45 +1,24 @@
 <template>
     <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar && topBarTitles.length > 0" 
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
-         class="w-full py-2 px-4 z-40 relative flex items-center justify-center min-h-[40px] overflow-hidden group">
-        
-        <!-- Left Back Button -->
-        <button v-if="topBarTitles.length > 1" 
-                @click="prevSlide" 
-                class="absolute left-2 sm:left-4 z-10 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-black/5 hover:bg-black/20 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none backdrop-blur-sm"
-                aria-label="Previous Slide">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-        </button>
-
-        <!-- Dynamic Promotional Content -->
-        <div class="relative w-full max-w-[85%] sm:max-w-4xl overflow-hidden flex items-center justify-center text-sm font-medium tracking-wide h-6" ref="topbarTextContainer">
-            <transition name="topbar-fade" mode="out-in" @after-enter="checkOverflow">
-                <div :key="'wrapper_' + currentSlideIndex" class="w-full h-full flex items-center justify-center" :class="{ 'marquee-wrapper': isTextOverflowing }">
-                    <component 
-                        :is="setting.top_bar_link ? 'a' : 'div'"
-                        :href="setting.top_bar_link ? setting.top_bar_link : undefined"
-                        ref="topbarTextContent"
-                        class="inline-block whitespace-nowrap transition-all py-0.5"
-                        :class="[isTextOverflowing ? 'animate-marquee' : 'text-center', setting.top_bar_link ? 'hover:underline' : '']"
-                    >
-                        <span>{{ topBarTitles[currentSlideIndex] }}</span>
-                        <span v-if="isTextOverflowing" class="pl-10">{{ topBarTitles[currentSlideIndex] }}</span>
-                    </component>
-                </div>
-            </transition>
+         class="w-full py-2 z-40 relative min-h-[40px] overflow-hidden">
+        <div class="topbar-marquee-viewport w-full overflow-hidden">
+            <component
+                :is="setting.top_bar_link ? 'a' : 'div'"
+                :href="setting.top_bar_link ? setting.top_bar_link : undefined"
+                class="topbar-marquee-row flex items-center whitespace-nowrap w-max"
+                :class="setting.top_bar_link ? 'hover:opacity-90' : ''"
+                :style="{ animationDuration: marqueeDuration + 's' }">
+                <template v-for="copy in 2" :key="'marquee-copy-' + copy">
+                    <span v-for="(title, index) in topBarTitles"
+                        :key="'marquee-title-' + copy + '-' + index"
+                        class="inline-flex items-center shrink-0">
+                        <span class="px-6 sm:px-10 text-sm font-medium tracking-wide">{{ title }}</span>
+                        <span class="opacity-70 text-xs">•</span>
+                    </span>
+                </template>
+            </component>
         </div>
-
-        <!-- Right Forward Button -->
-        <button v-if="topBarTitles.length > 1" 
-                @click="nextSlide" 
-                class="absolute right-2 sm:right-4 z-10 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-black/5 hover:bg-black/20 active:scale-95 transition-all text-current opacity-80 hover:opacity-100 focus:outline-none backdrop-blur-sm"
-                aria-label="Next Slide">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-        </button>
     </div>
 
     <header
@@ -440,9 +419,6 @@ export default {
     },
     data() {
         return {
-            isTextOverflowing: false,
-            currentSlideIndex: 0,
-            slideInterval: null,
             loading: {
                 isActive: false,
             },
@@ -517,6 +493,11 @@ export default {
                 }
             }
             return [];
+        },
+        marqueeDuration: function () {
+            const totalLength = this.topBarTitles.reduce((sum, title) => sum + String(title).length, 0);
+            const perTitlePadding = this.topBarTitles.length * 8;
+            return Math.max(10, Math.min(40, Math.round((totalLength + perTitlePadding) * 0.5)));
         },
     },
     mounted() {
@@ -615,58 +596,7 @@ export default {
             });
         }
     },
-    beforeUnmount() {
-        this.stopSlideShow();
-    },
     methods: {
-        checkOverflow: function () {
-            this.$nextTick(() => {
-                const container = this.$refs.topbarTextContainer;
-                const content = this.$refs.topbarTextContent;
-                if (container && content) {
-                    // $el might be needed if component is used instead of div/a
-                    const contentEl = content.$el || content;
-                    // If content width is greater than container width, it's overflowing
-                    this.isTextOverflowing = contentEl.scrollWidth > container.clientWidth;
-                }
-            });
-        },
-        startSlideShow: function () {
-            this.stopSlideShow();
-            if (this.topBarTitles.length > 1) {
-                this.slideInterval = setInterval(() => {
-                    this.nextSlide();
-                }, 5000);
-            }
-        },
-        stopSlideShow: function () {
-            if (this.slideInterval) {
-                clearInterval(this.slideInterval);
-                this.slideInterval = null;
-            }
-        },
-        prevSlide: function () {
-            this.stopSlideShow();
-            if (this.topBarTitles.length > 0) {
-                if (this.currentSlideIndex === 0) {
-                    this.currentSlideIndex = this.topBarTitles.length - 1;
-                } else {
-                    this.currentSlideIndex--;
-                }
-            }
-            this.startSlideShow();
-        },
-        nextSlide: function () {
-            this.stopSlideShow();
-            if (this.topBarTitles.length > 0) {
-                if (this.currentSlideIndex === this.topBarTitles.length - 1) {
-                    this.currentSlideIndex = 0;
-                } else {
-                    this.currentSlideIndex++;
-                }
-            }
-            this.startSlideShow();
-        },
         async installPWA() {
             if (!this.pwaInstallPrompt) {
                 this.closePwaModal();
@@ -762,47 +692,30 @@ export default {
         $route(to, from) {
             this.currentRoute = to.path;
         },
-        topBarTitles: {
-            immediate: true,
-            handler(newVal) {
-                if (newVal && newVal.length > 0) {
-                    this.startSlideShow();
-                }
-                this.checkOverflow();
-            }
-        }
     }
 }
 </script>
 
 <style scoped>
-@keyframes marquee {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-}
-.animate-marquee {
-    animation: marquee 15s linear infinite;
-    white-space: nowrap;
-}
-@media (min-width: 640px) {
-    .sm\:animate-none {
-        animation: none;
-    }
+.topbar-marquee-viewport {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
 }
 
-/* Topbar Fade Animation */
-.topbar-fade-enter-active,
-.topbar-fade-leave-active {
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.topbar-marquee-row {
+    animation-name: topbar-marquee-rtl;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
 }
-.topbar-fade-enter-from,
-.topbar-fade-enter {
-    opacity: 0;
-    transform: translateY(4px);
-}
-.topbar-fade-leave-to,
-.topbar-fade-leave-active-to {
-    opacity: 0;
-    transform: translateY(-4px);
+
+@keyframes topbar-marquee-rtl {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 </style>

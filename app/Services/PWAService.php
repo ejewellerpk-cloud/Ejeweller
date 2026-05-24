@@ -95,7 +95,11 @@ class PWAService
                 }
                 if ($url = $icons->getUrl('D_512x512')) {
                     $this->envService->addData([
-                        'D_512x512' =>  $icons->getUrl('D_512x512')
+                        'D_512x512' => $icons->getUrl('D_512x512'),
+                    ]);
+                } elseif ($url = $icons->getUrl()) {
+                    $this->envService->addData([
+                        'D_512x512' => $icons->getUrl(),
                     ]);
                 }
             }

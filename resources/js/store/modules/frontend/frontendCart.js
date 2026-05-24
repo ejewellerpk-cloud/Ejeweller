@@ -174,7 +174,9 @@ export const frontendCart = {
                                     subtotal: 0,
                                     total: 0,
                                     total_price: parseFloat(payload.total_price) || 0,
-                                    maximum_purchase_quantity: payload.maximum_purchase_quantity
+                                    maximum_purchase_quantity: payload.maximum_purchase_quantity,
+                                    in_baskets: payload.in_baskets || 0,
+                                    bought_last_24_hours: payload.bought_last_24_hours || 0
                                 });
                             } else {
                                 reject({

@@ -122,7 +122,7 @@
 
                 <div class="col-12 sm:col-6 lg:col-7 lg:pl-10">
                     <!-- Premium Interactive Price & Offer Row (Container styling removed as requested) -->
-                    <div class="mb-6">
+                    <div class="mb-2">
                         <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full">
                             <!-- Left: Price and Discount Pill -->
                             <div class="flex flex-nowrap items-baseline gap-2 sm:gap-3 shrink-0">
@@ -169,13 +169,9 @@
                         </div>
                     </div>
 
-                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm mb-4 flex items-center gap-1.5 animate-pulse">
+                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm mb-2 flex items-center gap-1.5 animate-pulse">
                         <i class="fa-solid fa-fire text-red-500 text-xs"></i>
-                        <span>
-                            <span v-if="product.in_baskets > 0">in {{ product.in_baskets }} baskets</span>
-                            <span v-if="product.in_baskets > 0 && product.bought_last_24_hours > 0"> and </span>
-                            <span v-if="product.bought_last_24_hours > 0">{{ product.bought_last_24_hours }} bought in last 24 hours</span>
-                        </span>
+                        <span>{{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}</span>
                     </p>
 
                     <!-- Flash Sale Countdown Timer -->
@@ -207,12 +203,12 @@
                         </div>
                     </div>
 
-                    <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-6">{{ product.name }}</h2>
+                    <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-3">{{ product.name }}</h2>
 
                     <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
-                    <div class="grid grid-cols-3 gap-2 border-y border-gray-100 py-4 my-6 text-center text-xs sm:text-sm">
+                    <div class="grid grid-cols-3 gap-1 py-2 my-2 text-center text-xs sm:text-sm">
                         <!-- 1. Star Ratings Column -->
-                        <div @click="scrollToReviews" class="flex flex-col items-center justify-center border-r border-gray-100 px-1 cursor-pointer hover:opacity-85 transition-opacity">
+                        <div @click="scrollToReviews" class="flex flex-col items-center justify-center px-1 cursor-pointer hover:opacity-85 transition-opacity">
                             <div class="flex items-center gap-1 mb-1">
                                 <span class="text-sm font-black text-gray-900">{{ product.rating_star_count > 0 ? (product.rating_star / product.rating_star_count).toFixed(1) : '5.0' }}</span>
                                 <i class="fa-solid fa-star text-[#FFBC1F] text-xs"></i>
@@ -223,7 +219,7 @@
                         </div>
                         
                         <!-- 2. Dynamic Estimated Delivery Column -->
-                        <div class="flex flex-col items-center justify-center border-r border-gray-100 px-1">
+                        <div class="flex flex-col items-center justify-center px-1">
                             <div class="flex items-center gap-1.5 mb-1 text-primary">
                                 <i class="fa-solid fa-truck-fast text-xs"></i>
                                 <span class="text-xs font-black text-gray-900">Arrives Soon</span>
@@ -250,7 +246,7 @@
                     <VariationComponent v-if="initialVariations.length > 0 && showVariationComponent"
                         :method="selectedVariationMethod" :variations="initialVariations" />
 
-                    <dl class="flex flex-wrap items-center gap-x-6 gap-y-3 mb-8">
+                    <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
                         <dt class="capitalize text-lg font-semibold">{{ $t('label.quantity') }}:</dt>
                         <dd class="flex items-center gap-6">
                             <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
@@ -276,7 +272,7 @@
                         </dd>
                     </dl>
 
-                    <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-6 gap-y-3 mb-8">
+                    <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
                         <dt class="capitalize text-lg font-semibold">{{ $t('label.total_price') }}:</dt>
                         <dd class="flex items-center gap-6 text-green-500 font-semibold text-lg">
                             {{
@@ -286,25 +282,25 @@
                         </dd>
                     </dl>
 
-                    <div class="flex flex-row items-center gap-4 mb-10">
+                    <div class="flex flex-row items-center gap-2 mb-2">
                         <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
                             :class="enableAddToCardButton === false ? 'shadow-btn-primary !bg-primary' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98]">
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
                             <i class="lab-line-bag text-lg"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.add_to_cart") }}</span>
                         </button>
                         <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
                             :class="enableAddToCardButton === false ? 'shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98]">
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
                             <i class="fa-solid fa-bolt text-lg text-yellow-300 animate-pulse"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
                     </div>
 
                     <button v-if="setting.whatsapp_status === activityEnum.ENABLE && setting.whatsapp_product_status === activityEnum.ENABLE" @click.prevent="orderOnWhatsApp" type="button"
-                        class="w-full h-12 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(37,211,102,0.3)] mb-10">
-                        <i class="lab-fill-whatsapp text-2xl"></i>
-                        <span class="whitespace-nowrap text-sm sm:text-base">Order on WhatsApp</span>
+                        class="whatsapp-sparkle-btn w-full h-12 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] mb-3 relative overflow-hidden">
+                        <i class="fa-brands fa-whatsapp text-xl relative z-10"></i>
+                        <span class="whitespace-nowrap text-sm sm:text-base relative z-10">Order on WhatsApp</span>
                     </button>
                 </div>
             </div>
@@ -314,10 +310,10 @@
     <section :class="relatedProducts.length > 0 ? 'mb-12' : 'mb-24'">
         <div class="container">
             <div class="row">
-                <div class="col-12 flex flex-col gap-8">
+                <div class="col-12 flex flex-col gap-3">
                     <!-- Details Section -->
-                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-6 sm:p-8">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3 text-heading border-b border-gray-100 pb-4">
+                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
+                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
                             <i class="lab-line-document text-primary text-2xl sm:text-3xl"></i>
                             {{ $t('label.product_details') }}
                         </h3>
@@ -327,8 +323,8 @@
 
 
                     <!-- Reviews Section -->
-                    <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-6 sm:p-8">
-                        <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                    <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-3">
                             <h3 class="capitalize text-2xl sm:text-3xl font-bold flex items-center gap-3 text-heading">
                                 <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
                                 {{ $t('label.product_reviews') }}
@@ -339,7 +335,7 @@
                             </button>
                         </div>
                         
-                        <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 mb-8 pb-6">
+                        <div class="flex flex-wrap items-center gap-3 mb-4 pb-2">
                             <starRating border-color="#FFBC1F" :rounded-corners="true" :padding="2.5"
                                 :border-width="2.5" :star-size="14" class="-mt-0.5" inactive-color="#FFFFFF"
                                 active-color="#FFBC1F" :round-start-rating="false" :show-rating="false"
@@ -380,8 +376,8 @@
                     </div>
 
                     <!-- Shipping and Return Section -->
-                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-6 sm:p-8">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3 text-heading border-b border-gray-100 pb-4">
+                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
+                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
                             <i class="lab-line-truck text-primary text-2xl sm:text-3xl"></i>
                             {{ $t('label.product_shipping_and_return') }}
                         </h3>
@@ -396,7 +392,7 @@
 
     <section v-if="relatedProductsLoading || relatedProducts.length > 0" class="mb-24 sm:mb-20">
         <div class="container">
-            <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7">
+            <div class="flex items-center justify-between gap-4 mb-3">
                 <h2 class="text-2xl sm:text-4xl font-bold capitalize">
                     {{ $t('label.related_products') }}
                 </h2>
@@ -433,44 +429,125 @@
         </div>
     </section>
 
-    <section v-if="recentlyViewedLoading || recentlyViewedProducts.length > 0" class="mb-24 sm:mb-20">
+    <section v-if="recentlyViewedLoading || recentlyViewedProducts.length > 0" class="mb-12 sm:mb-16">
         <div class="container">
-            <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7 border-t border-gray-100 pt-10">
-                <h2 class="text-2xl sm:text-4xl font-bold capitalize">
-                    Recently Viewed
-                </h2>
-            </div>
-            
-            <!-- Inline Loading Indicator for Recently Viewed Products -->
-            <div v-if="recentlyViewedLoading" class="flex items-center justify-center py-16 w-full">
-                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2.5">
+                Recently Viewed
+            </h4>
+
+            <div v-if="recentlyViewedLoading" class="flex items-center justify-center py-8 w-full">
+                <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
 
-            <div v-else class="product-section-slider-container relative">
-                <Swiper v-if="recentlyViewedProducts.length > 0"
-                    :dir="'ltr'"
-                    :slides-per-view="2"
-                    :space-between="16"
-                    :navigation="false"
-                    :freeMode="true"
-                    :autoplay="{ delay: 0, disableOnInteraction: false, pauseOnMouseEnter: true }"
-                    :speed="4000"
-                    :loop="true"
-                    :modules="modules"
-                    :breakpoints="{
-                        '640': { slidesPerView: 2, spaceBetween: 20 },
-                        '768': { slidesPerView: 3, spaceBetween: 24 },
-                        '1024': { slidesPerView: 4, spaceBetween: 24 }
-                    }"
-                    class="product-section-swiper continuous-slider !pb-10"
-                >
-                    <SwiperSlide v-for="product in recentlyViewedProducts" :key="product.id">
-                        <ProductListComponent :products="[product]" />
-                    </SwiperSlide>
-                </Swiper>
+            <div v-else class="flex gap-2.5 overflow-x-auto pb-2 recently-viewed-scroll">
+                <div v-for="product in recentlyViewedProducts" :key="product.id"
+                    @click.prevent="goToRecentlyViewedProduct(product.slug)"
+                    class="flex-shrink-0 w-[100px] cursor-pointer group">
+                    <div class="w-[100px] h-[100px] rounded-lg overflow-hidden bg-gray-50 mb-1.5 relative">
+                        <div v-if="!product.cover || product.cover.includes('default/product')"
+                            class="absolute inset-0 flex items-center justify-center bg-gray-50/50 z-10">
+                            <img :src="setting.theme_logo" alt="logo" loading="lazy"
+                                class="w-1/2 h-1/2 object-contain opacity-40 group-hover:scale-105 group-hover:opacity-70 transition-all duration-300" />
+                        </div>
+                        <template v-else>
+                            <div class="absolute inset-0 flex items-center justify-center z-0"
+                                v-if="!recentlyViewedLoadedImages[product.id]">
+                                <div class="flex gap-1">
+                                    <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"></div>
+                                    <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                    <div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                </div>
+                            </div>
+                            <img :src="product.cover" :alt="product.name" loading="lazy"
+                                @load="onRecentlyViewedImageLoad(product.id)"
+                                @error="onRecentlyViewedImageError($event, product.id)"
+                                :class="recentlyViewedLoadedImages[product.id] ? 'opacity-100' : 'opacity-0'"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-all duration-300 relative z-10" />
+                        </template>
+                    </div>
+                    <h5 class="text-[11px] font-medium text-gray-700 leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">
+                        {{ product.name }}
+                    </h5>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span class="text-[11px] font-bold text-primary font-sans">
+                            {{ currencyFormat(product.price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                        </span>
+                        <del v-if="product.is_offer" class="text-[9px] text-gray-400 font-sans">
+                            {{ currencyFormat(product.old_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                        </del>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Product Gallery Fullscreen Lightbox -->
+    <div v-if="showMediaLightbox" class="fixed inset-0 z-[9998] bg-black flex flex-col" @click.self="closeMediaLightbox">
+        <div class="absolute top-0 left-0 w-full p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 to-transparent">
+            <button @click="closeMediaLightbox" type="button" class="text-white hover:text-gray-300 p-2">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <span class="text-white text-sm font-medium" v-if="combinedMedia.length > 0">
+                {{ mediaLightboxIndex + 1 }} / {{ combinedMedia.length }}
+            </span>
+            <div class="w-10"></div>
+        </div>
+        <div class="flex-1 flex items-center justify-center w-full min-h-0 pb-24 sm:pb-28">
+            <Swiper
+                :initialSlide="mediaLightboxIndex"
+                :loop="combinedMedia.length > 1"
+                :navigation="true"
+                :modules="modules"
+                @slideChange="handleMediaLightboxSlideChange"
+                class="w-full h-full product-gallery-lightbox">
+                <SwiperSlide v-for="(media, index) in combinedMedia" :key="'lightbox-' + index" class="flex items-center justify-center">
+                    <div v-if="media.type === 'image'"
+                        class="w-full h-full flex items-center justify-center p-4 overflow-hidden cursor-zoom-in"
+                        @click.stop="toggleMediaLightboxZoom(index)">
+                        <img :src="media.url" alt="product"
+                            :class="mediaLightboxZoomedIndex === index ? 'scale-[2.2] cursor-zoom-out' : 'scale-100 cursor-zoom-in'"
+                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-300 ease-out" />
+                    </div>
+                    <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center p-4 aspect-video max-h-[85vh]">
+                        <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
+                            :src="formatVideoLink(media.data)" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                        <video v-else :src="media.data.link" controls playsinline class="w-full h-full object-contain"></video>
+                    </div>
+                </SwiperSlide>
+            </Swiper>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-black via-black/85 to-transparent pt-10 pb-4 px-4 sm:pb-6 sm:px-6">
+            <div class="w-full max-w-4xl mx-auto flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <span class="block text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Price</span>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-lg sm:text-2xl font-black text-white leading-none drop-shadow-md whitespace-nowrap">
+                            {{ currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                        </span>
+                        <span v-if="product.is_offer && discountPercentageDetail() > 0"
+                            class="hidden sm:inline-flex bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none shadow-sm border border-primary/30">
+                            -{{ discountPercentageDetail() }}%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button @click.prevent.stop="addToCart" :disabled="enableAddToCardButton" type="button"
+                        :class="enableAddToCardButton === false ? 'bg-primary shadow-btn-primary hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                        <i class="lab-line-bag text-sm sm:text-base"></i>
+                        <span class="text-xs sm:text-sm whitespace-nowrap">Add to cart</span>
+                    </button>
+                    <button @click.prevent.stop="buyNow" :disabled="enableAddToCardButton" type="button"
+                        :class="enableAddToCardButton === false ? 'bg-red-600 hover:bg-red-700 shadow-[0_4px_15px_rgba(220,38,38,0.35)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                        <i class="fa-solid fa-bolt text-yellow-300 text-sm sm:text-base"></i>
+                        <span class="text-xs sm:text-sm whitespace-nowrap">Buy Now</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
      <!-- Full Screen Review Image Viewer Modal (Temu Style) -->
      <div id="imagePreviewModal" class="modal fixed !inset-0 z-[9999] bg-black !left-0 !translate-x-0 flex items-center justify-center" @click.self="hidePreviewImage">
@@ -739,6 +816,10 @@ export default {
             copyText: "Copy",
             zoomedIndex: null,
             lastTap: 0,
+            tapTimeout: null,
+            showMediaLightbox: false,
+            mediaLightboxIndex: 0,
+            mediaLightboxZoomedIndex: null,
             animatingWishlist: false,
             tickerIndex: 0,
             tickerInterval: null,
@@ -753,7 +834,8 @@ export default {
             activeViewers: 0,
             viewersInterval: null,
             recentlyViewedProducts: [],
-            recentlyViewedLoading: false
+            recentlyViewedLoading: false,
+            recentlyViewedLoadedImages: {}
         }
     },
     computed: {
@@ -903,6 +985,12 @@ export default {
         if (this.viewersInterval) {
             clearInterval(this.viewersInterval);
         }
+        if (this.tapTimeout) {
+            clearTimeout(this.tapTimeout);
+        }
+        document.body.style.overflow = '';
+        document.body.classList.remove('media-lightbox-open');
+        document.body.classList.remove('image-preview-open');
     },
     methods: {
         getProductSoldCount: function () {
@@ -985,15 +1073,63 @@ export default {
                 this.zoomedIndex = index;
             }
         },
+        socialProofText: function (inBaskets, boughtLast24) {
+            const baskets = parseInt(inBaskets) || 0;
+            const bought = parseInt(boughtLast24) || 0;
+            const parts = [];
+            if (baskets > 0) {
+                parts.push(`In ${baskets} Bastek`);
+            }
+            if (bought > 0) {
+                parts.push(`${bought} bought in last 24 hours`);
+            }
+            if (parts.length === 2) {
+                return parts[0] + ' & ' + parts[1];
+            }
+            return parts.join('');
+        },
+        openMediaLightbox: function (index) {
+            this.mediaLightboxIndex = index;
+            this.mediaLightboxZoomedIndex = null;
+            this.showMediaLightbox = true;
+            document.body.style.overflow = 'hidden';
+            document.body.classList.add('media-lightbox-open');
+        },
+        closeMediaLightbox: function () {
+            this.showMediaLightbox = false;
+            this.mediaLightboxZoomedIndex = null;
+            document.body.style.overflow = '';
+            document.body.classList.remove('media-lightbox-open');
+        },
+        handleMediaLightboxSlideChange: function (swiper) {
+            this.mediaLightboxIndex = swiper.realIndex;
+            this.mediaLightboxZoomedIndex = null;
+        },
+        toggleMediaLightboxZoom: function (index) {
+            this.mediaLightboxZoomedIndex = this.mediaLightboxZoomedIndex === index ? null : index;
+        },
         handleImageClick: function (index, event) {
             const now = new Date().getTime();
             const timespan = now - this.lastTap;
             if (timespan < 500 && timespan > 0) {
+                if (this.tapTimeout) {
+                    clearTimeout(this.tapTimeout);
+                    this.tapTimeout = null;
+                }
                 if (event) event.preventDefault();
                 this.toggleZoom(index);
                 this.lastTap = 0;
             } else {
                 this.lastTap = now;
+                if (this.tapTimeout) {
+                    clearTimeout(this.tapTimeout);
+                }
+                this.tapTimeout = setTimeout(() => {
+                    if (this.lastTap === now) {
+                        this.openMediaLightbox(index === 999 ? 0 : index);
+                    }
+                    this.tapTimeout = null;
+                }, 300);
             }
         },
         onlyNumber: function (e) {
@@ -1060,10 +1196,12 @@ export default {
             this.previewImages = images || [];
             this.previewIndex = index || 0;
             this.previewReview = reviewObj;
+            document.body.classList.add('image-preview-open');
             appService.modalShow('#imagePreviewModal');
         },
         hidePreviewImage: function () {
              appService.modalHide('#imagePreviewModal');
+             document.body.classList.remove('image-preview-open');
         },
         shareProduct: function () {
             this.shareUrl = window.location.origin + window.location.pathname;
@@ -1236,6 +1374,7 @@ export default {
             localViewed = localViewed.filter(id => id !== this.product.id);
             if (localViewed.length > 0) {
                 this.recentlyViewedLoading = true;
+                this.recentlyViewedLoadedImages = {};
                 this.$store.dispatch("frontendProduct/lists", {
                     ids: localViewed.join(','),
                     paginate: 0
@@ -1246,6 +1385,21 @@ export default {
                     this.recentlyViewedLoading = false;
                 });
             }
+        },
+        onRecentlyViewedImageLoad: function (productId) {
+            this.recentlyViewedLoadedImages[productId] = true;
+        },
+        onRecentlyViewedImageError: function (event, productId) {
+            this.recentlyViewedLoadedImages[productId] = true;
+            event.target.src = this.setting.theme_logo;
+            event.target.classList.remove('object-cover');
+            event.target.classList.add('object-contain', 'p-3', 'opacity-40');
+        },
+        goToRecentlyViewedProduct: function (slug) {
+            if (!slug) {
+                return;
+            }
+            router.push({ name: 'frontend.product.details', params: { slug: slug } });
         },
         selectedVariationMethod: function (variation) {
             this.enableAddToCardButton = true;
@@ -1355,7 +1509,9 @@ export default {
                 price: this.temp.price,
                 old_price: this.temp.oldPrice,
                 total_price: this.temp.totalPrice,
-                maximum_purchase_quantity: this.temp.maximum_purchase_quantity
+                maximum_purchase_quantity: this.temp.maximum_purchase_quantity,
+                in_baskets: this.product.in_baskets || 0,
+                bought_last_24_hours: this.product.bought_last_24_hours || 0
             }
 
             if (this.selectedVariation) {
@@ -1801,6 +1957,59 @@ export default {
 .badge-fade-leave-to {
     opacity: 0;
     transform: translateY(-50%) scale(0.9);
+}
+
+.whatsapp-sparkle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+    background-size: 200% 100%;
+    animation: whatsappShimmer 2.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.whatsapp-sparkle-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 15%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+        -28px 8px 0 1px rgba(255, 255, 255, 0.7),
+        32px 18px 0 0 rgba(255, 255, 255, 0.5),
+        -12px 22px 0 1px rgba(255, 255, 255, 0.6);
+    animation: whatsappSparkleDots 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes whatsappShimmer {
+    0%, 100% { background-position: 200% 0; opacity: 0.3; }
+    50% { background-position: -200% 0; opacity: 1; }
+}
+
+@keyframes whatsappSparkleDots {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+.product-gallery-lightbox :deep(.swiper-button-next),
+.product-gallery-lightbox :deep(.swiper-button-prev) {
+    color: #fff;
+}
+
+.recently-viewed-scroll::-webkit-scrollbar {
+    height: 3px;
+}
+.recently-viewed-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+}
+.recently-viewed-scroll::-webkit-scrollbar-track {
+    background: transparent;
 }
 </style>
 

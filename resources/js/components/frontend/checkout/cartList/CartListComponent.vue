@@ -104,18 +104,16 @@
                             </button>
 
                         </div>
+
+                        <p v-if="cart.in_baskets > 0 || cart.bought_last_24_hours > 0"
+                            class="text-red-500 font-bold text-[11px] mt-1 flex items-center gap-1 leading-tight">
+                            <i class="fa-solid fa-fire text-red-500 text-[10px]"></i>
+                            <span>{{ socialProofText(cart.in_baskets, cart.bought_last_24_hours) }}</span>
+                        </p>
                     </div>
                 </li>
             </ul>
 
-            <div class="text-right">
-                <router-link
-                    :to="{ name : 'frontend.checkout.checkout' }"
-                    class="max-lg:hidden field-button w-fit font-semibold tracking-wide normal-case">
-
-                    {{ $t('button.process_to_checkout') }}
-                </router-link>
-            </div>
         </div>
 
         <div class="col-12 lg:col-4">
@@ -123,11 +121,14 @@
             <SummeryComponent />
 
             <router-link
+                v-if="carts.length > 0"
                 :to="{ name : 'frontend.checkout.checkout' }"
-                class="max-lg:block hidden field-button mt-6 font-semibold tracking-wide normal-case">
+                class="field-button mt-6 font-semibold tracking-wide normal-case w-full text-center">
 
                 {{ $t('button.process_to_checkout') }}
             </router-link>
+
+            <CartTrustBadgesComponent v-if="carts.length > 0" />
         </div>
     </div>
 </template>
@@ -137,13 +138,15 @@ import appService from "../../../../services/appService";
 import alertService from "../../../../services/alertService";
 import CouponComponent from "../CouponComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
+import CartTrustBadgesComponent from "../CartTrustBadgesComponent.vue";
 
 export default {
     name: "CartListComponent",
 
     components: {
         SummeryComponent,
-        CouponComponent
+        CouponComponent,
+        CartTrustBadgesComponent
     },
 
     data() {
@@ -293,6 +296,22 @@ export default {
                     id: id
                 }
             ).then().catch();
+        },
+
+        socialProofText(inBaskets, boughtLast24) {
+            const baskets = parseInt(inBaskets) || 0;
+            const bought = parseInt(boughtLast24) || 0;
+            const parts = [];
+            if (baskets > 0) {
+                parts.push(`In ${baskets} Bastek`);
+            }
+            if (bought > 0) {
+                parts.push(`${bought} bought in last 24 hours`);
+            }
+            if (parts.length === 2) {
+                return parts[0] + ' & ' + parts[1];
+            }
+            return parts.join('');
         }
     }
 }

@@ -81,24 +81,26 @@ document.querySelectorAll('.other-tabBtn').forEach(function (tabBtn) {
 /* Other button tab end */
 
 document.addEventListener('click', function (event) {
-    if (event.target.classList.contains('db-tab-btn')) {
-        document.querySelectorAll('.db-tab-btn').forEach((btn) => {
-            btn.classList.remove('active');
-            const tabSelector = btn.getAttribute('data-tab');
-            if (tabSelector) {
-                const tab = document.querySelector(tabSelector);
-                if (tab) {
-                    tab.classList.remove('active');
-                }
-            }
-        });
-        event.target.classList.add('active');
-        const dataTab = event.target.getAttribute('data-tab');
-        if (dataTab) {
-            const tab = document.querySelector(dataTab);
+    const tabBtn = event.target.closest('.db-tab-btn[data-tab]');
+    if (!tabBtn) {
+        return;
+    }
+    document.querySelectorAll('.db-tab-btn[data-tab]').forEach((btn) => {
+        btn.classList.remove('active');
+        const tabSelector = btn.getAttribute('data-tab');
+        if (tabSelector) {
+            const tab = document.querySelector(tabSelector);
             if (tab) {
-                tab.classList.add('active');
+                tab.classList.remove('active');
             }
+        }
+    });
+    tabBtn.classList.add('active');
+    const dataTab = tabBtn.getAttribute('data-tab');
+    if (dataTab) {
+        const tab = document.querySelector(dataTab);
+        if (tab) {
+            tab.classList.add('active');
         }
     }
 });

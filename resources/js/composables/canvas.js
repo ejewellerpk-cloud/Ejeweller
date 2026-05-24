@@ -10,6 +10,9 @@ export function useCanvas() {
         if (targetElements.length > 0) {
             targetElements.forEach(el => el.classList.add(activeClass.value));
             document.body.classList.add(hiddenClass.value);
+            if (targetID === 'cart-canvas') {
+                document.body.classList.add('cart-canvas-open');
+            }
             console.log("canvas.js: Classes added successfully.");
         } else {
             console.error("canvas.js: targetElement NOT FOUND!");
@@ -22,6 +25,9 @@ export function useCanvas() {
         if (targetElements.length > 0) {
             targetElements.forEach(el => el.classList.remove(activeClass.value));
             document.body.classList.remove(hiddenClass.value);
+            if (targetID === 'cart-canvas') {
+                document.body.classList.remove('cart-canvas-open');
+            }
             console.log("canvas.js: Classes removed successfully.");
         }
     }
@@ -33,6 +39,9 @@ export function useCanvas() {
         if(isWrapperElement) {
             event.currentTarget.classList.remove(activeClass.value)
             document.body.classList.remove(hiddenClass.value)
+            if (event.currentTarget.id === 'cart-canvas') {
+                document.body.classList.remove('cart-canvas-open');
+            }
         }
     }
 

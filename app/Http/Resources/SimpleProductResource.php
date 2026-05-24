@@ -32,6 +32,7 @@ class SimpleProductResource extends JsonResource
             'flash_sale'        => $this->add_to_flash_sale == Ask::YES,
             'is_offer'          => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date),
             'is_last_day_of_sale'=> $this->offer_end_date ? Carbon::parse($this->offer_end_date)->isToday() : false,
+            'discount'          => (double) $this->discount,
             'discounted_price'  => AppLibrary::currencyAmountFormat($price - (($price / 100) * $this->discount)),
             'price'             => (double) ($price - (($price / 100) * $this->discount)),
             'old_price'         => (double) $price,

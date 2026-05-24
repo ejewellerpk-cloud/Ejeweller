@@ -94,10 +94,10 @@
             </div>
 
             <div class="max-lg:hidden flex items-center justify-between gap-5 mt-10">
-                <router-link :to="{ name: 'frontend.checkout.cartList' }"
+                <button type="button" @click.prevent="navigateBackToCart"
                              class="field-button w-fit font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
                     {{ $t('button.back_to_cart') }}
-                </router-link>
+                </button>
 
                 <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
                     class="field-button w-fit font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
@@ -118,10 +118,10 @@
             <SummeryComponent/>
 
             <div class="max-lg:flex hidden flex-col-reverse sm:flex-row items-center justify-between gap-5 mt-10">
-                <router-link :to="{ name: 'frontend.checkout.cartList' }"
+                <button type="button" @click.prevent="navigateBackToCart"
                              class="field-button font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
                     {{ $t('button.back_to_cart') }}
-                </router-link>
+                </button>
 
                 <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
                     class="field-button font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
@@ -172,6 +172,15 @@ import _ from "lodash";
 export default {
     name: "CheckoutComponent",
     components: {CouponComponent, SummeryComponent, AddressComponent, LoadingComponent},
+    inject: {
+        promptAbandonedCheckoutLeave: {
+            default: (next) => {
+                if (typeof next === 'function') {
+                    next();
+                }
+            }
+        }
+    },
     data() {
         return {
             loading: {
@@ -240,6 +249,19 @@ export default {
             return this.$store.getters['frontendCart/totalTax'];
         },
     },
+    beforeRouteLeave(to, from, next) {
+        if (from.path !== '/checkout/checkout') {
+            next();
+            return;
+        }
+        const goingToCart = to.name === 'frontend.checkout.cartList' || to.path === '/checkout/cart-list';
+        const leavingCheckout = !to.path.startsWith('/checkout');
+        if ((goingToCart || leavingCheckout) && to.name !== 'frontend.account.orderDetails') {
+            this.promptAbandonedCheckoutLeave(next);
+            return;
+        }
+        next();
+    },
     mounted() {
         // Track Initiate Checkout event
         const cartItems = this.$store.getters['frontendCart/lists'];
@@ -302,6 +324,11 @@ export default {
         });
     },
     methods: {
+        navigateBackToCart: function () {
+            this.promptAbandonedCheckoutLeave(() => {
+                this.$router.push({ name: 'frontend.checkout.cartList' });
+            });
+        },
         changeOrderType: function (e) {
             this.$store.dispatch('frontendCart/updateOrderType', e)
         },

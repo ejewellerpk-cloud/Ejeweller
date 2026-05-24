@@ -16,6 +16,7 @@
                 <li class="list-none w-full flex after:content-[''] after:w-full after:h-1 last:after:hidden last:w-fit"
                     :class="currentRoute === '/checkout/checkout' ? 'after:bg-success' : 'after:bg-[#EFF0F6]'">
                     <router-link :to="{ name: 'frontend.checkout.cartList' }"
+                        @click="onCartStepNavigate"
                         class="flex flex-col items-center gap-4 -mt-[13px] relative">
                         <i v-if="currentRoute === '/checkout/checkout'"
                             class="lab lab-fill-save text-lg w-[30px] h-[30px] !leading-[30px] text-center rounded-full text-white bg-success"></i>
@@ -107,7 +108,7 @@
 
                         <!-- 4. Action Buttons -->
                         <div class="flex flex-col gap-2.5 mt-2">
-                            <button @click.prevent="showAbandonedModal = false" type="button" 
+                            <button @click.prevent="showAbandonedModal = false; abandonedNextCallback = null" type="button" 
                                 class="w-full h-12 rounded-full bg-primary hover:bg-primary/95 text-white font-extrabold flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(253,139,14,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
                                 <i class="fa-solid fa-circle-check text-lg"></i>
                                 <span>Complete My Order</span>
@@ -146,6 +147,11 @@ import activityEnum from "../../../enums/modules/activityEnum";
 export default {
     name: "CheckoutComponent",
     components: { LoadingComponent, CouponComponent, CartListComponent },
+    provide() {
+        return {
+            promptAbandonedCheckoutLeave: (next) => this.promptAbandonedCheckoutLeave(next),
+        };
+    },
     data() {
         return {
             loading: {
@@ -186,16 +192,20 @@ export default {
         }
     },
     beforeRouteLeave(to, from, next) {
-        if (from.path === '/checkout/checkout' && !to.path.startsWith('/checkout') && this.isList && !this.showAbandonedModal) {
+        const leavingCheckoutStep = from.path === '/checkout/checkout';
+        const goingToCartList = to.path === '/checkout/cart-list';
+        const leavingCheckoutFlow = !to.path.startsWith('/checkout');
+
+        if (leavingCheckoutStep && this.isList && !this.showAbandonedModal && (goingToCartList || leavingCheckoutFlow)) {
             if (to.name === 'frontend.account.orderDetails') {
                 next();
                 return;
             }
             this.abandonedNextCallback = next;
             this.showAbandonedModal = true;
-        } else {
-            next();
+            return;
         }
+        next();
     },
     mounted() {
         this.currentRoute = this.$route.path;
@@ -211,8 +221,37 @@ export default {
         })
     },
     methods: {
+        onCartStepNavigate: function (event) {
+            if (this.currentRoute === '/checkout/checkout' && this.isList) {
+                event.preventDefault();
+                this.promptAbandonedCheckoutLeave(() => {
+                    this.$router.push({ name: 'frontend.checkout.cartList' });
+                });
+            }
+        },
+        promptAbandonedCheckoutLeave: function (next) {
+            if (!this.isList) {
+                if (typeof next === 'function') {
+                    next();
+                }
+                return;
+            }
+            if (this.showAbandonedModal) {
+                return;
+            }
+            if (typeof next === 'function') {
+                this.abandonedNextCallback = next;
+            }
+            this.showAbandonedModal = true;
+        },
         goBack: function () {
-            router.go(-1)
+            if (this.currentRoute === '/checkout/checkout' && this.isList) {
+                this.promptAbandonedCheckoutLeave(() => {
+                    router.go(-1);
+                });
+                return;
+            }
+            router.go(-1);
         },
         checkGuestAccess: function () {
             if (this.setting.site_guest_checkout == this.enums.activityEnum.DISABLE && !this.logged && this.$route.path !== '/checkout/cart-list') {
@@ -225,7 +264,9 @@ export default {
         dismissModalAndLeave: function () {
             this.showAbandonedModal = false;
             if (this.abandonedNextCallback) {
-                this.abandonedNextCallback();
+                const next = this.abandonedNextCallback;
+                this.abandonedNextCallback = null;
+                next();
             }
         }
     },

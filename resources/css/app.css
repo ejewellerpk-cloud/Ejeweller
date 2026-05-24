@@ -1061,6 +1061,19 @@
         @apply !text-primary !bg-primary/5
     }
 
+    .settings-menu-link {
+        @apply w-full flex items-center text-[15px] capitalize text-left gap-3 py-2.5 px-3 rounded border-b last:border-none transition border-slate-100 hover:bg-slate-100 touch-manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .settings-menu-link i {
+        @apply text-lg pointer-events-none;
+    }
+
+    .settings-menu-link.router-link-active {
+        @apply !text-primary !bg-primary/5
+    }
+
     .db-tab-div {
         @apply hidden
     }

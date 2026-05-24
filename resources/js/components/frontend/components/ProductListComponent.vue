@@ -12,26 +12,26 @@
                 </div>
             </div>
  
-            <div class="absolute top-3 left-3 z-10 flex flex-col gap-1.5 items-start">
+            <div class="absolute top-3 left-3 z-30 flex flex-col gap-1.5 items-start pointer-events-none">
                 <span v-if="isNew(product)" 
-                    class="bg-blue-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(59,130,246,0.3)] flex items-center gap-1">
+                    class="bg-blue-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(59,130,246,0.3)] flex items-center gap-1 pointer-events-auto">
                     <i class="fa-solid fa-sparkles text-[9px] sm:text-[11px]"></i> NEW
                 </span>
                 <span v-if="isTrending(product)" 
-                    class="bg-orange-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(249,115,22,0.3)] flex items-center gap-1 animate-pulse">
+                    class="bg-orange-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(249,115,22,0.3)] flex items-center gap-1 animate-pulse pointer-events-auto">
                     <i class="fa-solid fa-fire-flame-curved text-[9px] sm:text-[11px]"></i> HOT
                 </span>
-                <span v-if="product.is_offer && discountPercentage(product) > 0" 
-                    class="bg-primary text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
+                <span v-if="showSaleBadge(product)" 
+                    class="bg-primary text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse pointer-events-auto">
                     <i class="fa-solid fa-tags text-[9px] sm:text-[11px]"></i>
                     {{ discountPercentage(product) }}% OFF
                 </span>
-                <span v-if="product.is_offer && product.flash_sale"
-                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-secondary text-white">
+                <span v-if="product.flash_sale"
+                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-secondary text-white pointer-events-auto">
                     {{ $t('label.flash_sale') }}
                 </span>
-                <span v-if="product.is_offer && product.is_last_day_of_sale"
-                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-red-600 text-white animate-pulse">
+                <span v-if="product.is_last_day_of_sale"
+                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-red-600 text-white animate-pulse pointer-events-auto">
                     Last day of sale
                 </span>
             </div>
@@ -180,7 +180,11 @@
                 <!-- 3. Rating & Sold Count Row -->
                 <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
                     <div class="flex items-center gap-1">
-                        <i class="fa-solid fa-star text-[#FFBC1F] text-[10px]"></i>
+                        <div class="flex items-center gap-0.5">
+                            <i v-for="star in 5" :key="star"
+                                :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
+                                class="fa-star text-[9px] sm:text-[10px]"></i>
+                        </div>
                         <span class="text-gray-900 font-bold">
                             {{ product.rating_star_count > 0 ? (product.rating_star / product.rating_star_count).toFixed(1) : '5.0' }}
                         </span>
@@ -315,9 +319,35 @@ export default {
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         },
+        getStarFillCount(product) {
+            const rating = product.rating_star_count > 0
+                ? (product.rating_star / product.rating_star_count)
+                : 5;
+            return Math.min(5, Math.max(0, Math.round(rating)));
+        },
+        showSaleBadge(product) {
+            if (!product || !product.is_offer) {
+                return false;
+            }
+            return this.discountPercentage(product) > 0;
+        },
         discountPercentage(product) {
+            if (!product) {
+                return 0;
+            }
             if (product.old_price && product.price && product.old_price > product.price) {
                 return Math.round(((product.old_price - product.price) / product.old_price) * 100);
+            }
+            const discount = parseFloat(product.discount);
+            if (!isNaN(discount) && discount > 0) {
+                return Math.round(discount);
+            }
+            if (product.is_offer && product.discounted_price && product.currency_price) {
+                const oldVal = parseFloat(String(product.currency_price).replace(/[^0-9.]/g, ''));
+                const newVal = parseFloat(String(product.discounted_price).replace(/[^0-9.]/g, ''));
+                if (oldVal > newVal && oldVal > 0) {
+                    return Math.round(((oldVal - newVal) / oldVal) * 100);
+                }
             }
             return 0;
         },

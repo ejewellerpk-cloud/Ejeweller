@@ -1,5 +1,5 @@
 <template>
-    <div class="row" @click="closeSettingMenu($event)">
+    <div class="row">
         <div class="col-12">
             <BreadcrumbComponent />
         </div>
@@ -8,7 +8,7 @@
             <MenuComponent />
         </div>
 
-        <div class="col-12 md:col-8 xl:col-9">
+        <div class="col-12 md:col-8 xl:col-9" @click="closeSettingMenu($event)">
             <router-view></router-view>
         </div>
     </div>

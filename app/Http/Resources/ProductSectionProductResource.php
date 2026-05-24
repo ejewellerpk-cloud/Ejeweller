@@ -33,6 +33,8 @@ class ProductSectionProductResource extends JsonResource
             'currency_price'                            => AppLibrary::currencyAmountFormat($price),
             'flash_sale'                                => $this->product?->add_to_flash_sale == Ask::YES,
             'is_offer'                                  => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date),
+            'is_last_day_of_sale'                       => $this->product?->offer_end_date ? Carbon::parse($this->product->offer_end_date)->isToday() : false,
+            'discount'                                  => (double) ($this->product?->discount ?? 0),
             'discounted_price'                          => AppLibrary::currencyAmountFormat($price - (($price / 100) * $this->product?->discount)),
             'price'                                     => (double) ($price - (($price / 100) * $this->product?->discount)),
             'old_price'                                 => (double) $price,

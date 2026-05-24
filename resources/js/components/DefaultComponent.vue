@@ -50,7 +50,7 @@
     </transition>
 
     <!-- Native Reactive Floating WhatsApp Button -->
-    <a v-if="theme === 'frontend' && setting && setting.whatsapp_status === 5 && setting.whatsapp_floating_status === 5 && setting.whatsapp_number"
+    <a v-if="showWhatsappFloating"
        :href="'https://wa.me/' + (setting.whatsapp_calling_code + setting.whatsapp_number).replace(/[^0-9]/g, '')"
        class="whatsapp-btn fixed z-[10000] flex items-center justify-center rounded-full bg-[#25D366] text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_4px_15px_rgba(37,211,102,0.35)]"
        :class="whatsappClass"
@@ -129,6 +129,19 @@ export default {
         },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        showWhatsappFloating: function () {
+            if (this.theme !== 'frontend') {
+                return false;
+            }
+            if (!this.setting || this.setting.whatsapp_status !== 5 || this.setting.whatsapp_floating_status !== 5 || !this.setting.whatsapp_number) {
+                return false;
+            }
+            const routeName = this.$route.name;
+            if (routeName && routeName.startsWith('frontend.checkout')) {
+                return false;
+            }
+            return true;
         },
         whatsappClass: function () {
             // Desktop dimensions: w-16 h-16 bottom-6 right-6
@@ -283,6 +296,15 @@ export default {
 <style>
 body.overflow-hidden .checkout-reminder-popup {
     display: none !important;
+}
+
+body.checkout-active .whatsapp-btn,
+body.cart-canvas-open .whatsapp-btn,
+body.media-lightbox-open .whatsapp-btn,
+body.image-preview-open .whatsapp-btn {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 </style>
 

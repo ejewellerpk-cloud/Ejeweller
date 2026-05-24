@@ -7,6 +7,7 @@
         <div class="mb-4 bg-red-100 p-2 pl-4 ">
             <h2 class="mb-1">{{ $t('label.reminder') }}</h2>
             <p>{{ $t('message.pwa_image_remainder') }}</p>
+            <p class="mt-1 text-sm">{{ $t('message.pwa_icon_upload_hint') }}</p>
         </div>
         <div class="db-card-body">
             <form @submit.prevent="save">
@@ -24,7 +25,7 @@
                     </div>
                     <div class="form-col-12  sm:form-col-5">
                         <label for="icon" class="db-field-title required">
-                            {{ $t("label.icon") }} (512px,512px)
+                            {{ $t("label.icon") }} (512×512 px, square)
                         </label>
                         <input @change="changeIcon" v-bind:class="errors.pwa_icon ? 'invalid' : ''" id="icon" type="file"
                             class="db-field-control" ref="iconProperty" accept="image/png, image/jpeg, image/jpg" />
@@ -47,13 +48,13 @@
                     <h3 class="text-lg font-medium capitalize mb-2 text-paragraph">
                         {{ $t("label.splash") }}
                     </h3>
-                    <img class="db-image" alt="splash" :src="pwa.splash" />
+                    <img class="db-image pwa-splash-preview" alt="splash" :src="pwa.splash" />
                 </div>
                 <div class="col-6 sm:col-3">
                     <h3 class="text-lg font-medium capitalize mb-2 text-paragraph">
                         {{ $t("label.icon") }}
                     </h3>
-                    <img class="db-image" alt="icon" :src="pwa.icon" />
+                    <img class="pwa-icon-preview" alt="icon" :src="pwa.icon" />
                 </div>
             </div>
 
@@ -130,3 +131,23 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.pwa-icon-preview {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 5px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    background: #f3f4f6;
+}
+
+.pwa-splash-preview {
+    max-width: 200px;
+    max-height: 267px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+</style>

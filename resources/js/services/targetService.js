@@ -3,11 +3,17 @@ export default {
         const targetElement = document.querySelector(`#${targetID}`);
         targetElement.classList.add(addClass);
         document.body.classList.add('overflow-hidden');
+        if (targetID === 'cart-canvas') {
+            document.body.classList.add('cart-canvas-open');
+        }
     },
     hideTarget: function (targetID, addClass) {
         const targetElement = document.querySelector(`#${targetID}`);
         targetElement.classList.remove(addClass);
         document.body.classList.remove('overflow-hidden');
+        if (targetID === 'cart-canvas') {
+            document.body.classList.remove('cart-canvas-open');
+        }
     },
     multiTargets: function (event, commonBtnClass, commonDivClass, targetID) {
         const targetBtns = document.querySelectorAll(`.${commonBtnClass}`);
