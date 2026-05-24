@@ -10,7 +10,7 @@ class SettingService
 {
     public function list(): array
     {
-        return Cache::remember('global_settings', 3600, function () {
+        return Cache::remember('global_settings_v2', 3600, function () {
             $array = [];
             $array = array_merge($array, Settings::group('company')->all());
             $array = array_merge($array, Settings::group('site')->all());

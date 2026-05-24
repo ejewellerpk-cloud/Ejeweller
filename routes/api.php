@@ -802,6 +802,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/add', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'add']);
         Route::post('/remove', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'remove']);
         Route::post('/clear', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'clear']);
+        Route::post('/stats', [\App\Http\Controllers\Frontend\CartTrackerController::class, 'stats']);
     });
 
     Route::prefix('country-code')->name('country-code.')->group(function () {
@@ -875,6 +876,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('benefit')->name('benefit.')->group(function () {
         Route::get('/', [FrontendBenefitController::class, 'index']);
     });
+
+    Route::get('/featured-reviews', [\App\Http\Controllers\Frontend\FeaturedReviewController::class, 'index']);
 
     Route::prefix('wishlist')->middleware(['auth:sanctum'])->name('wishlist.')->group(function () {
         Route::get('/', [FrontendWishlistController::class, 'index']);

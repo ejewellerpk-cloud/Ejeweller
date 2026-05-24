@@ -72,6 +72,8 @@ class OrderDetailsResource extends JsonResource
             'order_address'                  => AddressResource::collection($this->address),
             'outlet_address'                 => new OutletResource($this?->outletAddress),
             'order_products'                 => OrderProductResource::collection($this->orderProducts),
+            'products'                       => OrderProductResource::collection($this->orderProducts),
+            'order_timeline'                 => AppLibrary::buildOrderTimeline($this->resource),
             'pos_payment_method'             => $this->pos_payment_method,
             'pos_payment_method_name'        => trans("posPaymentMethod." . $this->pos_payment_method),
             'pos_payment_note'               => $this->pos_payment_note,

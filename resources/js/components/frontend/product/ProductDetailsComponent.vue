@@ -508,10 +508,20 @@
                             :class="mediaLightboxZoomedIndex === index ? 'scale-[2.2] cursor-zoom-out' : 'scale-100 cursor-zoom-in'"
                             class="max-w-full max-h-[78vh] object-contain transition-transform duration-300 ease-out" />
                     </div>
-                    <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center p-4 aspect-video max-h-[85vh]">
+                    <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center bg-black max-h-[85vh]">
                         <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
-                            :src="formatVideoLink(media.data)" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                        <video v-else :src="media.data.link" controls playsinline class="w-full h-full object-contain"></video>
+                            :src="mediaLightboxIndex === index ? formatVideoLink(media.data) : ''"
+                            class="w-full h-full max-h-[85vh] pointer-events-none"
+                            frameborder="0"
+                            allow="autoplay; encrypted-media; playsinline"></iframe>
+                        <video v-else
+                            :src="media.data.link"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            webkit-playsinline
+                            class="w-full h-full max-h-[85vh] object-cover pointer-events-none"></video>
                     </div>
                 </SwiperSlide>
             </Swiper>
@@ -734,6 +744,7 @@ import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
 
 import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
+import axios from "axios";
 
 export default {
     name: "ProductDetailsComponent",
@@ -1037,7 +1048,10 @@ export default {
             this.flashSaleInterval = setInterval(updateTimer, 1000);
         },
         discountPercentageDetail: function () {
-            return Math.round(this.product.discount_percentage);
+            if (!this.product?.is_offer) {
+                return 0;
+            }
+            return Math.round(this.product.discount_percentage || 0);
         },
         shouldShowSoldCount: function () {
             if (!this.product) return false;
@@ -1074,8 +1088,8 @@ export default {
             }
         },
         socialProofText: function (inBaskets, boughtLast24) {
-            const baskets = parseInt(inBaskets) || 0;
-            const bought = parseInt(boughtLast24) || 0;
+            const baskets = parseInt(inBaskets, 10) || 0;
+            const bought = parseInt(boughtLast24, 10) || 0;
             const parts = [];
             if (baskets > 0) {
                 parts.push(`In ${baskets} Bastek`);
@@ -1087,6 +1101,24 @@ export default {
                 return parts[0] + ' & ' + parts[1];
             }
             return parts.join('');
+        },
+        refreshProductSocialProof: function () {
+            if (!this.product?.id) {
+                return Promise.resolve();
+            }
+            const productId = this.product.id;
+            return axios.post('frontend/cart-track/stats', {
+                product_ids: [productId],
+            }).then((res) => {
+                const stats = res.data?.data?.[String(productId)] || res.data?.data?.[productId];
+                if (stats) {
+                    this.$store.commit('frontendProduct/updateSocialProof', {
+                        product_id: productId,
+                        in_baskets: stats.in_baskets,
+                        bought_last_24_hours: stats.bought_last_24_hours,
+                    });
+                }
+            }).catch(() => {});
         },
         openMediaLightbox: function (index) {
             this.mediaLightboxIndex = index;
@@ -1519,6 +1551,7 @@ export default {
                     this.productArray.variation_names = res.data.data;
                     this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
+                        this.refreshProductSocialProof();
                         this.showVariationComponent = true;
                         this.productArray = {};
                         this.selectedVariation = null;
@@ -1547,6 +1580,7 @@ export default {
                 });
             } else {
                 this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
+                    this.refreshProductSocialProof();
                     this.enableAddToCardButton = false;
                     this.productArray = {};
                     this.selectedVariation = null;
@@ -1639,6 +1673,7 @@ export default {
                 });
             } else {
                 this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
+                    this.refreshProductSocialProof();
                     this.enableAddToCardButton = false;
                     this.productArray = {};
                     this.selectedVariation = null;

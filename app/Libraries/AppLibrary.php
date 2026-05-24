@@ -429,6 +429,103 @@ class AppLibrary
         return Carbon::now()->between($startDate, $endDate);
     }
 
+    public static function isProductOfferActive($discount, $startDate = null, $endDate = null): bool
+    {
+        if ((float) $discount <= 0) {
+            return false;
+        }
+
+        if (empty($startDate) || empty($endDate)) {
+            return true;
+        }
+
+        return self::isBetweenDate($startDate, $endDate);
+    }
+
+    public static function productOfferPrice(float $price, $discount, $startDate = null, $endDate = null): float
+    {
+        if (!self::isProductOfferActive($discount, $startDate, $endDate)) {
+            return $price;
+        }
+
+        return $price - (($price / 100) * (float) $discount);
+    }
+
+    /**
+     * Real social proof counts from cart_trackers and orders (last 24 hours).
+     */
+    public static function buildOrderTimeline($order): array
+    {
+        if (!$order instanceof \App\Models\Order) {
+            return [];
+        }
+
+        $placedAt = self::datetime($order->order_datetime);
+        $updatedAt = self::datetime($order->updated_at);
+        $currentStatus = (int) $order->status;
+
+        if ($currentStatus === \App\Enums\OrderStatus::CANCELED) {
+            return [
+                ['status' => \App\Enums\OrderStatus::PENDING, 'date' => $placedAt],
+                ['status' => \App\Enums\OrderStatus::CANCELED, 'date' => $updatedAt],
+            ];
+        }
+
+        if ($currentStatus === \App\Enums\OrderStatus::REJECTED) {
+            return [
+                ['status' => \App\Enums\OrderStatus::PENDING, 'date' => $placedAt],
+                ['status' => \App\Enums\OrderStatus::REJECTED, 'date' => $updatedAt],
+            ];
+        }
+
+        $steps = $order->order_type === \App\Enums\OrderType::PICK_UP
+            ? [
+                \App\Enums\OrderStatus::PENDING,
+                \App\Enums\OrderStatus::CONFIRMED,
+                \App\Enums\OrderStatus::DELIVERED,
+            ]
+            : [
+                \App\Enums\OrderStatus::PENDING,
+                \App\Enums\OrderStatus::CONFIRMED,
+                \App\Enums\OrderStatus::ON_THE_WAY,
+                \App\Enums\OrderStatus::DELIVERED,
+            ];
+
+        $timeline = [];
+        foreach ($steps as $stepStatus) {
+            if ($stepStatus <= $currentStatus) {
+                $timeline[] = [
+                    'status' => $stepStatus,
+                    'date'   => $stepStatus === $currentStatus ? $updatedAt : $placedAt,
+                ];
+            }
+        }
+
+        return $timeline;
+    }
+
+    public static function productSocialProofStats($product): array
+    {
+        if (!$product) {
+            return ['in_baskets' => 0, 'bought_last_24_hours' => 0];
+        }
+
+        if (!($product instanceof \App\Models\Product)) {
+            $product = \App\Models\Product::query()->find((int) $product);
+        }
+
+        if (!$product) {
+            return ['in_baskets' => 0, 'bought_last_24_hours' => 0];
+        }
+
+        return [
+            'in_baskets'           => (int) $product->cartTrackers()->count(),
+            'bought_last_24_hours' => (int) abs(
+                $product->productOrders()->where('created_at', '>=', now()->subDay())->sum('quantity')
+            ),
+        ];
+    }
+
     public static function appVersion(){
         return config('product.version');
     }

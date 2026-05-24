@@ -60,6 +60,12 @@
                                         }}</span>
                                 </button>
                             </div>
+
+                            <p v-if="shouldShowCartSocialProof(cart)"
+                                class="text-red-500 font-bold text-[11px] mt-2 flex items-center gap-1 leading-tight">
+                                <i class="fa-solid fa-fire text-red-500 text-[10px]"></i>
+                                <span>{{ cartSocialProofText(cart) }}</span>
+                            </p>
                         </div>
                     </li>
                 </ul>
@@ -142,6 +148,7 @@ import {useCanvas} from "../../../composables/canvas";
 import statusEnum from "../../../enums/modules/statusEnum";
 import router from "../../../router";
 import CartTrustBadgesComponent from "../../frontend/checkout/CartTrustBadgesComponent.vue";
+import { shouldShowSocialProof, socialProofTextForItem } from "../../../utils/socialProof";
 
 export default {
     name: "FrontendCartComponent",
@@ -189,6 +196,7 @@ export default {
             order_type: 'desc',
             status: statusEnum.ACTIVE
         }).catch();
+        this.$store.dispatch('frontendCart/refreshSocialProof').catch();
     },
     methods: {
         onImageLoad(key) {
@@ -260,7 +268,13 @@ export default {
         goToProduct: function (slug) {
             this.closeCanvas('cart-canvas');
             router.push({ name: 'frontend.product.details', params: { slug: slug } });
-        }
+        },
+        shouldShowCartSocialProof(cart) {
+            return shouldShowSocialProof(cart);
+        },
+        cartSocialProofText(cart) {
+            return socialProofTextForItem(cart);
+        },
     }
 }
 </script>

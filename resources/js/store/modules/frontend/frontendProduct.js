@@ -257,6 +257,12 @@ export const frontendProduct = {
         show: function (state, payload) {
             state.show = payload;
         },
+        updateSocialProof: function (state, payload) {
+            if (state.show && state.show.id === payload.product_id) {
+                state.show.in_baskets = parseInt(payload.in_baskets, 10) || 0;
+                state.show.bought_last_24_hours = parseInt(payload.bought_last_24_hours, 10) || 0;
+            }
+        },
         showImages: function (state, payload) {
             state.showImages = payload;
         },
@@ -300,13 +306,22 @@ export const frontendProduct = {
             state.flashSaleProductPagination = payload;
         },
         categoryWiseProducts: function (state, payload) {
+            const list = Array.isArray(payload.products)
+                ? payload.products
+                : (payload.products?.data || []);
+
             if (payload.current_page && payload.current_page > 1) {
-                state.categoryWiseProducts = [...state.categoryWiseProducts, ...payload.products];
+                state.categoryWiseProducts = [...state.categoryWiseProducts, ...list];
             } else {
-                state.categoryWiseProducts = payload.products;
+                state.categoryWiseProducts = list;
             }
-            state.categoryWiseBands      = payload.brands;
-            state.categoryWiseVariations = payload.variations;
+
+            if (payload.current_page === 1 || !payload.current_page) {
+                state.categoryWiseBands = Array.isArray(payload.brands)
+                    ? payload.brands
+                    : (payload.brands?.data || state.categoryWiseBands);
+                state.categoryWiseVariations = payload.variations || {};
+            }
         },
         categoryWiseProductPage: function (state, payload) {
             if (typeof payload !== "undefined" && payload !== null) {

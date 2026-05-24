@@ -12,27 +12,12 @@
                 </div>
             </div>
  
-            <div class="absolute top-3 left-3 z-30 flex flex-col gap-1.5 items-start pointer-events-none">
-                <span v-if="isNew(product)" 
-                    class="bg-blue-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(59,130,246,0.3)] flex items-center gap-1 pointer-events-auto">
-                    <i class="fa-solid fa-sparkles text-[9px] sm:text-[11px]"></i> NEW
-                </span>
-                <span v-if="isTrending(product)" 
-                    class="bg-orange-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(249,115,22,0.3)] flex items-center gap-1 animate-pulse pointer-events-auto">
-                    <i class="fa-solid fa-fire-flame-curved text-[9px] sm:text-[11px]"></i> HOT
-                </span>
-                <span v-if="showSaleBadge(product)" 
-                    class="bg-primary text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse pointer-events-auto">
-                    <i class="fa-solid fa-tags text-[9px] sm:text-[11px]"></i>
-                    {{ discountPercentage(product) }}% OFF
-                </span>
-                <span v-if="product.flash_sale"
-                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-secondary text-white pointer-events-auto">
-                    {{ $t('label.flash_sale') }}
-                </span>
-                <span v-if="product.is_last_day_of_sale"
-                    class="capitalize text-[10px] sm:text-xs font-semibold rounded-full py-1 px-2.5 shadow-badge bg-red-600 text-white animate-pulse pointer-events-auto">
-                    Last day of sale
+            <div class="absolute top-2 left-2 z-30 flex flex-col gap-1 items-start pointer-events-none max-w-[calc(100%-3rem)]">
+                <span v-for="badge in getProductBadges(product)" :key="badge.key"
+                    class="product-card-badge inline-flex items-center gap-0.5 font-extrabold rounded-full pointer-events-auto max-w-full truncate"
+                    :class="badgeClass(badge.type)">
+                    <i v-if="badge.icon" :class="badge.icon" class="text-[8px] shrink-0"></i>
+                    <span class="truncate">{{ badge.label }}</span>
                 </span>
             </div>
  
@@ -42,7 +27,16 @@
             </button>
 
 
-            <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
+            <!-- Sold out overlay -->
+            <div v-if="isOutOfStock(product)"
+                class="absolute inset-0 z-[25] flex items-center justify-center bg-white/55 backdrop-blur-[1px] rounded-xl pointer-events-none">
+                <span class="bg-gray-900/85 text-white text-[10px] sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg">
+                    {{ $t('label.sold_out') || 'Sold Out' }}
+                </span>
+            </div>
+
+            <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider"
+                :class="isOutOfStock(product) ? 'opacity-75 grayscale-[0.35]' : ''">
                 <!-- Main Slider for Product Images + Video -->
                 <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
                     :dir="'ltr'"
@@ -144,12 +138,15 @@
                 <!-- 1. Price and Add to Cart Row -->
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col">
-                        <div class="flex flex-wrap items-baseline gap-1" v-if="product.is_offer">
+                        <div class="flex flex-wrap items-baseline gap-1" v-if="hasActiveDiscount(product)">
                             <span class="text-lg sm:text-xl font-black text-primary leading-none">
                                 {{ product.discounted_price }}
                             </span>
                             <span class="text-xs sm:text-sm font-semibold text-shopperz-red line-through leading-none">
                                 {{ product.currency_price }}
+                            </span>
+                            <span class="text-[10px] sm:text-xs font-bold text-shopperz-red leading-none">
+                                {{ discountPercentage(product) }}% OFF
                             </span>
                         </div>
                         <span class="text-lg sm:text-xl font-black text-primary leading-none" v-else>
@@ -157,11 +154,16 @@
                         </span>
                     </div>
 
-                    <!-- Add to Cart Round Icon Button -->
-                    <button type="button" @click.prevent.stop="addToCart(product)" title="Add to Cart"
+                    <!-- Add to Cart / Sold out -->
+                    <button v-if="!isOutOfStock(product)" type="button" @click.prevent.stop="addToCart(product)"
+                        :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
                         class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300">
                         <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
                     </button>
+                    <span v-else
+                        class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-200 text-gray-500 flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase leading-tight text-center px-1">
+                        {{ $t('label.sold_out') || 'Sold' }}
+                    </span>
                 </div>
 
                 <!-- 2. Product Name (smaller size, mt-1.5) -->
@@ -177,22 +179,19 @@
                     </span>
                 </div>
 
-                <!-- 3. Rating & Sold Count Row -->
-                <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
-                    <div class="flex items-center gap-1">
-                        <div class="flex items-center gap-0.5">
+                <!-- 3. Rating & Sold Count Row (real reviews only — no fake 5.0) -->
+                <div v-if="hasProductRating(product) || shouldShowSoldCount(product)"
+                    class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
+                    <div v-if="hasProductRating(product)" class="flex items-center gap-1">
+                        <div class="flex items-center gap-0.5" :aria-label="formatProductRating(product) + ' out of 5'">
                             <i v-for="star in 5" :key="star"
                                 :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
                                 class="fa-star text-[9px] sm:text-[10px]"></i>
                         </div>
-                        <span class="text-gray-900 font-bold">
-                            {{ product.rating_star_count > 0 ? (product.rating_star / product.rating_star_count).toFixed(1) : '5.0' }}
-                        </span>
-                        <span>
-                            ({{ product.rating_star_count }})
-                        </span>
+                        <span class="text-gray-900 font-bold">{{ formatProductRating(product) }}</span>
+                        <span>({{ product.rating_star_count }})</span>
                     </div>
-                    <span v-if="shouldShowSoldCount(product)" class="text-gray-200">|</span>
+                    <span v-if="hasProductRating(product) && shouldShowSoldCount(product)" class="text-gray-200">|</span>
                     <span v-if="shouldShowSoldCount(product)">
                         {{ getProductSoldCount(product) }} sold
                     </span>
@@ -211,6 +210,13 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
+import { discountPercentage as calcDiscountPercentage, hasActiveDiscount as calcHasActiveDiscount } from "../../../utils/productOffer";
+import {
+    hasProductRating,
+    getProductAverageRating,
+    getStarFillCount,
+    formatProductRating,
+} from "../../../utils/productRating";
 
 export default {
     name: "ProductListComponent",
@@ -319,37 +325,18 @@ export default {
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         },
-        getStarFillCount(product) {
-            const rating = product.rating_star_count > 0
-                ? (product.rating_star / product.rating_star_count)
-                : 5;
-            return Math.min(5, Math.max(0, Math.round(rating)));
+        hasProductRating,
+        getProductAverageRating,
+        getStarFillCount,
+        formatProductRating,
+        hasActiveDiscount(product) {
+            return calcHasActiveDiscount(product);
         },
         showSaleBadge(product) {
-            if (!product || !product.is_offer) {
-                return false;
-            }
-            return this.discountPercentage(product) > 0;
+            return calcHasActiveDiscount(product);
         },
         discountPercentage(product) {
-            if (!product) {
-                return 0;
-            }
-            if (product.old_price && product.price && product.old_price > product.price) {
-                return Math.round(((product.old_price - product.price) / product.old_price) * 100);
-            }
-            const discount = parseFloat(product.discount);
-            if (!isNaN(discount) && discount > 0) {
-                return Math.round(discount);
-            }
-            if (product.is_offer && product.discounted_price && product.currency_price) {
-                const oldVal = parseFloat(String(product.currency_price).replace(/[^0-9.]/g, ''));
-                const newVal = parseFloat(String(product.discounted_price).replace(/[^0-9.]/g, ''));
-                if (oldVal > newVal && oldVal > 0) {
-                    return Math.round(((oldVal - newVal) / oldVal) * 100);
-                }
-            }
-            return 0;
+            return calcDiscountPercentage(product);
         },
         buyNow: function (product) {
             if (product.variation_count > 0) {
@@ -379,6 +366,9 @@ export default {
                     old_price: product.old_price,
                     total_price: product.price,
                     maximum_purchase_quantity: product.maximum_purchase_quantity,
+                    in_baskets: product.in_baskets || 0,
+                    bought_last_24_hours: product.bought_last_24_hours || 0,
+                    actual_sales: product.actual_sales || 0,
                     skipCartDrawer: true
                 }).then((res) => {
                     this.$router.push({ name: "frontend.checkout.checkout" });
@@ -391,7 +381,50 @@ export default {
                 });
             }
         },
+        isOutOfStock: function (product) {
+            if (!product) return false;
+            return parseInt(product.stock, 10) <= 0;
+        },
+        getProductBadges: function (product) {
+            if (!product) return [];
+            const candidates = [];
+            if (product.is_last_day_of_sale) {
+                candidates.push({ key: 'last_day', type: 'last_day', label: 'Last day', icon: null });
+            }
+            if (product.flash_sale) {
+                candidates.push({ key: 'flash', type: 'flash', label: this.$t('label.flash_sale'), icon: null });
+            }
+            if (this.showSaleBadge(product)) {
+                candidates.push({
+                    key: 'sale',
+                    type: 'sale',
+                    label: `${this.discountPercentage(product)}% OFF`,
+                    icon: 'fa-solid fa-tags',
+                });
+            }
+            if (this.isTrending(product)) {
+                candidates.push({ key: 'hot', type: 'hot', label: 'HOT', icon: 'fa-solid fa-fire-flame-curved' });
+            }
+            if (this.isNew(product)) {
+                candidates.push({ key: 'new', type: 'new', label: 'NEW', icon: 'fa-solid fa-sparkles' });
+            }
+            return candidates.slice(0, 2);
+        },
+        badgeClass: function (type) {
+            const map = {
+                new: 'bg-blue-500 text-white shadow-[0_2px_8px_rgba(59,130,246,0.25)]',
+                hot: 'bg-orange-500 text-white shadow-[0_2px_8px_rgba(249,115,22,0.25)]',
+                sale: 'bg-primary text-white shadow-[0_2px_8px_rgba(255,92,0,0.2)]',
+                flash: 'bg-secondary text-white capitalize',
+                last_day: 'bg-red-600 text-white animate-pulse',
+            };
+            return map[type] || 'bg-gray-600 text-white';
+        },
         addToCart: function (product) {
+            if (this.isOutOfStock(product)) {
+                alertService.error(this.$t('message.out_of_stock') || 'This item is out of stock!');
+                return;
+            }
             // If product has variations, redirect to detail page (same as ProductDetailsComponent)
             if (product.variation_count > 0) {
                 alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
@@ -422,7 +455,10 @@ export default {
                 price: product.price,
                 old_price: product.old_price,
                 total_price: product.price,
-                maximum_purchase_quantity: product.maximum_purchase_quantity
+                maximum_purchase_quantity: product.maximum_purchase_quantity,
+                in_baskets: product.in_baskets || 0,
+                bought_last_24_hours: product.bought_last_24_hours || 0,
+                actual_sales: product.actual_sales || 0,
             };
 
             // Dispatch to cart (exact pattern from ProductDetailsComponent else branch)
@@ -520,6 +556,7 @@ export default {
         },
         isTrending: function (product) {
             if (!product) return false;
+            if (product.is_last_day_of_sale) return false;
             const salesCount = this.getProductSoldCount(product);
             const isHighlyRated = product.rating_star_count > 0 && (product.rating_star / product.rating_star_count) >= 4.5;
             
@@ -531,6 +568,19 @@ export default {
 </script>
 
 <style scoped>
+.product-card-badge {
+    font-size: 9px;
+    line-height: 1.1;
+    padding: 3px 7px;
+}
+
+@media (min-width: 640px) {
+    .product-card-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+}
+
 .product-card-slider :deep(.swiper-pagination) {
     bottom: 8px !important;
     opacity: 0 !important;

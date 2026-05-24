@@ -428,6 +428,20 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label for="site_homepage_theme" class="db-field-title">
+                            {{ $t("label.homepage_theme") }}
+                        </label>
+                        <vue-select class="db-field-control f-b-custom-select" id="site_homepage_theme"
+                            v-bind:class="errors.site_homepage_theme ? 'is-invalid' : ''"
+                            v-model="form.site_homepage_theme" :options="homepageThemeOptions" label-by="name"
+                            value-by="id" :closeOnSelect="true" :searchable="false" :clearOnClose="false"
+                            placeholder="--" />
+                        <small class="db-field-alert" v-if="errors.site_homepage_theme">
+                            {{ errors.site_homepage_theme[0] }}
+                        </small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title required" for="whatsapp_chat_icon_enable">{{
                             $t("label.whatsapp_chat_icon")
                             }}</label>
@@ -518,7 +532,15 @@ export default {
                 site_facebook_capi_token: null,
                 site_facebook_capi_status: null,
                 site_guest_checkout: null,
+                site_homepage_theme: 'default',
             },
+            homepageThemeOptions: [
+                { id: 'default', name: 'Default' },
+                { id: 'ramadan', name: 'Ramadan' },
+                { id: 'eid', name: 'Eid' },
+                { id: 'wedding', name: 'Wedding / Bridal' },
+                { id: 'winter', name: 'Winter' },
+            ],
             enums: {
                 dateFormatEnum: dateFormatEnum,
                 timeFormatEnum: timeFormatEnum,
@@ -617,6 +639,7 @@ export default {
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_guest_checkout: res.data.data.site_guest_checkout,
+                    site_homepage_theme: res.data.data.site_homepage_theme || 'default',
                 }
                 this.loading.isActive = false;
             }).catch((err) => {

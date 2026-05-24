@@ -1,21 +1,27 @@
 <template>
-    <SliderComponent />
+    <div class="homepage-root relative" :class="homepageThemeClass">
+        <SliderComponent />
 
-    <CategoryComponent />
+        <CategoryComponent />
 
-    <PromotionComponent />
+        <PromotionComponent />
 
-    <ProductSectionComponent />
+        <ProductSectionComponent />
 
-    <MostPopularComponent />
+        <MostPopularComponent />
 
-    <FlashSaleComponent />
+        <FlashSaleComponent />
 
-    <ProductBrandComponent />
+        <ProductBrandComponent />
 
-    <OutletComponent />
+        <HomeWhatsappCtaComponent />
 
-    <BenefitComponent />
+        <OutletComponent />
+
+        <HomeReviewsComponent />
+
+        <BenefitComponent />
+    </div>
 </template>
 
 <script>
@@ -31,6 +37,8 @@ const FlashSaleComponent = defineAsyncComponent(() => import("./FlashSaleCompone
 const ProductBrandComponent = defineAsyncComponent(() => import("./ProductBrandComponent.vue"));
 const OutletComponent = defineAsyncComponent(() => import("./OutletComponent.vue"));
 const BenefitComponent = defineAsyncComponent(() => import("./BenefitComponent.vue"));
+const HomeReviewsComponent = defineAsyncComponent(() => import("./HomeReviewsComponent.vue"));
+const HomeWhatsappCtaComponent = defineAsyncComponent(() => import("./HomeWhatsappCtaComponent.vue"));
 
 export default {
     name: "HomeComponent",
@@ -43,7 +51,18 @@ export default {
         FlashSaleComponent,
         ProductBrandComponent,
         OutletComponent,
-        BenefitComponent
-    }
+        BenefitComponent,
+        HomeReviewsComponent,
+        HomeWhatsappCtaComponent,
+    },
+    computed: {
+        setting() {
+            return this.$store.getters['frontendSetting/lists'];
+        },
+        homepageThemeClass() {
+            const theme = this.setting?.site_homepage_theme || 'default';
+            return `homepage-theme--${theme}`;
+        },
+    },
 };
 </script>

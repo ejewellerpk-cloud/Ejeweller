@@ -147,6 +147,14 @@
                                 {{ $t("label.offers") }}
                             </router-link>
                         </li>
+
+                        <li class="header-nav-item">
+                            <router-link class="header-nav-menu"
+                                :class="checkIsPathAndRoutePathSame('/track-order') ? 'router-link-active router-link-exact-active' : ''"
+                                :to="{ name: 'frontend.trackOrder' }">
+                                {{ $t("label.track_order") }}
+                            </router-link>
+                        </li>
                     </ul>
                     <div ref="pwaModal" v-if="!isPwaViewed" class="modal active ff-modal">
                         <div class="modal-dialog max-w-[360px] p-6 text-center relative">

@@ -21,6 +21,18 @@ class ProductSectionProductResource extends JsonResource
     public function toArray($request): array
     {
         $price = count($this->product?->variations) > 0 ? $this->product?->variation_price : $this->product?->selling_price;
+        $discount = (double) ($this->product?->discount ?? 0);
+        $isOffer = AppLibrary::isProductOfferActive(
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
+        $offerPrice = AppLibrary::productOfferPrice(
+            (float) $price,
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
         return [
             'id'                                        => $this->product_id,
             'name'                                      => optional($this->product)->name,
@@ -32,11 +44,11 @@ class ProductSectionProductResource extends JsonResource
             'productSection_product_status'             => optional($this->product)->status,
             'currency_price'                            => AppLibrary::currencyAmountFormat($price),
             'flash_sale'                                => $this->product?->add_to_flash_sale == Ask::YES,
-            'is_offer'                                  => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date),
-            'is_last_day_of_sale'                       => $this->product?->offer_end_date ? Carbon::parse($this->product->offer_end_date)->isToday() : false,
-            'discount'                                  => (double) ($this->product?->discount ?? 0),
-            'discounted_price'                          => AppLibrary::currencyAmountFormat($price - (($price / 100) * $this->product?->discount)),
-            'price'                                     => (double) ($price - (($price / 100) * $this->product?->discount)),
+            'is_offer'                                  => $isOffer,
+            'is_last_day_of_sale'                       => $isOffer && $this->product?->offer_end_date ? Carbon::parse($this->product->offer_end_date)->isToday() : false,
+            'discount'                                  => $discount,
+            'discounted_price'                          => AppLibrary::currencyAmountFormat($offerPrice),
+            'price'                                     => (double) $offerPrice,
             'old_price'                                 => (double) $price,
             'maximum_purchase_quantity'                 => (int) $this->product?->maximum_purchase_quantity,
             'taxes'                                     => ProductTaxResource::collection($this->product?->taxes),
@@ -54,6 +66,11 @@ class ProductSectionProductResource extends JsonResource
             'rating_star_count'                         => (int) $this->product?->rating_star_count,
             'wishlist'                                  => (bool) $this->product?->wishlist,
             'videos'                                    => ProductVideoResource::collection($this->product?->videos),
+            'in_baskets'                                => (int) ($this->product?->cart_trackers_count ?? $this->product?->cartTrackers()->count()),
+            'bought_last_24_hours'                      => (int) abs(
+                $this->product?->product_orders_last_day_sum_quantity
+                    ?? $this->product?->productOrders()->where('created_at', '>=', now()->subDay())->sum('quantity')
+            ),
         ];
     }
 }

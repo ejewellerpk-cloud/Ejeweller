@@ -24,8 +24,13 @@ class TrackOrderController extends Controller
 
             // Find order by order_serial_no
             $order = Order::where('order_serial_no', $orderSerialNo)
-                          ->with(['shippingAddress'])
-                          ->first();
+                ->with([
+                    'shippingAddress',
+                    'user',
+                    'orderProducts.product',
+                    'orderProducts.product.category',
+                ])
+                ->first();
 
             if (!$order) {
                 throw new Exception('Order not found with the provided Order ID.', 404);

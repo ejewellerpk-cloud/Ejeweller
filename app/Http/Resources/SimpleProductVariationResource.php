@@ -22,11 +22,18 @@ class SimpleProductVariationResource extends JsonResource
      */
     public function toArray($request): array
     {
-        $isOfferActive = AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date);
-
-        $discountedPrice = $isOfferActive
-            ? $this->price - (($this->price / 100) * $this->product->discount)
-            : $this->price;
+        $discount = (double) ($this->product?->discount ?? 0);
+        $isOfferActive = AppLibrary::isProductOfferActive(
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
+        $discountedPrice = AppLibrary::productOfferPrice(
+            (float) $this->price,
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
         return [
             'id'                            => $this->id,
             'product_attribute_id'          => (int) $this->product_attribute_id,
@@ -38,7 +45,7 @@ class SimpleProductVariationResource extends JsonResource
             'old_price'                     => AppLibrary::convertAmountFormat($this->price),
             'old_currency_price'            => AppLibrary::currencyAmountFormat($this->price),
             'discount'                      => $isOfferActive ? AppLibrary::convertAmountFormat(($this->price / 100) * $this->product->discount) : 0,
-            'discount_percentage'           => AppLibrary::convertAmountFormat($this->product?->discount),
+            'discount_percentage'           => $isOfferActive ? AppLibrary::convertAmountFormat($discount) : 0,
             'sku'                           => $this->sku,
             'image'                         => $this->image,
             'stock'                         => $this->product?->show_stock_out == Activity::DISABLE ? ($this->product?->can_purchasable == Ask::NO ? (int)env('NON_PURCHASE_QUANTITY') : (int)$this->stock_items_sum_quantity) : 0,

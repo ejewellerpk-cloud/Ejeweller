@@ -84,7 +84,8 @@ class SettingResource extends JsonResource
             'top_bar_text'                          => $this->info['top_bar_text'] ?? '',
             'top_bar_link'                          => $this->info['top_bar_link'] ?? '',
             'top_bar_bg_color'                      => $this->info['top_bar_bg_color'] ?? '#ff5c00',
-            'top_bar_text_color'                    => $this->info['top_bar_text_color'] ?? '#ffffff'
+            'top_bar_text_color'                    => $this->info['top_bar_text_color'] ?? '#ffffff',
+            'site_homepage_theme'                   => $this->info['site_homepage_theme'] ?? 'default',
         ];
     }
 

@@ -105,10 +105,10 @@
 
                         </div>
 
-                        <p v-if="cart.in_baskets > 0 || cart.bought_last_24_hours > 0"
+                        <p v-if="shouldShowCartSocialProof(cart)"
                             class="text-red-500 font-bold text-[11px] mt-1 flex items-center gap-1 leading-tight">
                             <i class="fa-solid fa-fire text-red-500 text-[10px]"></i>
-                            <span>{{ socialProofText(cart.in_baskets, cart.bought_last_24_hours) }}</span>
+                            <span>{{ cartSocialProofText(cart) }}</span>
                         </p>
                     </div>
                 </li>
@@ -139,6 +139,7 @@ import alertService from "../../../../services/alertService";
 import CouponComponent from "../CouponComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
 import CartTrustBadgesComponent from "../CartTrustBadgesComponent.vue";
+import { shouldShowSocialProof, socialProofTextForItem } from "../../../../utils/socialProof";
 
 export default {
     name: "CartListComponent",
@@ -298,21 +299,12 @@ export default {
             ).then().catch();
         },
 
-        socialProofText(inBaskets, boughtLast24) {
-            const baskets = parseInt(inBaskets) || 0;
-            const bought = parseInt(boughtLast24) || 0;
-            const parts = [];
-            if (baskets > 0) {
-                parts.push(`In ${baskets} Bastek`);
-            }
-            if (bought > 0) {
-                parts.push(`${bought} bought in last 24 hours`);
-            }
-            if (parts.length === 2) {
-                return parts[0] + ' & ' + parts[1];
-            }
-            return parts.join('');
-        }
+        shouldShowCartSocialProof(cart) {
+            return shouldShowSocialProof(cart);
+        },
+        cartSocialProofText(cart) {
+            return socialProofTextForItem(cart);
+        },
     }
 }
 </script>

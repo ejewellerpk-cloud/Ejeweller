@@ -41,7 +41,7 @@
                             <i class="fa-solid fa-arrow-left"></i> Track Another Order
                         </button>
                         <h2 class="text-2xl font-black text-gray-900">Order #{{ orderDetails.order_serial_no }}</h2>
-                        <p class="text-sm text-gray-500 mt-1">Placed on {{ orderDetails.order_date }}</p>
+                        <p class="text-sm text-gray-500 mt-1">Placed on {{ orderDetails.order_datetime || orderDetails.order_date }}</p>
                     </div>
                     <div class="text-right">
                         <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-black"
@@ -52,10 +52,10 @@
                 </div>
 
                 <!-- Order Timeline -->
-                <div class="mb-10">
+                <div v-if="orderTimeline.length > 0" class="mb-10">
                     <h3 class="text-lg font-bold text-gray-900 mb-6">Order Timeline</h3>
                     <div class="relative pl-6 border-l-2 border-gray-100 space-y-8">
-                        <div v-for="(timeline, index) in orderDetails.order_timeline" :key="index" class="relative">
+                        <div v-for="(timeline, index) in orderTimeline" :key="index" class="relative">
                             <div class="absolute -left-[35px] top-1 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center"
                                 :class="timeline.status === orderDetails.status ? 'bg-primary' : 'bg-gray-300'">
                             </div>
@@ -70,15 +70,20 @@
                 <!-- Order Items Summary -->
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-2">Order Summary</h3>
-                    <div class="space-y-4">
-                        <div v-for="(item, index) in orderDetails.products" :key="index" class="flex gap-4 items-center">
-                            <img :src="item.product_image" class="w-16 h-16 object-cover rounded-xl border border-gray-100">
-                            <div class="flex-1">
-                                <p class="font-bold text-gray-900 line-clamp-1">{{ item.product_name }}</p>
+
+                    <div v-if="orderProducts.length === 0" class="text-sm text-gray-500 py-4">
+                        No products found for this order.
+                    </div>
+
+                    <div v-else class="space-y-4">
+                        <div v-for="(item, index) in orderProducts" :key="item.id || index" class="flex gap-4 items-center">
+                            <img :src="item.product_image || placeholderImage" :alt="item.product_name" class="w-16 h-16 object-cover rounded-xl border border-gray-100 bg-gray-50">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-gray-900 line-clamp-2">{{ item.product_name }}</p>
                                 <p class="text-sm text-gray-500" v-if="item.variation_names">{{ item.variation_names }}</p>
                             </div>
-                            <div class="text-right">
-                                <p class="font-black text-gray-900">{{ item.total_price }}</p>
+                            <div class="text-right shrink-0">
+                                <p class="font-black text-gray-900">{{ item.total_currency_price }}</p>
                                 <p class="text-xs text-gray-500">Qty: {{ item.quantity }}</p>
                             </div>
                         </div>
@@ -89,7 +94,7 @@
                             <span class="text-gray-500 font-medium">Subtotal</span>
                             <span class="font-bold text-gray-900">{{ orderDetails.subtotal_currency_price }}</span>
                         </div>
-                        <div class="flex justify-between text-sm" v-if="orderDetails.discount_currency_price !== '$0.00' && orderDetails.discount_currency_price !== '0.00'">
+                        <div class="flex justify-between text-sm" v-if="orderDetails.discount_currency_price && orderDetails.discount_currency_price !== '$0.00' && orderDetails.discount_currency_price !== '0.00'">
                             <span class="text-gray-500 font-medium">Discount</span>
                             <span class="font-bold text-red-500">-{{ orderDetails.discount_currency_price }}</span>
                         </div>
@@ -111,6 +116,7 @@
 <script>
 import axios from 'axios';
 import alertService from '../../../services/alertService';
+import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 
 export default {
     name: "TrackOrderComponent",
@@ -121,18 +127,34 @@ export default {
                 order_serial_no: "",
                 phone_or_email: ""
             },
-            orderDetails: null
+            orderDetails: null,
+            placeholderImage: '/images/default/product/thumb.png',
         }
+    },
+    computed: {
+        orderProducts() {
+            if (!this.orderDetails) {
+                return [];
+            }
+            const items = this.orderDetails.products || this.orderDetails.order_products || [];
+            return Array.isArray(items) ? items : [];
+        },
+        orderTimeline() {
+            if (!this.orderDetails || !this.orderDetails.order_timeline) {
+                return [];
+            }
+            return Array.isArray(this.orderDetails.order_timeline) ? this.orderDetails.order_timeline : [];
+        },
     },
     methods: {
         submitTracking() {
             this.loading = true;
             axios.post('/frontend/order/track-order', this.form).then((res) => {
-                this.orderDetails = res.data.data;
+                this.orderDetails = res.data?.data || res.data;
                 this.loading = false;
             }).catch((err) => {
                 this.loading = false;
-                alertService.error(err.response.data.message || 'Order not found. Please verify your details.');
+                alertService.error(err.response?.data?.message || 'Order not found. Please verify your details.');
             });
         },
         resetForm() {
@@ -142,25 +164,23 @@ export default {
         },
         getStatusColor(status) {
             const statusMap = {
-                1: 'bg-yellow-100 text-yellow-700', // Pending
-                2: 'bg-blue-100 text-blue-700',   // Confirmed
-                3: 'bg-indigo-100 text-indigo-700', // Ongoing
-                4: 'bg-green-100 text-green-700',   // Delivered
-                5: 'bg-red-100 text-red-700',     // Canceled
-                6: 'bg-orange-100 text-orange-700', // Returned
-                7: 'bg-red-100 text-red-700',     // Rejected
+                [orderStatusEnum.PENDING]: 'bg-yellow-100 text-yellow-700',
+                [orderStatusEnum.CONFIRMED]: 'bg-blue-100 text-blue-700',
+                [orderStatusEnum.ON_THE_WAY]: 'bg-indigo-100 text-indigo-700',
+                [orderStatusEnum.DELIVERED]: 'bg-green-100 text-green-700',
+                [orderStatusEnum.CANCELED]: 'bg-red-100 text-red-700',
+                [orderStatusEnum.REJECTED]: 'bg-red-100 text-red-700',
             };
             return statusMap[status] || 'bg-gray-100 text-gray-700';
         },
         getStatusText(status) {
             const textMap = {
-                1: 'Pending',
-                2: 'Confirmed',
-                3: 'Ongoing',
-                4: 'Delivered',
-                5: 'Canceled',
-                6: 'Returned',
-                7: 'Rejected',
+                [orderStatusEnum.PENDING]: this.$t('label.pending'),
+                [orderStatusEnum.CONFIRMED]: this.$t('label.confirmed'),
+                [orderStatusEnum.ON_THE_WAY]: this.$t('label.on_the_way'),
+                [orderStatusEnum.DELIVERED]: this.$t('label.delivered'),
+                [orderStatusEnum.CANCELED]: this.$t('label.canceled'),
+                [orderStatusEnum.REJECTED]: this.$t('label.rejected'),
             };
             return textMap[status] || 'Unknown';
         }

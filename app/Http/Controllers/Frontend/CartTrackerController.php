@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Libraries\AppLibrary;
 use App\Models\CartTracker;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,7 +24,14 @@ class CartTrackerController extends Controller
             'user_id'    => Auth::check() ? Auth::id() : null,
         ]);
 
-        return response()->json(['status' => true, 'message' => 'Cart tracked successfully']);
+        $product = Product::find($request->product_id);
+        $stats   = AppLibrary::productSocialProofStats($product);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Cart tracked successfully',
+            ...$stats,
+        ]);
     }
 
     public function remove(Request $request)
@@ -32,19 +41,24 @@ class CartTrackerController extends Controller
             'session_id' => 'required|string',
         ]);
 
-        $query = CartTracker::where('product_id', $request->product_id)
-            ->where('session_id', $request->session_id);
+        CartTracker::where('product_id', $request->product_id)
+            ->where('session_id', $request->session_id)
+            ->delete();
 
         if (Auth::check()) {
-            $query->orWhere(function($q) use ($request) {
-                $q->where('product_id', $request->product_id)
-                  ->where('user_id', Auth::id());
-            });
+            CartTracker::where('product_id', $request->product_id)
+                ->where('user_id', Auth::id())
+                ->delete();
         }
 
-        $query->delete();
+        $product = Product::find($request->product_id);
+        $stats   = AppLibrary::productSocialProofStats($product);
 
-        return response()->json(['status' => true, 'message' => 'Cart track removed']);
+        return response()->json([
+            'status'  => true,
+            'message' => 'Cart track removed',
+            ...$stats,
+        ]);
     }
 
     public function clear(Request $request)
@@ -53,14 +67,31 @@ class CartTrackerController extends Controller
             'session_id' => 'required|string',
         ]);
 
-        $query = CartTracker::where('session_id', $request->session_id);
+        CartTracker::where('session_id', $request->session_id)->delete();
 
         if (Auth::check()) {
-            $query->orWhere('user_id', Auth::id());
+            CartTracker::where('user_id', Auth::id())->delete();
         }
 
-        $query->delete();
-
         return response()->json(['status' => true, 'message' => 'Cart tracks cleared']);
+    }
+
+    public function stats(Request $request)
+    {
+        $request->validate([
+            'product_ids'   => 'required|array',
+            'product_ids.*' => 'integer|exists:products,id',
+        ]);
+
+        $data = [];
+        foreach ($request->product_ids as $productId) {
+            $product = Product::find($productId);
+            $data[(string) $productId] = AppLibrary::productSocialProofStats($product);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $data,
+        ]);
     }
 }

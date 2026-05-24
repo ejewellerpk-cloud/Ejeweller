@@ -65,6 +65,25 @@ class ReviewService
     /**
      * @throws Exception
      */
+    public function featuredForHomepage(int $limit = 6)
+    {
+        try {
+            return ProductReview::with(['user', 'product:id,name,slug'])
+                ->where('star', '>=', 4)
+                ->whereHas('product', fn($query) => $query->where('status', \App\Enums\Status::ACTIVE))
+                ->orderBy('star', 'desc')
+                ->orderBy('id', 'desc')
+                ->limit($limit)
+                ->get();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
     public function show(ProductReview $productReview): ProductReview
     {
         try {

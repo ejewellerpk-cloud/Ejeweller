@@ -31,6 +31,12 @@
                     </router-link>
 
                     <router-link v-on:click="hideTarget('mobile-sidebar-canvas', 'canvas-active')"
+                        class="text-base font-medium capitalize py-3 border-b border-slate-100 text-heading"
+                        :to="{ name: 'frontend.trackOrder' }">
+                        {{ $t("label.track_order") }}
+                    </router-link>
+
+                    <router-link v-on:click="hideTarget('mobile-sidebar-canvas', 'canvas-active')"
                         v-if="pages.length > 0" v-for="page in pages" :key="page"
                         :to="{ name: 'frontend.page', params: { slug: page.slug } }"
                         class="text-base font-medium capitalize py-3 border-b border-slate-100 text-heading">{{

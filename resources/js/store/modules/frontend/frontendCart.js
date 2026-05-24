@@ -18,6 +18,20 @@ function getSessionId() {
     return sessionId;
 }
 
+function applySocialProofToCartItem(context, productId, variationId, stats) {
+    if (!stats || productId == null) {
+        return;
+    }
+    const index = context.state.lists.findIndex(
+        (item) => item.product_id === productId && (item.variation_id || null) === (variationId || null)
+    );
+    if (index >= 0) {
+        context.state.lists[index].in_baskets = parseInt(stats.in_baskets, 10) || 0;
+        context.state.lists[index].bought_last_24_hours = parseInt(stats.bought_last_24_hours, 10) || 0;
+        context.state.lists = [...context.state.lists];
+    }
+}
+
 
 export const frontendCart = {
     namespaced: true,
@@ -124,6 +138,15 @@ export const frontendCart = {
                                     const maxQty = (parseInt(list.maximum_purchase_quantity) > 0) ? parseInt(list.maximum_purchase_quantity) : Infinity;
                                     if ((payload.quantity + list.quantity) <= maxQty) {
                                         context.state.lists[i].quantity += payload.quantity;
+                                        if (payload.in_baskets != null) {
+                                            context.state.lists[i].in_baskets = payload.in_baskets;
+                                        }
+                                        if (payload.bought_last_24_hours != null) {
+                                            context.state.lists[i].bought_last_24_hours = payload.bought_last_24_hours;
+                                        }
+                                        if (payload.actual_sales != null) {
+                                            context.state.lists[i].actual_sales = payload.actual_sales;
+                                        }
                                     } else {
                                         errorOccurred = true;
                                         reject({
@@ -176,7 +199,8 @@ export const frontendCart = {
                                     total_price: parseFloat(payload.total_price) || 0,
                                     maximum_purchase_quantity: payload.maximum_purchase_quantity,
                                     in_baskets: payload.in_baskets || 0,
-                                    bought_last_24_hours: payload.bought_last_24_hours || 0
+                                    bought_last_24_hours: payload.bought_last_24_hours || 0,
+                                    actual_sales: payload.actual_sales || 0,
                                 });
                             } else {
                                 reject({
@@ -212,7 +236,17 @@ export const frontendCart = {
                 axios.post('frontend/cart-track/add', {
                     product_id: payload.product_id,
                     session_id: getSessionId()
-                }).catch(err => console.error("Cart tracking error:", err));
+                }).then((res) => {
+                    if (res.data) {
+                        applySocialProofToCartItem(
+                            context,
+                            payload.product_id,
+                            payload.variation_id,
+                            res.data
+                        );
+                    }
+                }).catch(() => {});
+                context.dispatch('refreshSocialProof').then().catch();
                 resolve({ data: context.state.lists, status: true });
             });
         },
@@ -251,11 +285,17 @@ export const frontendCart = {
         },
         remove: function (context, payload) {
             const item = context.state.lists[payload.id];
+            const productId = item?.product_id;
+            const variationId = item?.variation_id;
             if (item) {
                 axios.post('frontend/cart-track/remove', {
                     product_id: item.product_id,
                     session_id: getSessionId()
-                }).catch(err => console.error("Cart track remove error:", err));
+                }).then((res) => {
+                    if (res.data && productId) {
+                        applySocialProofToCartItem(context, productId, variationId, res.data);
+                    }
+                }).catch(() => {});
             }
             context.commit("remove", payload);
             context.commit("taxCalculation");
@@ -312,8 +352,37 @@ export const frontendCart = {
         resetCart: function (context) {
             axios.post('frontend/cart-track/clear', {
                 session_id: getSessionId()
-            }).catch(err => console.error("Cart track clear error:", err));
+            }).catch(() => {});
             context.commit('resetCart');
+        },
+        refreshSocialProof: function (context) {
+            const lists = context.state.lists;
+            if (!lists.length) {
+                return Promise.resolve();
+            }
+            const sessionId = getSessionId();
+            const productIds = [...new Set(lists.map((item) => item.product_id).filter(Boolean))];
+            const syncTrackers = Promise.all(
+                productIds.map((productId) =>
+                    axios.post('frontend/cart-track/add', {
+                        product_id: productId,
+                        session_id: sessionId,
+                    })
+                )
+            );
+            return syncTrackers.then(() => {
+                return axios.post('frontend/cart-track/stats', { product_ids: productIds });
+            }).then((res) => {
+                const data = res.data?.data || {};
+                context.state.lists.forEach((item, index) => {
+                    const stats = data[String(item.product_id)] || data[item.product_id];
+                    if (stats) {
+                        context.state.lists[index].in_baskets = parseInt(stats.in_baskets, 10) || 0;
+                        context.state.lists[index].bought_last_24_hours = parseInt(stats.bought_last_24_hours, 10) || 0;
+                    }
+                });
+                context.state.lists = [...context.state.lists];
+            }).catch(() => {});
         },
     },
     mutations: {

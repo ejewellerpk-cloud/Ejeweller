@@ -20,6 +20,11 @@ class ProductReviewResource extends JsonResource
             "user_id"    => $this->user_id,
             "name"       => $this->user?->name,
             "product_id" => $this->product_id,
+            "product"    => $this->whenLoaded('product', fn() => [
+                'id'   => $this->product?->id,
+                'name' => $this->product?->name,
+                'slug' => $this->product?->slug,
+            ]),
             "star"       => $this->star,
             "review"     => $this->review,
             "images"     => $this->images,

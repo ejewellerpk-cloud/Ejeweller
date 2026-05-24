@@ -19,18 +19,31 @@ class ProductAllVariationResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $discount = (double) ($this->product?->discount ?? 0);
+        $isOffer = AppLibrary::isProductOfferActive(
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
+        $offerPrice = AppLibrary::productOfferPrice(
+            (float) $this->price,
+            $discount,
+            $this->product?->offer_start_date,
+            $this->product?->offer_end_date
+        );
+
         return [
             'id'                            => $this->id,
             'product_attribute_id'          => $this->product_attribute_id,
             'product_attribute_option_id'   => $this->product_attribute_option_id,
             'product_attribute_name'        => $this->productAttribute?->name,
             'product_attribute_option_name' => $this->productAttributeOption?->name,
-            'price'                         => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date) ? AppLibrary::convertAmountFormat($this->price - (($this->price / 100) * $this->product->discount)) : AppLibrary::convertAmountFormat($this->price),
-            'currency_price'                => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date) ? AppLibrary::currencyAmountFormat($this->price - (($this->price / 100) * $this->product->discount)) : AppLibrary::currencyAmountFormat($this->price),
+            'price'                         => AppLibrary::convertAmountFormat($offerPrice),
+            'currency_price'                => AppLibrary::currencyAmountFormat($offerPrice),
             'old_price'                     => AppLibrary::convertAmountFormat($this->price),
             'old_currency_price'            => AppLibrary::currencyAmountFormat($this->price),
-            'discount'                      => AppLibrary::isBetweenDate($this->product?->offer_start_date, $this->product?->offer_end_date) ? AppLibrary::convertAmountFormat(($this->price / 100) * $this->product->discount) : 0,
-            'discount_percentage'           => AppLibrary::convertAmountFormat($this->product?->discount),
+            'discount'                      => $isOffer ? AppLibrary::convertAmountFormat(($this->price / 100) * $discount) : 0,
+            'discount_percentage'           => $isOffer ? AppLibrary::convertAmountFormat($discount) : 0,
             'sku'                           => $this->sku,
             'stock'                         => $this->product?->show_stock_out == Activity::DISABLE ? ($this->product?->can_purchasable == Ask::NO ? (int)env('NON_PURCHASE_QUANTITY') : (int)$this->stock_items_sum_quantity) : 0,
             'children'                      => ProductAllVariationResource::collection($this->children),

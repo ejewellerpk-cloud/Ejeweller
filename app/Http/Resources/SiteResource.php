@@ -52,6 +52,7 @@ class SiteResource extends JsonResource
             "site_facebook_pixel_id"                     => $this->info['site_facebook_pixel_id'] ?? '',
             "site_facebook_capi_token"                   => $this->info['site_facebook_capi_token'] ?? '',
             "site_facebook_capi_status"                  => $this->info['site_facebook_capi_status'] ?? 10,
+            "site_homepage_theme"                        => $this->info['site_homepage_theme'] ?? 'default',
         ];
     }
 }

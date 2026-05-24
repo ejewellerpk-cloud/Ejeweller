@@ -20,6 +20,9 @@ class ProductDetailsAdminResource extends JsonResource
     public function toArray($request): array
     {
         $price = count($this?->variations) > 0 ? $this->variation_price : $this->selling_price;
+        $discount = (double) $this->discount;
+        $isOffer = AppLibrary::isProductOfferActive($discount, $this->offer_start_date, $this->offer_end_date);
+        $offerPrice = AppLibrary::productOfferPrice((float) $price, $discount, $this->offer_start_date, $this->offer_end_date);
         return [
             "id"                           => $this->id,
             "use_random_sale"              => (int)$this->use_random_sale,
@@ -55,14 +58,14 @@ class ProductDetailsAdminResource extends JsonResource
             "shipping_cost"                => AppLibrary::flatAmountFormat($this->shipping_cost),
             "is_product_quantity_multiply" => $this->is_product_quantity_multiply,
             'category_slug'                => $this->category?->slug,
-            'price'                        => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date) ? AppLibrary::convertAmountFormat($price - (($price / 100) * $this->discount)) : AppLibrary::convertAmountFormat($price),
-            'currency_price'               => AppLibrary::currencyAmountFormat(AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date) ? AppLibrary::convertAmountFormat($price - (($price / 100) * $this->discount)) : AppLibrary::convertAmountFormat($price)),
+            'price'                        => AppLibrary::convertAmountFormat($offerPrice),
+            'currency_price'               => AppLibrary::currencyAmountFormat($offerPrice),
             'old_price'                    => AppLibrary::convertAmountFormat($price),
             'old_currency_price'           => AppLibrary::currencyAmountFormat($price),
-            'discount'                     => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date) ? AppLibrary::convertAmountFormat(($price / 100) * $this->discount) : 0,
-            'discount_percentage'          => AppLibrary::convertAmountFormat($this->discount),
+            'discount'                     => $isOffer ? AppLibrary::convertAmountFormat(($price / 100) * $discount) : 0,
+            'discount_percentage'          => $isOffer ? AppLibrary::convertAmountFormat($discount) : 0,
             'flash_sale'                   => $this->add_to_flash_sale == Ask::YES,
-            'is_offer'                     => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date),
+            'is_offer'                     => $isOffer,
             'rating_star'                  => $this->rating_star,
             'rating_star_count'            => $this->rating_star_count,
             'stock'                        => $this->show_stock_out == Activity::DISABLE ? ($this->can_purchasable == Ask::NO ? (int)env('NON_PURCHASE_QUANTITY') : (int)$this->stock_items_sum_quantity) : 0,

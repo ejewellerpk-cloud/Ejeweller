@@ -47,6 +47,7 @@ class SiteTableSeeder extends Seeder
             'site_is_return_product_price_add_to_credit' => Ask::YES,
             'site_guest_checkout'                        => Activity::DISABLE,
             'site_whatsapp_status'                       => Activity::DISABLE,
+            'site_homepage_theme'                        => 'default',
         ]);
 
         $envService->addData([

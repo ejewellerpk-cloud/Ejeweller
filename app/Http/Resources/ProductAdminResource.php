@@ -20,6 +20,9 @@ class ProductAdminResource extends JsonResource
     public function toArray($request): array
     {
         $price = count($this->variations) > 0 ? $this->variation_price : $this->selling_price;
+        $discount = (double) $this->discount;
+        $isOffer = AppLibrary::isProductOfferActive($discount, $this->offer_start_date, $this->offer_end_date);
+        $offerPrice = AppLibrary::productOfferPrice((float) $price, $discount, $this->offer_start_date, $this->offer_end_date);
         return [
             "id"                         => $this->id,
             "use_random_sale"            => (int)$this->use_random_sale,
@@ -50,8 +53,8 @@ class ProductAdminResource extends JsonResource
             'currency_price'             => AppLibrary::currencyAmountFormat($price),
             "cover"                      => $this->cover,
             'flash_sale'                 => $this->add_to_flash_sale == Ask::YES,
-            'is_offer'                   => AppLibrary::isBetweenDate($this->offer_start_date, $this->offer_end_date),
-            'discounted_price'           => AppLibrary::currencyAmountFormat($price - (($price / 100) * $this->discount)),
+            'is_offer'                   => $isOffer,
+            'discounted_price'           => AppLibrary::currencyAmountFormat($offerPrice),
             'rating_star'                => $this->rating_star,
             'rating_star_count'          => $this->rating_star_count,
             "barcode_image"              => $this->barcodeImage,

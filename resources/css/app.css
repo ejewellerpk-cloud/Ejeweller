@@ -1708,3 +1708,52 @@ input[type="search"]::-webkit-search-results-decoration {
 .whatsapp-btn:active {
     transform: scale(0.95) translateY(0) !important;
 }
+
+/* Homepage seasonal themes */
+.homepage-root.homepage-theme--ramadan {
+    --homepage-accent: #0d5c36;
+    --homepage-accent-soft: rgba(13, 92, 54, 0.08);
+}
+.homepage-root.homepage-theme--eid {
+    --homepage-accent: #b8860b;
+    --homepage-accent-soft: rgba(184, 134, 11, 0.1);
+}
+.homepage-root.homepage-theme--wedding {
+    --homepage-accent: #9b4d6a;
+    --homepage-accent-soft: rgba(155, 77, 106, 0.08);
+}
+.homepage-root.homepage-theme--winter {
+    --homepage-accent: #1e4d7a;
+    --homepage-accent-soft: rgba(30, 77, 122, 0.08);
+}
+
+.homepage-root.homepage-theme--ramadan h2.capitalize,
+.homepage-root.homepage-theme--eid h2.capitalize,
+.homepage-root.homepage-theme--wedding h2.capitalize,
+.homepage-root.homepage-theme--winter h2.capitalize {
+    color: var(--homepage-accent, inherit);
+}
+
+.homepage-root.homepage-theme--ramadan::before,
+.homepage-root.homepage-theme--eid::before,
+.homepage-root.homepage-theme--wedding::before,
+.homepage-root.homepage-theme--winter::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--homepage-accent), transparent);
+    margin-bottom: 0;
+}
+
+.homepage-root.homepage-theme--ramadan {
+    background: linear-gradient(180deg, var(--homepage-accent-soft) 0%, transparent 120px);
+}
+.homepage-root.homepage-theme--eid {
+    background: linear-gradient(180deg, var(--homepage-accent-soft) 0%, transparent 140px);
+}
+.homepage-root.homepage-theme--wedding {
+    background: linear-gradient(180deg, var(--homepage-accent-soft) 0%, transparent 100px);
+}
+.homepage-root.homepage-theme--winter {
+    background: linear-gradient(180deg, var(--homepage-accent-soft) 0%, transparent 100px);
+}

@@ -5,6 +5,7 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Models\ProductSection;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,8 @@ use App\Libraries\QueryExceptionLibrary;
 
 class ProductSectionService
 {
+    public const HOME_SECTIONS_CACHE_PREFIX = 'product_sections_v3_user_';
+
     protected array $productCateFilter = [
         'name',
         'slug',
@@ -121,11 +124,16 @@ class ProductSectionService
     {
         try {
             $userId = Auth::id() ?? 0;
-            return \Illuminate\Support\Facades\Cache::remember('product_sections_user_' . $userId, 3600, function () {
+            return Cache::remember(self::HOME_SECTIONS_CACHE_PREFIX . $userId, 3600, function () {
                 return ProductSection::select('product_sections.id', 'product_sections.name', 'product_sections.slug', 'product_sections.status')->with(['products' => function ($query) {
                     $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.created_at', 'products.use_random_sale')
                         ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                         ->withReviewRating()
+                        ->withCount('cartTrackers')
+                        ->withSum(
+                            ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
+                            'quantity'
+                        )
                         ->with('media', 'variations', 'reviews')
                         ->active('products.status')
                         ->whereNull('deleted_at')
@@ -138,6 +146,14 @@ class ProductSectionService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    public function clearHomeSectionsCache(): void
+    {
+        Cache::forget(self::HOME_SECTIONS_CACHE_PREFIX . '0');
+        if (Auth::check()) {
+            Cache::forget(self::HOME_SECTIONS_CACHE_PREFIX . Auth::id());
         }
     }
 }
