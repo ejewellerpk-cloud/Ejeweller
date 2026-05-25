@@ -79,6 +79,27 @@ export function isColorAttribute(name) {
     return /color|colour|رنگ/i.test(String(name || ''));
 }
 
+/** First image on this node or any descendant (for color option thumbnails). */
+export function getNodePreviewImage(node) {
+    if (!node) {
+        return null;
+    }
+    if (node.image) {
+        return node.image;
+    }
+    const queue = [...(node.children || [])];
+    while (queue.length) {
+        const current = queue.shift();
+        if (current?.image) {
+            return current.image;
+        }
+        if (current?.children?.length) {
+            queue.push(...current.children);
+        }
+    }
+    return null;
+}
+
 export function collectLeafVariations(tree, path = [], out = []) {
     for (const node of tree) {
         const nextPath = [...path, node];

@@ -14,6 +14,14 @@
                 <span class="capitalize text-sm sm:text-base font-semibold text-heading min-w-[4rem]">
                     {{ level.attributeName }}:
                 </span>
+                <img
+                    v-if="level.isColor && getSelectedLevelPreview(level.levelIndex)"
+                    :src="getSelectedLevelPreview(level.levelIndex)"
+                    :alt="level.attributeName"
+                    class="variation-selected-thumb"
+                    loading="lazy"
+                    @error="onVariationThumbError"
+                />
                 <span
                     v-if="level.levelIndex > 0 && selectedByLevel[level.levelIndex - 1] == null"
                     class="text-xs text-gray-500 italic"
@@ -35,8 +43,16 @@
                     :class="optionButtonClass(opt, level)"
                     :title="opt.available ? opt.product_attribute_option_name : ($t('message.option_unavailable') || 'Unavailable')"
                 >
+                    <img
+                        v-if="level.isColor && getOptionPreviewImage(opt)"
+                        :src="getOptionPreviewImage(opt)"
+                        :alt="opt.product_attribute_option_name"
+                        class="variation-option-thumb"
+                        loading="lazy"
+                        @error="onVariationThumbError"
+                    />
                     <span
-                        v-if="level.isColor"
+                        v-else-if="level.isColor"
                         class="variation-color-swatch"
                         :style="{ backgroundColor: colorSwatchValue(opt.product_attribute_option_name) }"
                     ></span>
@@ -68,9 +84,17 @@
                     type="button"
                     v-for="(variation, index) in variations"
                     :key="index"
-                    class="px-3 min-h-9 h-auto py-1 leading-snug text-center rounded-full text-sm font-medium capitalize flex-shrink-0 cursor-pointer text-secondary bg-[#F7F7FC] disabled:opacity-40 disabled:cursor-not-allowed"
+                    class="px-3 min-h-9 h-auto py-1 leading-snug text-center rounded-full text-sm font-medium capitalize flex-shrink-0 cursor-pointer text-secondary bg-[#F7F7FC] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
                     :disabled="!variationHasStock(variation)"
                 >
+                    <img
+                        v-if="variation.image"
+                        :src="variation.image"
+                        :alt="variation.product_attribute_option_name"
+                        class="variation-option-thumb"
+                        loading="lazy"
+                        @error="onVariationThumbError"
+                    />
                     {{ variation.product_attribute_option_name }}
                 </button>
             </dd>
@@ -93,6 +117,7 @@ import {
     findPathToVariationId,
     getAttributeName,
     getOptionsForLevel,
+    getNodePreviewImage,
 } from '../../../utils/variationPicker';
 
 const COLOR_MAP = {
@@ -126,6 +151,7 @@ export default {
         variationTreeData: { type: Array, default: () => [] },
         initialVariantId: { type: [Number, String], default: null },
         useLegacyOnly: { type: Boolean, default: false },
+        fallbackImage: { type: String, default: '' },
     },
     data() {
         return {
@@ -269,13 +295,39 @@ export default {
                 base.push('variation-option-btn--idle', 'border-gray-200 bg-white text-secondary hover:border-primary/60');
             }
             if (level.isColor && opt.available) {
-                base.push('pl-2');
+                base.push('variation-option-btn--color');
             }
             return base;
         },
         colorSwatchValue(name) {
             const key = String(name || '').trim().toLowerCase();
             return COLOR_MAP[key] || '#e5e7eb';
+        },
+        getOptionPreviewImage(opt) {
+            return getNodePreviewImage(opt);
+        },
+        getSelectedLevelPreview(levelIndex) {
+            const selectedId = this.selectedByLevel[levelIndex];
+            if (selectedId == null) {
+                return null;
+            }
+            const options = getOptionsForLevel(this.variationTree, this.selectedByLevel, levelIndex);
+            const selected = options.find((o) => Number(o.id) === Number(selectedId));
+            if (!selected) {
+                return null;
+            }
+            const leaf = getLeafFromPath(this.variationTree, this.selectedByLevel);
+            return getNodePreviewImage(selected) || leaf?.image || null;
+        },
+        onVariationThumbError(event) {
+            if (!event?.target) {
+                return;
+            }
+            const fallback = this.fallbackImage || this.$store?.getters?.['frontendSetting/lists']?.theme_logo;
+            if (fallback) {
+                event.target.src = fallback;
+            }
+            event.target.classList.add('variation-option-thumb--error');
         },
         variationHasStock(variation) {
             return (parseInt(variation?.stock, 10) || 0) > 0 || !variation?.sku;
@@ -297,12 +349,46 @@ export default {
 </script>
 
 <style scoped>
+.variation-selected-thumb {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    border: 2px solid var(--primary, #ff5c00);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+.variation-option-thumb {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem;
+    object-fit: cover;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.variation-option-thumb--error {
+    object-fit: contain;
+    padding: 2px;
+    background: #f7f7fc;
+}
+
+.variation-option-btn--color {
+    padding-left: 0.375rem;
+}
+
 .product-variation-picker .variation-color-swatch {
     width: 1.125rem;
     height: 1.125rem;
     border-radius: 9999px;
     border: 1px solid rgba(0, 0, 0, 0.12);
     flex-shrink: 0;
+}
+
+.variation-option-btn--selected .variation-option-thumb {
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .variation-unavailable-mark {

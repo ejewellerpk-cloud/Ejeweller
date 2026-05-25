@@ -252,6 +252,7 @@
                         :product-slug="product.slug"
                         :variation-tree-data="allVariationTree"
                         :initial-variant-id="initialVariantIdFromRoute"
+                        :fallback-image="product.image"
                         :method="selectedVariationMethod"
                         :variations="initialVariations"
                     />
