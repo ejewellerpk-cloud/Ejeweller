@@ -2,7 +2,6 @@
 
 namespace App\Analytics\Http\Controllers\Admin;
 
-use App\Analytics\Models\AnalyticsEvent;
 use App\Analytics\Repositories\EloquentAnalyticsSiteRepository;
 use App\Analytics\Services\AnalyticsDashboardService;
 use App\Analytics\Services\AnalyticsRealtimeService;
@@ -22,44 +21,47 @@ class IntelligenceDashboardController extends AdminController
 
     public function sites(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
-        $list = $this->sites->listForUser($userId);
+        try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            }
 
-        if (empty($list)) {
-            $this->settings->resolveOrCreateSite($userId);
             $list = $this->sites->listForUser($userId);
+
+            if (empty($list)) {
+                $this->settings->resolveOrCreateSite($userId);
+                $list = $this->sites->listForUser($userId);
+            }
+
+            $today = Carbon::now(config('app.timezone', 'UTC'))->toDateString();
+            $defaultFrom = Carbon::parse($today, config('app.timezone', 'UTC'))->subDays(6)->toDateString();
+            $defaultSiteId = !empty($list) ? $list[0]->id : null;
+
+            return response()->json([
+                'success' => true,
+                'data' => collect($list)->map(fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'domain' => $s->domain,
+                    'public_key' => $s->public_key,
+                    'is_active' => (bool) $s->is_active,
+                ])->values(),
+                'meta' => [
+                    'default_site_id' => $defaultSiteId,
+                    'server_today' => $today,
+                    'default_from' => $defaultFrom,
+                    'default_to' => $today,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => config('app.debug') ? $e->getMessage() : 'Could not load analytics sites.',
+            ], 500);
         }
-
-        $today = Carbon::now(config('app.timezone', 'UTC'))->toDateString();
-        $defaultFrom = Carbon::parse($today)->subDays(6)->toDateString();
-
-        $siteIds = collect($list)->pluck('id')->filter()->all();
-        $defaultSiteId = !empty($siteIds)
-            ? (AnalyticsEvent::query()
-                ->whereIn('site_id', $siteIds)
-                ->where('occurred_at', '>=', Carbon::now()->subDays(7))
-                ->selectRaw('site_id, COUNT(*) as total')
-                ->groupBy('site_id')
-                ->orderByDesc('total')
-                ->value('site_id') ?? $list[0]->id)
-            : null;
-
-        return response()->json([
-            'success' => true,
-            'data' => collect($list)->map(fn ($s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'domain' => $s->domain,
-                'public_key' => $s->public_key,
-                'is_active' => (bool) $s->is_active,
-            ])->values(),
-            'meta' => [
-                'default_site_id' => $defaultSiteId,
-                'server_today' => $today,
-                'default_from' => $defaultFrom,
-                'default_to' => $today,
-            ],
-        ]);
     }
 
     public function overview(Request $request): JsonResponse

@@ -2,9 +2,25 @@ import axios from 'axios';
 
 function parseResponse(res, label) {
     if (!res?.data?.success) {
-        throw new Error(res?.data?.message || `Failed to load ${label}`);
+        const msg = res?.data?.message || res?.data?.error;
+        throw new Error(msg || `Failed to load ${label}`);
     }
-    return res.data.data;
+    return res.data.data ?? [];
+}
+
+function apiErrorMessage(err, fallback) {
+    const status = err.response?.status;
+    const msg = err.response?.data?.message || err.message || fallback;
+    if (status === 400) {
+        return `${msg} (Check VITE_API_KEY in .env matches the site license key.)`;
+    }
+    if (status === 401) {
+        return `${msg} (Please log in again.)`;
+    }
+    if (status === 404) {
+        return `${msg} (Deploy latest code — analytics API route missing.)`;
+    }
+    return status ? `${msg} (HTTP ${status})` : msg;
 }
 
 export const intelligence = {
@@ -38,7 +54,12 @@ export const intelligence = {
     },
     actions: {
         async fetchSites({ commit }) {
-            const res = await axios.get('admin/intelligence/sites');
+            let res;
+            try {
+                res = await axios.get('admin/intelligence/sites');
+            } catch (err) {
+                throw new Error(apiErrorMessage(err, 'Failed to load sites'));
+            }
             const sites = parseResponse(res, 'sites');
             const meta = res.data.meta || {};
             commit('setSites', sites);

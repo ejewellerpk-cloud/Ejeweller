@@ -2,6 +2,21 @@
 
 Production-grade, self-hosted analytics module for Shopperzz (Laravel 12 + Vue 3).
 
+## Where dashboard data comes from
+
+| UI section | API | Database / source |
+|------------|-----|-------------------|
+| Site dropdown | `GET /api/admin/intelligence/sites` | `analytics_sites` |
+| Live visitors, page views today (top row) | `GET .../realtime` (poll 5s) | Redis/Cache counters via `AnalyticsRealtimeService` |
+| Visitors, sessions, page views, orders, revenue | `GET .../overview?site_id=&from=&to=` | `analytics_visitors`, `analytics_sessions`, `analytics_events` |
+| Funnel | `GET .../funnel` | `analytics_events` by `event_name` |
+| Traffic sources | `GET .../sources` | `analytics_sessions.source` |
+| Top products | `GET .../products` | `analytics_events` (`product_viewed`) |
+
+**Flow:** `tracker.js` → `POST /api/analytics/v1/collect` → DB tables → admin APIs → Vue `/admin/intelligence`.
+
+Log lines `Broadcasting AnalyticsRealtimeUpdated` are **not** what fills the dashboard UI (websocket not wired yet). The dashboard uses the HTTP APIs above.
+
 ## Architecture
 
 ```

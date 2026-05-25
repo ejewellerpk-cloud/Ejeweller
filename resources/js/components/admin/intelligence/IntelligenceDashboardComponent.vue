@@ -178,9 +178,7 @@ export default {
                     await this.refresh();
                 }
             } catch (err) {
-                this.loadError = err.response?.data?.message
-                    || err.message
-                    || 'Could not load analytics sites.';
+                this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
             } finally {
                 this.bootstrapping = false;
             }
