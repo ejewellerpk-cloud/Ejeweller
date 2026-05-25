@@ -541,9 +541,9 @@ class ProductService
             $activeStatus = Status::ACTIVE;
 
             $categories = [];
-            if ($request->has('category')) {
-                if (!blank($request->category)) {
-                    $categories = ProductCategory::where(['slug' => $request->category])->first();
+            if ($request->filled('category')) {
+                if (!blank($request->input('category'))) {
+                    $categories = ProductCategory::where(['slug' => $request->input('category')])->first();
                     if ($categories) {
                         $categories = $categories->descendantsAndSelf->toArray();
                     } else {
@@ -576,21 +576,23 @@ class ProductService
                     }
                 })->get();
 
-            $perPage     = $request->post('per_page', 30);
+            $perPage     = (int) $request->input('per_page', 30);
+            $sortBy      = $request->input('sort_by');
             $orderColumn = 'products.name';
             $orderType   = 'asc';
-            if ($request->post('sort_by') == 'newest') {
+            if ($sortBy === 'newest') {
                 $orderColumn = 'id';
                 $orderType   = 'desc';
-            } else if ($request->post('sort_by') == 'price_low_to_high') {
+            } elseif ($sortBy === 'price_low_to_high') {
                 $orderColumn = 'products.variation_price';
-            } else if ($request->post('sort_by') == 'price_high_to_low') {
+                $orderType   = 'asc';
+            } elseif ($sortBy === 'price_high_to_low') {
                 $orderColumn = 'products.variation_price';
                 $orderType   = 'desc';
-            } else if ($request->post('sort_by') == 'top_rated') {
+            } elseif ($sortBy === 'top_rated') {
                 $orderColumn = 'rating_star';
                 $orderType   = 'desc';
-            } else if ($request->post('sort_by') == 'random') {
+            } elseif ($sortBy === 'random') {
                 $orderColumn = 'random';
             }
 
@@ -612,18 +614,18 @@ class ProductService
                         }
                     }
                 })->where(function ($query) use ($request) {
-                    $brandIds = $this->resolveCategoryWiseBrandIds($request->brand);
+                    $brandIds = $this->resolveCategoryWiseBrandIds($request->input('brand'));
                     if (count($brandIds)) {
                         $query->whereIn('product_brand_id', $brandIds);
                     }
                 })->where(function ($query) use ($request, $customProductFilter, $customProductFilterMask) {
                     foreach ($request->all() as $key => $req) {
-                        if (in_array($key, $customProductFilter)) {
+                        if (in_array($key, $customProductFilter) && !blank($req)) {
                             $query->where($customProductFilterMask[$key], 'like', '%' . $req . '%');
                         }
                     }
                 })->where(function ($query) use ($request) {
-                    $variations = $this->decodeCategoryWiseVariationFilter($request->variation);
+                    $variations = $this->decodeCategoryWiseVariationFilter($request->input('variation'));
                     if (count($variations)) {
                             $arrays = [];
                             foreach ($variations as $variation) {
@@ -648,17 +650,19 @@ class ProductService
                     }
                 })->when($orderColumn === 'random', function ($query) {
                     $query->inRandomOrder();
-                })->when($orderColumn !== 'random', function ($query) use ($orderColumn, $orderType) {
+                })->when($sortBy === 'top_rated', function ($query) {
+                    $query->orderByDesc('rating_star');
+                })->when($orderColumn !== 'random' && $sortBy !== 'top_rated', function ($query) use ($orderColumn, $orderType) {
                     $query->orderBy($orderColumn, $orderType);
                 })->when(
-                    $request->filled('min_price') && $request->filled('max_price'),
+                    $request->has('min_price') && $request->has('max_price'),
                     function ($query) use ($request) {
                         $query->whereBetween('variation_price', [
-                            (float) $request->min_price,
-                            (float) $request->max_price,
+                            (float) $request->input('min_price'),
+                            (float) $request->input('max_price'),
                         ]);
                     }
-                )->paginate($perPage);
+                )->paginate($perPage, ['*'], 'page', (int) $request->input('page', 1));
 
             $variations = $productCategory->map(function ($query) {
                 return $query->variations;

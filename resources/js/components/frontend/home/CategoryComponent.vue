@@ -71,6 +71,9 @@ export default {
         },
     },
     mounted() {
+        if (this.categories.length > 0) {
+            return;
+        }
         this.loading.isActive = true;
         this.$store.dispatch("frontendProductCategory/lists", {
             paginate: 0,

@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-BjQ7Afy4.js";import{l as n,f as t,z as r}from"./vendor-vue-core-Bwi84O9g.js";import"./vendor-8yHaUXFb.js";const a={name:"LanguageComponent"};function s(c,p,_,m,f,i){const o=n("router-view");return t(),r(o)}const g=e(a,[["render",s]]);export{g as default};

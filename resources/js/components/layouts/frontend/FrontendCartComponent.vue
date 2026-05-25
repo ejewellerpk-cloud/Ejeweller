@@ -62,9 +62,9 @@
                             </div>
 
                             <p v-if="shouldShowCartSocialProof(cart)"
-                                class="text-red-500 font-bold text-[11px] mt-2 flex items-center gap-1 leading-tight">
-                                <i class="fa-solid fa-fire text-red-500 text-[10px]"></i>
-                                <span>{{ cartSocialProofText(cart) }}</span>
+                                class="text-red-500 font-bold text-[9px] sm:text-[10px] mt-1.5 flex flex-nowrap items-center gap-1 leading-none whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                                <i class="fa-solid fa-fire text-red-500 text-[9px] flex-shrink-0"></i>
+                                <span class="truncate">{{ cartSocialProofText(cart) }}</span>
                             </p>
                         </div>
                     </li>

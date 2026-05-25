@@ -16,10 +16,10 @@
                     </div>
 
                     <!-- SAVE % tag overlaid on top-left of image/slider -->
-                    <span v-if="product.is_offer && discountPercentageDetail() > 0" 
+                    <span v-if="detailPrices.onSale" 
                         class="absolute top-4 left-4 z-20 bg-primary text-white text-[11px] sm:text-xs font-extrabold px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
                         <i class="fa-solid fa-tags text-[10px]"></i>
-                        SAVE {{ discountPercentageDetail() }}%
+                        SAVE {{ detailPrices.percent }}%
                     </span>
 
                     <!-- Wishlist Button Overlay -->
@@ -93,10 +93,10 @@
                     </div>
 
                     <!-- SAVE % tag overlaid on top-left of image/slider -->
-                    <span v-if="product.is_offer && discountPercentageDetail() > 0" 
+                    <span v-if="detailPrices.onSale" 
                         class="absolute top-4 left-4 z-20 bg-primary text-white text-[11px] sm:text-xs font-extrabold px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
                         <i class="fa-solid fa-tags text-[10px]"></i>
-                        SAVE {{ discountPercentageDetail() }}%
+                        SAVE {{ detailPrices.percent }}%
                     </span>
 
                     <!-- Wishlist Button Overlay -->
@@ -127,21 +127,15 @@
                             <!-- Left: Price and Discount Pill -->
                             <div class="flex flex-nowrap items-baseline gap-2 sm:gap-3 shrink-0">
                                 <span class="text-4xl min-[360px]:text-5xl sm:text-6xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
-                                    {{
-                                        currencyFormat(temp.price, setting.site_digit_after_decimal_point,
-                                            setting.site_default_currency_symbol, setting.site_currency_position)
-                                    }}
+                                    {{ detailPrices.salePrice }}
                                 </span>
-                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="product.is_offer">
+                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="detailPrices.onSale">
                                     <del class="text-base min-[360px]:text-lg sm:text-xl font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
-                                        {{
-                                            currencyFormat(temp.oldPrice, setting.site_digit_after_decimal_point,
-                                                setting.site_default_currency_symbol, setting.site_currency_position)
-                                        }}
+                                        {{ detailPrices.originalPrice }}
                                     </del>
-                                    <span v-if="discountPercentageDetail() > 0" 
+                                    <span
                                         class="inline-flex items-center px-2.5 py-1 rounded-full text-xs min-[360px]:text-sm sm:text-sm font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
-                                        {{ discountPercentageDetail() }}% OFF
+                                        {{ detailPrices.percent }}% OFF
                                     </span>
                                 </div>
                             </div>
@@ -404,15 +398,16 @@
             </div>
 
             <div v-else class="product-section-slider-container relative">
-                    <Swiper v-if="relatedProducts.length > 0"
+                    <Swiper v-if="loopedRelatedProducts.length > 0"
                         :dir="'ltr'"
                         :slides-per-view="2"
                         :space-between="16"
                         :navigation="false"
-                        :freeMode="true"
-                        :autoplay="{ delay: 0, disableOnInteraction: false, pauseOnMouseEnter: true }"
-                        :speed="4000"
+                        :grab-cursor="true"
+                        :autoplay="relatedAutoplay"
+                        :speed="4500"
                         :loop="true"
+                        :loop-additional-slides="8"
                         :modules="modules"
                         :breakpoints="{
                             '640': { slidesPerView: 2, spaceBetween: 20 },
@@ -420,8 +415,11 @@
                             '1024': { slidesPerView: 4, spaceBetween: 24 }
                         }"
                         class="product-section-swiper continuous-slider !pb-10"
+                        @swiper="onRelatedSwiper"
+                        @touchEnd="resumeRelatedAutoplay"
+                        @slideChangeTransitionEnd="resumeRelatedAutoplay"
                     >
-                    <SwiperSlide v-for="product in relatedProducts" :key="product.id">
+                    <SwiperSlide v-for="(product, idx) in loopedRelatedProducts" :key="product.id + '-' + idx">
                         <ProductListComponent :products="[product]" />
                     </SwiperSlide>
                 </Swiper>
@@ -470,10 +468,10 @@
                     </h5>
                     <div class="flex items-center gap-1 mt-0.5">
                         <span class="text-[11px] font-bold text-primary font-sans">
-                            {{ currencyFormat(product.price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                            {{ product.is_offer && product.discounted_price ? product.discounted_price : product.currency_price }}
                         </span>
-                        <del v-if="product.is_offer" class="text-[9px] text-gray-400 font-sans">
-                            {{ currencyFormat(product.old_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
+                        <del v-if="product.is_offer && product.old_currency_price" class="text-[9px] text-gray-400 font-sans">
+                            {{ product.old_currency_price }}
                         </del>
                     </div>
                 </div>
@@ -502,11 +500,14 @@
                 class="w-full h-full product-gallery-lightbox">
                 <SwiperSlide v-for="(media, index) in combinedMedia" :key="'lightbox-' + index" class="flex items-center justify-center">
                     <div v-if="media.type === 'image'"
-                        class="w-full h-full flex items-center justify-center p-4 overflow-hidden cursor-zoom-in"
+                        class="w-full h-full flex items-center justify-center p-4 overflow-hidden"
+                        @touchstart.passive="onLightboxPinchStart($event, index)"
+                        @touchmove.passive="onLightboxPinchMove($event, index)"
+                        @touchend="onLightboxPinchEnd"
                         @click.stop="toggleMediaLightboxZoom(index)">
                         <img :src="media.url" alt="product"
-                            :class="mediaLightboxZoomedIndex === index ? 'scale-[2.2] cursor-zoom-out' : 'scale-100 cursor-zoom-in'"
-                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-300 ease-out" />
+                            :style="getLightboxImageStyle(index)"
+                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center touch-none select-none" />
                     </div>
                     <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center bg-black max-h-[85vh]">
                         <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
@@ -534,7 +535,7 @@
                         <span class="text-lg sm:text-2xl font-black text-white leading-none drop-shadow-md whitespace-nowrap">
                             {{ currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
                         </span>
-                        <span v-if="product.is_offer && discountPercentageDetail() > 0"
+                        <span v-if="detailPrices.onSale"
                             class="hidden sm:inline-flex bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none shadow-sm border border-primary/30">
                             -{{ discountPercentageDetail() }}%
                         </span>
@@ -623,8 +624,8 @@
                             <span class="text-lg sm:text-xl font-black text-white leading-none drop-shadow-md">
                                 {{ currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}
                             </span>
-                            <span v-if="product.is_offer" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none shadow-sm border border-primary/30">
-                                -{{ discountPercentageDetail() }}%
+                            <span v-if="detailPrices.onSale" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none shadow-sm border border-primary/30">
+                                -{{ detailPrices.percent }}%
                             </span>
                         </div>
                     </div>
@@ -745,6 +746,7 @@ import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
 import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
 import axios from "axios";
+import { discountPercentage, getDetailPrices, parseAmount } from "../../../utils/productOffer";
 
 export default {
     name: "ProductDetailsComponent",
@@ -823,6 +825,8 @@ export default {
             previewImages: [],
             previewIndex: 0,
             previewReview: null,
+            previewHistoryActive: false,
+            _onPreviewPopState: null,
             shareUrl: "",
             copyText: "Copy",
             zoomedIndex: null,
@@ -831,6 +835,9 @@ export default {
             showMediaLightbox: false,
             mediaLightboxIndex: 0,
             mediaLightboxZoomedIndex: null,
+            lightboxHistoryActive: false,
+            lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
+            _onLightboxPopState: null,
             animatingWishlist: false,
             tickerIndex: 0,
             tickerInterval: null,
@@ -846,7 +853,14 @@ export default {
             viewersInterval: null,
             recentlyViewedProducts: [],
             recentlyViewedLoading: false,
-            recentlyViewedLoadedImages: {}
+            recentlyViewedLoadedImages: {},
+            relatedSwiper: null,
+            relatedAutoplay: {
+                delay: 0,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: false,
+                stopOnLastSlide: false,
+            },
         }
     },
     computed: {
@@ -896,6 +910,20 @@ export default {
         },
         relatedProducts: function () {
             return this.$store.getters["frontendProduct/relatedProducts"];
+        },
+        loopedRelatedProducts: function () {
+            const items = this.relatedProducts || [];
+            if (!items.length) {
+                return [];
+            }
+            if (items.length >= 8) {
+                return items;
+            }
+            let out = [];
+            while (out.length < 10) {
+                out = out.concat(items);
+            }
+            return out;
         },
         animatedBuyNowTexts: function () {
             const texts = [];
@@ -948,6 +976,9 @@ export default {
             if (list.length === 0) return null;
             return list[this.badgeIndex % list.length];
         },
+        detailPrices: function () {
+            return getDetailPrices(this.product);
+        },
     },
     mounted() {
         this.show();
@@ -999,6 +1030,12 @@ export default {
         if (this.tapTimeout) {
             clearTimeout(this.tapTimeout);
         }
+        if (this._onLightboxPopState) {
+            window.removeEventListener('popstate', this._onLightboxPopState);
+        }
+        if (this._onPreviewPopState) {
+            window.removeEventListener('popstate', this._onPreviewPopState);
+        }
         document.body.style.overflow = '';
         document.body.classList.remove('media-lightbox-open');
         document.body.classList.remove('image-preview-open');
@@ -1048,10 +1085,7 @@ export default {
             this.flashSaleInterval = setInterval(updateTimer, 1000);
         },
         discountPercentageDetail: function () {
-            if (!this.product?.is_offer) {
-                return 0;
-            }
-            return Math.round(this.product.discount_percentage || 0);
+            return discountPercentage(this.product);
         },
         shouldShowSoldCount: function () {
             if (!this.product) return false;
@@ -1123,19 +1157,96 @@ export default {
         openMediaLightbox: function (index) {
             this.mediaLightboxIndex = index;
             this.mediaLightboxZoomedIndex = null;
+            this.resetLightboxPinch();
             this.showMediaLightbox = true;
             document.body.style.overflow = 'hidden';
             document.body.classList.add('media-lightbox-open');
+            if (!this.lightboxHistoryActive) {
+                history.pushState({ productGallery: 1 }, '');
+                this.lightboxHistoryActive = true;
+                this._onLightboxPopState = () => {
+                    if (this.showMediaLightbox) {
+                        this.closeMediaLightbox(true);
+                    }
+                };
+                window.addEventListener('popstate', this._onLightboxPopState);
+            }
         },
-        closeMediaLightbox: function () {
+        closeMediaLightbox: function (fromPopState = false) {
+            if (!this.showMediaLightbox) {
+                return;
+            }
             this.showMediaLightbox = false;
             this.mediaLightboxZoomedIndex = null;
+            this.resetLightboxPinch();
             document.body.style.overflow = '';
             document.body.classList.remove('media-lightbox-open');
+            if (fromPopState) {
+                if (this._onLightboxPopState) {
+                    window.removeEventListener('popstate', this._onLightboxPopState);
+                    this._onLightboxPopState = null;
+                }
+                this.lightboxHistoryActive = false;
+            } else if (this.lightboxHistoryActive) {
+                this.lightboxHistoryActive = false;
+                if (this._onLightboxPopState) {
+                    window.removeEventListener('popstate', this._onLightboxPopState);
+                    this._onLightboxPopState = null;
+                }
+                history.back();
+            }
+        },
+        resetLightboxPinch: function () {
+            this.lightboxPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false };
+        },
+        getLightboxImageStyle: function (index) {
+            if (this.mediaLightboxIndex !== index) {
+                return {};
+            }
+            const tapZoom = this.mediaLightboxZoomedIndex === index;
+            const scale = this.lightboxPinch.active || this.lightboxPinch.scale > 1
+                ? this.lightboxPinch.scale
+                : (tapZoom ? 2.2 : 1);
+            return {
+                transform: `scale(${scale}) translate(${this.lightboxPinch.x}px, ${this.lightboxPinch.y}px)`,
+                cursor: scale > 1 ? 'zoom-out' : 'zoom-in',
+            };
+        },
+        onLightboxPinchStart: function (e, index) {
+            if (this.mediaLightboxIndex !== index || e.touches.length !== 2) {
+                return;
+            }
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            this.lightboxPinch.active = true;
+            this.lightboxPinch.startDist = dist;
+            this.lightboxPinch.startScale = this.lightboxPinch.scale > 1 ? this.lightboxPinch.scale : 1;
+            this.mediaLightboxZoomedIndex = null;
+        },
+        onLightboxPinchMove: function (e, index) {
+            if (!this.lightboxPinch.active || this.mediaLightboxIndex !== index || e.touches.length !== 2) {
+                return;
+            }
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            const next = (dist / this.lightboxPinch.startDist) * this.lightboxPinch.startScale;
+            this.lightboxPinch.scale = Math.min(4, Math.max(1, next));
+        },
+        onLightboxPinchEnd: function () {
+            if (this.lightboxPinch.scale <= 1.05) {
+                this.resetLightboxPinch();
+            } else {
+                this.lightboxPinch.active = false;
+            }
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
             this.mediaLightboxZoomedIndex = null;
+            this.resetLightboxPinch();
         },
         toggleMediaLightboxZoom: function (index) {
             this.mediaLightboxZoomedIndex = this.mediaLightboxZoomedIndex === index ? null : index;
@@ -1230,10 +1341,36 @@ export default {
             this.previewReview = reviewObj;
             document.body.classList.add('image-preview-open');
             appService.modalShow('#imagePreviewModal');
+            if (!this.previewHistoryActive) {
+                history.pushState({ productReviewPreview: 1 }, '');
+                this.previewHistoryActive = true;
+                this._onPreviewPopState = () => {
+                    if (this.previewImages.length > 0) {
+                        this.hidePreviewImage(true);
+                    }
+                };
+                window.addEventListener('popstate', this._onPreviewPopState);
+            }
         },
-        hidePreviewImage: function () {
-             appService.modalHide('#imagePreviewModal');
-             document.body.classList.remove('image-preview-open');
+        hidePreviewImage: function (fromPopState = false) {
+            appService.modalHide('#imagePreviewModal');
+            document.body.classList.remove('image-preview-open');
+            this.previewImages = [];
+            this.previewReview = null;
+            if (fromPopState) {
+                if (this._onPreviewPopState) {
+                    window.removeEventListener('popstate', this._onPreviewPopState);
+                    this._onPreviewPopState = null;
+                }
+                this.previewHistoryActive = false;
+            } else if (this.previewHistoryActive) {
+                this.previewHistoryActive = false;
+                if (this._onPreviewPopState) {
+                    window.removeEventListener('popstate', this._onPreviewPopState);
+                    this._onPreviewPopState = null;
+                }
+                history.back();
+            }
         },
         shareProduct: function () {
             this.shareUrl = window.location.origin + window.location.pathname;
@@ -1386,6 +1523,20 @@ export default {
                 });
             }
         },
+        onRelatedSwiper: function (swiper) {
+            this.relatedSwiper = swiper;
+            this.resumeRelatedAutoplay();
+        },
+        resumeRelatedAutoplay: function () {
+            this.$nextTick(() => {
+                const autoplay = this.relatedSwiper?.autoplay;
+                if (!autoplay) {
+                    return;
+                }
+                autoplay.stop();
+                autoplay.start();
+            });
+        },
         showRelatedProduct: function () {
             if (typeof this.$route.params.slug !== "undefined") {
                 this.relatedProductsLoading = true;
@@ -1395,6 +1546,7 @@ export default {
                     rand: 8
                 }).then((res) => {
                     this.relatedProductsLoading = false;
+                    this.$nextTick(() => this.resumeRelatedAutoplay());
                 }).catch((err) => {
                     this.relatedProductsLoading = false;
                 });
@@ -1456,10 +1608,10 @@ export default {
                 this.temp.sku = variation.sku;
                 this.temp.stock = variation.stock;
                 this.temp.quantity = 1;
-                this.temp.discount = 0;
-                this.temp.price = variation.price;
-                this.temp.oldPrice = variation.old_price;
-                this.temp.totalPrice = variation.price;
+                this.temp.discount = variation.discount_percentage || 0;
+                this.temp.price = parseAmount(variation.price);
+                this.temp.oldPrice = parseAmount(variation.old_price);
+                this.temp.totalPrice = parseAmount(variation.price);
                 this.temp.maximum_purchase_quantity = variation.maximum_purchase_quantity;
 
                 if (variation.stock > 0) {
@@ -1743,12 +1895,6 @@ export default {
             const maxFormatted = maxDeliveryDate.toLocaleDateString('en-US', options);
             
             return `${minFormatted} - ${maxFormatted}`;
-        },
-        discountPercentageDetail() {
-            if (this.temp.oldPrice && this.temp.price && this.temp.oldPrice > this.temp.price) {
-                return Math.round(((this.temp.oldPrice - this.temp.price) / this.temp.oldPrice) * 100);
-            }
-            return 0;
         },
         getShippingFee() {
             if (!this.setting) return 'Calculated at checkout';

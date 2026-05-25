@@ -69,7 +69,7 @@ class ReviewService
     {
         try {
             return ProductReview::with(['user', 'product:id,name,slug'])
-                ->where('star', '>=', 4)
+                ->where('star', '>=', 3)
                 ->whereHas('product', fn($query) => $query->where('status', \App\Enums\Status::ACTIVE))
                 ->orderBy('star', 'desc')
                 ->orderBy('id', 'desc')

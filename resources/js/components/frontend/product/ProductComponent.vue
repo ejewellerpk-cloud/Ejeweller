@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent :props="loading" :is-full-screen="false" />
     <section class="mb-6 sm:mb-10">
         <div class="container mt-4 sm:mt-6">
             <!-- Category Breadcrumb -->
@@ -15,7 +15,7 @@
                 <div class="relative w-full rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1.5 h-[46px] sm:h-12">
                     <input 
                         type="text" 
-                        v-model="productSearchForm.name" 
+                        v-model="searchName" 
                         @input="handleSearchInput"
                         @keyup.enter="executeSearch"
                         @focus="showSuggestions = true"
@@ -24,7 +24,7 @@
                         class="w-full pl-5 pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
                     />
                     <button 
-                        v-if="productSearchForm.name" 
+                        v-if="searchName" 
                         @mousedown.prevent="clearNewSearch" 
                         type="button" 
                         class="text-gray-400 hover:text-gray-600 transition-colors px-2"
@@ -53,170 +53,106 @@
                 </div>
             </div>
 
-            <!-- Backdrop for Closing Dropdowns -->
-            <div v-if="activeDropdown" @click="activeDropdown = null" class="fixed inset-0 z-40 bg-transparent"></div>
+            <!-- Shop filters (menus teleported to body so overflow cannot clip them) -->
+            <div class="relative mb-4 z-40">
+                <div class="flex flex-wrap items-center gap-2 pb-1">
+                    <button v-if="hasActiveFilters" type="button" @click="resetFilters"
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary bg-primary/5 text-primary font-medium text-sm hover:bg-primary/10 transition-all active:scale-95">
+                        <i class="fa-solid fa-xmark text-[11px]"></i>
+                        <span>{{ $t('button.clear') || 'Clear' }}</span>
+                    </button>
 
-            <!-- Premium Horizontal Filter Row (Always Visible, Scrollable) -->
-            <div class="relative mb-4 z-30">
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap scrollbar-none scroll-smooth">
-                    
-                    <!-- Filters Button (Reset Filters) -->
-                    <div class="shrink-0">
-                        <button type="button" @click="clearAllFilters"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gray-200 bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95"
-                            :class="hasActiveFilters ? 'text-primary border-primary bg-primary/5' : 'text-gray-700'">
-                            <i class="fa-solid fa-filter text-[11px]"></i>
-                            <span>{{ hasActiveFilters ? 'Clear Filters' : 'Filters' }}</span>
-                        </button>
-                    </div>
+                    <button type="button" @click.stop="toggleDropdown('sort', $event)"
+                        :class="filters.sortBy ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
+                        <span>{{ sortLabel }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'sort' }"></i>
+                    </button>
 
-                    <!-- 1. Sort By Dropdown -->
-                    <div class="relative inline-block text-left shrink-0">
-                        <button @click.prevent="toggleDropdown('sortBy')" type="button"
-                            :class="productSearchForm.sort_by ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
-                            <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
-                            <span>{{ getSortLabel() }}</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'sortBy' }"></i>
-                        </button>
-                        
-                        <div v-if="activeDropdown === 'sortBy'" 
-                            class="absolute top-full mt-2 left-0 z-50 min-w-[220px] bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
-                            <div class="flex flex-col gap-3.5">
-                                <label for="sortByNewest" class="flex items-center gap-3 cursor-pointer group">
-                                    <input @change="sortByOption($event)" v-model="productSortBy"
-                                        value="newest" type="radio" id="sortByNewest" class="cs-custom-radio">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ $t('label.newest') }}
-                                    </span>
-                                </label>
+                    <button type="button" @click.stop="toggleDropdown('price', $event)"
+                        :class="filters.priceActive ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        <i class="fa-solid fa-tags text-[11px]"></i>
+                        <span>{{ priceLabel }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'price' }"></i>
+                    </button>
 
-                                <label for="priceLowToHigh" class="flex items-center gap-3 cursor-pointer group">
-                                    <input @change="sortByOption($event)"
-                                        v-model="productSortBy" value="price_low_to_high" type="radio"
-                                        id="priceLowToHigh" class="cs-custom-radio">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ $t('label.price_low_to_high') }}
-                                    </span>
-                                </label>
+                    <button v-if="categoryWiseBands.length > 0" type="button" @click.stop="toggleDropdown('brand', $event)"
+                        :class="filters.brandIds.length ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        <i class="fa-solid fa-building text-[11px]"></i>
+                        <span>{{ brandLabel }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
+                    </button>
 
-                                <label for="priceHighToLow" class="flex items-center gap-3 cursor-pointer group">
-                                    <input @change="sortByOption($event)"
-                                        v-model="productSortBy" value="price_high_to_low" type="radio"
-                                        id="priceHighToLow" class="cs-custom-radio">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ $t('label.price_high_to_low') }}
-                                    </span>
-                                </label>
-
-                                <label for="topRated" class="flex items-center gap-3 cursor-pointer group">
-                                    <input @change="sortByOption($event)" v-model="productSortBy"
-                                        value="top_rated" type="radio" id="topRated" class="cs-custom-radio">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ $t('label.top_rated') }}
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2. Price Range Dropdown -->
-                    <div class="relative inline-block text-left shrink-0">
-                        <button @click.prevent="toggleDropdown('price')" type="button"
-                            :class="priceFilterActive ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
-                            <i class="fa-solid fa-dollar-sign text-[11px]"></i>
-                            <span>{{ getPriceLabel() }}</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'price' }"></i>
-                        </button>
-                        
-                        <div v-if="activeDropdown === 'price'" 
-                            class="absolute top-full mt-2 left-0 z-50 min-w-[280px] bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
-                            <div class="flex flex-col gap-4">
-                                <div class="flex items-center gap-2">
-                                    <input v-on:keypress="onlyNumber($event)"
-                                        class="db-field-control text-center py-1.5 px-2.5 rounded-lg border border-gray-200 outline-none text-sm w-1/2" type="number"
-                                        v-model.number="productPrice.range[0]" min="0" :max="maxRange">
-                                    <span class="text-gray-400 font-medium text-sm">to</span>
-                                    <input v-on:keypress="onlyNumber($event)"
-                                        class="db-field-control text-center py-1.5 px-2.5 rounded-lg border border-gray-200 outline-none text-sm w-1/2" type="number"
-                                        v-model.number="productPrice.range[1]" min="0" :max="maxRange">
-                                </div>
-                                <VueSimpleRangeSlider
-                                    :keepJustSignificantFigures="true" popover-content-editable="false"
-                                    significant-figures="1" active-bar-color="#FD8B0E" bar-color="#D9DBE9"
-                                    class="p-1 w-full" :min="0" :max="maxRange || 1" v-model="productPrice.range" />
-                                <button type="button" @click="applyPriceFilter"
-                                    class="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-                                    {{ $t('button.apply') }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Brand Dropdown -->
-                    <div v-if="categoryWiseBands.length > 0" class="relative inline-block text-left shrink-0">
-                        <button @click.prevent="toggleDropdown('brand')" type="button"
-                            :class="productBrands.length > 0 ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
-                            <i class="fa-solid fa-tags text-[11px]"></i>
-                            <span>{{ $t('label.brand') }}{{ getBrandLabel() }}</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
-                        </button>
-                        
-                        <div v-if="activeDropdown === 'brand'" 
-                            class="absolute top-full mt-2 left-0 z-50 min-w-[240px] max-h-[300px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
-                            <div class="flex flex-col gap-3">
-                                <label :for="'brand_' + categoryWiseBand.id"
-                                    v-for="categoryWiseBand in categoryWiseBands"
-                                    :key="categoryWiseBand.id"
-                                    class="flex items-center gap-3 cursor-pointer group">
-                                    <input @change="brandOption($event, categoryWiseBand.id)" type="checkbox"
-                                        :id="'brand_' + categoryWiseBand.id" class="cs-custom-checkbox"
-                                        :checked="isBrandSelected(categoryWiseBand.id)">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ categoryWiseBand.name }}
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Dynamic Variations Dropdown -->
-                    <div v-if="Object.keys(categoryWiseVariations).length > 0"
-                        v-for="(categoryWiseVariation, categoryWiseVariationKey) in categoryWiseVariations"
-                        :key="categoryWiseVariationKey"
-                        class="relative inline-block text-left shrink-0">
-                        <button @click.prevent="toggleDropdown(categoryWiseVariationKey)" type="button"
-                            :class="getVariationLabel(categoryWiseVariationKey) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all duration-300 active:scale-95">
-                            <span>{{ underscoreToSpace(categoryWiseVariationKey) }}{{ getVariationLabel(categoryWiseVariationKey) }}</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" :class="{ 'rotate-180': activeDropdown === categoryWiseVariationKey }"></i>
-                        </button>
-                        
-                        <div v-if="activeDropdown === categoryWiseVariationKey" 
-                            class="absolute top-full mt-2 left-0 z-50 min-w-[240px] max-h-[300px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 transition-all duration-200">
-                            <div class="flex flex-col gap-3">
-                                <label
-                                    :for="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
-                                    v-for="variation in categoryWiseVariation"
-                                    :key="variation.product_attribute_option_id"
-                                    class="flex items-center gap-3 cursor-pointer group">
-                                    <input type="checkbox"
-                                        @change="variationOption($event, variation.product_attribute_id, variation.product_attribute_option_id)"
-                                        :id="variation.product_attribute_id + '_' + variation.product_attribute_option_id"
-                                        class="cs-custom-checkbox"
-                                        :checked="isVariationSelected(variation.product_attribute_id, variation.product_attribute_option_id)">
-                                    <span class="font-medium text-sm capitalize transition-all duration-300 group-hover:text-primary">
-                                        {{ variation.attribute_option_name }}
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
+                    <button v-for="(options, attrKey) in categoryWiseVariations" :key="attrKey" type="button"
+                        @click.stop="toggleDropdown('var_' + attrKey, $event)"
+                        :class="variationCount(attrKey) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        <span>{{ underscoreToSpace(attrKey) }}{{ variationCount(attrKey) ? ` (${variationCount(attrKey)})` : '' }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'var_' + attrKey }"></i>
+                    </button>
                 </div>
             </div>
+
+            <Teleport to="body">
+                <div v-if="activeDropdown" class="fixed inset-0 z-[9998] bg-transparent" @click="closeDropdown"></div>
+
+                <div v-if="activeDropdown === 'sort' && dropdownPos" data-shop-filter-menu class="fixed z-[9999] bg-white border border-gray-100 rounded-2xl shadow-lg p-2"
+                    :style="dropdownPos" @click.stop>
+                    <button v-for="opt in sortOptions" :key="opt.value" type="button"
+                        @click="selectSort(opt.value)"
+                        class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                        :class="filters.sortBy === opt.value ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-50'">
+                        {{ opt.label }}
+                    </button>
+                </div>
+
+                <div v-if="activeDropdown === 'price' && dropdownPos" data-shop-filter-menu class="fixed z-[9999] bg-white border border-gray-100 rounded-2xl shadow-lg p-4"
+                    :style="dropdownPos" @click.stop>
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="number" min="0" :max="maxRange" v-model.number="priceDraft[0]"
+                            @keypress="onlyNumber($event)"
+                            class="w-1/2 text-center py-1.5 px-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary">
+                        <span class="text-gray-400 text-sm">–</span>
+                        <input type="number" min="0" :max="maxRange" v-model.number="priceDraft[1]"
+                            @keypress="onlyNumber($event)"
+                            class="w-1/2 text-center py-1.5 px-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary">
+                    </div>
+                    <VueSimpleRangeSlider class="p-1 w-full mb-3" :min="0" :max="maxRange || 1"
+                        v-model="priceDraft" active-bar-color="#FD8B0E" bar-color="#D9DBE9" />
+                    <button type="button" @click="applyPrice"
+                        class="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold">
+                        {{ $t('button.apply') }}
+                    </button>
+                </div>
+
+                <div v-if="activeDropdown === 'brand' && dropdownPos" data-shop-filter-menu
+                    class="fixed z-[9999] max-h-[280px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-lg p-3"
+                    :style="dropdownPos" @click.stop>
+                    <label v-for="band in categoryWiseBands" :key="band.id"
+                        class="flex items-center gap-3 py-2 cursor-pointer">
+                        <input type="checkbox" class="cs-custom-checkbox" :value="band.id"
+                            v-model="filters.brandIds" @change="loadProducts(1)">
+                        <span class="text-sm font-medium capitalize">{{ band.name }}</span>
+                    </label>
+                </div>
+
+                <div v-for="(options, attrKey) in categoryWiseVariations" :key="'menu-' + attrKey">
+                    <div v-if="activeDropdown === 'var_' + attrKey && dropdownPos" data-shop-filter-menu
+                        class="fixed z-[9999] max-h-[280px] overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-lg p-3"
+                        :style="dropdownPos" @click.stop>
+                        <label v-for="opt in options" :key="opt.product_attribute_option_id"
+                            class="flex items-center gap-3 py-2 cursor-pointer">
+                            <input type="checkbox" class="cs-custom-checkbox"
+                                :checked="isVariationChecked(opt.product_attribute_id, opt.product_attribute_option_id)"
+                                @change="toggleVariation(opt.product_attribute_id, opt.product_attribute_option_id, $event.target.checked)">
+                            <span class="text-sm font-medium capitalize">{{ opt.attribute_option_name }}</span>
+                        </label>
+                    </div>
+                </div>
+            </Teleport>
 
             <!-- Product Grid Section (Full-Width) -->
             <div class="w-full mt-2">
@@ -244,6 +180,7 @@
 
 <script>
 
+import alertService from "../../../services/alertService";
 import targetService from "../../../services/targetService";
 import ProductListComponent from "../components/ProductListComponent";
 import StatusEnum from "../../../enums/modules/statusEnum";
@@ -266,103 +203,308 @@ export default {
     },
     data() {
         return {
-            loading: {
-                isActive: false,
-            },
-            loadingContent: {
-                isActive: false
-            },
-            productSortBy: null,
-            productBrands: [],
-            productVariations: [],
-            productPrice: {
-                range: [0, 0]
-            },
-            maxRange: 0,
-            productSearchForm: {
-                page: 1,
-                status: StatusEnum.ACTIVE,
-                sort_by: null,
-                category: null,
-                name: null,
-                brand: [],
-                variation: [],
-                min_price: null,
-                max_price: null
-            },
+            loading: { isActive: false },
+            loadingContent: { isActive: false },
             isLoadingMore: false,
             observer: null,
             activeDropdown: null,
+            dropdownPos: null,
             searchTimeout: null,
             showSuggestions: false,
             searchSuggestions: [],
+            searchName: '',
+            categorySlug: null,
             pendingBrandSlug: null,
-            priceFilterActive: false,
-            filterRequestId: 0,
-        }
+            maxRange: 1,
+            priceDraft: [0, 1],
+            loadToken: 0,
+            filters: {
+                sortBy: '',
+                priceActive: false,
+                minPrice: 0,
+                maxPrice: 0,
+                brandIds: [],
+                variations: [],
+            },
+            sortOptions: [],
+        };
     },
     computed: {
-        pagination: function () {
-            return this.$store.getters["frontendProduct/categoryWiseProductPagination"];
+        pagination() {
+            return this.$store.getters['frontendProduct/categoryWiseProductPagination'];
         },
-        ancestorsAndSelfCategories: function () {
-            return this.$store.getters["frontendProductCategory/ancestorsAndSelf"];
+        ancestorsAndSelfCategories() {
+            return this.$store.getters['frontendProductCategory/ancestorsAndSelf'];
         },
-        categoryWiseProducts: function () {
-            return this.$store.getters["frontendProduct/categoryWiseProducts"];
+        categoryWiseProducts() {
+            return this.$store.getters['frontendProduct/categoryWiseProducts'];
         },
-        categoryWiseBands: function () {
-            return this.$store.getters["frontendProduct/categoryWiseBands"];
+        categoryWiseBands() {
+            return this.$store.getters['frontendProduct/categoryWiseBands'];
         },
-        categoryWiseVariations: function () {
-            return this.$store.getters["frontendProduct/categoryWiseVariations"];
+        categoryWiseVariations() {
+            return this.$store.getters['frontendProduct/categoryWiseVariations'];
         },
         hasActiveFilters() {
-            return this.productSearchForm.sort_by !== null ||
-                   this.priceFilterActive ||
-                   this.productBrands.length > 0 ||
-                   this.productVariations.length > 0;
-        }
+            return !!this.filters.sortBy
+                || this.filters.priceActive
+                || this.filters.brandIds.length > 0
+                || this.filters.variations.length > 0;
+        },
+        sortLabel() {
+            const hit = this.sortOptions.find((o) => o.value === this.filters.sortBy);
+            return hit ? hit.label : (this.$t('label.sort_by') || 'Sort By');
+        },
+        priceLabel() {
+            if (!this.filters.priceActive) {
+                return this.$t('label.price') || 'Price';
+            }
+            return `${this.filters.minPrice} – ${this.filters.maxPrice}`;
+        },
+        brandLabel() {
+            const base = this.$t('label.brand') || 'Brand';
+            return this.filters.brandIds.length ? `${base} (${this.filters.brandIds.length})` : base;
+        },
+    },
+    created() {
+        this.sortOptions = [
+            { value: 'newest', label: this.$t('label.newest') || 'Newest' },
+            { value: 'price_low_to_high', label: this.$t('label.price_low_to_high') || 'Price: Low to High' },
+            { value: 'price_high_to_low', label: this.$t('label.price_high_to_low') || 'Price: High to Low' },
+            { value: 'top_rated', label: this.$t('label.top_rated') || 'Top Rated' },
+        ];
     },
     mounted() {
-        this.ancestorsAndSelf();
+        this.initFromRoute();
+        this.loadProducts(1);
         this.$nextTick(() => this.setupInfiniteScroll());
+        this._onFilterScroll = (e) => {
+            if (!this.activeDropdown) {
+                return;
+            }
+            if (e?.target?.closest?.('[data-shop-filter-menu]')) {
+                return;
+            }
+            this.closeDropdown();
+        };
+        window.addEventListener('scroll', this._onFilterScroll, true);
+        window.addEventListener('resize', this._onFilterScroll);
+    },
+    activated() {
+        this.initFromRoute();
+        this.loadProducts(1);
     },
     beforeUnmount() {
         if (this.observer) {
             this.observer.disconnect();
         }
+        window.removeEventListener('scroll', this._onFilterScroll, true);
+        window.removeEventListener('resize', this._onFilterScroll);
     },
     methods: {
-        getSortLabel: function () {
-            if (this.productSearchForm.sort_by === 'newest') return this.$t('label.newest') || 'Newest';
-            if (this.productSearchForm.sort_by === 'price_low_to_high') return this.$t('label.price_low_to_high') || 'Price: Low to High';
-            if (this.productSearchForm.sort_by === 'price_high_to_low') return this.$t('label.price_high_to_low') || 'Price: High to Low';
-            if (this.productSearchForm.sort_by === 'top_rated') return this.$t('label.top_rated') || 'Top Rated';
-            return this.$t('label.sort_by') || 'Sort By';
-        },
-        getPriceLabel: function () {
-            if (this.priceFilterActive) {
-                const min = this.productSearchForm.min_price ?? 0;
-                const max = this.productSearchForm.max_price ?? this.maxRange;
-                return `${min} - ${max}`;
+        initFromRoute() {
+            const q = this.$route.query;
+            this.categorySlug = q.category || null;
+            this.searchName = q.name || '';
+            this.pendingBrandSlug = q.brand || null;
+
+            if (this.categorySlug) {
+                this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', this.categorySlug).catch(() => {});
             }
-            return this.$t('label.price') || 'Price';
         },
-        parseMaxPrice: function (value) {
+        parseMaxPrice(value) {
             const num = parseFloat(String(value ?? 0).replace(/,/g, ''));
             return Number.isFinite(num) && num > 0 ? Math.ceil(num) : 1;
         },
-        isBrandSelected: function (brandId) {
-            const id = Number(brandId);
-            return this.productBrands.some((b) => Number(b) === id);
+        buildPayload(page = 1) {
+            const payload = {
+                page,
+                per_page: 30,
+                status: StatusEnum.ACTIVE,
+            };
+
+            if (this.categorySlug) {
+                payload.category = this.categorySlug;
+            }
+            if (this.searchName && this.searchName.trim()) {
+                payload.name = this.searchName.trim();
+            }
+            if (this.filters.sortBy) {
+                payload.sort_by = this.filters.sortBy;
+            }
+            if (this.filters.brandIds.length) {
+                payload.brand = this.filters.brandIds.map((id) => Number(id));
+            } else if (this.pendingBrandSlug) {
+                payload.brand = [this.pendingBrandSlug];
+            }
+            if (this.filters.variations.length) {
+                payload.variation = this.filters.variations.map((v) => ({
+                    attribute: Number(v.attribute),
+                    option: Number(v.option),
+                }));
+            }
+            if (this.filters.priceActive) {
+                payload.min_price = Number(this.filters.minPrice);
+                payload.max_price = Number(this.filters.maxPrice);
+            }
+
+            return payload;
         },
-        isVariationSelected: function (attributeId, optionId) {
+        applyResponseMeta(data) {
+            const max = this.parseMaxPrice(data?.max_price);
+            this.maxRange = max;
+            if (!this.filters.priceActive) {
+                this.priceDraft = [0, max];
+            }
+            this.applyBrandFromQuery();
+        },
+        applyBrandFromQuery() {
+            if (!this.pendingBrandSlug || !this.categoryWiseBands.length) {
+                return;
+            }
+            const brand = this.categoryWiseBands.find(
+                (b) => b.slug === this.pendingBrandSlug || String(b.id) === String(this.pendingBrandSlug)
+            );
+            if (brand) {
+                this.filters.brandIds = [Number(brand.id)];
+                this.pendingBrandSlug = null;
+                this.loadProducts(1);
+            }
+        },
+        defaultFilters() {
+            return {
+                sortBy: '',
+                priceActive: false,
+                minPrice: 0,
+                maxPrice: this.maxRange || 1,
+                brandIds: [],
+                variations: [],
+            };
+        },
+        loadProducts(page = 1) {
+            const token = ++this.loadToken;
+            const payload = this.buildPayload(page);
+
+            if (page === 1) {
+                this.loading.isActive = true;
+                this.loadingContent.isActive = true;
+                this.isLoadingMore = false;
+            } else {
+                this.isLoadingMore = true;
+            }
+
+            this.closeDropdown();
+
+            return this.$store.dispatch('frontendProduct/categoryWiseProducts', payload)
+                .then((res) => {
+                    if (token !== this.loadToken) {
+                        return res;
+                    }
+                    const data = res?.data?.data ?? res?.data ?? {};
+                    if (page === 1) {
+                        this.applyResponseMeta(data);
+                        this.$nextTick(() => this.setupInfiniteScroll());
+                    }
+                    return res;
+                })
+                .catch((err) => {
+                    if (token !== this.loadToken) {
+                        return;
+                    }
+                    const message = err?.response?.data?.message || err?.message;
+                    if (message) {
+                        alertService.error(message);
+                    }
+                })
+                .finally(() => {
+                    if (token !== this.loadToken) {
+                        return;
+                    }
+                    if (page === 1) {
+                        this.loading.isActive = false;
+                        this.loadingContent.isActive = false;
+                    } else {
+                        this.isLoadingMore = false;
+                    }
+                });
+        },
+        closeDropdown() {
+            this.activeDropdown = null;
+            this.dropdownPos = null;
+        },
+        positionDropdown(triggerEl) {
+            if (!triggerEl || typeof triggerEl.getBoundingClientRect !== 'function') {
+                return;
+            }
+            const rect = triggerEl.getBoundingClientRect();
+            const minW = this.activeDropdown === 'price' ? 280 : 240;
+            this.dropdownPos = {
+                top: `${rect.bottom + 8}px`,
+                left: `${rect.left}px`,
+                minWidth: `${Math.max(rect.width, minW)}px`,
+            };
+        },
+        toggleDropdown(name, event) {
+            if (this.activeDropdown === name) {
+                this.closeDropdown();
+                return;
+            }
+            this.activeDropdown = name;
+            this.$nextTick(() => this.positionDropdown(event?.currentTarget));
+        },
+        selectSort(value) {
+            this.filters.sortBy = value;
+            this.closeDropdown();
+            this.loadProducts(1);
+        },
+        applyPrice() {
+            let min = Number(this.priceDraft[0] ?? 0);
+            let max = Number(this.priceDraft[1] ?? this.maxRange);
+            if (min > max) {
+                [min, max] = [max, min];
+                this.priceDraft = [min, max];
+            }
+            min = Math.max(0, min);
+            max = Math.min(this.maxRange, Math.max(min, max));
+
+            const fullRange = min <= 0 && max >= this.maxRange;
+            this.filters.priceActive = !fullRange;
+            this.filters.minPrice = min;
+            this.filters.maxPrice = max;
+            this.closeDropdown();
+            this.loadProducts(1);
+        },
+        resetFilters() {
+            this.filters = this.defaultFilters();
+            this.priceDraft = [0, this.maxRange];
+            this.loadProducts(1);
+        },
+        variationCount(attrKey) {
+            const options = this.categoryWiseVariations[attrKey] || [];
+            return this.filters.variations.filter((v) =>
+                options.some((o) => Number(o.product_attribute_id) === Number(v.attribute))
+            ).length;
+        },
+        isVariationChecked(attributeId, optionId) {
+            return this.filters.variations.some(
+                (v) => Number(v.attribute) === Number(attributeId) && Number(v.option) === Number(optionId)
+            );
+        },
+        toggleVariation(attributeId, optionId, checked) {
             const attr = Number(attributeId);
             const opt = Number(optionId);
-            return this.productVariations.some((v) => Number(v.attribute) === attr && Number(v.option) === opt);
+            if (checked) {
+                if (!this.isVariationChecked(attr, opt)) {
+                    this.filters.variations.push({ attribute: attr, option: opt });
+                }
+            } else {
+                this.filters.variations = this.filters.variations.filter(
+                    (v) => !(Number(v.attribute) === attr && Number(v.option) === opt)
+                );
+            }
+            this.loadProducts(1);
         },
-        setupInfiniteScroll: function () {
+        setupInfiniteScroll() {
             if (this.observer) {
                 this.observer.disconnect();
             }
@@ -378,26 +520,6 @@ export default {
                 this.observer.observe(this.$refs.infiniteScrollTrigger);
             }
         },
-        getBrandLabel: function () {
-            if (this.productBrands.length > 0) {
-                return ` (${this.productBrands.length})`;
-            }
-            return '';
-        },
-        getVariationLabel: function (key) {
-            const attrOptions = this.categoryWiseVariations[key] || [];
-            const selectedCount = this.productVariations.filter(v => 
-                attrOptions.some(opt => opt.product_attribute_id === v.attribute && opt.product_attribute_option_id === v.option)
-            ).length;
-            return selectedCount > 0 ? ` (${selectedCount})` : '';
-        },
-        toggleDropdown: function (dropdownName) {
-            if (this.activeDropdown === dropdownName) {
-                this.activeDropdown = null;
-            } else {
-                this.activeDropdown = dropdownName;
-            }
-        },
         handleSearchInput() {
             this.showSuggestions = true;
             clearTimeout(this.searchTimeout);
@@ -406,12 +528,12 @@ export default {
             }, 300);
         },
         fetchSuggestions() {
-            if (this.productSearchForm.name && this.productSearchForm.name.length > 1) {
-                this.$store.dispatch("frontendProduct/lists", {
-                    name: this.productSearchForm.name,
-                    paginate: 0
-                }).then(res => {
-                    this.searchSuggestions = res.data.data.slice(0, 8);
+            if (this.searchName && this.searchName.length > 1) {
+                this.$store.dispatch('frontendProduct/lists', {
+                    name: this.searchName,
+                    paginate: 0,
+                }).then((res) => {
+                    this.searchSuggestions = (res.data.data || []).slice(0, 8);
                 });
             } else {
                 this.searchSuggestions = [];
@@ -419,12 +541,12 @@ export default {
         },
         executeSearch() {
             this.showSuggestions = false;
-            this.products();
+            this.loadProducts(1);
         },
         selectSuggestion(name) {
-            this.productSearchForm.name = name;
+            this.searchName = name;
             this.showSuggestions = false;
-            this.products();
+            this.loadProducts(1);
         },
         hideSuggestions() {
             setTimeout(() => {
@@ -432,9 +554,9 @@ export default {
             }, 200);
         },
         clearNewSearch() {
-            this.productSearchForm.name = null;
+            this.searchName = '';
             this.searchSuggestions = [];
-            this.products();
+            this.loadProducts(1);
         },
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
@@ -451,187 +573,29 @@ export default {
         hideTarget: function (id, cClass) {
             targetService.hideTarget(id, cClass);
         },
-        ancestorsAndSelf: function () {
-            if (typeof this.$route.query.category !== "undefined" && this.$route.query.category !== "") {
-                this.loading.isActive = true;
-                this.productSearchForm.category = this.$route.query.category;
-                this.$store.dispatch("frontendProductCategory/ancestorsAndSelf", this.$route.query.category).then(res => {
-                    this.loading.isActive = false;
-                }).catch((err) => {
-                    this.loading.isActive = false;
-                });
-            } else {
-                this.productSearchForm.category = null;
-            }
-
-            if (typeof this.$route.query.name !== "undefined" && this.$route.query.name !== "") {
-                this.productSearchForm.name = this.$route.query.name;
-            } else {
-                this.productSearchForm.name = null;
-            }
-
-            this.pendingBrandSlug = (typeof this.$route.query.brand !== "undefined" && this.$route.query.brand !== "")
-                ? this.$route.query.brand
-                : null;
-            this.productBrands = [];
-            this.productSearchForm.brand = [];
-
-            this.loading.isActive = true;
-            this.$store.dispatch("frontendProduct/categoryWiseProducts", this.buildProductPayload(1)).then(res => {
-                const max = this.parseMaxPrice(res.data.data.max_price);
-                this.maxRange = max;
-                if (!this.priceFilterActive) {
-                    this.productPrice.range = [0, max];
-                }
-                this.syncBrandFromRoute();
-                this.productSortBy = this.productSearchForm.sort_by;
-                this.loading.isActive = false;
-                this.$nextTick(() => this.setupInfiniteScroll());
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
-        },
-        buildProductPayload: function (page = 1) {
-            const payload = {
-                page: page,
-                status: StatusEnum.ACTIVE,
-                sort_by: this.productSearchForm.sort_by || null,
-                category: this.productSearchForm.category || null,
-                name: this.productSearchForm.name || null,
-            };
-
-            if (this.productBrands.length > 0) {
-                payload.brand = JSON.stringify(this.productBrands.map((id) => Number(id)));
-            } else if (this.pendingBrandSlug) {
-                payload.brand = JSON.stringify([this.pendingBrandSlug]);
-            }
-
-            if (this.productVariations.length > 0) {
-                payload.variation = JSON.stringify(this.productVariations.map((v) => ({
-                    attribute: Number(v.attribute),
-                    option: Number(v.option),
-                })));
-            }
-
-            if (this.priceFilterActive) {
-                payload.min_price = Number(this.productSearchForm.min_price ?? 0);
-                payload.max_price = Number(this.productSearchForm.max_price ?? this.maxRange);
-            }
-
-            return payload;
-        },
-        syncBrandFromRoute: function () {
-            if (!this.pendingBrandSlug || this.categoryWiseBands.length === 0) {
-                return;
-            }
-            const slug = this.pendingBrandSlug;
-            const brand = this.categoryWiseBands.find((b) => b.slug === slug || String(b.id) === String(slug));
-            if (brand) {
-                this.productBrands = [Number(brand.id)];
-                this.pendingBrandSlug = null;
-                this.products();
-            }
-        },
-        async products(page = 1) {
-            const requestId = ++this.filterRequestId;
-            this.loadingContent.isActive = true;
-            this.activeDropdown = null;
-
-            try {
-                await this.$store.dispatch("frontendProduct/categoryWiseProducts", this.buildProductPayload(page));
-                if (requestId !== this.filterRequestId) {
-                    return;
-                }
-            } catch (err) {
-                // ignore
-            } finally {
-                if (requestId === this.filterRequestId) {
-                    this.loadingContent.isActive = false;
-                }
-            }
-        },
-        async loadMoreProducts() {
+        loadMoreProducts() {
             if (!this.pagination.meta || this.pagination.meta.current_page >= this.pagination.meta.last_page) {
                 return;
             }
-            this.isLoadingMore = true;
-            const nextPage = this.pagination.meta.current_page + 1;
-            await this.$store.dispatch("frontendProduct/categoryWiseProducts", this.buildProductPayload(nextPage)).then(res => {
-                this.isLoadingMore = false;
-            }).catch((err) => {
-                this.isLoadingMore = false;
-            });
+            this.loadProducts(this.pagination.meta.current_page + 1);
         },
-        sortByOption: function (event) {
-            const sortBy = event.target.value;
-            this.productSortBy = sortBy;
-            this.productSearchForm.sort_by = sortBy;
-            this.products();
-        },
-        applyPriceFilter() {
-            let min = Number(this.productPrice.range[0] ?? 0);
-            let max = Number(this.productPrice.range[1] ?? this.maxRange);
-            if (min > max) {
-                [min, max] = [max, min];
-                this.productPrice.range = [min, max];
-            }
-            min = Math.max(0, min);
-            max = Math.min(this.maxRange, Math.max(min, max));
-
-            const isFullRange = min <= 0 && max >= this.maxRange;
-            this.priceFilterActive = !isFullRange;
-            this.productSearchForm.min_price = min;
-            this.productSearchForm.max_price = max;
-            this.products();
-        },
-        clearAllFilters() {
-            if (!this.hasActiveFilters) {
-                return;
-            }
-            this.productSearchForm.sort_by = null;
-            this.productSortBy = null;
-            this.priceFilterActive = false;
-            this.productSearchForm.min_price = null;
-            this.productSearchForm.max_price = null;
-            this.productBrands = [];
-            this.productVariations = [];
-            this.productPrice.range = [0, this.maxRange];
-            this.products();
-        },
-        brandOption: function (event, brand) {
-            const id = Number(brand);
-            if (event.target.checked) {
-                if (!this.isBrandSelected(id)) {
-                    this.productBrands.push(id);
-                }
-            } else {
-                this.productBrands = this.productBrands.filter((b) => Number(b) !== id);
-            }
-            this.products();
-        },
-        variationOption: function (event, attribute, option) {
-            const attr = Number(attribute);
-            const opt = Number(option);
-            if (event.target.checked) {
-                if (!this.isVariationSelected(attr, opt)) {
-                    this.productVariations.push({ attribute: attr, option: opt });
-                }
-            } else {
-                this.productVariations = this.productVariations.filter(
-                    (v) => !(Number(v.attribute) === attr && Number(v.option) === opt)
-                );
-            }
-            this.products();
+        onRouteChange() {
+            this.filters = this.defaultFilters();
+            this.priceDraft = [0, this.maxRange];
+            this.initFromRoute();
+            this.loadProducts(1);
         },
     },
     watch: {
-        $route() {
-            this.ancestorsAndSelf();
+        '$route.fullPath'(newPath, oldPath) {
+            if (newPath !== oldPath) {
+                this.onRouteChange();
+            }
         },
         categoryWiseBands() {
-            this.syncBrandFromRoute();
-        }
-    }
+            this.applyBrandFromQuery();
+        },
+    },
 }
 </script>
 

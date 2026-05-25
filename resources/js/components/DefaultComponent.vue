@@ -6,7 +6,11 @@
         <main class="">
             <FrontendNavbarComponent />
             <FrontendCartComponent />
-            <router-view></router-view>
+            <router-view v-slot="{ Component, route }">
+                <keep-alive include="HomeComponent">
+                    <component :is="Component" :key="route.meta.keepAlive ? route.name : route.fullPath" />
+                </keep-alive>
+            </router-view>
             <FrontendMobileSideBarComponent />
             <FrontendMobileNavBarComponent />
             <FrontendMobileCategoryComponent />

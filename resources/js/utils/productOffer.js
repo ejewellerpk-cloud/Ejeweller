@@ -1,40 +1,75 @@
 /**
- * Shared product discount / offer helpers for storefront components.
+ * Shared product discount / offer helpers (must match AppLibrary::productOfferPrice on backend).
  */
-export function discountPercentage(product) {
-    if (!product) {
+
+export function parseAmount(value) {
+    if (value == null || value === '') {
         return 0;
     }
-    if (product.old_price && product.price && product.old_price > product.price) {
-        return Math.round(((product.old_price - product.price) / product.old_price) * 100);
+    if (typeof value === 'number' && !isNaN(value)) {
+        return value;
     }
-    const discount = parseFloat(product.discount);
-    if (!isNaN(discount) && discount > 0) {
-        return Math.round(discount);
+    return parseFloat(String(value).replace(/[^0-9.-]/g, '')) || 0;
+}
+
+/**
+ * Active offer only when API says is_offer (dates + discount validated server-side).
+ */
+export function hasActiveDiscount(product) {
+    if (!product || !product.is_offer) {
+        return false;
     }
-    if (product.discount_percentage) {
-        return Math.round(parseFloat(product.discount_percentage));
+    return discountPercentage(product) > 0;
+}
+
+export function discountPercentage(product) {
+    if (!product || !product.is_offer) {
+        return 0;
     }
-    if (product.is_offer && product.discounted_price && product.currency_price) {
-        const oldVal = parseFloat(String(product.currency_price).replace(/[^0-9.]/g, ''));
-        const newVal = parseFloat(String(product.discounted_price).replace(/[^0-9.]/g, ''));
-        if (oldVal > newVal && oldVal > 0) {
-            return Math.round(((oldVal - newVal) / oldVal) * 100);
-        }
+
+    const fromField = parseFloat(product.discount);
+    if (!isNaN(fromField) && fromField > 0) {
+        return Math.round(fromField);
     }
+
+    const fromPercent = parseFloat(product.discount_percentage);
+    if (!isNaN(fromPercent) && fromPercent > 0) {
+        return Math.round(fromPercent);
+    }
+
+    const oldVal = parseAmount(product.old_price);
+    const newVal = parseAmount(product.price);
+    if (oldVal > newVal && oldVal > 0) {
+        return Math.round(((oldVal - newVal) / oldVal) * 100);
+    }
+
+    const originalFormatted = parseAmount(product.currency_price);
+    const saleFormatted = parseAmount(product.discounted_price);
+    if (originalFormatted > saleFormatted && originalFormatted > 0) {
+        return Math.round(((originalFormatted - saleFormatted) / originalFormatted) * 100);
+    }
+
     return 0;
 }
 
-export function hasActiveDiscount(product) {
-    if (!product) {
-        return false;
-    }
-    if (product.is_offer) {
-        return discountPercentage(product) > 0;
-    }
-    const d = parseFloat(product.discount);
-    if (!isNaN(d) && d > 0) {
-        return true;
-    }
-    return discountPercentage(product) > 0;
+/** List/card display: sale price + original strikethrough */
+export function getListPrices(product) {
+    const onSale = hasActiveDiscount(product);
+    return {
+        onSale,
+        salePrice: onSale ? (product.discounted_price || product.currency_price) : product.currency_price,
+        originalPrice: product.currency_price,
+        percent: discountPercentage(product),
+    };
+}
+
+/** Detail page display */
+export function getDetailPrices(product) {
+    const onSale = hasActiveDiscount(product);
+    return {
+        onSale,
+        salePrice: product.currency_price || '',
+        originalPrice: product.old_currency_price || product.currency_price || '',
+        percent: discountPercentage(product),
+    };
 }

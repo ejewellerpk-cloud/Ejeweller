@@ -35,6 +35,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
+            keepAlive: true,
         },
     },
     {

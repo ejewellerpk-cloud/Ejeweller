@@ -26,8 +26,9 @@
 
 <script>
 import { defineAsyncComponent } from 'vue';
-import SliderComponent from "./SliderComponent.vue";
-import CategoryComponent from "./CategoryComponent.vue";
+// Lazy load homepage sections to speed up checkout → home navigation
+const SliderComponent = defineAsyncComponent(() => import("./SliderComponent.vue"));
+const CategoryComponent = defineAsyncComponent(() => import("./CategoryComponent.vue"));
 
 // Lazy load below-the-fold components to reduce initial JS bundle size
 const PromotionComponent = defineAsyncComponent(() => import("./PromotionComponent.vue"));

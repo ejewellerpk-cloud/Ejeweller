@@ -86,6 +86,7 @@ class SettingResource extends JsonResource
             'top_bar_bg_color'                      => $this->info['top_bar_bg_color'] ?? '#ff5c00',
             'top_bar_text_color'                    => $this->info['top_bar_text_color'] ?? '#ffffff',
             'site_homepage_theme'                   => $this->info['site_homepage_theme'] ?? 'default',
+            'site_show_stock_out'                   => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,
         ];
     }
 

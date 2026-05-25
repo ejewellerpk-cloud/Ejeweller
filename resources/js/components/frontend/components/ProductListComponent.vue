@@ -26,17 +26,7 @@
                 class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
             </button>
 
-
-            <!-- Sold out overlay -->
-            <div v-if="isOutOfStock(product)"
-                class="absolute inset-0 z-[25] flex items-center justify-center bg-white/55 backdrop-blur-[1px] rounded-xl pointer-events-none">
-                <span class="bg-gray-900/85 text-white text-[10px] sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg">
-                    {{ $t('label.sold_out') || 'Sold Out' }}
-                </span>
-            </div>
-
-            <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider"
-                :class="isOutOfStock(product) ? 'opacity-75 grayscale-[0.35]' : ''">
+            <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
                 <!-- Main Slider for Product Images + Video -->
                 <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
                     :dir="'ltr'"
@@ -145,7 +135,8 @@
                             <span class="text-xs sm:text-sm font-semibold text-shopperz-red line-through leading-none">
                                 {{ product.currency_price }}
                             </span>
-                            <span class="text-[10px] sm:text-xs font-bold text-shopperz-red leading-none">
+                            <span v-if="discountPercentage(product) > 0"
+                                class="text-[10px] sm:text-xs font-bold text-shopperz-red leading-none">
                                 {{ discountPercentage(product) }}% OFF
                             </span>
                         </div>
@@ -157,12 +148,13 @@
                     <!-- Add to Cart / Sold out -->
                     <button v-if="!isOutOfStock(product)" type="button" @click.prevent.stop="addToCart(product)"
                         :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
+                        :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
                         class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300">
                         <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
                     </button>
-                    <span v-else
-                        class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-200 text-gray-500 flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase leading-tight text-center px-1">
-                        {{ $t('label.sold_out') || 'Sold' }}
+                    <span v-else-if="isOutOfStock(product)"
+                        class="inline-flex items-center justify-center min-w-[4.5rem] sm:min-w-[5rem] h-9 sm:h-10 px-2 rounded-xl bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold uppercase tracking-wide shrink-0 pointer-events-none">
+                        {{ $t('label.sold_out') || 'Sold Out' }}
                     </span>
                 </div>
 
@@ -217,6 +209,7 @@ import {
     getStarFillCount,
     formatProductRating,
 } from "../../../utils/productRating";
+import activityEnum from "../../../enums/modules/activityEnum";
 
 export default {
     name: "ProductListComponent",
@@ -237,9 +230,15 @@ export default {
         return {
             swiperInstances: {},
             animatingWishlists: {},
+            animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
             loadedImages: {}
         }
+    },
+    computed: {
+        setting() {
+            return this.$store.getters['frontendSetting/lists'];
+        },
     },
     methods: {
         onImageLoad(key) {
@@ -383,6 +382,10 @@ export default {
         },
         isOutOfStock: function (product) {
             if (!product) return false;
+            const siteShow = this.setting?.site_show_stock_out;
+            if (siteShow !== undefined && siteShow !== null && parseInt(siteShow, 10) !== activityEnum.ENABLE) {
+                return false;
+            }
             return parseInt(product.stock, 10) <= 0;
         },
         getProductBadges: function (product) {
@@ -462,6 +465,11 @@ export default {
             };
 
             // Dispatch to cart (exact pattern from ProductDetailsComponent else branch)
+            this.animatingCartIds[product.id] = true;
+            setTimeout(() => {
+                this.animatingCartIds[product.id] = false;
+            }, 600);
+
             this.$store.dispatch("frontendCart/lists", productPayload).then((res) => {
                 // success - cart drawer opens automatically via store action
             }).catch((err) => {
@@ -681,5 +689,16 @@ export default {
     100% {
         transform: scale(1);
     }
+}
+
+.animate-cart-bounce {
+    animation: cartBounce 0.55s ease-out;
+}
+
+@keyframes cartBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.2) rotate(-8deg); }
+    55% { transform: scale(0.92) rotate(4deg); }
+    100% { transform: scale(1) rotate(0deg); }
 }
 </style>

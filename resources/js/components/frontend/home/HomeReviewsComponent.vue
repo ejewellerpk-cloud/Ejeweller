@@ -17,8 +17,24 @@
                     </div>
                 </div>
 
-                <Swiper dir="ltr" :speed="600" :space-between="16" :breakpoints="breakpoints" class="reviews-swiper">
-                    <SwiperSlide v-for="review in reviews" :key="review.id">
+                <Swiper
+                    v-if="carouselReviews.length > 0"
+                    dir="ltr"
+                    :modules="modules"
+                    :slides-per-view="1.1"
+                    :space-between="12"
+                    :speed="4500"
+                    :loop="true"
+                    :loop-additional-slides="6"
+                    :grab-cursor="true"
+                    :autoplay="reviewsAutoplay"
+                    :breakpoints="breakpoints"
+                    class="reviews-swiper continuous-slider !pb-2"
+                    @swiper="onReviewsSwiper"
+                    @touchEnd="resumeReviewsAutoplay"
+                    @slideChangeTransitionEnd="resumeReviewsAutoplay"
+                >
+                    <SwiperSlide v-for="(review, idx) in carouselReviews" :key="review.id + '-' + idx">
                         <article class="h-full p-5 sm:p-6 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
                             <div class="flex items-center justify-between gap-2 mb-3">
                                 <h4 class="font-bold text-heading capitalize truncate">{{ review.name }}</h4>
@@ -39,18 +55,33 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { Autoplay } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
+import 'swiper/css';
 import starRating from 'vue-star-rating';
 import LoadingComponent from '../components/LoadingComponent';
 
 export default {
     name: 'HomeReviewsComponent',
     components: { Swiper, SwiperSlide, starRating, LoadingComponent },
+    setup() {
+        return {
+            modules: [Autoplay],
+        };
+    },
     data() {
         return {
             loading: { isActive: false },
             reviews: [],
             stats: { total: 0, average: 0 },
+            reviewsSwiper: null,
+            reviewsAutoplay: {
+                delay: 0,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: false,
+                stopOnLastSlide: false,
+            },
             breakpoints: {
                 0: { slidesPerView: 1.1, spaceBetween: 12 },
                 640: { slidesPerView: 2, spaceBetween: 16 },
@@ -58,18 +89,53 @@ export default {
             },
         };
     },
-    mounted() {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.load();
-                observer.disconnect();
+    computed: {
+        carouselReviews() {
+            const items = this.reviews || [];
+            if (!items.length) {
+                return [];
             }
-        }, { rootMargin: '100px' });
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        }
+            if (items.length >= 6) {
+                return items;
+            }
+            let out = [];
+            while (out.length < 8) {
+                out = out.concat(items);
+            }
+            return out;
+        },
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.load();
+            const el = this.$refs.lazySection;
+            if (!el || typeof IntersectionObserver === 'undefined') {
+                return;
+            }
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    this.load();
+                    observer.disconnect();
+                }
+            }, { rootMargin: '200px' });
+            observer.observe(el);
+        });
     },
     methods: {
+        onReviewsSwiper(swiper) {
+            this.reviewsSwiper = swiper;
+            this.resumeReviewsAutoplay();
+        },
+        resumeReviewsAutoplay() {
+            this.$nextTick(() => {
+                const autoplay = this.reviewsSwiper?.autoplay;
+                if (!autoplay) {
+                    return;
+                }
+                autoplay.stop();
+                autoplay.start();
+            });
+        },
         load() {
             if (this.reviews.length > 0) {
                 return;
@@ -90,6 +156,7 @@ export default {
                     };
                 }
                 this.loading.isActive = false;
+                this.$nextTick(() => this.resumeReviewsAutoplay());
             }).catch(() => {
                 this.loading.isActive = false;
             });
@@ -97,3 +164,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.continuous-slider :deep(.swiper-wrapper) {
+    transition-timing-function: linear !important;
+}
+</style>

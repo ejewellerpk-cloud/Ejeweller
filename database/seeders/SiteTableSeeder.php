@@ -48,6 +48,7 @@ class SiteTableSeeder extends Seeder
             'site_guest_checkout'                        => Activity::DISABLE,
             'site_whatsapp_status'                       => Activity::DISABLE,
             'site_homepage_theme'                        => 'default',
+            'site_show_stock_out'                        => Activity::ENABLE,
         ]);
 
         $envService->addData([

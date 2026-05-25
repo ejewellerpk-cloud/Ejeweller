@@ -71,6 +71,9 @@ export default {
         }
     },
     mounted() {
+        if (this.sliders.length > 0) {
+            return;
+        }
         this.loading.isActive = true;
         this.$store.dispatch("frontendSlider/lists", this.sliderProps.search).then((res) => {
             this.loading.isActive = false;

@@ -51,6 +51,7 @@ class SiteRequest extends FormRequest
             'site_facebook_capi_status'                   => ['nullable', 'numeric'],
             'site_guest_checkout'                         => ['nullable', 'numeric'],
             'site_homepage_theme'                         => ['nullable', 'string', 'in:default,ramadan,eid,wedding,winter'],
+            'site_show_stock_out'                         => ['nullable', 'numeric'],
         ];
     }
 }

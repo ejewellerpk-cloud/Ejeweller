@@ -428,6 +428,37 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title required" for="site_show_stock_out_enable">{{
+                            $t("label.site_show_stock_out")
+                            }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.ENABLE" v-model="form.site_show_stock_out"
+                                        id="site_show_stock_out_enable" type="radio" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="site_show_stock_out_enable" class="db-field-label">
+                                    {{ $t("label.enable") }}
+                                </label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.DISABLE" v-model="form.site_show_stock_out"
+                                        type="radio" id="site_show_stock_out_disable" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="site_show_stock_out_disable" class="db-field-label">
+                                    {{ $t("label.disable") }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.site_show_stock_out">
+                            {{ errors.site_show_stock_out[0] }}
+                        </small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label for="site_homepage_theme" class="db-field-title">
                             {{ $t("label.homepage_theme") }}
                         </label>
@@ -533,6 +564,7 @@ export default {
                 site_facebook_capi_status: null,
                 site_guest_checkout: null,
                 site_homepage_theme: 'default',
+                site_show_stock_out: null,
             },
             homepageThemeOptions: [
                 { id: 'default', name: 'Default' },
@@ -640,6 +672,9 @@ export default {
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                     site_homepage_theme: res.data.data.site_homepage_theme || 'default',
+                    site_show_stock_out: res.data.data.site_show_stock_out !== null && res.data.data.site_show_stock_out !== undefined
+                        ? Number(res.data.data.site_show_stock_out)
+                        : activityEnum.ENABLE,
                 }
                 this.loading.isActive = false;
             }).catch((err) => {

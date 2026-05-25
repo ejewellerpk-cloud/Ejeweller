@@ -1,6 +1,25 @@
 import axios from "axios";
 import appService from "../../../services/appService";
 
+let categoryWiseProductsSeq = 0;
+
+function extractCategoryWiseProductList(payload) {
+    if (!payload || typeof payload !== "object") {
+        return [];
+    }
+    const products = payload.products;
+    if (Array.isArray(products)) {
+        return products;
+    }
+    if (products && Array.isArray(products.data)) {
+        return products.data;
+    }
+    if (Array.isArray(payload.data)) {
+        return payload.data;
+    }
+    return [];
+}
+
 export const frontendProduct = {
     namespaced: true,
     state: {
@@ -144,15 +163,25 @@ export const frontendProduct = {
             });
         },
         categoryWiseProducts: function (context, payload) {
+            const seq = ++categoryWiseProductsSeq;
             return new Promise((resolve, reject) => {
-                let url = `frontend/product/category-wise-products`;
+                const url = `frontend/product/category-wise-products`;
                 axios.post(url, payload).then((res) => {
-                    context.commit("categoryWiseProducts", res.data.data);
-                    context.commit("categoryWiseProductPage", res.data.data);
-                    context.commit("categoryWiseProductPagination", res.data.data);
+                    if (seq !== categoryWiseProductsSeq) {
+                        resolve(res);
+                        return;
+                    }
+                    const commitData = res?.data?.data ?? res?.data ?? {};
+                    context.commit("categoryWiseProducts", commitData);
+                    context.commit("categoryWiseProductPage", commitData);
+                    context.commit("categoryWiseProductPagination", commitData);
                     resolve(res);
                 }).catch((err) => {
-                    reject(err);
+                    if (seq === categoryWiseProductsSeq) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
                 });
             });
         },
@@ -306,17 +335,16 @@ export const frontendProduct = {
             state.flashSaleProductPagination = payload;
         },
         categoryWiseProducts: function (state, payload) {
-            const list = Array.isArray(payload.products)
-                ? payload.products
-                : (payload.products?.data || []);
+            const list = extractCategoryWiseProductList(payload);
+            const page = Number(payload?.current_page) || 1;
 
-            if (payload.current_page && payload.current_page > 1) {
+            if (page > 1) {
                 state.categoryWiseProducts = [...state.categoryWiseProducts, ...list];
             } else {
                 state.categoryWiseProducts = list;
             }
 
-            if (payload.current_page === 1 || !payload.current_page) {
+            if (page === 1) {
                 state.categoryWiseBands = Array.isArray(payload.brands)
                     ? payload.brands
                     : (payload.brands?.data || state.categoryWiseBands);
@@ -333,8 +361,11 @@ export const frontendProduct = {
             }
         },
         categoryWiseProductPagination: function (state, payload) {
+            const productData = Array.isArray(payload.products)
+                ? payload.products
+                : (payload.products?.data ?? payload.products);
             state.categoryWiseProductPagination = {
-                data: payload.products,
+                data: productData,
                 links: {
                     first: payload.first_page_url,
                     last: payload.last_page_url,
