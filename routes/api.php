@@ -90,6 +90,8 @@ use App\Http\Controllers\Admin\AdministratorAddressController;
 use App\Http\Controllers\Admin\AiAgentController;
 use App\Http\Controllers\Admin\AiController;
 use App\Http\Controllers\Admin\ProductSectionProductController;
+use App\Analytics\Http\Controllers\Admin\IntelligenceDashboardController;
+use App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\ProductAttributeOptionController;
 use App\Http\Controllers\Admin\ReviewController;
@@ -212,6 +214,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/active-users', [DashboardController::class, 'activeUsers']);
     });
 
+    Route::prefix('intelligence')->name('intelligence.')->group(function () {
+        Route::get('/sites', [IntelligenceDashboardController::class, 'sites']);
+        Route::get('/overview', [IntelligenceDashboardController::class, 'overview']);
+        Route::get('/realtime', [IntelligenceDashboardController::class, 'realtime']);
+        Route::get('/funnel', [IntelligenceDashboardController::class, 'funnel']);
+        Route::get('/sources', [IntelligenceDashboardController::class, 'sources']);
+        Route::get('/products', [IntelligenceDashboardController::class, 'products']);
+    });
+
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
             Route::get('/', [CompanyController::class, 'index']);
@@ -255,6 +266,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
                 [AnalyticSectionController::class, 'update']
             );
             Route::delete('/{analytic}/{analyticSection}', [AnalyticSectionController::class, 'destroy']);
+        });
+
+        Route::prefix('intelligence-analytics')->name('intelligence-analytics.')->group(function () {
+            Route::get('/', [IntelligenceSettingsController::class, 'show']);
+            Route::match(['put', 'patch'], '/', [IntelligenceSettingsController::class, 'update']);
+            Route::post('/regenerate-keys', [IntelligenceSettingsController::class, 'regenerateKeys']);
         });
 
         Route::prefix('mail')->name('mail.')->group(function () {

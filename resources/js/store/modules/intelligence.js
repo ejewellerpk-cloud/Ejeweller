@@ -8,18 +8,29 @@ import {
     isIntelligenceDebugEnabled,
 } from './intelligenceDebug';
 
+function isHtmlApiBody(data) {
+    return typeof data === 'string' && /^\s*<!DOCTYPE/i.test(data);
+}
+
 function parseResponse(res, label) {
+    const body = res?.data;
+    if (isHtmlApiBody(body)) {
+        const hint =
+            'Server returned the storefront page instead of JSON. Deploy routes/api.php (intelligence routes) and run: php artisan route:clear';
+        intelError(`${label} rejected (HTML body)`, body.slice(0, 200));
+        throw new Error(hint);
+    }
     intelLog(`${label} response`, {
-        success: res?.data?.success,
-        data: res?.data?.data,
-        meta: res?.data?.meta,
+        success: body?.success,
+        data: body?.data,
+        meta: body?.meta,
     });
-    if (!res?.data?.success) {
-        const msg = res?.data?.message || res?.data?.error;
-        intelError(`${label} rejected (success=false)`, res?.data);
+    if (!body?.success) {
+        const msg = body?.message || body?.error;
+        intelError(`${label} rejected (success=false)`, body);
         throw new Error(msg || `Failed to load ${label}`);
     }
-    return res.data.data ?? [];
+    return body.data ?? [];
 }
 
 function apiErrorMessage(err, fallback) {

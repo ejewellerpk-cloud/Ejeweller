@@ -188,6 +188,8 @@ Headers: `X-Analytics-Key: pk_...` (or `site_key` in JSON body for sendBeacon)
 | `GET /api/admin/intelligence/sources?site_id=` | Source breakdown |
 | `GET /api/admin/intelligence/products?site_id=` | Top viewed products |
 
+Admin intelligence routes are registered in **`routes/api.php`** (inside the `admin` group) so they work even when production has an older `routes/analytics.php` without those paths. Ingest stays in `routes/analytics.php` (`POST /api/analytics/v1/collect`).
+
 ## Realtime WebSockets (optional)
 
 1. Install Laravel Reverb + laravel-echo
@@ -253,6 +255,9 @@ Should print `PONG`. Then `collect` uses the Redis buffer + queue; without a wor
 
 ## Deployment checklist
 
+- [ ] Upload `routes/api.php` (intelligence routes) + full `app/Analytics/` + `public/build` after `npm run build`
+- [ ] On server: `php artisan route:clear` (and `config:clear` if you changed `.env`)
+- [ ] Verify `GET /api/admin/intelligence/sites` returns JSON `{ "success": true, ... }` (not HTML)
 - [ ] Redis running (TCP or cPanel Unix socket)
 - [ ] `QUEUE_CONNECTION=redis`
 - [ ] Supervisor: `queue:work --queue=analytics`
