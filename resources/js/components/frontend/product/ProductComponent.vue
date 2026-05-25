@@ -1,78 +1,75 @@
 <template>
     <LoadingComponent :props="loading" :is-full-screen="false" />
-    <section class="mb-6 sm:mb-10">
-        <div class="container mt-4 sm:mt-6">
-            <!-- Category Breadcrumb -->
-            <CategoryBreadcrumbComponent
-                v-if="typeof $route.query.category !== 'undefined' && $route.query.category !== ''"
-                :categories="ancestorsAndSelfCategories" class="mb-4" />
+    <section class="shop-page mb-4 sm:mb-6 pb-20 lg:pb-8">
+        <div class="container mt-2 sm:mt-4 px-4 sm:px-6">
+            <!-- Sticky: search + filters -->
+            <div class="shop-page-sticky sticky top-14 sm:top-16 lg:top-[4.25rem] z-40 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-2 pb-3 mb-3 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+                <CategoryBreadcrumbComponent
+                    v-if="typeof $route.query.category !== 'undefined' && $route.query.category !== ''"
+                    :categories="ancestorsAndSelfCategories" class="mb-2 text-sm" />
 
-            <!-- New Search Bar Layout -->
-            <div class="w-full mb-4 relative flex items-center gap-2 sm:gap-3 z-40">
-                <button @click="$router.go(-1)" type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                    <i class="fa-solid fa-chevron-left text-xl text-gray-700"></i>
-                </button>
-                <div class="relative w-full rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1.5 h-[46px] sm:h-12">
-                    <input 
-                        type="text" 
-                        v-model="searchName" 
-                        @input="handleSearchInput"
-                        @keyup.enter="executeSearch"
-                        @focus="showSuggestions = true"
-                        @blur="hideSuggestions"
-                        placeholder="Search our premium collection..." 
-                        class="w-full pl-5 pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
-                    />
-                    <button 
-                        v-if="searchName" 
-                        @mousedown.prevent="clearNewSearch" 
-                        type="button" 
-                        class="text-gray-400 hover:text-gray-600 transition-colors px-2"
-                    >
-                        <i class="fa-solid fa-circle-xmark text-lg"></i>
+                <div class="w-full relative flex items-center gap-2 sm:gap-3">
+                    <button @click="$router.go(-1)" type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fa-solid fa-chevron-left text-xl text-gray-700"></i>
                     </button>
-                    <button 
-                        @mousedown.prevent="executeSearch" 
-                        type="button" 
-                        class="w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] flex-shrink-0 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors ml-1"
-                    >
-                        <i class="fa-solid fa-magnifying-glass text-sm sm:text-base"></i>
-                    </button>
+                    <div class="relative flex-1 min-w-0 rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1.5 h-[46px] sm:h-12">
+                        <input
+                            type="text"
+                            v-model="searchName"
+                            @input="handleSearchInput"
+                            @keyup.enter="executeSearch"
+                            @focus="showSuggestions = true"
+                            @blur="hideSuggestions"
+                            placeholder="Search our premium collection..."
+                            class="w-full pl-5 pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
+                        />
+                        <button
+                            v-if="searchName"
+                            @mousedown.prevent="clearNewSearch"
+                            type="button"
+                            class="text-gray-400 hover:text-gray-600 transition-colors px-2"
+                        >
+                            <i class="fa-solid fa-circle-xmark text-lg"></i>
+                        </button>
+                        <button
+                            @mousedown.prevent="executeSearch"
+                            type="button"
+                            class="w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] flex-shrink-0 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors ml-1"
+                        >
+                            <i class="fa-solid fa-magnifying-glass text-sm sm:text-base"></i>
+                        </button>
 
-                    <!-- Suggestions Dropdown -->
-                    <div v-if="showSuggestions && searchSuggestions.length > 0" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
-                        <ul class="max-h-60 overflow-y-auto">
-                            <li v-for="(suggestion, index) in searchSuggestions" :key="index"
-                                @mousedown.prevent="selectSuggestion(suggestion.name)"
-                                class="px-5 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors">
-                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-                                <span class="font-medium text-gray-700">{{ suggestion.name }}</span>
-                            </li>
-                        </ul>
+                        <div v-if="showSuggestions && searchSuggestions.length > 0" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                            <ul class="max-h-60 overflow-y-auto">
+                                <li v-for="(suggestion, index) in searchSuggestions" :key="index"
+                                    @mousedown.prevent="selectSuggestion(suggestion.name)"
+                                    class="px-5 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors">
+                                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                                    <span class="font-medium text-gray-700">{{ suggestion.name }}</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Shop filters (menus teleported to body so overflow cannot clip them) -->
-            <div class="relative mb-4 z-40">
-                <div class="flex flex-wrap items-center gap-2 pb-1">
+                <div class="shop-filters-row mt-2.5 flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth">
                     <button v-if="hasActiveFilters" type="button" @click="resetFilters"
                         class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary bg-primary/5 text-primary font-medium text-sm hover:bg-primary/10 transition-all active:scale-95">
                         <i class="fa-solid fa-xmark text-[11px]"></i>
                         <span>{{ $t('button.clear') || 'Clear' }}</span>
-                        </button>
+                    </button>
 
                     <button type="button" @click.stop="toggleDropdown('sort', $event)"
                         :class="filters.sortBy ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
-                            <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95 whitespace-nowrap">
+                        <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
                         <span>{{ sortLabel }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'sort' }"></i>
-                        </button>
-                        
+                    </button>
+
                     <button type="button" @click.stop="toggleDropdown('price', $event)"
                         :class="filters.priceActive ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95 whitespace-nowrap">
                         <i class="fa-solid fa-tags text-[11px]"></i>
                         <span>{{ priceLabel }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'price' }"></i>
@@ -80,21 +77,21 @@
 
                     <button v-if="categoryWiseBands.length > 0" type="button" @click.stop="toggleDropdown('brand', $event)"
                         :class="filters.brandIds.length ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95 whitespace-nowrap">
                         <i class="fa-solid fa-building text-[11px]"></i>
                         <span>{{ brandLabel }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
-                        </button>
-                        
+                    </button>
+
                     <button v-for="(options, attrKey) in categoryWiseVariations" :key="attrKey" type="button"
                         @click.stop="toggleDropdown('var_' + attrKey, $event)"
                         :class="variationCount(attrKey) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
-                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
+                        class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95 whitespace-nowrap">
                         <span>{{ underscoreToSpace(attrKey) }}{{ variationCount(attrKey) ? ` (${variationCount(attrKey)})` : '' }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'var_' + attrKey }"></i>
                     </button>
-                        </div>
-                    </div>
+                </div>
+            </div>
 
             <Teleport to="body">
                 <div v-if="activeDropdown" class="fixed inset-0 z-[9998] bg-transparent" @click="closeDropdown"></div>
@@ -154,8 +151,7 @@
                 </div>
             </Teleport>
 
-            <!-- Product Grid Section (Full-Width) -->
-            <div class="w-full mt-2">
+            <div class="w-full">
                 <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 componentLoading">
                     <LoadingContentComponent :props="loadingContent" />
                     <ProductListComponent v-if="categoryWiseProducts.length > 0" :products="categoryWiseProducts" />
@@ -600,14 +596,26 @@ export default {
 </script>
 
 <style scoped>
-/* Hide scrollbar for Chrome, Safari and Opera */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+.shop-filters-row {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-.scrollbar-none {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+.shop-filters-row::-webkit-scrollbar {
+    height: 5px;
+}
+
+.shop-filters-row::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.shop-filters-row::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 999px;
+}
+
+.shop-filters-row::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
 }
 </style>

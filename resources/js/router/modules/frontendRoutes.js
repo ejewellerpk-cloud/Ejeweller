@@ -45,6 +45,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
+            hideFooter: true,
         },
     },
     {

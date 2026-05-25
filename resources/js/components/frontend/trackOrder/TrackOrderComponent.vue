@@ -4,21 +4,15 @@
             <!-- Header -->
             <div class="text-center mb-10">
                 <h1 class="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">Track Your Order</h1>
-                <p class="text-gray-500 max-w-lg mx-auto">Enter your Order ID and the Phone Number or Email associated with the order to see its current status.</p>
+                <p class="text-gray-500 max-w-lg mx-auto">Enter your Order ID to see the current status and details of your purchase.</p>
             </div>
 
             <!-- Form Card -->
             <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 mb-8" v-if="!orderDetails">
                 <form @submit.prevent="submitTracking">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Order ID <span class="text-red-500">*</span></label>
-                            <input v-model="form.order_serial_no" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="e.g. 123456789" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Phone or Email <span class="text-red-500">*</span></label>
-                            <input v-model="form.phone_or_email" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Enter Phone or Email" required>
-                        </div>
+                    <div class="max-w-md mx-auto mb-8">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Order ID <span class="text-red-500">*</span></label>
+                        <input v-model="form.order_serial_no" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="e.g. 123456789" required>
                     </div>
                     
                     <div class="flex justify-center">
@@ -125,7 +119,6 @@ export default {
             loading: false,
             form: {
                 order_serial_no: "",
-                phone_or_email: ""
             },
             orderDetails: null,
             placeholderImage: '/images/default/product/thumb.png',
@@ -148,19 +141,23 @@ export default {
     },
     methods: {
         submitTracking() {
+            const orderId = (this.form.order_serial_no || '').trim();
+            if (!orderId) {
+                alertService.error('Please enter your Order ID.');
+                return;
+            }
             this.loading = true;
-            axios.post('/frontend/order/track-order', this.form).then((res) => {
+            axios.post('/frontend/order/track-order', { order_serial_no: orderId }).then((res) => {
                 this.orderDetails = res.data?.data || res.data;
                 this.loading = false;
             }).catch((err) => {
                 this.loading = false;
-                alertService.error(err.response?.data?.message || 'Order not found. Please verify your details.');
+                alertService.error(err.response?.data?.message || 'Order not found. Please check your Order ID.');
             });
         },
         resetForm() {
             this.orderDetails = null;
             this.form.order_serial_no = "";
-            this.form.phone_or_email = "";
         },
         getStatusColor(status) {
             const statusMap = {

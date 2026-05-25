@@ -1,14 +1,29 @@
 import axios from 'axios';
+import {
+    intelAuthContext,
+    intelAxiosMeta,
+    intelError,
+    intelLog,
+    intelWarn,
+    isIntelligenceDebugEnabled,
+} from './intelligenceDebug';
 
 function parseResponse(res, label) {
+    intelLog(`${label} response`, {
+        success: res?.data?.success,
+        data: res?.data?.data,
+        meta: res?.data?.meta,
+    });
     if (!res?.data?.success) {
         const msg = res?.data?.message || res?.data?.error;
+        intelError(`${label} rejected (success=false)`, res?.data);
         throw new Error(msg || `Failed to load ${label}`);
     }
     return res.data.data ?? [];
 }
 
 function apiErrorMessage(err, fallback) {
+    intelError('API error', intelAxiosMeta(err));
     const status = err.response?.status;
     const msg = err.response?.data?.message || err.message || fallback;
     if (status === 400) {
@@ -54,9 +69,11 @@ export const intelligence = {
     },
     actions: {
         async fetchSites({ commit }) {
+            intelLog('fetchSites → start', intelAuthContext());
             let res;
             try {
                 res = await axios.get('admin/intelligence/sites');
+                intelLog('fetchSites ← HTTP OK', intelAxiosMeta(res));
             } catch (err) {
                 throw new Error(apiErrorMessage(err, 'Failed to load sites'));
             }
@@ -71,25 +88,36 @@ export const intelligence = {
             if (defaultId) {
                 commit('setActiveSiteId', defaultId);
             }
+            intelLog('fetchSites ✓ committed', { sitesCount: sites.length, defaultId, meta });
             return { sites, meta };
         },
         async fetchOverview({ commit, state }) {
-            if (!state.activeSiteId) return;
+            if (!state.activeSiteId) {
+                intelWarn('fetchOverview skipped — no activeSiteId', state);
+                return;
+            }
+            const params = {
+                site_id: state.activeSiteId,
+                from: state.filters.from,
+                to: state.filters.to,
+            };
+            intelLog('fetchOverview →', params);
             commit('setLoading', true);
             commit('setLastError', null);
             try {
-                const res = await axios.get('admin/intelligence/overview', {
-                    params: {
-                        site_id: state.activeSiteId,
-                        from: state.filters.from,
-                        to: state.filters.to,
-                    },
-                });
+                const res = await axios.get('admin/intelligence/overview', { params });
+                intelLog('fetchOverview ← HTTP OK', intelAxiosMeta(res));
                 const data = parseResponse(res, 'overview');
                 commit('setOverview', data);
                 if (data?.realtime) {
                     commit('setRealtime', data.realtime);
                 }
+                intelLog('fetchOverview ✓ KPIs', {
+                    visitors: data?.visitors,
+                    sessions: data?.sessions,
+                    page_views: data?.page_views,
+                    realtime: data?.realtime,
+                });
             } catch (e) {
                 commit('setLastError', e.message || 'Overview failed');
                 throw e;
@@ -99,91 +127,142 @@ export const intelligence = {
         },
         async fetchRealtime({ commit, state }) {
             if (!state.activeSiteId) return;
+            const params = { site_id: state.activeSiteId };
             try {
-                const res = await axios.get('admin/intelligence/realtime', {
-                    params: { site_id: state.activeSiteId },
+                const res = await axios.get('admin/intelligence/realtime', { params });
+                const data = parseResponse(res, 'realtime');
+                commit('setRealtime', data);
+                intelLog('fetchRealtime ✓', {
+                    active_visitors: data?.active_visitors,
+                    page_views_today: data?.page_views_today,
                 });
-                commit('setRealtime', parseResponse(res, 'realtime'));
             } catch (e) {
                 commit('setLastError', e.message || 'Realtime failed');
+                intelError('fetchRealtime failed', e.message);
             }
         },
         async fetchFunnel({ commit, state }) {
             if (!state.activeSiteId) return;
-            const res = await axios.get('admin/intelligence/funnel', {
-                params: {
-                    site_id: state.activeSiteId,
-                    from: state.filters.from,
-                    to: state.filters.to,
-                },
-            });
-            commit('setFunnel', parseResponse(res, 'funnel') || []);
+            const params = {
+                site_id: state.activeSiteId,
+                from: state.filters.from,
+                to: state.filters.to,
+            };
+            intelLog('fetchFunnel →', params);
+            try {
+                const res = await axios.get('admin/intelligence/funnel', { params });
+                const data = parseResponse(res, 'funnel') || [];
+                commit('setFunnel', data);
+                intelLog('fetchFunnel ✓ steps', data.length);
+            } catch (e) {
+                intelError('fetchFunnel failed', intelAxiosMeta(e));
+                throw e;
+            }
         },
         async fetchSources({ commit, state }) {
             if (!state.activeSiteId) return;
-            const res = await axios.get('admin/intelligence/sources', {
-                params: {
-                    site_id: state.activeSiteId,
-                    from: state.filters.from,
-                    to: state.filters.to,
-                },
-            });
-            commit('setSources', parseResponse(res, 'sources') || []);
+            const params = {
+                site_id: state.activeSiteId,
+                from: state.filters.from,
+                to: state.filters.to,
+            };
+            intelLog('fetchSources →', params);
+            try {
+                const res = await axios.get('admin/intelligence/sources', { params });
+                const data = parseResponse(res, 'sources') || [];
+                commit('setSources', data);
+                intelLog('fetchSources ✓ rows', data.length);
+            } catch (e) {
+                intelError('fetchSources failed', intelAxiosMeta(e));
+                throw e;
+            }
         },
         async fetchProducts({ commit, state }) {
             if (!state.activeSiteId) return;
-            const res = await axios.get('admin/intelligence/products', {
-                params: {
-                    site_id: state.activeSiteId,
-                    from: state.filters.from,
-                    to: state.filters.to,
-                },
-            });
-            commit('setProducts', parseResponse(res, 'products') || []);
+            const params = {
+                site_id: state.activeSiteId,
+                from: state.filters.from,
+                to: state.filters.to,
+            };
+            intelLog('fetchProducts →', params);
+            try {
+                const res = await axios.get('admin/intelligence/products', { params });
+                const data = parseResponse(res, 'products') || [];
+                commit('setProducts', data);
+                intelLog('fetchProducts ✓ rows', data.length);
+            } catch (e) {
+                intelError('fetchProducts failed', intelAxiosMeta(e));
+                throw e;
+            }
         },
-        async refreshAll({ dispatch }) {
+        async refreshAll({ dispatch, state }) {
+            intelLog('refreshAll →', {
+                activeSiteId: state.activeSiteId,
+                filters: state.filters,
+            });
             const results = await Promise.allSettled([
                 dispatch('fetchOverview'),
                 dispatch('fetchFunnel'),
                 dispatch('fetchSources'),
                 dispatch('fetchProducts'),
             ]);
+            const labels = ['overview', 'funnel', 'sources', 'products'];
+            results.forEach((r, i) => {
+                if (r.status === 'fulfilled') {
+                    intelLog(`refreshAll ✓ ${labels[i]}`);
+                } else {
+                    intelError(`refreshAll ✗ ${labels[i]}`, r.reason?.message || r.reason);
+                }
+            });
             const failed = results.find((r) => r.status === 'rejected');
             if (failed) {
                 throw failed.reason;
             }
+            intelLog('refreshAll complete');
         },
     },
     mutations: {
         setSites(state, sites) {
             state.sites = sites;
+            intelLog('mutation setSites', { count: sites?.length, ids: sites?.map((s) => s.id) });
         },
         setActiveSiteId(state, id) {
             state.activeSiteId = Number(id) || null;
+            intelLog('mutation setActiveSiteId', state.activeSiteId);
         },
         setOverview(state, data) {
             state.overview = data;
+            intelLog('mutation setOverview', data);
         },
         setRealtime(state, data) {
             state.realtime = data;
         },
         setFunnel(state, data) {
             state.funnel = data;
+            intelLog('mutation setFunnel', { steps: data?.length });
         },
         setSources(state, data) {
             state.sources = data;
+            intelLog('mutation setSources', { rows: data?.length });
         },
         setProducts(state, data) {
             state.products = data;
+            intelLog('mutation setProducts', { rows: data?.length });
         },
         setFilters(state, filters) {
             state.filters = { ...state.filters, ...filters };
+            intelLog('mutation setFilters', state.filters);
         },
         setLoading(state, v) {
             state.loading = v;
         },
         setLastError(state, msg) {
             state.lastError = msg;
+            if (msg) intelWarn('mutation setLastError', msg);
         },
     },
 };
+
+if (typeof window !== 'undefined' && isIntelligenceDebugEnabled()) {
+    intelLog('Debug ON — disable: localStorage.setItem("intelligence_debug","0"); location.reload()');
+}

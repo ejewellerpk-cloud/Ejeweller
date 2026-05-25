@@ -134,6 +134,7 @@
 <script>
 import { mapGetters } from 'vuex';
 import KpiCard from './KpiCard.vue';
+import { intelAuthContext, intelLog, intelError } from '../../../store/modules/intelligenceDebug';
 
 export default {
     name: 'IntelligenceDashboardComponent',
@@ -156,7 +157,9 @@ export default {
         }),
     },
     async mounted() {
+        intelLog('Dashboard mounted', intelAuthContext());
         await this.initSites();
+        this.logUiState('after initSites');
         this.pollTimer = setInterval(() => {
             if (this.siteId) this.$store.dispatch('intelligence/fetchRealtime');
         }, 5000);
@@ -169,18 +172,25 @@ export default {
             this.bootstrapping = true;
             this.loadError = null;
             this.refreshError = null;
+            intelLog('initSites →');
             try {
-                const { meta } = await this.$store.dispatch('intelligence/fetchSites');
+                const { meta, sites } = await this.$store.dispatch('intelligence/fetchSites');
+                intelLog('initSites sites from store', { sites, meta });
                 if (meta?.default_from) this.from = meta.default_from;
                 if (meta?.default_to) this.to = meta.default_to;
                 if (this.sites.length) {
                     this.siteId = this.$store.state.intelligence.activeSiteId || this.sites[0].id;
+                    intelLog('initSites → refresh', { siteId: this.siteId, from: this.from, to: this.to });
                     await this.refresh();
+                } else {
+                    intelError('initSites — sites array empty after successful API');
                 }
             } catch (err) {
                 this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
+                intelError('initSites failed', { message: this.loadError, err });
             } finally {
                 this.bootstrapping = false;
+                this.logUiState('initSites done');
             }
         },
         onSiteChange() {
@@ -191,11 +201,30 @@ export default {
             this.refreshError = null;
             this.$store.commit('intelligence/setActiveSiteId', this.siteId);
             this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
+            intelLog('refresh →', { siteId: this.siteId, from: this.from, to: this.to });
             try {
                 await this.$store.dispatch('intelligence/refreshAll');
+                this.logUiState('refresh OK');
             } catch (err) {
                 this.refreshError = err.response?.data?.message || err.message || 'Failed to load dashboard data';
+                intelError('refresh failed', this.refreshError);
+                this.logUiState('refresh failed');
             }
+        },
+        logUiState(label) {
+            intelLog(`UI state [${label}]`, {
+                bootstrapping: this.bootstrapping,
+                loadError: this.loadError,
+                refreshError: this.refreshError,
+                siteId: this.siteId,
+                sitesCount: this.sites?.length,
+                overview: this.overview,
+                realtime: this.realtime,
+                funnelSteps: this.funnel?.length,
+                sourcesCount: this.sources?.length,
+                productsCount: this.products?.length,
+                storeActiveSiteId: this.$store.state.intelligence?.activeSiteId,
+            });
         },
         formatMoney(v) {
             const n = Number(v || 0);

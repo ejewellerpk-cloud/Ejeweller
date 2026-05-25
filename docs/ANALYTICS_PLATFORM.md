@@ -17,6 +17,19 @@ Production-grade, self-hosted analytics module for Shopperzz (Laravel 12 + Vue 3
 
 Log lines `Broadcasting AnalyticsRealtimeUpdated` are **not** what fills the dashboard UI (websocket not wired yet). The dashboard uses the HTTP APIs above.
 
+### Debug console (admin Intelligence page)
+
+Open `/admin/intelligence` → browser **Console** → filter `[Intelligence]`.
+
+Logs show: auth token present, each API request/response, Vuex mutations, and final UI state.
+
+Disable after debugging:
+
+```js
+localStorage.setItem('intelligence_debug', '0');
+location.reload();
+```
+
 ## Architecture
 
 ```
