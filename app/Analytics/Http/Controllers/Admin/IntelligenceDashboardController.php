@@ -2,12 +2,15 @@
 
 namespace App\Analytics\Http\Controllers\Admin;
 
+use App\Analytics\Models\AnalyticsEvent;
 use App\Analytics\Repositories\EloquentAnalyticsSiteRepository;
 use App\Analytics\Services\AnalyticsDashboardService;
+use App\Analytics\Services\AnalyticsRealtimeService;
 use App\Analytics\Services\AnalyticsSettingsService;
 use App\Http\Controllers\Admin\AdminController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class IntelligenceDashboardController extends AdminController
 {
@@ -27,6 +30,20 @@ class IntelligenceDashboardController extends AdminController
             $list = $this->sites->listForUser($userId);
         }
 
+        $today = Carbon::now(config('app.timezone', 'UTC'))->toDateString();
+        $defaultFrom = Carbon::parse($today)->subDays(6)->toDateString();
+
+        $siteIds = collect($list)->pluck('id')->filter()->all();
+        $defaultSiteId = !empty($siteIds)
+            ? (AnalyticsEvent::query()
+                ->whereIn('site_id', $siteIds)
+                ->where('occurred_at', '>=', Carbon::now()->subDays(7))
+                ->selectRaw('site_id, COUNT(*) as total')
+                ->groupBy('site_id')
+                ->orderByDesc('total')
+                ->value('site_id') ?? $list[0]->id)
+            : null;
+
         return response()->json([
             'success' => true,
             'data' => collect($list)->map(fn ($s) => [
@@ -35,7 +52,13 @@ class IntelligenceDashboardController extends AdminController
                 'domain' => $s->domain,
                 'public_key' => $s->public_key,
                 'is_active' => (bool) $s->is_active,
-            ]),
+            ])->values(),
+            'meta' => [
+                'default_site_id' => $defaultSiteId,
+                'server_today' => $today,
+                'default_from' => $defaultFrom,
+                'default_to' => $today,
+            ],
         ]);
     }
 
@@ -51,13 +74,13 @@ class IntelligenceDashboardController extends AdminController
         ]);
     }
 
-    public function realtime(Request $request): JsonResponse
+    public function realtime(Request $request, AnalyticsRealtimeService $realtime): JsonResponse
     {
         $site = $this->resolveSite($request);
 
         return response()->json([
             'success' => true,
-            'data' => $this->dashboard->overview($site->id, now()->toDateString(), now()->toDateString())['realtime'],
+            'data' => $realtime->snapshot($site->id),
         ]);
     }
 

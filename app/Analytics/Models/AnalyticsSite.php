@@ -33,6 +33,11 @@ class AnalyticsSite extends Model
         return $this->hasMany(AnalyticsSiteMember::class, 'site_id');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(AnalyticsEvent::class, 'site_id');
+    }
+
     public function isOriginAllowed(?string $origin): bool
     {
         if (blank($origin)) {

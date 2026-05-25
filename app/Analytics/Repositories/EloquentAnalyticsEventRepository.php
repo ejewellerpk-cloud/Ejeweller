@@ -4,6 +4,7 @@ namespace App\Analytics\Repositories;
 
 use App\Analytics\Contracts\AnalyticsEventRepositoryInterface;
 use App\Analytics\Models\AnalyticsEvent;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class EloquentAnalyticsEventRepository implements AnalyticsEventRepositoryInterface
@@ -44,10 +45,15 @@ class EloquentAnalyticsEventRepository implements AnalyticsEventRepositoryInterf
 
     public function countByName(int $siteId, string $eventName, string $from, string $to): int
     {
+        $tz = config('app.timezone', 'UTC');
+
         return AnalyticsEvent::query()
             ->where('site_id', $siteId)
             ->where('event_name', $eventName)
-            ->whereBetween('event_date', [$from, $to])
+            ->whereBetween('occurred_at', [
+                Carbon::parse($from, $tz)->startOfDay(),
+                Carbon::parse($to, $tz)->endOfDay(),
+            ])
             ->count();
     }
 
@@ -58,7 +64,10 @@ class EloquentAnalyticsEventRepository implements AnalyticsEventRepositoryInterf
             ->where('site_id', $siteId)
             ->where('event_name', 'product_viewed')
             ->whereNotNull('product_id')
-            ->whereBetween('event_date', [$from, $to])
+            ->whereBetween('occurred_at', [
+                Carbon::parse($from, config('app.timezone', 'UTC'))->startOfDay(),
+                Carbon::parse($to, config('app.timezone', 'UTC'))->endOfDay(),
+            ])
             ->groupBy('product_id')
             ->orderByDesc('views')
             ->limit($limit)

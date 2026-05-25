@@ -273,6 +273,7 @@ For production throughput, use Redis + `analytics` queue worker as in the checkl
 | Save works but page errors on reload | Old admin JS bundle still calls `load()` after save | Hard refresh admin (Ctrl+Shift+R) or keep `npm run dev` running |
 | `collect` **401 Unauthorized** | DB has placeholder key `pk_...` from Save, stale offline queue, or key mismatch | Open **Intelligence Keys** → **Regenerate** → **Save** (auto-heals bad keys). Hard refresh storefront. In DevTools → Application → Local Storage delete `analytics_offline` if needed. Console: `window.__ANALYTICS__.siteKey` must match admin public key (35+ chars, not `pk_...`) |
 | Dashboard “Analytics site could not be loaded” | Admin user not linked as site member / workspace owner | Open Intelligence Keys and **Save** once (links your user). Refresh dashboard |
+| Logs show `AnalyticsRealtimeUpdated` but dashboard empty | Dashboard uses HTTP API (not broadcast logs); old `npm run build`, API errors, or date/site mismatch | Run `npm run build` on server, deploy `public/build`. Open `/admin/intelligence`, check Network → `overview` returns data. Set date range to today (server timezone). Hard refresh admin |
 
 **Recommended local `.env`:**
 

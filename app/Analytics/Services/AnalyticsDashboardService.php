@@ -7,6 +7,7 @@ use App\Analytics\Models\AnalyticsEvent;
 use App\Analytics\Models\AnalyticsSession;
 use App\Analytics\Models\AnalyticsVisitor;
 use App\Analytics\Repositories\EloquentAnalyticsEventRepository;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AnalyticsDashboardService
@@ -18,18 +19,22 @@ class AnalyticsDashboardService
 
     public function overview(int $siteId, string $from, string $to): array
     {
+        $tz = config('app.timezone', 'UTC');
+        $fromAt = Carbon::parse($from, $tz)->startOfDay();
+        $toAt = Carbon::parse($to, $tz)->endOfDay();
+
         $sessions = AnalyticsSession::query()
             ->where('site_id', $siteId)
-            ->whereBetween('started_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+            ->whereBetween('started_at', [$fromAt, $toAt]);
 
         $visitors = AnalyticsVisitor::query()
             ->where('site_id', $siteId)
-            ->whereBetween('last_seen_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+            ->whereBetween('last_seen_at', [$fromAt, $toAt]);
 
         $pageViews = AnalyticsEvent::query()
             ->where('site_id', $siteId)
             ->where('event_name', 'page_view')
-            ->whereBetween('event_date', [$from, $to])
+            ->whereBetween('occurred_at', [$fromAt, $toAt])
             ->count();
 
         $orders = $this->events->countByName($siteId, 'order_placed', $from, $to);
@@ -69,10 +74,14 @@ class AnalyticsDashboardService
 
     public function sources(int $siteId, string $from, string $to): array
     {
+        $tz = config('app.timezone', 'UTC');
+        $fromAt = Carbon::parse($from, $tz)->startOfDay();
+        $toAt = Carbon::parse($to, $tz)->endOfDay();
+
         return AnalyticsSession::query()
             ->select('source', DB::raw('COUNT(*) as sessions'))
             ->where('site_id', $siteId)
-            ->whereBetween('started_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->whereBetween('started_at', [$fromAt, $toAt])
             ->groupBy('source')
             ->orderByDesc('sessions')
             ->limit(15)

@@ -48,6 +48,13 @@
         </div>
 
         <template v-else>
+            <div v-if="refreshError || lastError"
+                class="mb-4 rounded-xl border border-amber-700/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+                {{ refreshError || lastError }}
+                <span class="block text-xs text-amber-400/80 mt-1">
+                    Tracking is working if logs show AnalyticsRealtimeUpdated. Rebuild admin assets (npm run build) and ensure you are logged in as admin.
+                </span>
+            </div>
             <!-- Realtime strip -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <KpiCard label="Live visitors" :value="realtime?.active_visitors ?? 0" accent="emerald" pulse />
@@ -134,7 +141,7 @@ export default {
     data() {
         const to = new Date().toISOString().slice(0, 10);
         const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-        return { from, to, siteId: null, pollTimer: null, bootstrapping: true, loadError: null };
+        return { from, to, siteId: null, pollTimer: null, bootstrapping: true, loadError: null, refreshError: null };
     },
     computed: {
         ...mapGetters({
@@ -145,6 +152,7 @@ export default {
             products: 'intelligence/products',
             realtime: 'intelligence/realtime',
             loading: 'intelligence/loading',
+            lastError: 'intelligence/lastError',
         }),
     },
     async mounted() {
@@ -160,12 +168,13 @@ export default {
         async initSites() {
             this.bootstrapping = true;
             this.loadError = null;
+            this.refreshError = null;
             try {
-                await this.$store.dispatch('intelligence/fetchSites');
+                const { meta } = await this.$store.dispatch('intelligence/fetchSites');
+                if (meta?.default_from) this.from = meta.default_from;
+                if (meta?.default_to) this.to = meta.default_to;
                 if (this.sites.length) {
-                    this.siteId = this.sites[0].id;
-                    this.$store.commit('intelligence/setActiveSiteId', this.siteId);
-                    this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
+                    this.siteId = this.$store.state.intelligence.activeSiteId || this.sites[0].id;
                     await this.refresh();
                 }
             } catch (err) {
@@ -181,8 +190,14 @@ export default {
             this.refresh();
         },
         async refresh() {
+            this.refreshError = null;
+            this.$store.commit('intelligence/setActiveSiteId', this.siteId);
             this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
-            await this.$store.dispatch('intelligence/refreshAll');
+            try {
+                await this.$store.dispatch('intelligence/refreshAll');
+            } catch (err) {
+                this.refreshError = err.response?.data?.message || err.message || 'Failed to load dashboard data';
+            }
         },
         formatMoney(v) {
             const n = Number(v || 0);
