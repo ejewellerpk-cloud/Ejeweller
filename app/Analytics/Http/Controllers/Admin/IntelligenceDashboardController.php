@@ -7,9 +7,11 @@ use App\Analytics\Services\AnalyticsDashboardService;
 use App\Analytics\Services\AnalyticsRealtimeService;
 use App\Analytics\Services\AnalyticsSettingsService;
 use App\Http\Controllers\Admin\AdminController;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class IntelligenceDashboardController extends AdminController
 {
@@ -66,127 +68,94 @@ class IntelligenceDashboardController extends AdminController
 
     public function overview(Request $request): JsonResponse
     {
-        try {
-            $site = $this->resolveSite($request);
-            $from = $request->input('from', now()->subDays(7)->toDateString());
-            $to = $request->input('to', now()->toDateString());
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->dashboard->overview($site->id, $from, $to),
-            ]);
-        } catch (\Throwable $e) {
-            return $this->metricsErrorResponse($e, 'overview', [
-                'visitors' => 0,
-                'sessions' => 0,
-                'page_views' => 0,
-                'orders' => 0,
-                'revenue' => 0,
-                'bounce_rate' => 0,
-                'conversion_rate' => 0,
-                'realtime' => [
-                    'active_visitors' => 0,
-                    'page_views_today' => 0,
-                    'orders_today' => 0,
-                    'add_to_carts_today' => 0,
-                    'top_pages' => [],
-                    'top_sources' => [],
-                    'updated_at' => now()->toIso8601String(),
-                ],
-            ]);
-        }
+        return $this->metricsResponse($request, function (int $siteId, string $from, string $to) {
+            return $this->dashboard->overview($siteId, $from, $to);
+        });
     }
 
     public function realtime(Request $request, AnalyticsRealtimeService $realtime): JsonResponse
     {
-        try {
-            $site = $this->resolveSite($request);
-
-            return response()->json([
-                'success' => true,
-                'data' => $realtime->snapshot($site->id),
-            ]);
-        } catch (\Throwable $e) {
-            return $this->metricsErrorResponse($e, 'realtime', [
-                'active_visitors' => 0,
-                'page_views_today' => 0,
-                'orders_today' => 0,
-                'add_to_carts_today' => 0,
-                'top_pages' => [],
-                'top_sources' => [],
-                'updated_at' => now()->toIso8601String(),
-            ]);
-        }
+        return $this->metricsResponse($request, function (int $siteId) use ($realtime) {
+            return $realtime->snapshot($siteId);
+        }, dateRange: false);
     }
 
     public function funnel(Request $request): JsonResponse
     {
-        try {
-            $site = $this->resolveSite($request);
-            $from = $request->input('from', now()->subDays(7)->toDateString());
-            $to = $request->input('to', now()->toDateString());
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->dashboard->funnel($site->id, $from, $to),
-            ]);
-        } catch (\Throwable $e) {
-            return $this->metricsErrorResponse($e, 'funnel', []);
-        }
+        return $this->metricsResponse($request, function (int $siteId, string $from, string $to) {
+            return $this->dashboard->funnel($siteId, $from, $to);
+        });
     }
 
     public function sources(Request $request): JsonResponse
     {
-        try {
-            $site = $this->resolveSite($request);
-            $from = $request->input('from', now()->subDays(7)->toDateString());
-            $to = $request->input('to', now()->toDateString());
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->dashboard->sources($site->id, $from, $to),
-            ]);
-        } catch (\Throwable $e) {
-            return $this->metricsErrorResponse($e, 'sources', []);
-        }
+        return $this->metricsResponse($request, function (int $siteId, string $from, string $to) {
+            return $this->dashboard->sources($siteId, $from, $to);
+        });
     }
 
     public function products(Request $request): JsonResponse
     {
+        return $this->metricsResponse($request, function (int $siteId, string $from, string $to) {
+            return $this->dashboard->topProducts($siteId, $from, $to);
+        });
+    }
+
+    /**
+     * @param callable(int, string, string): mixed|callable(int): mixed $callback
+     */
+    private function metricsResponse(Request $request, callable $callback, bool $dateRange = true): JsonResponse
+    {
         try {
             $site = $this->resolveSite($request);
-            $from = $request->input('from', now()->subDays(7)->toDateString());
-            $to = $request->input('to', now()->toDateString());
+            if ($dateRange) {
+                [$from, $to] = $this->dateRange($request);
+                $data = $callback($site->id, $from, $to);
+            } else {
+                $data = $callback($site->id);
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $this->dashboard->topProducts($site->id, $from, $to),
+                'data' => $data,
             ]);
+        } catch (HttpException $e) {
+            throw $e;
+        } catch (QueryException $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Analytics tables missing or incomplete. Run: php artisan migrate',
+            ], 500);
         } catch (\Throwable $e) {
-            return $this->metricsErrorResponse($e, 'products', []);
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => config('app.debug') ? $e->getMessage() : 'Could not load analytics metrics.',
+            ], 500);
         }
     }
 
-    private function metricsErrorResponse(\Throwable $e, string $section, ?array $emptyData = null): JsonResponse
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function dateRange(Request $request): array
     {
-        report($e);
+        $tz = config('app.timezone', 'UTC');
+        $today = Carbon::now($tz)->toDateString();
+        $from = trim((string) $request->input('from', ''));
+        $to = trim((string) $request->input('to', ''));
 
-        $message = str_contains($e->getMessage(), 'analytics_') || $e instanceof \Illuminate\Database\QueryException
-            ? 'Analytics tables missing or incomplete. Run: php artisan migrate'
-            : (config('app.debug') ? $e->getMessage() : 'Could not load ' . $section . ' metrics.');
-
-        if ($emptyData !== null) {
-            return response()->json([
-                'success' => true,
-                'data' => $emptyData,
-                'warning' => $message,
-            ]);
+        if ($from === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+            $from = Carbon::parse($today, $tz)->subDays(6)->toDateString();
+        }
+        if ($to === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+            $to = $today;
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => $message,
-        ], 500);
+        return [$from, $to];
     }
 
     private function resolveSite(Request $request)

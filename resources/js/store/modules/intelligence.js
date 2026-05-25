@@ -110,12 +110,11 @@ export const intelligence = {
                 to: state.filters.to,
             };
             commit('setLoading', true);
-            commit('setLastError', null);
             try {
                 const res = await axios.get('admin/intelligence/overview', { params });
                 const data = parseResponse(res, 'overview');
-                if (res.data?.warning) {
-                    commit('setLastError', res.data.warning);
+                if (!data || Array.isArray(data)) {
+                    throw new Error('Invalid overview response from server');
                 }
                 commit('setOverview', data);
                 if (data?.realtime) {
@@ -136,7 +135,8 @@ export const intelligence = {
                 const data = parseResponse(res, 'realtime');
                 commit('setRealtime', data);
             } catch (e) {
-                commit('setLastError', e.message || 'Realtime failed');
+                // Do not overwrite dashboard errors — realtime poll is best-effort
+                console.warn('[Intelligence] realtime:', e.message || e);
             }
         },
         async fetchFunnel({ commit, state }) {
@@ -192,18 +192,20 @@ export const intelligence = {
             refreshAllKey = key;
 
             refreshAllInflight = (async () => {
+                commit('setLastError', null);
                 const results = await Promise.allSettled([
                     dispatch('fetchOverview'),
                     dispatch('fetchFunnel'),
                     dispatch('fetchSources'),
                     dispatch('fetchProducts'),
                 ]);
-                const failures = results.filter((r) => r.status === 'rejected');
-                if (failures.length === results.length) {
-                    throw failures[0].reason;
+                const overviewResult = results[0];
+                if (overviewResult.status === 'rejected') {
+                    throw overviewResult.reason;
                 }
-                if (failures.length > 0) {
-                    const msg = failures[0].reason?.message || 'Some metrics failed to load';
+                const secondaryFailures = results.slice(1).filter((r) => r.status === 'rejected');
+                if (secondaryFailures.length > 0) {
+                    const msg = secondaryFailures[0].reason?.message || 'Some charts failed to load';
                     commit('setLastError', msg);
                 }
             })();

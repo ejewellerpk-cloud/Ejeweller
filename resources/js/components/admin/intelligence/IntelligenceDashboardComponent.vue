@@ -185,12 +185,12 @@ export default {
             lastError: 'intelligence/lastError',
         }),
         hasNoMetrics() {
-            if (this.loading || this.bootstrapping) {
+            if (this.loading || this.bootstrapping || this.refreshError || this.lastError) {
                 return false;
             }
             const o = this.overview;
-            if (!o) {
-                return true;
+            if (!o || typeof o !== 'object') {
+                return false;
             }
             return !(o.visitors || o.sessions || o.page_views || o.orders || (this.products && this.products.length));
         },
@@ -237,8 +237,7 @@ export default {
                 this.syncDateRangeFromStrings();
                 if (sites && sites.length) {
                     this.siteId = this.$store.state.intelligence.activeSiteId || sites[0].id;
-                    this.$store.commit('intelligence/setActiveSiteId', this.siteId);
-                    this.refresh().catch(() => {});
+                    await this.refresh();
                 }
             } catch (err) {
                 this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
@@ -252,8 +251,12 @@ export default {
         },
         async refresh() {
             this.refreshError = null;
+            const to = this.to || new Date().toISOString().slice(0, 10);
+            const from = this.from || new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+            this.from = from;
+            this.to = to;
             this.$store.commit('intelligence/setActiveSiteId', this.siteId);
-            this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
+            this.$store.commit('intelligence/setFilters', { from, to });
             try {
                 await this.$store.dispatch('intelligence/refreshAll');
             } catch (err) {

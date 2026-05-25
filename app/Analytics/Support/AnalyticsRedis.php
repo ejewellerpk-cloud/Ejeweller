@@ -11,9 +11,14 @@ class AnalyticsRedis
 
     private static ?int $checkedAt = null;
 
+    /**
+     * When ANALYTICS_USE_REDIS=false in .env, skip Redis entirely (shared hosting).
+     * Otherwise try Redis once per 120s; fall back to cache if unreachable or slow.
+     */
     public static function available(): bool
     {
-        if (!config('analytics.use_redis', false)) {
+        $configured = config('analytics.use_redis');
+        if ($configured === false) {
             return false;
         }
 
