@@ -187,21 +187,6 @@ import LoadingComponent from "../../frontend/components/LoadingComponent";
 import menuSectionEnum from "../../../enums/modules/menuSectionEnum";
 import _ from "lodash";
 
-const FOOTER_SUPPORT_SLUG_ORDER = [
-    'contact-us',
-    'faq',
-    'shipping-policy',
-    'shipping',
-    'return-and-refund-policy',
-    'return-and-exchange',
-];
-const FOOTER_LEGAL_SLUG_ORDER = [
-    'about-us',
-    'privacy-policy',
-    'terms-and-conditions',
-    'cookies-policy',
-];
-
 export default {
     name: "FrontendFooterComponent",
     components: { LoadingComponent },
@@ -252,15 +237,6 @@ export default {
         });
     },
     methods: {
-        sortFooterPages: function (pages, order) {
-            return [...pages].sort((a, b) => {
-                const indexA = order.indexOf(a.slug);
-                const indexB = order.indexOf(b.slug);
-                const rankA = indexA === -1 ? 999 + (a.id || 0) : indexA;
-                const rankB = indexB === -1 ? 999 + (b.id || 0) : indexB;
-                return rankA - rankB;
-            });
-        },
         saveSubscription: function () {
             try {
                 const url = '/frontend/subscriber';

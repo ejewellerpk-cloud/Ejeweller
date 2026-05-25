@@ -147,19 +147,7 @@ class ProductVariationService
      */
     public function allVariation(Product $product)
     {
-        $variations = ProductVariation::tree()
-            ->depthFirst()
-            ->where('product_id', $product->id)
-            ->with([
-                'productAttribute:id,name',
-                'productAttributeOption:id,name',
-                'product:id,offer_start_date,offer_end_date,discount,show_stock_out,can_purchasable,maximum_purchase_quantity',
-            ])
-            ->withSum('stockItems', 'quantity')
-            ->get()
-            ->toTree();
-
-        return $variations;
+        return ProductVariation::tree()->depthFirst()->where('product_id', $product->id)->withSum('stockItems', 'quantity')->get()->toTree();
     }
 
     /**

@@ -1,59 +1,50 @@
 <template>
-    <div class="store-contact-extra mt-8 pt-8 border-t border-gray-100">
-        <div v-if="outlets.length > 0" class="mb-8">
-            <h3 class="text-xl font-bold text-heading capitalize mb-5">{{ $t('label.outlets') || 'Our Locations' }}</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <div
-                    v-for="outlet in outlets"
-                    :key="outlet.id"
-                    class="rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5 hover:border-primary/30 transition-colors">
-                    <div class="flex items-center gap-2.5 mb-3">
-                        <span class="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-white flex-shrink-0">
-                            <i class="lab lab-line-branches !text-xs"></i>
-                        </span>
-                        <h4 class="font-semibold text-heading capitalize">{{ outlet.name }}</h4>
-                    </div>
-                    <ul class="flex flex-col gap-2.5 text-sm text-secondary">
-                        <li v-if="outlet.address || outlet.city" class="flex items-start gap-2">
-                            <i class="lab lab-line-location flex-shrink-0 mt-0.5 text-primary"></i>
-                            <span class="leading-relaxed text-heading">
-                                <span v-if="outlet.address">{{ outlet.address }}</span>
-                                <span v-if="outlet.city || outlet.state || outlet.country" class="block text-secondary">
-                                    <template v-if="outlet.city">{{ outlet.city }}, </template>
-                                    <template v-if="outlet.state">{{ outlet.state }}, </template>
-                                    <template v-if="outlet.country">{{ outlet.country }}</template>
-                                    <template v-if="outlet.zip_code"> {{ outlet.zip_code }}</template>
-                                </span>
-                            </span>
-                        </li>
-                        <li v-if="outlet.phone" class="flex items-center gap-2">
-                            <i class="lab lab-call-calling text-primary"></i>
-                            <span class="text-heading">{{ outlet.country_code }}{{ outlet.phone }}</span>
-                        </li>
-                    </ul>
-                </div>
+    <div class="row mb-7">
+        <div class="col-12 sm:col-6 mb-2" v-if="outlets.length > 0" v-for="outlet in outlets">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center bg-primary">
+                    <i class="lab lab-line-branches text-white !text-xs"></i>
+                </span>
+                <h3 class="font-medium leading-6">{{ outlet.name }}</h3>
             </div>
-        </div>
-
-        <div class="rounded-xl bg-primary/5 border border-primary/15 p-5 sm:p-6">
-            <h3 class="text-lg font-bold text-heading capitalize mb-4">{{ $t('label.support') }}</h3>
-            <ul class="flex flex-col gap-3 text-sm">
-                <li v-if="setting.company_email" class="flex items-center gap-3">
-                    <i class="lab lab-line-mail text-primary"></i>
-                    <a :href="'mailto:' + setting.company_email" class="text-heading hover:text-primary transition-colors break-all">
-                        {{ setting.company_email }}
-                    </a>
+            <ul class="flex flex-col gap-2">
+                <li class="flex items-center gap-2.5">
+                    <i class="lab lab-line-location lab-font-size-14"></i>
+                    <span class="text-sm leading-6 text-heading">
+                        <span v-if="outlet.address">{{ outlet.address }}</span>
+                        <span class="block">
+                            <span v-if="outlet.city">{{ outlet.city }},</span>
+                            <span v-if="outlet.state">{{ outlet.state }},</span>
+                            <span v-if="outlet.country">{{ outlet.country }},</span>
+                            <span v-if="outlet.zip_code">{{ outlet.zip_code }}</span>
+                        </span>
+                    </span>
                 </li>
-                <li v-if="supportPhone" class="flex items-center gap-3">
-                    <i class="lab lab-call-calling text-primary"></i>
-                    <span class="text-heading font-medium">{{ supportPhone }}</span>
+                <li class="flex items-center gap-2.5">
+                    <i class="lab lab-call-calling lab-font-size-14"></i>
+                    <span class="text-sm leading-6 text-heading">{{ outlet.country_code }}{{ outlet.phone }}</span>
                 </li>
             </ul>
         </div>
     </div>
+    <div>
+        <h2 class="text-[22px] leading-[34px] font-medium capitalize mb-3">{{ $t('label.support') }}</h2>
+        <ul class="flex flex-col gap-2">
+            <li class="flex items-center gap-2.5">
+                <i class="lab lab-line-mail lab-font-size-14"></i>
+                <span class="text-sm leading-6 text-heading">{{ setting.company_email }}</span>
+            </li>
+            <li class="flex items-center gap-2.5">
+                <i class="lab lab-call-calling lab-font-size-14"></i>
+                <span class="text-sm font-medium leading-6 text-heading">{{ setting.company_calling_code }}{{ setting.company_phone }}</span>
+            </li>
+        </ul>
+    </div>
 </template>
 
 <script>
+
+
 import statusEnum from "../../../enums/modules/statusEnum";
 
 export default {
@@ -65,18 +56,9 @@ export default {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
         },
-        supportPhone: function () {
-            const code = this.setting.company_calling_code || '';
-            const phone = this.setting.company_phone || '';
-            return `${code}${phone}`.trim();
-        },
     },
     mounted() {
-        this.$store.dispatch('frontendOutlet/lists', {
-            order_column: 'id',
-            order_type: 'asc',
-            status: statusEnum.ACTIVE,
-        }).then().catch();
-    },
-};
+        this.$store.dispatch('frontendOutlet/lists', {order_column: 'id', order_type : 'asc', status : statusEnum.ACTIVE }).then().catch()
+    }
+}
 </script>

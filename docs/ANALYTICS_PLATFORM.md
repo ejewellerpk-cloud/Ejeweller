@@ -17,6 +17,19 @@ Production-grade, self-hosted analytics module for Shopperzz (Laravel 12 + Vue 3
 
 Log lines `Broadcasting AnalyticsRealtimeUpdated` are **not** what fills the dashboard UI (websocket not wired yet). The dashboard uses the HTTP APIs above.
 
+### Debug console (admin Intelligence page)
+
+Open `/admin/intelligence` → browser **Console** → filter `[Intelligence]`.
+
+Logs show: auth token present, each API request/response, Vuex mutations, and final UI state.
+
+Disable after debugging:
+
+```js
+localStorage.setItem('intelligence_debug', '0');
+location.reload();
+```
+
 ## Architecture
 
 ```
@@ -55,8 +68,6 @@ php artisan migrate
 ```env
 ANALYTICS_ENABLED=true
 ANALYTICS_PUBLIC_KEY=pk_xxx   # from install command
-# Default false on shared hosting — avoids slow Redis connection hangs on dashboard load
-ANALYTICS_USE_REDIS=false
 QUEUE_CONNECTION=redis
 REDIS_HOST=127.0.0.1
 ANALYTICS_INGEST_QUEUE=analytics
@@ -304,9 +315,7 @@ For production throughput, use Redis + `analytics` queue worker as in the checkl
 | Save works but page errors on reload | Old admin JS bundle still calls `load()` after save | Hard refresh admin (Ctrl+Shift+R) or keep `npm run dev` running |
 | `collect` **401 Unauthorized** | DB has placeholder key `pk_...` from Save, stale offline queue, or key mismatch | Open **Intelligence Keys** → **Regenerate** → **Save** (auto-heals bad keys). Hard refresh storefront. In DevTools → Application → Local Storage delete `analytics_offline` if needed. Console: `window.__ANALYTICS__.siteKey` must match admin public key (35+ chars, not `pk_...`) |
 | Dashboard “Analytics site could not be loaded” | Admin user not linked as site member / workspace owner | Open Intelligence Keys and **Save** once (links your user). Refresh dashboard |
-| Stuck on **Loading analytics…** | Redis `PING` blocking PHP (no Redis on host) while loading overview/realtime | Set `ANALYTICS_USE_REDIS=false` in `.env`, run `php artisan config:clear`. Deploy latest dashboard JS (`npm run build`) |
 | Logs show `AnalyticsRealtimeUpdated` but dashboard empty | Dashboard uses HTTP API (not broadcast logs); old `npm run build`, API errors, or date/site mismatch | Run `npm run build` on server, deploy `public/build`. Open `/admin/intelligence`, check Network → `overview` returns data. Set date range to today (server timezone). Hard refresh admin |
-| All KPIs show **0** | No events ingested yet or wrong date range | Browse storefront (product pages, add to cart). Confirm `tracker.js` loads and `POST /api/analytics/v1/collect` returns 200. Regenerate keys in Intelligence Settings if needed |
 
 **Recommended local `.env`:**
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Analytics\Http\Controllers\Admin\IntelligenceDashboardController;
 use App\Analytics\Http\Controllers\IngestController;
 use App\Analytics\Http\Middleware\AnalyticsCorsMiddleware;
 use App\Analytics\Http\Middleware\AnalyticsSiteKeyMiddleware;
@@ -20,6 +21,17 @@ Route::prefix('analytics/v1')->group(function () {
         Route::post('/collect', [IngestController::class, 'collect']);
     });
 });
+
+Route::prefix('admin/intelligence')
+    ->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])
+    ->group(function () {
+        Route::get('/sites', [IntelligenceDashboardController::class, 'sites']);
+        Route::get('/overview', [IntelligenceDashboardController::class, 'overview']);
+        Route::get('/realtime', [IntelligenceDashboardController::class, 'realtime']);
+        Route::get('/funnel', [IntelligenceDashboardController::class, 'funnel']);
+        Route::get('/sources', [IntelligenceDashboardController::class, 'sources']);
+        Route::get('/products', [IntelligenceDashboardController::class, 'products']);
+    });
 
 Route::prefix('admin/setting/intelligence-analytics')
     ->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])

@@ -10,18 +10,10 @@
                     class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm">
                     <option v-for="s in sites" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
-                <div class="intelligence-date-range min-w-[220px] max-w-[280px]">
-                    <Datepicker
-                        v-model="dateRange"
-                        range
-                        autoApply
-                        :enableTimePicker="false"
-                        utc="false"
-                        :maxDate="maxSelectableDate"
-                        placeholder="Date range"
-                        @update:modelValue="onDateRangeChange"
-                    />
-                </div>
+                <input type="date" v-model="from" @change="refresh"
+                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
+                <input type="date" v-model="to" @change="refresh"
+                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
                 <button type="button" @click="refresh"
                     class="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold">
                     Refresh
@@ -30,7 +22,7 @@
         </header>
 
         <div v-if="bootstrapping" class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400">
-            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading analytics…
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Setting up analytics…
         </div>
 
         <div v-else-if="loadError" class="rounded-2xl border border-red-900/50 bg-slate-900/80 p-8 text-center">
@@ -56,20 +48,12 @@
         </div>
 
         <template v-else>
-            <div v-if="loading && !overview"
-                class="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-300 flex items-center gap-2">
-                <i class="fa-solid fa-spinner fa-spin"></i> Loading metrics…
-            </div>
             <div v-if="refreshError || lastError"
                 class="mb-4 rounded-xl border border-amber-700/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
                 {{ refreshError || lastError }}
                 <span class="block text-xs text-amber-400/80 mt-1">
-                    Visit your storefront while logged out to generate events. Ensure Settings → Intelligence has a valid public key (pk_…) and run <code class="text-amber-200">php artisan migrate</code> if tables are missing.
+                    Tracking is working if logs show AnalyticsRealtimeUpdated. Rebuild admin assets (npm run build) and ensure you are logged in as admin.
                 </span>
-            </div>
-            <div v-else-if="hasNoMetrics"
-                class="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
-                No analytics events in this date range yet. Browse products on the shop, add to cart, or place a test order — data appears within a few seconds.
             </div>
             <!-- Realtime strip -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -149,29 +133,16 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import Datepicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
 import KpiCard from './KpiCard.vue';
-
-let realtimePollTimer = null;
-let initSitesInflight = null;
+import { intelAuthContext, intelLog, intelError } from '../../../store/modules/intelligenceDebug';
 
 export default {
     name: 'IntelligenceDashboardComponent',
-    components: { KpiCard, Datepicker },
+    components: { KpiCard },
     data() {
         const to = new Date().toISOString().slice(0, 10);
         const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-        return {
-            from,
-            to,
-            dateRange: null,
-            maxSelectableDate: new Date(),
-            siteId: null,
-            bootstrapping: true,
-            loadError: null,
-            refreshError: null,
-        };
+        return { from, to, siteId: null, pollTimer: null, bootstrapping: true, loadError: null, refreshError: null };
     },
     computed: {
         ...mapGetters({
@@ -184,65 +155,42 @@ export default {
             loading: 'intelligence/loading',
             lastError: 'intelligence/lastError',
         }),
-        hasNoMetrics() {
-            if (this.loading || this.bootstrapping || this.refreshError || this.lastError) {
-                return false;
-            }
-            const o = this.overview;
-            if (!o || typeof o !== 'object') {
-                return false;
-            }
-            return !(o.visitors || o.sessions || o.page_views || o.orders || (this.products && this.products.length));
-        },
-    },
-    created() {
-        this.syncDateRangeFromStrings();
     },
     async mounted() {
+        intelLog('Dashboard mounted', intelAuthContext());
         await this.initSites();
-        if (!realtimePollTimer) {
-            realtimePollTimer = setInterval(() => {
-                if (this.siteId) {
-                    this.$store.dispatch('intelligence/fetchRealtime');
-                }
-            }, 5000);
-        }
+        this.logUiState('after initSites');
+        this.pollTimer = setInterval(() => {
+            if (this.siteId) this.$store.dispatch('intelligence/fetchRealtime');
+        }, 5000);
     },
     beforeUnmount() {
-        if (realtimePollTimer) {
-            clearInterval(realtimePollTimer);
-            realtimePollTimer = null;
-        }
+        clearInterval(this.pollTimer);
     },
     methods: {
         async initSites() {
-            if (initSitesInflight) {
-                return initSitesInflight;
-            }
-            initSitesInflight = this.runInitSites();
-            try {
-                return await initSitesInflight;
-            } finally {
-                initSitesInflight = null;
-            }
-        },
-        async runInitSites() {
             this.bootstrapping = true;
             this.loadError = null;
             this.refreshError = null;
+            intelLog('initSites →');
             try {
-                const { sites, meta } = await this.$store.dispatch('intelligence/fetchSites');
+                const { meta, sites } = await this.$store.dispatch('intelligence/fetchSites');
+                intelLog('initSites sites from store', { sites, meta });
                 if (meta?.default_from) this.from = meta.default_from;
                 if (meta?.default_to) this.to = meta.default_to;
-                this.syncDateRangeFromStrings();
-                if (sites && sites.length) {
-                    this.siteId = this.$store.state.intelligence.activeSiteId || sites[0].id;
+                if (this.sites.length) {
+                    this.siteId = this.$store.state.intelligence.activeSiteId || this.sites[0].id;
+                    intelLog('initSites → refresh', { siteId: this.siteId, from: this.from, to: this.to });
                     await this.refresh();
+                } else {
+                    intelError('initSites — sites array empty after successful API');
                 }
             } catch (err) {
                 this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
+                intelError('initSites failed', { message: this.loadError, err });
             } finally {
                 this.bootstrapping = false;
+                this.logUiState('initSites done');
             }
         },
         onSiteChange() {
@@ -251,71 +199,37 @@ export default {
         },
         async refresh() {
             this.refreshError = null;
-            const to = this.to || new Date().toISOString().slice(0, 10);
-            const from = this.from || new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-            this.from = from;
-            this.to = to;
             this.$store.commit('intelligence/setActiveSiteId', this.siteId);
-            this.$store.commit('intelligence/setFilters', { from, to });
+            this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
+            intelLog('refresh →', { siteId: this.siteId, from: this.from, to: this.to });
             try {
                 await this.$store.dispatch('intelligence/refreshAll');
+                this.logUiState('refresh OK');
             } catch (err) {
                 this.refreshError = err.response?.data?.message || err.message || 'Failed to load dashboard data';
+                intelError('refresh failed', this.refreshError);
+                this.logUiState('refresh failed');
             }
+        },
+        logUiState(label) {
+            intelLog(`UI state [${label}]`, {
+                bootstrapping: this.bootstrapping,
+                loadError: this.loadError,
+                refreshError: this.refreshError,
+                siteId: this.siteId,
+                sitesCount: this.sites?.length,
+                overview: this.overview,
+                realtime: this.realtime,
+                funnelSteps: this.funnel?.length,
+                sourcesCount: this.sources?.length,
+                productsCount: this.products?.length,
+                storeActiveSiteId: this.$store.state.intelligence?.activeSiteId,
+            });
         },
         formatMoney(v) {
             const n = Number(v || 0);
             return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         },
-        toDateString(value) {
-            if (!value) return '';
-            const d = value instanceof Date ? value : new Date(value);
-            if (Number.isNaN(d.getTime())) return '';
-            return d.toISOString().slice(0, 10);
-        },
-        syncDateRangeFromStrings() {
-            if (!this.from || !this.to) {
-                this.dateRange = null;
-                return;
-            }
-            this.dateRange = [
-                new Date(`${this.from}T12:00:00`),
-                new Date(`${this.to}T12:00:00`),
-            ];
-        },
-        onDateRangeChange(range) {
-            if (!Array.isArray(range) || range.length < 2 || !range[0] || !range[1]) {
-                return;
-            }
-            const nextFrom = this.toDateString(range[0]);
-            const nextTo = this.toDateString(range[1]);
-            if (nextFrom === this.from && nextTo === this.to) {
-                return;
-            }
-            this.from = nextFrom;
-            this.to = nextTo;
-            this.refresh();
-        },
     },
 };
 </script>
-
-<style scoped>
-.intelligence-date-range :deep(.dp__input) {
-    background-color: rgb(30 41 59);
-    border-color: rgb(51 65 85);
-    color: rgb(241 245 249);
-    border-radius: 0.75rem;
-    min-height: 2.5rem;
-    font-size: 0.875rem;
-}
-
-.intelligence-date-range :deep(.dp__input::placeholder) {
-    color: rgb(148 163 184);
-}
-
-.intelligence-date-range :deep(.dp__input_icon),
-.intelligence-date-range :deep(.dp__clear_icon) {
-    color: rgb(148 163 184);
-}
-</style>

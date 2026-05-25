@@ -21,13 +21,6 @@ return [
         'sync_when_no_redis' => env('ANALYTICS_SYNC_WITHOUT_REDIS', true),
     ],
 
-    /**
-     * null = auto-detect (try Redis with fast fallback). Set ANALYTICS_USE_REDIS=false on hosts without Redis.
-     */
-    'use_redis' => env('ANALYTICS_USE_REDIS') === null
-        ? null
-        : filter_var(env('ANALYTICS_USE_REDIS'), FILTER_VALIDATE_BOOLEAN),
-
     'realtime' => [
         'redis_prefix' => env('ANALYTICS_REALTIME_PREFIX', 'analytics:rt'),
         'active_window_seconds' => (int) env('ANALYTICS_ACTIVE_WINDOW', 300),
