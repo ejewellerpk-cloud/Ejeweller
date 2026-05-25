@@ -42,6 +42,37 @@
             @endif
         @endforeach
     @endif
+
+    @php
+        $analyticsSite = \App\Analytics\Models\AnalyticsSite::query()
+            ->where('is_active', true)
+            ->orderByDesc('updated_at')
+            ->first(['public_key']);
+        $analyticsPublicKey = $analyticsSite?->public_key;
+        $pkOk = is_string($analyticsPublicKey)
+            && str_starts_with($analyticsPublicKey, 'pk_')
+            && strlen($analyticsPublicKey) >= 20
+            && !str_contains($analyticsPublicKey, '...');
+        if (!$pkOk) {
+            $analyticsPublicKey = trim((string) env('ANALYTICS_PUBLIC_KEY', ''));
+            $pkOk = is_string($analyticsPublicKey)
+                && str_starts_with($analyticsPublicKey, 'pk_')
+                && strlen($analyticsPublicKey) >= 20
+                && !str_contains($analyticsPublicKey, '...');
+        }
+    @endphp
+    @if (config('analytics.enabled', true) && $pkOk)
+        <script>
+            window.__ANALYTICS__ = {
+                siteKey: @json($analyticsPublicKey),
+                endpoint: @json(config('analytics.tracker.collect_url') ?? url('/api/analytics/v1/collect')),
+                userId: @json(auth()->id()),
+                batchSize: {{ (int) config('analytics.tracker.batch_size', 20) }},
+                flushInterval: {{ (int) config('analytics.tracker.flush_interval_ms', 3000) }}
+            };
+        </script>
+        <script async src="{{ asset(config('analytics.tracker.cdn_url', '/analytics/tracker.js')) }}"></script>
+    @endif
     @laravelPWA
     <script>
         if ('serviceWorker' in navigator) {

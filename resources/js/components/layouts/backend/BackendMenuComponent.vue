@@ -32,6 +32,12 @@
             <!-- Static Media Menu -->
             <ul class="db-sidebar-nav-list">
                 <li class="db-sidebar-nav-item" @click="sidebarActive($event); closeSidebar()">
+                    <router-link :to="{ name: 'admin.intelligence.dashboard' }" class="db-sidebar-nav-menu">
+                        <i class="fa-solid fa-chart-line text-sm"></i>
+                        <span class="text-base flex-auto">Intelligence</span>
+                    </router-link>
+                </li>
+                <li class="db-sidebar-nav-item" @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="{ name: 'admin.media' }" class="db-sidebar-nav-menu">
                         <i class="fa-solid fa-photo-film text-sm"></i>
                         <span class="text-base flex-auto">Media Manager</span>

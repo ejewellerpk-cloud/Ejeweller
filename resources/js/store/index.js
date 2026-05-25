@@ -114,6 +114,7 @@ import { whatsapp } from "./modules/whatsapp";
 import { aiAgent } from "./modules/aiAgent";
 import { ai } from "./modules/ai";
 import { media } from "./modules/media";
+import { intelligence } from "./modules/intelligence";
 
 export default new createStore({
     state: {},
@@ -233,7 +234,8 @@ export default new createStore({
         review,
         aiAgent,
         ai,
-        media
+        media,
+        intelligence,
     },
     plugins: [
         createPersistedState({

@@ -35,6 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         then: function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/analytics.php'));
             if (file_exists(storage_path('installed'))) {
                 try {
                     $path = app_path('Http/PaymentGateways/Routes');

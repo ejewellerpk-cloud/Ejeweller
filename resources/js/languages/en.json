@@ -104,7 +104,9 @@
         "pos-orders": "POS Orders",
         "ai_agent": "AI Agent",
         "top_bar": "Top Bar",
-        "facebook_capi": "Facebook CAPI"
+        "facebook_capi": "Facebook CAPI",
+        "intelligence_analytics": "Intelligence Keys",
+        "intelligence_dashboard": "Intelligence Dashboard"
     },
     "label": {
         "version": "Version",
@@ -121,6 +123,11 @@
         "remember_me": "Remember me",
         "hello": "Hello",
         "name": "Name",
+        "domain": "Domain",
+        "public_key": "Public Key",
+        "secret_key": "Secret Key",
+        "allowed_origins": "Allowed Origins",
+        "one_time": "one time only",
         "phone": "Phone",
         "website": "Website",
         "city": "City",
@@ -745,6 +752,7 @@
         "close": "Close",
         "cancel": "Cancel",
         "clear": "Clear",
+        "regenerate_keys": "Regenerate Keys",
         "search": "Search",
         "filter": "Filter",
         "export": "Export",
@@ -865,6 +873,8 @@
         "something_wrong": "Something Wrong."
     },
     "message": {
+        "intelligence_analytics_help": "Configure tracking keys for your store. The public key is used by tracker.js on the storefront.",
+        "public_key_readonly_hint": "Paste an existing pk_ key or click Regenerate to create new keys.",
         "add": "Add",
         "demo_login_expired": "Demo session expired! Please login again.",
         "app_to_your_home_screen": "app to your home screen",

@@ -60,16 +60,16 @@
                         class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary bg-primary/5 text-primary font-medium text-sm hover:bg-primary/10 transition-all active:scale-95">
                         <i class="fa-solid fa-xmark text-[11px]"></i>
                         <span>{{ $t('button.clear') || 'Clear' }}</span>
-                    </button>
+                        </button>
 
                     <button type="button" @click.stop="toggleDropdown('sort', $event)"
                         :class="filters.sortBy ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
                         class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
-                        <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
+                            <i class="fa-solid fa-arrow-down-wide-short text-[11px]"></i>
                         <span>{{ sortLabel }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'sort' }"></i>
-                    </button>
-
+                        </button>
+                        
                     <button type="button" @click.stop="toggleDropdown('price', $event)"
                         :class="filters.priceActive ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
                         class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border bg-gray-50 font-medium text-sm hover:border-gray-300 transition-all active:scale-95">
@@ -84,8 +84,8 @@
                         <i class="fa-solid fa-building text-[11px]"></i>
                         <span>{{ brandLabel }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'brand' }"></i>
-                    </button>
-
+                        </button>
+                        
                     <button v-for="(options, attrKey) in categoryWiseVariations" :key="attrKey" type="button"
                         @click.stop="toggleDropdown('var_' + attrKey, $event)"
                         :class="variationCount(attrKey) ? 'border-primary text-primary' : 'border-gray-200 text-gray-700'"
@@ -93,8 +93,8 @@
                         <span>{{ underscoreToSpace(attrKey) }}{{ variationCount(attrKey) ? ` (${variationCount(attrKey)})` : '' }}</span>
                         <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="{ 'rotate-180': activeDropdown === 'var_' + attrKey }"></i>
                     </button>
-                </div>
-            </div>
+                        </div>
+                    </div>
 
             <Teleport to="body">
                 <div v-if="activeDropdown" class="fixed inset-0 z-[9998] bg-transparent" @click="closeDropdown"></div>
@@ -106,7 +106,7 @@
                         class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
                         :class="filters.sortBy === opt.value ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-50'">
                         {{ opt.label }}
-                    </button>
+                        </button>
                 </div>
 
                 <div v-if="activeDropdown === 'price' && dropdownPos" data-shop-filter-menu class="fixed z-[9999] bg-white border border-gray-100 rounded-2xl shadow-lg p-4"
@@ -125,7 +125,7 @@
                     <button type="button" @click="applyPrice"
                         class="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold">
                         {{ $t('button.apply') }}
-                    </button>
+                        </button>
                 </div>
 
                 <div v-if="activeDropdown === 'brand' && dropdownPos" data-shop-filter-menu
@@ -136,8 +136,8 @@
                         <input type="checkbox" class="cs-custom-checkbox" :value="band.id"
                             v-model="filters.brandIds" @change="loadProducts(1)">
                         <span class="text-sm font-medium capitalize">{{ band.name }}</span>
-                    </label>
-                </div>
+                                </label>
+                            </div>
 
                 <div v-for="(options, attrKey) in categoryWiseVariations" :key="'menu-' + attrKey">
                     <div v-if="activeDropdown === 'var_' + attrKey && dropdownPos" data-shop-filter-menu
@@ -508,16 +508,16 @@ export default {
             if (this.observer) {
                 this.observer.disconnect();
             }
-            this.observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && !this.loadingContent.isActive && !this.isLoadingMore) {
-                    if (this.pagination.meta && this.pagination.meta.current_page < this.pagination.meta.last_page) {
-                        this.loadMoreProducts();
-                    }
+        this.observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !this.loadingContent.isActive && !this.isLoadingMore) {
+                if (this.pagination.meta && this.pagination.meta.current_page < this.pagination.meta.last_page) {
+                    this.loadMoreProducts();
                 }
-            }, { rootMargin: '200px' });
-
-            if (this.$refs.infiniteScrollTrigger) {
-                this.observer.observe(this.$refs.infiniteScrollTrigger);
+            }
+        }, { rootMargin: '200px' });
+        
+        if (this.$refs.infiniteScrollTrigger) {
+            this.observer.observe(this.$refs.infiniteScrollTrigger);
             }
         },
         handleSearchInput() {

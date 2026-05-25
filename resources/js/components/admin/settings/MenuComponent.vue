@@ -49,6 +49,10 @@
                 <i class="text-sm lab lab-line-analytic"></i>
                 {{ $t("menu.analytics") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.intelligenceAnalytics' }" class="settings-menu-link">
+                <i class="text-sm fa-solid fa-chart-line"></i>
+                {{ $t("menu.intelligence_analytics") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.theme' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-theme"></i>
                 {{ $t("menu.theme") }}
