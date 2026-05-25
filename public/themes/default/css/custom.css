@@ -269,15 +269,19 @@ iframe.w-full.rounded-2xl {
     left: inherit !important;
 }
 
+input[type="date"] {
+    position: relative;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
-    background: transparent;
-    color: transparent;
     cursor: pointer;
     position: absolute;
-    inset: 0;
-    z-index: 10;
-    height: 100%;
-    width: 100%;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    z-index: 1;
 }
 
 .drawer:where([dir="ltr"], [dir="ltr"] *) {

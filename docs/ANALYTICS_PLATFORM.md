@@ -17,19 +17,6 @@ Production-grade, self-hosted analytics module for Shopperzz (Laravel 12 + Vue 3
 
 Log lines `Broadcasting AnalyticsRealtimeUpdated` are **not** what fills the dashboard UI (websocket not wired yet). The dashboard uses the HTTP APIs above.
 
-### Debug console (admin Intelligence page)
-
-Open `/admin/intelligence` → browser **Console** → filter `[Intelligence]`.
-
-Logs show: auth token present, each API request/response, Vuex mutations, and final UI state.
-
-Disable after debugging:
-
-```js
-localStorage.setItem('intelligence_debug', '0');
-location.reload();
-```
-
 ## Architecture
 
 ```
@@ -132,9 +119,18 @@ Tracker hooks `history.pushState`, `replaceState`, and `popstate` for automatic 
 
 ### Ecommerce events (Vue)
 
-```js
-import { trackAddToCart, trackOrderPlaced } from '@/services/analyticsEcommerceBridge';
+Wired automatically on the storefront:
 
+- **Product detail** — `product_viewed` on load, `add_to_cart` on add
+- **Product cards** — `add_to_cart` when adding from listing grids
+- **Checkout** — `checkout_started` on checkout step, `order_placed` on COD success
+
+Manual use (optional):
+
+```js
+import { trackAddToCart, trackOrderPlaced, trackProductViewed } from '@/services/analyticsEcommerceBridge';
+
+trackProductViewed(product);
 trackAddToCart(product, qty);
 trackOrderPlaced({ id: order.id, total: order.total, currency_code: 'PKR' });
 ```

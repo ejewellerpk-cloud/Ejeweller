@@ -210,6 +210,7 @@ import {
     formatProductRating,
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
+import { trackAddToCart } from "../../../services/analyticsEcommerceBridge";
 
 export default {
     name: "ProductListComponent",
@@ -471,7 +472,10 @@ export default {
             }, 600);
 
             this.$store.dispatch("frontendCart/lists", productPayload).then((res) => {
-                // success - cart drawer opens automatically via store action
+                trackAddToCart(
+                    { id: product.id, sku: product.sku, name: product.name },
+                    1
+                );
             }).catch((err) => {
                 if (err && err.message === "stockOut") {
                     alertService.error(this.$t('message.out_of_stock') || "This product is out of stock!");

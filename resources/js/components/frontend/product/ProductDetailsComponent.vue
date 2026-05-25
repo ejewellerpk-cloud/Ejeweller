@@ -237,8 +237,12 @@
 
 
 
-                    <VariationComponent v-if="initialVariations.length > 0 && showVariationComponent"
-                        :method="selectedVariationMethod" :variations="initialVariations" />
+                    <ProductVariationPicker
+                        v-if="product.slug || $route.params.slug"
+                        :product-slug="product.slug || $route.params.slug"
+                        :method="selectedVariationMethod"
+                        @ready="onVariationsReady"
+                    />
 
                     <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
                         <dt class="capitalize text-lg font-semibold">{{ $t('label.quantity') }}:</dt>
@@ -253,7 +257,7 @@
                                     :class="temp.stock === temp.quantity ? 'cursor-not-allowed' : temp.quantity === temp.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
                                     class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
                             </div>
-                            <div v-if="!initialVariations.length || selectedVariation != null">
+                            <div v-if="!hasVariationOptions || selectedVariation != null">
                                 <p v-if="temp.stock > 0" class="capitalize">
                                     {{ $t('label.available') }}:
                                     <b>({{ temp.stock }}) </b>
@@ -736,7 +740,7 @@ import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import ProductListComponent from "../components/ProductListComponent";
-import VariationComponent from "../components/VariationComponent";
+import ProductVariationPicker from "../components/ProductVariationPicker.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import { useHead } from '@vueuse/head';
@@ -747,11 +751,12 @@ import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
 import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount } from "../../../utils/productOffer";
+import { trackAddToCart, trackProductViewed } from "../../../services/analyticsEcommerceBridge";
 
 export default {
     name: "ProductDetailsComponent",
     components: {
-        VariationComponent,
+        ProductVariationPicker,
         ProductListComponent,
         CategoryBreadcrumbComponent,
         starRating,
@@ -792,7 +797,7 @@ export default {
             enableAddToCardButton: false,
             selectedVariation: null,
             productArray: {},
-            showVariationComponent: false,
+            hasVariationOptions: false,
             initProduct: {
                 isVariation: false,
                 variationId: null,
@@ -869,9 +874,6 @@ export default {
         },
         categories: function () {
             return this.$store.getters["frontendProductCategory/ancestorsAndSelf"];
-        },
-        initialVariations: function () {
-            return this.$store.getters["frontendProductVariation/initialVariation"];
         },
         product: function () {
             return this.$store.getters["frontendProduct/show"];
@@ -977,6 +979,18 @@ export default {
             return list[this.badgeIndex % list.length];
         },
         detailPrices: function () {
+            if (this.selectedVariation) {
+                const v = this.selectedVariation;
+                const onSale =
+                    (v.discount_percentage && v.discount_percentage > 0) ||
+                    parseAmount(v.old_price) > parseAmount(v.price);
+                return {
+                    onSale,
+                    salePrice: v.currency_price || v.price,
+                    originalPrice: v.old_currency_price || v.old_price || v.price,
+                    percent: v.discount_percentage || 0,
+                };
+            }
             return getDetailPrices(this.product);
         },
     },
@@ -1416,6 +1430,8 @@ export default {
         },
         show: function () {
             if (typeof this.$route.params.slug !== "undefined") {
+                this.hasVariationOptions = false;
+                this.selectedVariation = null;
                 this.loading.isActive = true;
                 this.props.search.slug = this.$route.params.slug;
                 this.$store.dispatch("frontendProduct/show", this.props.search).then((res) => {
@@ -1466,6 +1482,7 @@ export default {
                         this.soldCount = parseInt(localCount);
                     }
                     pixelService.trackViewContent(res.data.data);
+                    trackProductViewed(res.data.data);
 
                     // Handle Recently Viewed local storage
                     let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
@@ -1484,19 +1501,6 @@ export default {
                     this.fetchRecentlyViewed();
 
                     this.$store.dispatch("frontendProductCategory/ancestorsAndSelf", res.data.data.category_slug).then((categoryRes) => {
-                        this.loading.isActive = false;
-                    }).catch((err) => {
-                        this.loading.isActive = false;
-                    });
-
-                    this.$store.dispatch("frontendProductVariation/initialVariation", res.data.data.id).then((initVariationRes) => {
-                        if (initVariationRes.data.data.length > 0) {
-                            this.showVariationComponent = true;
-                        }
-
-                        if (!initVariationRes.data.data.length && res.data.data.stock > 0) {
-                            this.enableAddToCardButton = false;
-                        }
                         this.loading.isActive = false;
                     }).catch((err) => {
                         this.loading.isActive = false;
@@ -1585,10 +1589,15 @@ export default {
             }
             router.push({ name: 'frontend.product.details', params: { slug: slug } });
         },
-        selectedVariationMethod: function (variation) {
-            this.enableAddToCardButton = true;
-            this.selectedVariation = null;
-
+        onVariationsReady: function ({ groups }) {
+            this.hasVariationOptions = groups.length > 0;
+            if (!this.hasVariationOptions && this.initProduct.stock > 0) {
+                this.enableAddToCardButton = false;
+            } else if (this.hasVariationOptions) {
+                this.enableAddToCardButton = true;
+            }
+        },
+        resetTempToInitProduct: function () {
             this.temp.isVariation = this.initProduct.isVariation;
             this.temp.variationId = this.initProduct.variationId;
             this.temp.sku = this.initProduct.sku;
@@ -1599,30 +1608,33 @@ export default {
             this.temp.oldPrice = this.initProduct.oldPrice;
             this.temp.totalPrice = this.initProduct.price;
             this.temp.maximum_purchase_quantity = this.initProduct.maximum_purchase_quantity;
+        },
+        selectedVariationMethod: function (variation) {
+            this.selectedVariation = variation || null;
+            this.resetTempToInitProduct();
 
-            if (variation) {
-                this.selectedVariation = variation;
+            if (!variation) {
+                this.enableAddToCardButton = this.hasVariationOptions;
+                return;
+            }
 
-                this.temp.isVariation = true;
-                this.temp.variationId = variation.id;
-                this.temp.sku = variation.sku;
-                this.temp.stock = variation.stock;
-                this.temp.quantity = 1;
-                this.temp.discount = variation.discount_percentage || 0;
-                this.temp.price = parseAmount(variation.price);
-                this.temp.oldPrice = parseAmount(variation.old_price);
-                this.temp.totalPrice = parseAmount(variation.price);
-                this.temp.maximum_purchase_quantity = variation.maximum_purchase_quantity;
+            this.temp.isVariation = true;
+            this.temp.variationId = variation.id;
+            this.temp.sku = variation.sku;
+            this.temp.stock = variation.stock;
+            this.temp.quantity = 1;
+            this.temp.discount = variation.discount_percentage || 0;
+            this.temp.price = parseAmount(variation.price);
+            this.temp.oldPrice = parseAmount(variation.old_price);
+            this.temp.totalPrice = parseAmount(variation.price);
+            this.temp.maximum_purchase_quantity = variation.maximum_purchase_quantity;
 
-                if (variation.stock > 0) {
-                    this.enableAddToCardButton = false;
-                }
+            this.enableAddToCardButton = variation.stock > 0 ? false : true;
 
-                if (variation.image) {
-                    const imageIndex = this.combinedMedia.findIndex(media => media.url === variation.image);
-                    if (imageIndex !== -1 && this.mainSwiper) {
-                        this.mainSwiper.slideToLoop(imageIndex);
-                    }
+            if (variation.image) {
+                const imageIndex = this.combinedMedia.findIndex((media) => media.url === variation.image);
+                if (imageIndex !== -1 && this.mainSwiper) {
+                    this.mainSwiper.slideToLoop(imageIndex);
                 }
             }
         },
@@ -1665,8 +1677,18 @@ export default {
         totalPriceSetup: function () {
             this.temp.totalPrice = (this.temp.price * this.temp.quantity);
         },
+        analyticsTrackCartAdd: function () {
+            trackAddToCart(
+                {
+                    id: this.temp.productId,
+                    sku: this.temp.sku,
+                    name: this.temp.name,
+                },
+                this.temp.quantity || 1
+            );
+        },
         addToCart: function () {
-            if (this.showVariationComponent && !this.selectedVariation) {
+            if (this.hasVariationOptions && !this.selectedVariation) {
                 alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 return;
             }
@@ -1701,10 +1723,9 @@ export default {
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {
                     this.productArray.variation_names = res.data.data;
-                    this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
+                        this.analyticsTrackCartAdd();
                         this.refreshProductSocialProof();
-                        this.showVariationComponent = true;
                         this.productArray = {};
                         this.selectedVariation = null;
                         this.temp.isVariation = this.initProduct.isVariation;
@@ -1723,15 +1744,14 @@ export default {
                         } else {
                             alertService.error(this.$t('message.maximum_quantity') || "Maximum purchase quantity reached!");
                         }
-                        this.showVariationComponent = true;
                         this.selectedVariation = null;
-                        this.temp.stock = this.initProduct.stock;
-                        this.temp.quantity = this.initProduct.quantity;
+                        this.resetTempToInitProduct();
                     });
                 }).catch((err) => {
                 });
             } else {
                 this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
+                    this.analyticsTrackCartAdd();
                     this.refreshProductSocialProof();
                     this.enableAddToCardButton = false;
                     this.productArray = {};
@@ -1760,7 +1780,7 @@ export default {
             }
         },
         buyNow: function () {
-            if (this.showVariationComponent && !this.selectedVariation) {
+            if (this.hasVariationOptions && !this.selectedVariation) {
                 alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
                 return;
             }
@@ -1794,21 +1814,10 @@ export default {
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {
                     this.productArray.variation_names = res.data.data;
-                    this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
-                        this.showVariationComponent = true;
                         this.productArray = {};
                         this.selectedVariation = null;
-                        this.temp.isVariation = this.initProduct.isVariation;
-                        this.temp.variationId = this.initProduct.variationId;
-                        this.temp.sku = this.initProduct.sku;
-                        this.temp.stock = this.initProduct.stock;
-                        this.temp.quantity = this.initProduct.quantity;
-                        this.temp.discount = this.initProduct.discount;
-                        this.temp.price = this.initProduct.price;
-                        this.temp.oldPrice = this.initProduct.oldPrice;
-                        this.temp.totalPrice = this.initProduct.price;
-                        this.temp.maximum_purchase_quantity = this.initProduct.maximum_purchase_quantity;
+                        this.resetTempToInitProduct();
                         router.push({ name: "frontend.checkout.checkout" });
                     }).catch((err) => {
                         if (err && err.message === "stockOut") {
@@ -1816,10 +1825,8 @@ export default {
                         } else {
                             alertService.error(this.$t('message.maximum_quantity') || "Maximum purchase quantity reached!");
                         }
-                        this.showVariationComponent = true;
                         this.selectedVariation = null;
-                        this.temp.stock = this.initProduct.stock;
-                        this.temp.quantity = this.initProduct.quantity;
+                        this.resetTempToInitProduct();
                     });
                 }).catch((err) => {
                 });

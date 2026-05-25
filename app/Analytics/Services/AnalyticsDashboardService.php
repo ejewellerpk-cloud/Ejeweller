@@ -7,6 +7,7 @@ use App\Analytics\Models\AnalyticsEvent;
 use App\Analytics\Models\AnalyticsSession;
 use App\Analytics\Models\AnalyticsVisitor;
 use App\Analytics\Repositories\EloquentAnalyticsEventRepository;
+use App\Models\Product;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -91,7 +92,24 @@ class AnalyticsDashboardService
 
     public function topProducts(int $siteId, string $from, string $to): array
     {
-        return $this->events->topProducts($siteId, $from, $to);
+        $rows = $this->events->topProducts($siteId, $from, $to);
+        if ($rows === []) {
+            return [];
+        }
+
+        $names = Product::query()
+            ->whereIn('id', array_column($rows, 'product_id'))
+            ->pluck('name', 'id');
+
+        return array_map(static function (array $row) use ($names) {
+            $id = (int) ($row['product_id'] ?? 0);
+
+            return [
+                'product_id' => $id,
+                'views' => (int) ($row['views'] ?? 0),
+                'name' => $names[$id] ?? null,
+            ];
+        }, $rows);
     }
 
     public function funnel(int $siteId, string $from, string $to): array

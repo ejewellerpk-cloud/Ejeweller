@@ -43,9 +43,12 @@ class ProductAllVariationResource extends JsonResource
             'old_price'                     => AppLibrary::convertAmountFormat($this->price),
             'old_currency_price'            => AppLibrary::currencyAmountFormat($this->price),
             'discount'                      => $isOffer ? AppLibrary::convertAmountFormat(($this->price / 100) * $discount) : 0,
-            'discount_percentage'           => $isOffer ? AppLibrary::convertAmountFormat($discount) : 0,
+            'discount_percentage'           => $isOffer ? (float) $discount : 0,
+            'is_offer'                      => $isOffer,
             'sku'                           => $this->sku,
+            'image'                         => $this->image,
             'stock'                         => $this->product?->show_stock_out == Activity::DISABLE ? ($this->product?->can_purchasable == Ask::NO ? (int)env('NON_PURCHASE_QUANTITY') : (int)$this->stock_items_sum_quantity) : 0,
+            'maximum_purchase_quantity'     => $this->product?->maximum_purchase_quantity,
             'children'                      => ProductAllVariationResource::collection($this->children),
         ];
     }

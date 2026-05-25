@@ -161,6 +161,7 @@ import CouponComponent from "../CouponComponent.vue";
 import router from "../../../../router";
 import alertService from "../../../../services/alertService";
 import { pixelService } from "../../../../services/pixelService";
+import { trackCheckoutStarted, trackOrderPlaced } from "../../../../services/analyticsEcommerceBridge";
 import LoadingComponent from "../../components/LoadingComponent.vue";
 import statusEnum from "../../../../enums/modules/statusEnum";
 import sourceEnum from "../../../../enums/modules/sourceEnum";
@@ -267,6 +268,7 @@ export default {
         const cartItems = this.$store.getters['frontendCart/lists'];
         const cartTotal = this.$store.getters['frontendCart/total'];
         pixelService.trackInitiateCheckout(cartItems, cartTotal);
+        trackCheckoutStarted(cartTotal, window.FACEBOOK_PIXEL_CURRENCY || 'PKR');
 
         this.loading.isActive = true;
         this.$store.dispatch('frontendOrderArea/lists').then(res => {
@@ -437,6 +439,11 @@ export default {
 
                 let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
                 if (orderResponse.data.data.is_cod) {
+                    trackOrderPlaced({
+                        id: orderResponse.data.data.id,
+                        total: orderResponse.data.data.total ?? this.total,
+                        currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
+                    });
                     this.$router.push({ name: 'frontend.account.orderDetails', params: { id: orderResponse.data.data.id }, query: { status: 'success' } });
                 } else if (paymentSlug) {
                     window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;

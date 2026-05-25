@@ -10,10 +10,18 @@
                     class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm">
                     <option v-for="s in sites" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
-                <input type="date" v-model="from" @change="refresh"
-                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
-                <input type="date" v-model="to" @change="refresh"
-                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
+                <div class="intelligence-date-range min-w-[220px] max-w-[280px]">
+                    <Datepicker
+                        v-model="dateRange"
+                        range
+                        autoApply
+                        :enableTimePicker="false"
+                        utc="false"
+                        :maxDate="maxSelectableDate"
+                        placeholder="Date range"
+                        @update:modelValue="onDateRangeChange"
+                    />
+                </div>
                 <button type="button" @click="refresh"
                     class="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold">
                     Refresh
@@ -117,9 +125,9 @@
                 <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
                     <h2 class="font-semibold mb-4">Top viewed products</h2>
                     <ul class="space-y-2 text-sm">
-                        <li v-for="(p, i) in products" :key="i" class="flex justify-between">
-                            <span>Product #{{ p.product_id }}</span>
-                            <span class="text-orange-400">{{ p.views }} views</span>
+                        <li v-for="(p, i) in products" :key="i" class="flex justify-between gap-3">
+                            <span class="truncate">{{ p.name || ('Product #' + p.product_id) }}</span>
+                            <span class="text-orange-400 shrink-0">{{ p.views }} views</span>
                         </li>
                         <li v-if="!products.length" class="text-slate-500">No product views in range</li>
                     </ul>
@@ -133,16 +141,29 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 import KpiCard from './KpiCard.vue';
-import { intelAuthContext, intelLog, intelError } from '../../../store/modules/intelligenceDebug';
+
+let realtimePollTimer = null;
+let initSitesInflight = null;
 
 export default {
     name: 'IntelligenceDashboardComponent',
-    components: { KpiCard },
+    components: { KpiCard, Datepicker },
     data() {
         const to = new Date().toISOString().slice(0, 10);
         const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-        return { from, to, siteId: null, pollTimer: null, bootstrapping: true, loadError: null, refreshError: null };
+        return {
+            from,
+            to,
+            dateRange: null,
+            maxSelectableDate: new Date(),
+            siteId: null,
+            bootstrapping: true,
+            loadError: null,
+            refreshError: null,
+        };
     },
     computed: {
         ...mapGetters({
@@ -156,41 +177,54 @@ export default {
             lastError: 'intelligence/lastError',
         }),
     },
+    created() {
+        this.syncDateRangeFromStrings();
+    },
     async mounted() {
-        intelLog('Dashboard mounted', intelAuthContext());
         await this.initSites();
-        this.logUiState('after initSites');
-        this.pollTimer = setInterval(() => {
-            if (this.siteId) this.$store.dispatch('intelligence/fetchRealtime');
-        }, 5000);
+        if (!realtimePollTimer) {
+            realtimePollTimer = setInterval(() => {
+                if (this.siteId) {
+                    this.$store.dispatch('intelligence/fetchRealtime');
+                }
+            }, 5000);
+        }
     },
     beforeUnmount() {
-        clearInterval(this.pollTimer);
+        if (realtimePollTimer) {
+            clearInterval(realtimePollTimer);
+            realtimePollTimer = null;
+        }
     },
     methods: {
         async initSites() {
+            if (initSitesInflight) {
+                return initSitesInflight;
+            }
+            initSitesInflight = this.runInitSites();
+            try {
+                return await initSitesInflight;
+            } finally {
+                initSitesInflight = null;
+            }
+        },
+        async runInitSites() {
             this.bootstrapping = true;
             this.loadError = null;
             this.refreshError = null;
-            intelLog('initSites →');
             try {
-                const { meta, sites } = await this.$store.dispatch('intelligence/fetchSites');
-                intelLog('initSites sites from store', { sites, meta });
+                const { meta } = await this.$store.dispatch('intelligence/fetchSites');
                 if (meta?.default_from) this.from = meta.default_from;
                 if (meta?.default_to) this.to = meta.default_to;
+                this.syncDateRangeFromStrings();
                 if (this.sites.length) {
                     this.siteId = this.$store.state.intelligence.activeSiteId || this.sites[0].id;
-                    intelLog('initSites → refresh', { siteId: this.siteId, from: this.from, to: this.to });
                     await this.refresh();
-                } else {
-                    intelError('initSites — sites array empty after successful API');
                 }
             } catch (err) {
                 this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
-                intelError('initSites failed', { message: this.loadError, err });
             } finally {
                 this.bootstrapping = false;
-                this.logUiState('initSites done');
             }
         },
         onSiteChange() {
@@ -201,35 +235,65 @@ export default {
             this.refreshError = null;
             this.$store.commit('intelligence/setActiveSiteId', this.siteId);
             this.$store.commit('intelligence/setFilters', { from: this.from, to: this.to });
-            intelLog('refresh →', { siteId: this.siteId, from: this.from, to: this.to });
             try {
                 await this.$store.dispatch('intelligence/refreshAll');
-                this.logUiState('refresh OK');
             } catch (err) {
                 this.refreshError = err.response?.data?.message || err.message || 'Failed to load dashboard data';
-                intelError('refresh failed', this.refreshError);
-                this.logUiState('refresh failed');
             }
-        },
-        logUiState(label) {
-            intelLog(`UI state [${label}]`, {
-                bootstrapping: this.bootstrapping,
-                loadError: this.loadError,
-                refreshError: this.refreshError,
-                siteId: this.siteId,
-                sitesCount: this.sites?.length,
-                overview: this.overview,
-                realtime: this.realtime,
-                funnelSteps: this.funnel?.length,
-                sourcesCount: this.sources?.length,
-                productsCount: this.products?.length,
-                storeActiveSiteId: this.$store.state.intelligence?.activeSiteId,
-            });
         },
         formatMoney(v) {
             const n = Number(v || 0);
             return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         },
+        toDateString(value) {
+            if (!value) return '';
+            const d = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toISOString().slice(0, 10);
+        },
+        syncDateRangeFromStrings() {
+            if (!this.from || !this.to) {
+                this.dateRange = null;
+                return;
+            }
+            this.dateRange = [
+                new Date(`${this.from}T12:00:00`),
+                new Date(`${this.to}T12:00:00`),
+            ];
+        },
+        onDateRangeChange(range) {
+            if (!Array.isArray(range) || range.length < 2 || !range[0] || !range[1]) {
+                return;
+            }
+            const nextFrom = this.toDateString(range[0]);
+            const nextTo = this.toDateString(range[1]);
+            if (nextFrom === this.from && nextTo === this.to) {
+                return;
+            }
+            this.from = nextFrom;
+            this.to = nextTo;
+            this.refresh();
+        },
     },
 };
 </script>
+
+<style scoped>
+.intelligence-date-range :deep(.dp__input) {
+    background-color: rgb(30 41 59);
+    border-color: rgb(51 65 85);
+    color: rgb(241 245 249);
+    border-radius: 0.75rem;
+    min-height: 2.5rem;
+    font-size: 0.875rem;
+}
+
+.intelligence-date-range :deep(.dp__input::placeholder) {
+    color: rgb(148 163 184);
+}
+
+.intelligence-date-range :deep(.dp__input_icon),
+.intelligence-date-range :deep(.dp__clear_icon) {
+    color: rgb(148 163 184);
+}
+</style>
