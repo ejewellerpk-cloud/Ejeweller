@@ -40,6 +40,7 @@ import LoadingComponent from "../components/LoadingComponent";
 
 export default {
     name: "SliderComponent",
+    emits: ['ready'],
     components: {
         Swiper,
         SwiperSlide,
@@ -72,15 +73,23 @@ export default {
     },
     mounted() {
         if (this.sliders.length > 0) {
+            this.emitReady();
             return;
         }
         this.loading.isActive = true;
-        this.$store.dispatch("frontendSlider/lists", this.sliderProps.search).then((res) => {
+        this.$store.dispatch("frontendSlider/lists", this.sliderProps.search).then(() => {
             this.loading.isActive = false;
-        }).catch((err) => {
+            this.emitReady();
+        }).catch(() => {
             this.loading.isActive = false;
+            this.emitReady();
         });
-    }
+    },
+    methods: {
+        emitReady() {
+            this.$emit('ready');
+        },
+    },
 }
 </script>
 

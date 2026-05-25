@@ -25,6 +25,9 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 
 export default {
     name: "FlashSaleComponent",
+    props: {
+        immediateFetch: { type: Boolean, default: false },
+    },
     components: {
         ProductListComponent,
         LoadingComponent
@@ -42,13 +45,17 @@ export default {
         },
     },
     mounted() {
+        if (this.immediateFetch) {
+            this.fetchData();
+            return;
+        }
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) {
                 this.fetchData();
                 observer.disconnect();
             }
         }, { rootMargin: '300px' });
-        
+
         if (this.$refs.lazySection) {
             observer.observe(this.$refs.lazySection);
         } else {

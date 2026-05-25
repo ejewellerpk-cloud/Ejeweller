@@ -37,6 +37,7 @@ import LoadingComponent from "../components/LoadingComponent";
 
 export default {
     name: "CategoryComponent",
+    emits: ['ready'],
     components: {
         Swiper,
         SwiperSlide,
@@ -72,6 +73,7 @@ export default {
     },
     mounted() {
         if (this.categories.length > 0) {
+            this.emitReady();
             return;
         }
         this.loading.isActive = true;
@@ -81,11 +83,18 @@ export default {
             order_type: "asc",
             parent_id: null,
             status: statusEnum.ACTIVE,
-        }).then(res => {
+        }).then(() => {
             this.loading.isActive = false;
-        }).catch((err) => {
+            this.emitReady();
+        }).catch(() => {
             this.loading.isActive = false;
+            this.emitReady();
         });
+    },
+    methods: {
+        emitReady() {
+            this.$emit('ready');
+        },
     },
 }
 </script>
