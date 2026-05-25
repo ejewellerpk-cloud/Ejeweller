@@ -1,5 +1,5 @@
 // Increment the version number whenever you want to force a cache refresh
-const VERSION = 'v1.9';
+const VERSION = 'v2.0';
 const staticCacheName = "pwa-" + VERSION;
 
 const filesToCache = [
@@ -42,16 +42,26 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Smart Fetch Handler
+const isMediaRequest = (request) => {
+    if (request.destination === 'video' || request.destination === 'audio') {
+        return true;
+    }
+    const url = request.url || '';
+    return !!(
+        url.match(/\.(mp4|webm|ogg|wav|mp3|mov|avi|mkv|m4v|flv)(\?|$)/i) ||
+        url.includes('/storage/') && url.match(/\.(mp4|webm|mov|m4v|avi|mkv|ogg)/i)
+    );
+};
+
+// Smart Fetch Handler — never intercept/cache video or storage media (avoids ERR_CACHE_OPERATION_NOT_SUPPORTED)
 self.addEventListener("fetch", event => {
-    // Skip non-GET requests, API requests, and video/audio files
     if (event.request.method !== 'GET' ||
         event.request.url.includes('/api/') ||
-        event.request.url.match(/\.(mp4|webm|ogg|wav|mp3|mov|avi|mkv)/i)) {
+        isMediaRequest(event.request)) {
         return;
     }
 
-    const isImage = event.request.url.match(/\.(png|jpg|jpeg|gif|ico|svg)$/i) || event.request.url.includes('favicon.ico');
+    const isImage = event.request.url.match(/\.(png|jpg|jpeg|gif|ico|svg|webp)(\?|$)/i) || event.request.url.includes('favicon.ico');
 
     // For image assets, use a Cache-First with Network-Fallback & Runtime Caching strategy
     if (isImage) {
@@ -61,11 +71,11 @@ self.addEventListener("fetch", event => {
                     return cachedResponse;
                 }
                 return fetch(event.request).then(networkResponse => {
-                    if (networkResponse && networkResponse.status === 200) {
+                    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
                         const responseToCache = networkResponse.clone();
-                        caches.open(staticCacheName).then(cache => {
-                            cache.put(event.request, responseToCache);
-                        });
+                        caches.open(staticCacheName).then((cache) => {
+                            cache.put(event.request, responseToCache).catch(() => {});
+                        }).catch(() => {});
                     }
                     return networkResponse;
                 }).catch(() => {

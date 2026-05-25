@@ -5,6 +5,7 @@ export const frontendProductVariation = {
     state: {
         initialVariation: [],
         childrenVariation: [],
+        allVariation: [],
         ancestorsToString: "",
     },
     getters: {
@@ -13,6 +14,9 @@ export const frontendProductVariation = {
         },
         childrenVariation: function (state) {
             return state.childrenVariation;
+        },
+        allVariation: function (state) {
+            return state.allVariation;
         },
         ancestorsToString: function (state) {
             return state.ancestorsToString;
@@ -51,7 +55,18 @@ export const frontendProductVariation = {
                     reject(err);
                 });
             });
-        }
+        },
+        allVariation: function (context, slug) {
+            return new Promise((resolve, reject) => {
+                const url = `frontend/product/all-variation/${slug}`;
+                axios.get(url).then((res) => {
+                    context.commit("allVariation", res.data.data);
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
     },
     mutations: {
         initialVariation: function (state, payload) {
@@ -59,6 +74,9 @@ export const frontendProductVariation = {
         },
         childrenVariation: function (state, payload) {
             state.childrenVariation = payload;
+        },
+        allVariation: function (state, payload) {
+            state.allVariation = payload;
         },
         ancestorsToString: function (state, payload) {
             state.ancestorsToString = payload;

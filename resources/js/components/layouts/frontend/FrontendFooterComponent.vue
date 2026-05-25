@@ -187,6 +187,21 @@ import LoadingComponent from "../../frontend/components/LoadingComponent";
 import menuSectionEnum from "../../../enums/modules/menuSectionEnum";
 import _ from "lodash";
 
+const FOOTER_SUPPORT_ORDER = [
+    'contact-us',
+    'faq',
+    'shipping-policy',
+    'shipping',
+    'return-and-refund-policy',
+    'return-and-exchange',
+];
+const FOOTER_LEGAL_ORDER = [
+    'about-us',
+    'privacy-policy',
+    'terms-and-conditions',
+    'cookies-policy',
+];
+
 export default {
     name: "FrontendFooterComponent",
     components: { LoadingComponent },
@@ -222,21 +237,32 @@ export default {
             order_type: "asc",
             status: this.enums.statusEnum.ACTIVE
         }).then(res => {
+            const legal = [];
+            const support = [];
             if (res.data.data.length > 0) {
                 _.forEach(res.data.data, (page) => {
                     if (page.menu_section_id === this.enums.menuSectionEnum.LEGAL) {
-                        this.legalPages.push(page);
+                        legal.push(page);
                     } else {
-                        this.supportPages.push(page);
+                        support.push(page);
                     }
                 });
             }
+            this.legalPages = this.sortFooterPages(legal, FOOTER_LEGAL_ORDER);
+            this.supportPages = this.sortFooterPages(support, FOOTER_SUPPORT_ORDER);
             this.loading.isActive = false;
         }).catch((err) => {
             this.loading.isActive = false;
         });
     },
     methods: {
+        sortFooterPages(pages, order) {
+            return [...pages].sort((a, b) => {
+                const ia = order.indexOf(a.slug);
+                const ib = order.indexOf(b.slug);
+                return (ia === -1 ? 999 + (a.id || 0) : ia) - (ib === -1 ? 999 + (b.id || 0) : ib);
+            });
+        },
         saveSubscription: function () {
             try {
                 const url = '/frontend/subscriber';

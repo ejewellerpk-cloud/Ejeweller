@@ -35,22 +35,40 @@
                     </button>
 
                     <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="getPaginationConfig()" :thumbs="{ swiper: thumbsSwiper }"
-                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper">
+                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper" @slideChange="onMainGallerySlideChange">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <div @click="handleImageClick(index, $event)"
+                                <div @click="handleImageClick(index)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
                                     <img :src="media.url" alt="product" loading="lazy"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                                        :class="zoomedIndex === index ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                                         class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
                                 </div>
                             </template>
                             <template v-else-if="media.type === 'video'">
-                                <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15" 
+                                <iframe v-if="isEmbedVideo(media)"
                                     :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                                <video v-else :src="media.data.link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover"></video>
+                                <div v-else class="relative w-full h-full bg-black">
+                                    <img
+                                        :src="getVideoPoster(media)"
+                                        alt="video preview"
+                                        class="w-full h-full object-cover absolute inset-0"
+                                        :class="mainSwiperActiveIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                                    />
+                                    <video
+                                        v-if="mainSwiperActiveIndex === index"
+                                        :src="media.data.link"
+                                        :poster="getVideoPoster(media)"
+                                        autoplay
+                                        muted
+                                        loop
+                                        playsinline
+                                        webkit-playsinline
+                                        preload="auto"
+                                        class="w-full h-full object-cover relative z-[1]"
+                                    ></video>
+                                </div>
                             </template>
                         </SwiperSlide>
                     </Swiper>
@@ -69,16 +87,9 @@
                                 <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-45 rounded-lg z-10">
                                     <i class="fa-solid fa-play text-white text-base"></i>
                                 </div>
-                                <!-- YouTube Video Thumbnail -->
-                                <template v-if="media.data.video_provider === 5">
-                                    <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover" loading="lazy"
-                                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
-                                        :src="getVideoThumbnail(media)" alt="video thumbnail" />
-                                </template>
-                                <!-- Self-hosted Video (renders first frame natively) -->
-                                <template v-else>
-                                    <video :src="media.data.link" preload="metadata" class="w-full h-full rounded-lg border-2 border-gray-200 object-cover pointer-events-none"></video>
-                                </template>
+                                <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover" loading="lazy"
+                                    @error="onVideoPosterImageError($event)"
+                                    :src="getVideoPoster(media)" alt="video thumbnail" />
                             </template>
                         </SwiperSlide>
                     </Swiper>
@@ -110,12 +121,11 @@
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
-                    <div @click="handleImageClick(999, $event)"
+                    <div @click="handleImageClick(999)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
                         <img :src="product.image" alt="products" loading="lazy"
                             @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                            :class="zoomedIndex === 999 ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
                     </div>
                 </div>
@@ -237,8 +247,14 @@
 
 
 
-                    <VariationComponent v-if="initialVariations.length > 0 && showVariationComponent"
-                        :method="selectedVariationMethod" :variations="initialVariations" />
+                    <VariationComponent
+                        v-if="showVariationComponent && product.slug"
+                        :product-slug="product.slug"
+                        :variation-tree-data="allVariationTree"
+                        :initial-variant-id="initialVariantIdFromRoute"
+                        :method="selectedVariationMethod"
+                        :variations="initialVariations"
+                    />
 
                     <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
                         <dt class="capitalize text-lg font-semibold">{{ $t('label.quantity') }}:</dt>
@@ -277,15 +293,13 @@
                     </dl>
 
                     <div class="flex flex-row items-center gap-2 mb-2">
-                        <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'shadow-btn-primary !bg-primary' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
+                        <button @click.prevent="addToCart" type="button"
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-btn-primary !bg-primary">
                             <i class="lab-line-bag text-lg"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.add_to_cart") }}</span>
                         </button>
-                        <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
+                        <button @click.prevent="buyNow" type="button"
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]">
                             <i class="fa-solid fa-bolt text-lg text-yellow-300 animate-pulse"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
@@ -404,11 +418,16 @@
                         :space-between="16"
                         :navigation="false"
                         :grab-cursor="true"
+                        :allow-touch-move="true"
+                        :simulate-touch="true"
+                        :touch-ratio="1"
+                        :threshold="5"
+                        :long-swipes="true"
                         :autoplay="relatedAutoplay"
-                        :speed="4500"
+                        :speed="relatedContinuousSpeed"
                         :loop="true"
                         :loop-additional-slides="8"
-                        :modules="modules"
+                        :modules="relatedSliderModules"
                         :breakpoints="{
                             '640': { slidesPerView: 2, spaceBetween: 20 },
                             '768': { slidesPerView: 3, spaceBetween: 24 },
@@ -416,8 +435,11 @@
                         }"
                         class="product-section-swiper continuous-slider !pb-10"
                         @swiper="onRelatedSwiper"
-                        @touchEnd="resumeRelatedAutoplay"
-                        @slideChangeTransitionEnd="resumeRelatedAutoplay"
+                        @touchStart="onRelatedManualStart"
+                        @sliderFirstMove="onRelatedManualStart"
+                        @touchEnd="onRelatedManualEnd"
+                        @touchCancel="onRelatedManualEnd"
+                        @slideChangeTransitionEnd="onRelatedManualEnd"
                     >
                     <SwiperSlide v-for="(product, idx) in loopedRelatedProducts" :key="product.id + '-' + idx">
                         <ProductListComponent :products="[product]" />
@@ -503,8 +525,7 @@
                         class="w-full h-full flex items-center justify-center p-4 overflow-hidden"
                         @touchstart.passive="onLightboxPinchStart($event, index)"
                         @touchmove.passive="onLightboxPinchMove($event, index)"
-                        @touchend="onLightboxPinchEnd"
-                        @click.stop="toggleMediaLightboxZoom(index)">
+                        @touchend="onLightboxPinchEnd">
                         <img :src="media.url" alt="product"
                             :style="getLightboxImageStyle(index)"
                             class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center touch-none select-none" />
@@ -515,14 +536,26 @@
                             class="w-full h-full max-h-[85vh] pointer-events-none"
                             frameborder="0"
                             allow="autoplay; encrypted-media; playsinline"></iframe>
-                        <video v-else
-                            :src="media.data.link"
-                            autoplay
-                            muted
-                            loop
-                            playsinline
-                            webkit-playsinline
-                            class="w-full h-full max-h-[85vh] object-cover pointer-events-none"></video>
+                        <div v-else class="relative w-full h-full max-h-[85vh]">
+                            <img
+                                :src="getVideoPoster(media)"
+                                alt="video preview"
+                                class="w-full h-full max-h-[85vh] object-cover absolute inset-0"
+                                :class="mediaLightboxIndex === index ? 'opacity-0' : 'opacity-100'"
+                            />
+                            <video
+                                v-if="mediaLightboxIndex === index"
+                                :src="media.data.link"
+                                :poster="getVideoPoster(media)"
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                                webkit-playsinline
+                                preload="auto"
+                                class="w-full h-full max-h-[85vh] object-cover relative z-[1] pointer-events-none"
+                            ></video>
+                        </div>
                     </div>
                 </SwiperSlide>
             </Swiper>
@@ -543,15 +576,13 @@
                 </div>
 
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <button @click.prevent.stop="addToCart" :disabled="enableAddToCardButton" type="button"
-                        :class="enableAddToCardButton === false ? 'bg-primary shadow-btn-primary hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
-                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                    <button @click.prevent.stop="addToCart" type="button"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98] bg-primary shadow-btn-primary hover:-translate-y-0.5">
                         <i class="lab-line-bag text-sm sm:text-base"></i>
                         <span class="text-xs sm:text-sm whitespace-nowrap">Add to cart</span>
                     </button>
-                    <button @click.prevent.stop="buyNow" :disabled="enableAddToCardButton" type="button"
-                        :class="enableAddToCardButton === false ? 'bg-red-600 hover:bg-red-700 shadow-[0_4px_15px_rgba(220,38,38,0.35)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
-                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                    <button @click.prevent.stop="buyNow" type="button"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98] bg-red-600 hover:bg-red-700 shadow-[0_4px_15px_rgba(220,38,38,0.35)] hover:-translate-y-0.5">
                         <i class="fa-solid fa-bolt text-yellow-300 text-sm sm:text-base"></i>
                         <span class="text-xs sm:text-sm whitespace-nowrap">Buy Now</span>
                     </button>
@@ -632,14 +663,12 @@
 
                     <!-- Action Buttons -->
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'bg-[#FF8A00] hover:bg-[#ff9d2e] shadow-[0_4px_15px_rgba(255,138,0,0.4)] hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
-                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                        <button @click.prevent="addToCart" type="button"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300 bg-[#FF8A00] hover:bg-[#ff9d2e] shadow-[0_4px_15px_rgba(255,138,0,0.4)] hover:-translate-y-0.5">
                             <span class="text-sm">Add to cart</span>
                         </button>
-                        <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'bg-[#FF3B30] hover:bg-[#ff4e45] shadow-[0_4px_15px_rgba(255,59,48,0.4)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
-                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                        <button @click.prevent="buyNow" type="button"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300 bg-[#FF3B30] hover:bg-[#ff4e45] shadow-[0_4px_15px_rgba(255,59,48,0.4)] hover:-translate-y-0.5">
                             <span class="text-sm">Buy Now</span>
                         </button>
                     </div>
@@ -659,15 +688,13 @@
             </span>
         </div>
         <div class="flex items-center gap-2 flex-grow justify-end max-w-[65%] sm:max-w-[70%]">
-            <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                :class="enableAddToCardButton === false ? 'bg-primary shadow-btn-primary' : 'bg-slate-400'"
-                class="flex-1 h-11 px-1.5 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap">
+            <button @click.prevent="addToCart" type="button"
+                class="flex-1 h-11 px-1.5 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
                 <i class="lab-line-bag text-sm font-bold"></i>
                 <span>{{ $t("button.add_to_cart") }}</span>
             </button>
-            <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                :class="enableAddToCardButton === false ? 'animate-flash-buy' : 'bg-slate-400'"
-                class="flex-1 h-11 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap">
+            <button @click.prevent="buyNow" type="button"
+                class="flex-1 h-11 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
                 <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
                 <div class="flex flex-col items-center justify-center leading-none">
                     <span class="text-[10px] min-[375px]:text-[12px] font-black uppercase tracking-wider block">{{ $t("button.buy_now") || 'Buy Now' }}</span>
@@ -748,6 +775,13 @@ import activityEnum from "../../../enums/modules/activityEnum";
 import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount } from "../../../utils/productOffer";
 import { trackAddToCart, trackProductViewed } from "../../../services/analyticsEcommerceBridge";
+import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
+import {
+    continuousAutoplayConfig,
+    CONTINUOUS_SWIPER_SPEED,
+    pauseContinuousSwiper,
+    resumeContinuousSwiper,
+} from "../../../utils/continuousSwiper";
 
 export default {
     name: "ProductDetailsComponent",
@@ -776,6 +810,7 @@ export default {
             setThumbsSwiper,
             setMainSwiper,
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
+            relatedSliderModules: [Autoplay],
         }
     },
     data() {
@@ -830,12 +865,8 @@ export default {
             _onPreviewPopState: null,
             shareUrl: "",
             copyText: "Copy",
-            zoomedIndex: null,
-            lastTap: 0,
-            tapTimeout: null,
             showMediaLightbox: false,
             mediaLightboxIndex: 0,
-            mediaLightboxZoomedIndex: null,
             lightboxHistoryActive: false,
             lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
             _onLightboxPopState: null,
@@ -856,12 +887,10 @@ export default {
             recentlyViewedLoading: false,
             recentlyViewedLoadedImages: {},
             relatedSwiper: null,
-            relatedAutoplay: {
-                delay: 0,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: false,
-                stopOnLastSlide: false,
-            },
+            videoPosterMap: {},
+            mainSwiperActiveIndex: 0,
+            relatedContinuousSpeed: CONTINUOUS_SWIPER_SPEED,
+            relatedAutoplay: { ...continuousAutoplayConfig },
         }
     },
     computed: {
@@ -873,6 +902,9 @@ export default {
         },
         initialVariations: function () {
             return this.$store.getters["frontendProductVariation/initialVariation"];
+        },
+        allVariationTree: function () {
+            return this.$store.getters["frontendProductVariation/allVariation"];
         },
         product: function () {
             return this.$store.getters["frontendProduct/show"];
@@ -977,8 +1009,31 @@ export default {
             if (list.length === 0) return null;
             return list[this.badgeIndex % list.length];
         },
+        initialVariantIdFromRoute: function () {
+            const variant = this.$route?.query?.variant;
+            if (variant == null || variant === '') {
+                return null;
+            }
+            const id = parseInt(variant, 10);
+            return isNaN(id) ? null : id;
+        },
+        variationPriceProduct: function () {
+            if (this.selectedVariation && this.selectedVariation.sku) {
+                const v = this.selectedVariation;
+                return {
+                    is_offer: !!v.is_offer,
+                    price: v.price,
+                    old_price: v.old_price,
+                    currency_price: v.currency_price,
+                    old_currency_price: v.old_currency_price,
+                    discount_percentage: v.discount_percentage,
+                    discount: v.discount,
+                };
+            }
+            return this.product;
+        },
         detailPrices: function () {
-            return getDetailPrices(this.product);
+            return getDetailPrices(this.variationPriceProduct);
         },
     },
     mounted() {
@@ -1027,9 +1082,6 @@ export default {
         }
         if (this.viewersInterval) {
             clearInterval(this.viewersInterval);
-        }
-        if (this.tapTimeout) {
-            clearTimeout(this.tapTimeout);
         }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
@@ -1102,25 +1154,77 @@ export default {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         },
-        getVideoThumbnail: function (media) {
-            if (!media || !media.data || !media.data.link) {
-                return this.product.image;
+        isEmbedVideo: function (media) {
+            if (!media?.data) {
+                return false;
             }
+            const provider = Number(media.data.video_provider);
+            return provider === 5 || provider === 10 || provider === 15;
+        },
+        getVideoPoster: function (media) {
+            if (!media?.data?.link) {
+                return this.fallbackVideoPoster();
+            }
+            if (this.isEmbedVideo(media)) {
+                return this.getEmbedVideoThumbnail(media);
+            }
+            if (this.videoPosterMap[media.data.link]) {
+                return this.videoPosterMap[media.data.link];
+            }
+            return this.fallbackVideoPoster();
+        },
+        fallbackVideoPoster: function () {
+            return this.product?.image || this.setting?.theme_logo || '';
+        },
+        getEmbedVideoThumbnail: function (media) {
             const link = media.data.link;
-            if (media.data.video_provider === 5) {
+            if (Number(media.data.video_provider) === 5) {
                 const ytId = this.getYouTubeId(link);
                 if (ytId) {
                     return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
                 }
             }
-            return this.product.image;
+            return this.fallbackVideoPoster();
         },
-        toggleZoom: function (index) {
-            if (this.zoomedIndex === index) {
-                this.zoomedIndex = null;
-            } else {
-                this.zoomedIndex = index;
+        onVideoPosterImageError: function (event) {
+            if (!event?.target) {
+                return;
             }
+            event.target.src = this.fallbackVideoPoster();
+            event.target.classList.remove('object-cover');
+            event.target.classList.add('object-contain', 'bg-white', 'p-2');
+        },
+        generateVideoPosters: function () {
+            const videos = this.videos || [];
+            videos.forEach((video) => {
+                if (!isSelfHostedVideo(video) || !video.link || this.videoPosterMap[video.link]) {
+                    return;
+                }
+                captureVideoThumbnail(video.link).then((dataUrl) => {
+                    this.videoPosterMap = {
+                        ...this.videoPosterMap,
+                        [video.link]: dataUrl,
+                    };
+                }).catch(() => {});
+            });
+        },
+        onMainGallerySlideChange: function (swiper) {
+            this.mainSwiperActiveIndex = swiper?.realIndex ?? 0;
+        },
+        validatePurchaseBeforeAction: function () {
+            if (this.showVariationComponent && (!this.selectedVariation || !this.selectedVariation.sku)) {
+                alertService.error(
+                    this.$t('message.select_all_options')
+                    || this.$t('message.please_select_a_variation')
+                    || 'Please select all options first!'
+                );
+                return false;
+            }
+            if ((this.temp.stock || 0) <= 0) {
+                alertService.error(this.$t('message.out_of_stock') || 'This product is out of stock!');
+                return false;
+            }
+            return true;
         },
         socialProofText: function (inBaskets, boughtLast24) {
             const baskets = parseInt(inBaskets, 10) || 0;
@@ -1157,7 +1261,6 @@ export default {
         },
         openMediaLightbox: function (index) {
             this.mediaLightboxIndex = index;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
             this.showMediaLightbox = true;
             document.body.style.overflow = 'hidden';
@@ -1178,7 +1281,6 @@ export default {
                 return;
             }
             this.showMediaLightbox = false;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
             document.body.style.overflow = '';
             document.body.classList.remove('media-lightbox-open');
@@ -1224,7 +1326,6 @@ export default {
             this.lightboxPinch.active = true;
             this.lightboxPinch.startDist = dist;
             this.lightboxPinch.startScale = this.lightboxPinch.scale > 1 ? this.lightboxPinch.scale : 1;
-            this.mediaLightboxZoomedIndex = null;
         },
         onLightboxPinchMove: function (e, index) {
             if (!this.lightboxPinch.active || this.mediaLightboxIndex !== index || e.touches.length !== 2) {
@@ -1246,35 +1347,10 @@ export default {
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
         },
-        toggleMediaLightboxZoom: function (index) {
-            this.mediaLightboxZoomedIndex = this.mediaLightboxZoomedIndex === index ? null : index;
-        },
-        handleImageClick: function (index, event) {
-            const now = new Date().getTime();
-            const timespan = now - this.lastTap;
-            if (timespan < 500 && timespan > 0) {
-                if (this.tapTimeout) {
-                    clearTimeout(this.tapTimeout);
-                    this.tapTimeout = null;
-                }
-                if (event) event.preventDefault();
-                this.toggleZoom(index);
-                this.lastTap = 0;
-            } else {
-                this.lastTap = now;
-                if (this.tapTimeout) {
-                    clearTimeout(this.tapTimeout);
-                }
-                this.tapTimeout = setTimeout(() => {
-                    if (this.lastTap === now) {
-                        this.openMediaLightbox(index === 999 ? 0 : index);
-                    }
-                    this.tapTimeout = null;
-                }, 300);
-            }
+        handleImageClick: function (index) {
+            this.openMediaLightbox(index === 999 ? 0 : index);
         },
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
@@ -1418,6 +1494,12 @@ export default {
         show: function () {
             if (typeof this.$route.params.slug !== "undefined") {
                 this.loading.isActive = true;
+                this.selectedVariation = null;
+                this.showVariationComponent = false;
+                this.videoPosterMap = {};
+                this.mainSwiperActiveIndex = 0;
+                this.$store.commit('frontendProductVariation/initialVariation', []);
+                this.$store.commit('frontendProductVariation/allVariation', []);
                 this.props.search.slug = this.$route.params.slug;
                 this.$store.dispatch("frontendProduct/show", this.props.search).then((res) => {
                     this.initProduct = {
@@ -1484,6 +1566,7 @@ export default {
                     }
                     
                     this.fetchRecentlyViewed();
+                    this.$nextTick(() => this.generateVideoPosters());
 
                     this.$store.dispatch("frontendProductCategory/ancestorsAndSelf", res.data.data.category_slug).then((categoryRes) => {
                         this.loading.isActive = false;
@@ -1491,12 +1574,22 @@ export default {
                         this.loading.isActive = false;
                     });
 
-                    this.$store.dispatch("frontendProductVariation/initialVariation", res.data.data.id).then((initVariationRes) => {
+                    const productSlug = res.data.data.slug;
+                    const productId = res.data.data.id;
+
+                    this.$store.dispatch("frontendProductVariation/allVariation", productSlug).then((allVarRes) => {
+                        const hasTree = (allVarRes.data.data || []).length > 0;
+                        if (hasTree) {
+                            this.showVariationComponent = true;
+                        }
+                    }).catch(() => {});
+
+                    this.$store.dispatch("frontendProductVariation/initialVariation", productId).then((initVariationRes) => {
                         if (initVariationRes.data.data.length > 0) {
                             this.showVariationComponent = true;
                         }
 
-                        if (!initVariationRes.data.data.length && res.data.data.stock > 0) {
+                        if (!this.showVariationComponent && res.data.data.stock > 0) {
                             this.enableAddToCardButton = false;
                         }
                         this.loading.isActive = false;
@@ -1527,17 +1620,13 @@ export default {
         },
         onRelatedSwiper: function (swiper) {
             this.relatedSwiper = swiper;
-            this.resumeRelatedAutoplay();
+            this.onRelatedManualEnd();
         },
-        resumeRelatedAutoplay: function () {
-            this.$nextTick(() => {
-                const autoplay = this.relatedSwiper?.autoplay;
-                if (!autoplay) {
-                    return;
-                }
-                autoplay.stop();
-                autoplay.start();
-            });
+        onRelatedManualStart: function () {
+            pauseContinuousSwiper(this.relatedSwiper);
+        },
+        onRelatedManualEnd: function () {
+            this.$nextTick(() => resumeContinuousSwiper(this.relatedSwiper));
         },
         showRelatedProduct: function () {
             if (typeof this.$route.params.slug !== "undefined") {
@@ -1548,7 +1637,7 @@ export default {
                     rand: 8
                 }).then((res) => {
                     this.relatedProductsLoading = false;
-                    this.$nextTick(() => this.resumeRelatedAutoplay());
+                    this.$nextTick(() => this.onRelatedManualEnd());
                 }).catch((err) => {
                     this.relatedProductsLoading = false;
                 });
@@ -1602,7 +1691,7 @@ export default {
             this.temp.totalPrice = this.initProduct.price;
             this.temp.maximum_purchase_quantity = this.initProduct.maximum_purchase_quantity;
 
-            if (variation) {
+            if (variation && variation.sku) {
                 this.selectedVariation = variation;
 
                 this.temp.isVariation = true;
@@ -1626,6 +1715,27 @@ export default {
                         this.mainSwiper.slideToLoop(imageIndex);
                     }
                 }
+
+                this.totalPriceSetup();
+                this.updateVariantInUrl(variation.id);
+            } else {
+                this.updateVariantInUrl(null);
+            }
+        },
+        updateVariantInUrl: function (variationId) {
+            if (typeof window === 'undefined' || !window.history?.replaceState) {
+                return;
+            }
+            try {
+                const url = new URL(window.location.href);
+                if (variationId) {
+                    url.searchParams.set('variant', String(variationId));
+                } else {
+                    url.searchParams.delete('variant');
+                }
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {
+                // ignore URL update errors
             }
         },
         quantityUp: function () {
@@ -1678,8 +1788,7 @@ export default {
             );
         },
         addToCart: function () {
-            if (this.showVariationComponent && !this.selectedVariation) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+            if (!this.validatePurchaseBeforeAction()) {
                 return;
             }
 
@@ -1774,8 +1883,7 @@ export default {
             }
         },
         buyNow: function () {
-            if (this.showVariationComponent && !this.selectedVariation) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+            if (!this.validatePurchaseBeforeAction()) {
                 return;
             }
 
@@ -1982,12 +2090,21 @@ export default {
         $route() {
             this.show();
             this.showRelatedProduct();
-        }
+        },
+        videos: {
+            handler() {
+                this.$nextTick(() => this.generateVideoPosters());
+            },
+            deep: true,
+        },
     }
 }
 </script>
 
 <style scoped>
+.continuous-slider {
+    touch-action: pan-x;
+}
 .continuous-slider :deep(.swiper-wrapper) {
     transition-timing-function: linear !important;
 }
