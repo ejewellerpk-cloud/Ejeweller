@@ -114,6 +114,9 @@ export const intelligence = {
             try {
                 const res = await axios.get('admin/intelligence/overview', { params });
                 const data = parseResponse(res, 'overview');
+                if (res.data?.warning) {
+                    commit('setLastError', res.data.warning);
+                }
                 commit('setOverview', data);
                 if (data?.realtime) {
                     commit('setRealtime', data.realtime);
@@ -181,7 +184,7 @@ export const intelligence = {
                 throw e;
             }
         },
-        async refreshAll({ dispatch, state }) {
+        async refreshAll({ dispatch, commit, state }) {
             const key = `${state.activeSiteId}|${state.filters.from}|${state.filters.to}`;
             if (refreshAllInflight && refreshAllKey === key) {
                 return refreshAllInflight;
@@ -195,9 +198,13 @@ export const intelligence = {
                     dispatch('fetchSources'),
                     dispatch('fetchProducts'),
                 ]);
-                const failed = results.find((r) => r.status === 'rejected');
-                if (failed) {
-                    throw failed.reason;
+                const failures = results.filter((r) => r.status === 'rejected');
+                if (failures.length === results.length) {
+                    throw failures[0].reason;
+                }
+                if (failures.length > 0) {
+                    const msg = failures[0].reason?.message || 'Some metrics failed to load';
+                    commit('setLastError', msg);
                 }
             })();
 

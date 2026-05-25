@@ -66,60 +66,127 @@ class IntelligenceDashboardController extends AdminController
 
     public function overview(Request $request): JsonResponse
     {
-        $site = $this->resolveSite($request);
-        $from = $request->input('from', now()->subDays(7)->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        try {
+            $site = $this->resolveSite($request);
+            $from = $request->input('from', now()->subDays(7)->toDateString());
+            $to = $request->input('to', now()->toDateString());
 
-        return response()->json([
-            'success' => true,
-            'data' => $this->dashboard->overview($site->id, $from, $to),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $this->dashboard->overview($site->id, $from, $to),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->metricsErrorResponse($e, 'overview', [
+                'visitors' => 0,
+                'sessions' => 0,
+                'page_views' => 0,
+                'orders' => 0,
+                'revenue' => 0,
+                'bounce_rate' => 0,
+                'conversion_rate' => 0,
+                'realtime' => [
+                    'active_visitors' => 0,
+                    'page_views_today' => 0,
+                    'orders_today' => 0,
+                    'add_to_carts_today' => 0,
+                    'top_pages' => [],
+                    'top_sources' => [],
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ]);
+        }
     }
 
     public function realtime(Request $request, AnalyticsRealtimeService $realtime): JsonResponse
     {
-        $site = $this->resolveSite($request);
+        try {
+            $site = $this->resolveSite($request);
 
-        return response()->json([
-            'success' => true,
-            'data' => $realtime->snapshot($site->id),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $realtime->snapshot($site->id),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->metricsErrorResponse($e, 'realtime', [
+                'active_visitors' => 0,
+                'page_views_today' => 0,
+                'orders_today' => 0,
+                'add_to_carts_today' => 0,
+                'top_pages' => [],
+                'top_sources' => [],
+                'updated_at' => now()->toIso8601String(),
+            ]);
+        }
     }
 
     public function funnel(Request $request): JsonResponse
     {
-        $site = $this->resolveSite($request);
-        $from = $request->input('from', now()->subDays(7)->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        try {
+            $site = $this->resolveSite($request);
+            $from = $request->input('from', now()->subDays(7)->toDateString());
+            $to = $request->input('to', now()->toDateString());
 
-        return response()->json([
-            'success' => true,
-            'data' => $this->dashboard->funnel($site->id, $from, $to),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $this->dashboard->funnel($site->id, $from, $to),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->metricsErrorResponse($e, 'funnel', []);
+        }
     }
 
     public function sources(Request $request): JsonResponse
     {
-        $site = $this->resolveSite($request);
-        $from = $request->input('from', now()->subDays(7)->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        try {
+            $site = $this->resolveSite($request);
+            $from = $request->input('from', now()->subDays(7)->toDateString());
+            $to = $request->input('to', now()->toDateString());
 
-        return response()->json([
-            'success' => true,
-            'data' => $this->dashboard->sources($site->id, $from, $to),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $this->dashboard->sources($site->id, $from, $to),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->metricsErrorResponse($e, 'sources', []);
+        }
     }
 
     public function products(Request $request): JsonResponse
     {
-        $site = $this->resolveSite($request);
-        $from = $request->input('from', now()->subDays(7)->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        try {
+            $site = $this->resolveSite($request);
+            $from = $request->input('from', now()->subDays(7)->toDateString());
+            $to = $request->input('to', now()->toDateString());
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->dashboard->topProducts($site->id, $from, $to),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->metricsErrorResponse($e, 'products', []);
+        }
+    }
+
+    private function metricsErrorResponse(\Throwable $e, string $section, ?array $emptyData = null): JsonResponse
+    {
+        report($e);
+
+        $message = str_contains($e->getMessage(), 'analytics_') || $e instanceof \Illuminate\Database\QueryException
+            ? 'Analytics tables missing or incomplete. Run: php artisan migrate'
+            : (config('app.debug') ? $e->getMessage() : 'Could not load ' . $section . ' metrics.');
+
+        if ($emptyData !== null) {
+            return response()->json([
+                'success' => true,
+                'data' => $emptyData,
+                'warning' => $message,
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'data' => $this->dashboard->topProducts($site->id, $from, $to),
-        ]);
+            'success' => false,
+            'message' => $message,
+        ], 500);
     }
 
     private function resolveSite(Request $request)

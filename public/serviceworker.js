@@ -1,6 +1,6 @@
 // Increment the version number whenever you want to force a cache refresh
-const VERSION = 'v1.9';
-const staticCacheName = "pwa-" + VERSION;
+const VERSION = 'v2.0';
+const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
     '/offline.html',
@@ -14,86 +14,106 @@ const filesToCache = [
     '/images/icons/icon-512x512.png',
 ];
 
+const MEDIA_EXT = /\.(mp4|webm|ogg|wav|mp3|m4v|mov|avi|mkv|flv)(\?.*)?$/i;
+
+function isMediaRequest(request) {
+    try {
+        const path = new URL(request.url).pathname;
+        return MEDIA_EXT.test(path);
+    } catch (e) {
+        return MEDIA_EXT.test(request.url);
+    }
+}
+
 // Cache on install
-self.addEventListener("install", event => {
-    console.log(`%c PWA Update Available! Updating to version: ${VERSION} `, 'background: #f97316; color: #fff; font-weight: bold; padding: 4px; border-radius: 4px;');
+self.addEventListener('install', (event) => {
+    console.log(
+        `%c PWA Update Available! Updating to version: ${VERSION} `,
+        'background: #f97316; color: #fff; font-weight: bold; padding: 4px; border-radius: 4px;'
+    );
     self.skipWaiting();
     event.waitUntil(
-        caches.open(staticCacheName)
-            .then(cache => {
-                return cache.addAll(filesToCache);
-            })
-    )
-});
-
-// Clear old caches on activate
-self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames
-                    .filter(cacheName => (cacheName.startsWith("pwa-") && cacheName !== staticCacheName))
-                    .map(cacheName => caches.delete(cacheName))
-            );
-        }).then(() => {
-            console.log(`%c PWA Updated Successfully to version: ${VERSION} `, 'background: #10b981; color: #fff; font-weight: bold; padding: 4px; border-radius: 4px;');
-            return self.clients.claim();
-        })
+        caches.open(staticCacheName).then((cache) => cache.addAll(filesToCache))
     );
 });
 
-// Smart Fetch Handler
-self.addEventListener("fetch", event => {
-    // Skip non-GET requests, API requests, and video/audio files
-    if (event.request.method !== 'GET' ||
-        event.request.url.includes('/api/') ||
-        event.request.url.match(/\.(mp4|webm|ogg|wav|mp3|mov|avi|mkv)/i)) {
+// Clear old caches on activate
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches
+            .keys()
+            .then((cacheNames) =>
+                Promise.all(
+                    cacheNames
+                        .filter((name) => name.startsWith('pwa-') && name !== staticCacheName)
+                        .map((name) => caches.delete(name))
+                )
+            )
+            .then(() => {
+                console.log(
+                    `%c PWA Updated Successfully to version: ${VERSION} `,
+                    'background: #10b981; color: #fff; font-weight: bold; padding: 4px; border-radius: 4px;'
+                );
+                return self.clients.claim();
+            })
+    );
+});
+
+// Fetch: never put videos/audio through Cache API (avoids ERR_CACHE_OPERATION_NOT_SUPPORTED)
+self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') {
         return;
     }
 
-    const isImage = event.request.url.match(/\.(png|jpg|jpeg|gif|ico|svg)$/i) || event.request.url.includes('favicon.ico');
+    const url = event.request.url;
 
-    // For image assets, use a Cache-First with Network-Fallback & Runtime Caching strategy
+    if (url.includes('/api/') || isMediaRequest(event.request)) {
+        event.respondWith(
+            fetch(event.request).catch(() =>
+                new Response('', { status: 503, statusText: 'Media unavailable offline' })
+            )
+        );
+        return;
+    }
+
+    const isImage =
+        /\.(png|jpg|jpeg|gif|ico|svg|webp)(\?.*)?$/i.test(new URL(url).pathname) ||
+        url.includes('favicon.ico');
+
     if (isImage) {
         event.respondWith(
-            caches.match(event.request).then(cachedResponse => {
+            caches.match(event.request).then((cachedResponse) => {
                 if (cachedResponse) {
                     return cachedResponse;
                 }
-                return fetch(event.request).then(networkResponse => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const responseToCache = networkResponse.clone();
-                        caches.open(staticCacheName).then(cache => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    }
-                    return networkResponse;
-                }).catch(() => {
-                    // Fallback to PWA icon if completely offline and not in cache
-                    return caches.match('/images/icons/icon-192x192.png');
-                });
+                return fetch(event.request)
+                    .then((networkResponse) => {
+                        if (networkResponse && networkResponse.status === 200) {
+                            const responseToCache = networkResponse.clone();
+                            caches.open(staticCacheName).then((cache) => {
+                                cache.put(event.request, responseToCache).catch(() => {});
+                            });
+                        }
+                        return networkResponse;
+                    })
+                    .catch(() => caches.match('/images/icons/icon-192x192.png'));
             })
         );
         return;
     }
 
-    // Network First strategy for the main application pages to ensure fresh content
     event.respondWith(
         fetch(event.request)
-            .then(response => {
-                return response;
-            })
-            .catch(() => {
-                // If network fails, try cache
-                return caches.match(event.request).then(cachedResponse => {
+            .then((response) => response)
+            .catch(() =>
+                caches.match(event.request).then((cachedResponse) => {
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    // If offline and navigate, show offline page
                     if (event.request.mode === 'navigate') {
                         return caches.match('/offline.html');
                     }
-                });
-            })
+                })
+            )
     );
 });

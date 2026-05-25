@@ -35,22 +35,42 @@
                     </button>
 
                     <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="getPaginationConfig()" :thumbs="{ swiper: thumbsSwiper }"
-                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper">
+                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper" @slideChange="onGallerySlideChange">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <div @click="handleImageClick(index, $event)"
+                                <div @click="handleImageClick(index)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
                                     <img :src="media.url" alt="product" loading="lazy"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                                        :class="zoomedIndex === index ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                                         class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
                                 </div>
                             </template>
                             <template v-else-if="media.type === 'video'">
-                                <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15" 
-                                    :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                                <video v-else :src="media.data.link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover"></video>
+                                <iframe v-if="isEmbedVideo(media.data)"
+                                    :src="activeGalleryIndex === index ? formatVideoLink(media.data) : ''"
+                                    class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                                <video v-else-if="activeGalleryIndex === index && media.data.link"
+                                    :key="'gallery-video-' + index"
+                                    :src="media.data.link"
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    webkit-playsinline
+                                    preload="none"
+                                    disablePictureInPicture
+                                    class="w-full h-full object-cover"
+                                    @error="onProductVideoError"></video>
+                                <ProductVideoThumbnail
+                                    v-else-if="media.data.link"
+                                    :src="media.data.link"
+                                    play-icon-class="text-4xl"
+                                    root-class="rounded-2xl"
+                                />
+                                <div v-else class="w-full h-full flex items-center justify-center bg-black">
+                                    <i class="fa-solid fa-play text-white text-4xl opacity-80"></i>
+                                </div>
                             </template>
                         </SwiperSlide>
                     </Swiper>
@@ -66,19 +86,34 @@
                                     :src="media.url" alt="gallery" />
                             </template>
                             <template v-else-if="media.type === 'video'">
-                                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-45 rounded-lg z-10">
+                                <div
+                                    v-if="isEmbedVideo(media.data)"
+                                    class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-45 rounded-lg z-10 pointer-events-none"
+                                >
                                     <i class="fa-solid fa-play text-white text-base"></i>
                                 </div>
-                                <!-- YouTube Video Thumbnail -->
-                                <template v-if="media.data.video_provider === 5">
-                                    <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover" loading="lazy"
+                                <template v-if="isEmbedVideo(media.data)">
+                                    <img
+                                        v-if="media.data.video_provider === 5"
+                                        class="w-full h-full rounded-lg border-2 border-gray-200 object-cover"
+                                        loading="lazy"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
-                                        :src="getVideoThumbnail(media)" alt="video thumbnail" />
+                                        :src="getVideoThumbnail(media)"
+                                        alt="video thumbnail"
+                                    />
+                                    <div
+                                        v-else
+                                        class="w-full h-full rounded-lg border-2 border-gray-200 bg-black flex items-center justify-center"
+                                    >
+                                        <i class="fa-solid fa-play text-white text-lg opacity-80"></i>
+                                    </div>
                                 </template>
-                                <!-- Self-hosted Video (renders first frame natively) -->
-                                <template v-else>
-                                    <video :src="media.data.link" preload="metadata" class="w-full h-full rounded-lg border-2 border-gray-200 object-cover pointer-events-none"></video>
-                                </template>
+                                <ProductVideoThumbnail
+                                    v-else-if="media.data.link"
+                                    :src="media.data.link"
+                                    root-class="rounded-lg border-2 border-gray-200"
+                                />
+                                <div v-else class="w-full h-full rounded-lg border-2 border-gray-200 bg-black"></div>
                             </template>
                         </SwiperSlide>
                     </Swiper>
@@ -110,12 +145,11 @@
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
-                    <div @click="handleImageClick(999, $event)"
+                    <div @click="handleImageClick(999)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
                         <img :src="product.image" alt="products" loading="lazy"
                             @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                            :class="zoomedIndex === 999 ? 'scale-[2.2] cursor-zoom-out z-30' : 'scale-100 cursor-zoom-in'"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
                     </div>
                 </div>
@@ -281,15 +315,13 @@
                     </dl>
 
                     <div class="flex flex-row items-center gap-2 mb-2">
-                        <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'shadow-btn-primary !bg-primary' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
+                        <button @click.prevent="addToCart" type="button"
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-btn-primary !bg-primary">
                             <i class="lab-line-bag text-lg"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.add_to_cart") }}</span>
                         </button>
-                        <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]' : 'bg-slate-400'"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]">
+                        <button @click.prevent="buyNow" type="button"
+                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]">
                             <i class="fa-solid fa-bolt text-lg text-yellow-300 animate-pulse"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
@@ -507,8 +539,7 @@
                         class="w-full h-full flex items-center justify-center p-4 overflow-hidden"
                         @touchstart.passive="onLightboxPinchStart($event, index)"
                         @touchmove.passive="onLightboxPinchMove($event, index)"
-                        @touchend="onLightboxPinchEnd"
-                        @click.stop="toggleMediaLightboxZoom(index)">
+                        @touchend="onLightboxPinchEnd">
                         <img :src="media.url" alt="product"
                             :style="getLightboxImageStyle(index)"
                             class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center touch-none select-none" />
@@ -519,14 +550,27 @@
                             class="w-full h-full max-h-[85vh] pointer-events-none"
                             frameborder="0"
                             allow="autoplay; encrypted-media; playsinline"></iframe>
-                        <video v-else
+                        <video v-else-if="mediaLightboxIndex === index && media.data.link"
+                            :key="'lightbox-video-' + index"
                             :src="media.data.link"
                             autoplay
                             muted
                             loop
                             playsinline
                             webkit-playsinline
-                            class="w-full h-full max-h-[85vh] object-cover pointer-events-none"></video>
+                            preload="none"
+                            class="w-full h-full max-h-[85vh] object-cover pointer-events-none"
+                            @error="onProductVideoError"></video>
+                        <ProductVideoThumbnail
+                            v-else-if="media.data.link"
+                            :src="media.data.link"
+                            play-icon-class="text-5xl"
+                            root-class="max-h-[85vh]"
+                            :show-play-overlay="false"
+                        />
+                        <div v-else class="w-full h-full flex items-center justify-center">
+                            <i class="fa-solid fa-play text-white text-5xl opacity-80"></i>
+                        </div>
                     </div>
                 </SwiperSlide>
             </Swiper>
@@ -547,15 +591,13 @@
                 </div>
 
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <button @click.prevent.stop="addToCart" :disabled="enableAddToCardButton" type="button"
-                        :class="enableAddToCardButton === false ? 'bg-primary shadow-btn-primary hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
-                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                    <button @click.prevent.stop="addToCart" type="button"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98] bg-primary shadow-btn-primary hover:-translate-y-0.5">
                         <i class="lab-line-bag text-sm sm:text-base"></i>
                         <span class="text-xs sm:text-sm whitespace-nowrap">Add to cart</span>
                     </button>
-                    <button @click.prevent.stop="buyNow" :disabled="enableAddToCardButton" type="button"
-                        :class="enableAddToCardButton === false ? 'bg-red-600 hover:bg-red-700 shadow-[0_4px_15px_rgba(220,38,38,0.35)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
-                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98]">
+                    <button @click.prevent.stop="buyNow" type="button"
+                        class="h-10 sm:h-11 px-4 sm:px-5 rounded-full text-white font-extrabold flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-[0.98] bg-red-600 hover:bg-red-700 shadow-[0_4px_15px_rgba(220,38,38,0.35)] hover:-translate-y-0.5">
                         <i class="fa-solid fa-bolt text-yellow-300 text-sm sm:text-base"></i>
                         <span class="text-xs sm:text-sm whitespace-nowrap">Buy Now</span>
                     </button>
@@ -636,14 +678,12 @@
 
                     <!-- Action Buttons -->
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'bg-[#FF8A00] hover:bg-[#ff9d2e] shadow-[0_4px_15px_rgba(255,138,0,0.4)] hover:-translate-y-0.5' : 'bg-slate-500 cursor-not-allowed'"
-                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                        <button @click.prevent="addToCart" type="button"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300 bg-[#FF8A00] hover:bg-[#ff9d2e] shadow-[0_4px_15px_rgba(255,138,0,0.4)] hover:-translate-y-0.5">
                             <span class="text-sm">Add to cart</span>
                         </button>
-                        <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                            :class="enableAddToCardButton === false ? 'bg-[#FF3B30] hover:bg-[#ff4e45] shadow-[0_4px_15px_rgba(255,59,48,0.4)] hover:-translate-y-0.5' : 'bg-slate-400 cursor-not-allowed'"
-                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300">
+                        <button @click.prevent="buyNow" type="button"
+                            class="px-5 h-10 sm:h-11 rounded-full text-white font-extrabold flex items-center justify-center transition-all duration-300 bg-[#FF3B30] hover:bg-[#ff4e45] shadow-[0_4px_15px_rgba(255,59,48,0.4)] hover:-translate-y-0.5">
                             <span class="text-sm">Buy Now</span>
                         </button>
                     </div>
@@ -663,15 +703,13 @@
             </span>
         </div>
         <div class="flex items-center gap-2 flex-grow justify-end max-w-[65%] sm:max-w-[70%]">
-            <button @click.prevent="addToCart" :disabled="enableAddToCardButton" type="button"
-                :class="enableAddToCardButton === false ? 'bg-primary shadow-btn-primary' : 'bg-slate-400'"
-                class="flex-1 h-11 px-1.5 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap">
+            <button @click.prevent="addToCart" type="button"
+                class="flex-1 h-11 px-1.5 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
                 <i class="lab-line-bag text-sm font-bold"></i>
                 <span>{{ $t("button.add_to_cart") }}</span>
             </button>
-            <button @click.prevent="buyNow" :disabled="enableAddToCardButton" type="button"
-                :class="enableAddToCardButton === false ? 'animate-flash-buy' : 'bg-slate-400'"
-                class="flex-1 h-11 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap">
+            <button @click.prevent="buyNow" type="button"
+                class="flex-1 h-11 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
                 <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
                 <div class="flex flex-col items-center justify-center leading-none">
                     <span class="text-[10px] min-[375px]:text-[12px] font-black uppercase tracking-wider block">{{ $t("button.buy_now") || 'Buy Now' }}</span>
@@ -741,6 +779,7 @@ import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import ProductListComponent from "../components/ProductListComponent";
 import ProductVariationPicker from "../components/ProductVariationPicker.vue";
+import ProductVideoThumbnail from "../components/ProductVideoThumbnail.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import { useHead } from '@vueuse/head';
@@ -757,6 +796,7 @@ export default {
     name: "ProductDetailsComponent",
     components: {
         ProductVariationPicker,
+        ProductVideoThumbnail,
         ProductListComponent,
         CategoryBreadcrumbComponent,
         starRating,
@@ -794,6 +834,7 @@ export default {
                 }
             },
             activityEnum: activityEnum,
+            activeGalleryIndex: 0,
             enableAddToCardButton: false,
             selectedVariation: null,
             productArray: {},
@@ -834,12 +875,8 @@ export default {
             _onPreviewPopState: null,
             shareUrl: "",
             copyText: "Copy",
-            zoomedIndex: null,
-            lastTap: 0,
-            tapTimeout: null,
             showMediaLightbox: false,
             mediaLightboxIndex: 0,
-            mediaLightboxZoomedIndex: null,
             lightboxHistoryActive: false,
             lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
             _onLightboxPopState: null,
@@ -1041,9 +1078,6 @@ export default {
         if (this.viewersInterval) {
             clearInterval(this.viewersInterval);
         }
-        if (this.tapTimeout) {
-            clearTimeout(this.tapTimeout);
-        }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
         }
@@ -1128,12 +1162,16 @@ export default {
             }
             return this.product.image;
         },
-        toggleZoom: function (index) {
-            if (this.zoomedIndex === index) {
-                this.zoomedIndex = null;
-            } else {
-                this.zoomedIndex = index;
+        validatePurchaseBeforeAction: function () {
+            if (this.hasVariationOptions && !this.selectedVariation) {
+                alertService.error(this.$t('message.select_all_options') || this.$t('message.please_select_a_variation'));
+                return false;
             }
+            if (!this.temp.stock || this.temp.stock <= 0) {
+                alertService.error(this.$t('message.out_of_stock') || 'This product is out of stock!');
+                return false;
+            }
+            return true;
         },
         socialProofText: function (inBaskets, boughtLast24) {
             const baskets = parseInt(inBaskets, 10) || 0;
@@ -1170,7 +1208,6 @@ export default {
         },
         openMediaLightbox: function (index) {
             this.mediaLightboxIndex = index;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
             this.showMediaLightbox = true;
             document.body.style.overflow = 'hidden';
@@ -1191,7 +1228,6 @@ export default {
                 return;
             }
             this.showMediaLightbox = false;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
             document.body.style.overflow = '';
             document.body.classList.remove('media-lightbox-open');
@@ -1217,13 +1253,11 @@ export default {
             if (this.mediaLightboxIndex !== index) {
                 return {};
             }
-            const tapZoom = this.mediaLightboxZoomedIndex === index;
             const scale = this.lightboxPinch.active || this.lightboxPinch.scale > 1
                 ? this.lightboxPinch.scale
-                : (tapZoom ? 2.2 : 1);
+                : 1;
             return {
                 transform: `scale(${scale}) translate(${this.lightboxPinch.x}px, ${this.lightboxPinch.y}px)`,
-                cursor: scale > 1 ? 'zoom-out' : 'zoom-in',
             };
         },
         onLightboxPinchStart: function (e, index) {
@@ -1237,7 +1271,6 @@ export default {
             this.lightboxPinch.active = true;
             this.lightboxPinch.startDist = dist;
             this.lightboxPinch.startScale = this.lightboxPinch.scale > 1 ? this.lightboxPinch.scale : 1;
-            this.mediaLightboxZoomedIndex = null;
         },
         onLightboxPinchMove: function (e, index) {
             if (!this.lightboxPinch.active || this.mediaLightboxIndex !== index || e.touches.length !== 2) {
@@ -1259,35 +1292,10 @@ export default {
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
-            this.mediaLightboxZoomedIndex = null;
             this.resetLightboxPinch();
         },
-        toggleMediaLightboxZoom: function (index) {
-            this.mediaLightboxZoomedIndex = this.mediaLightboxZoomedIndex === index ? null : index;
-        },
-        handleImageClick: function (index, event) {
-            const now = new Date().getTime();
-            const timespan = now - this.lastTap;
-            if (timespan < 500 && timespan > 0) {
-                if (this.tapTimeout) {
-                    clearTimeout(this.tapTimeout);
-                    this.tapTimeout = null;
-                }
-                if (event) event.preventDefault();
-                this.toggleZoom(index);
-                this.lastTap = 0;
-            } else {
-                this.lastTap = now;
-                if (this.tapTimeout) {
-                    clearTimeout(this.tapTimeout);
-                }
-                this.tapTimeout = setTimeout(() => {
-                    if (this.lastTap === now) {
-                        this.openMediaLightbox(index === 999 ? 0 : index);
-                    }
-                    this.tapTimeout = null;
-                }, 300);
-            }
+        handleImageClick: function (index) {
+            this.openMediaLightbox(index === 999 ? 0 : index);
         },
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
@@ -1428,10 +1436,27 @@ export default {
             const text = `Hi, I want to order : ${this.product.name} | ${companyName} URL: ${url}`;
             window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
         },
+        isEmbedVideo: function (video) {
+            if (!video) return false;
+            const p = Number(video.video_provider);
+            return p === 5 || p === 10 || p === 15;
+        },
+        onGallerySlideChange: function (swiper) {
+            this.activeGalleryIndex =
+                typeof swiper.realIndex === 'number' ? swiper.realIndex : swiper.activeIndex;
+        },
+        onProductVideoError: function (e) {
+            const el = e?.target;
+            if (el) {
+                el.removeAttribute('src');
+                el.load();
+            }
+        },
         show: function () {
             if (typeof this.$route.params.slug !== "undefined") {
                 this.hasVariationOptions = false;
                 this.selectedVariation = null;
+                this.activeGalleryIndex = 0;
                 this.loading.isActive = true;
                 this.props.search.slug = this.$route.params.slug;
                 this.$store.dispatch("frontendProduct/show", this.props.search).then((res) => {
@@ -1688,8 +1713,7 @@ export default {
             );
         },
         addToCart: function () {
-            if (this.hasVariationOptions && !this.selectedVariation) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+            if (!this.validatePurchaseBeforeAction()) {
                 return;
             }
 
@@ -1780,8 +1804,7 @@ export default {
             }
         },
         buyNow: function () {
-            if (this.hasVariationOptions && !this.selectedVariation) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+            if (!this.validatePurchaseBeforeAction()) {
                 return;
             }
 

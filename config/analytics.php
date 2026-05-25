@@ -21,6 +21,12 @@ return [
         'sync_when_no_redis' => env('ANALYTICS_SYNC_WITHOUT_REDIS', true),
     ],
 
+    /**
+     * When false (default), realtime metrics use Laravel cache — no Redis connection attempts.
+     * Set ANALYTICS_USE_REDIS=true only when Redis is installed and reachable.
+     */
+    'use_redis' => filter_var(env('ANALYTICS_USE_REDIS', false), FILTER_VALIDATE_BOOLEAN),
+
     'realtime' => [
         'redis_prefix' => env('ANALYTICS_REALTIME_PREFIX', 'analytics:rt'),
         'active_window_seconds' => (int) env('ANALYTICS_ACTIVE_WINDOW', 300),

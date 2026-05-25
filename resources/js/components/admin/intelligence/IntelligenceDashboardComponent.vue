@@ -30,7 +30,7 @@
         </header>
 
         <div v-if="bootstrapping" class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400">
-            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Setting up analytics…
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading analytics…
         </div>
 
         <div v-else-if="loadError" class="rounded-2xl border border-red-900/50 bg-slate-900/80 p-8 text-center">
@@ -56,12 +56,20 @@
         </div>
 
         <template v-else>
+            <div v-if="loading && !overview"
+                class="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-300 flex items-center gap-2">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading metrics…
+            </div>
             <div v-if="refreshError || lastError"
                 class="mb-4 rounded-xl border border-amber-700/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
                 {{ refreshError || lastError }}
                 <span class="block text-xs text-amber-400/80 mt-1">
-                    Tracking is working if logs show AnalyticsRealtimeUpdated. Rebuild admin assets (npm run build) and ensure you are logged in as admin.
+                    Visit your storefront while logged out to generate events. Ensure Settings → Intelligence has a valid public key (pk_…) and run <code class="text-amber-200">php artisan migrate</code> if tables are missing.
                 </span>
+            </div>
+            <div v-else-if="hasNoMetrics"
+                class="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+                No analytics events in this date range yet. Browse products on the shop, add to cart, or place a test order — data appears within a few seconds.
             </div>
             <!-- Realtime strip -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -176,6 +184,16 @@ export default {
             loading: 'intelligence/loading',
             lastError: 'intelligence/lastError',
         }),
+        hasNoMetrics() {
+            if (this.loading || this.bootstrapping) {
+                return false;
+            }
+            const o = this.overview;
+            if (!o) {
+                return true;
+            }
+            return !(o.visitors || o.sessions || o.page_views || o.orders || (this.products && this.products.length));
+        },
     },
     created() {
         this.syncDateRangeFromStrings();
@@ -213,13 +231,14 @@ export default {
             this.loadError = null;
             this.refreshError = null;
             try {
-                const { meta } = await this.$store.dispatch('intelligence/fetchSites');
+                const { sites, meta } = await this.$store.dispatch('intelligence/fetchSites');
                 if (meta?.default_from) this.from = meta.default_from;
                 if (meta?.default_to) this.to = meta.default_to;
                 this.syncDateRangeFromStrings();
-                if (this.sites.length) {
-                    this.siteId = this.$store.state.intelligence.activeSiteId || this.sites[0].id;
-                    await this.refresh();
+                if (sites && sites.length) {
+                    this.siteId = this.$store.state.intelligence.activeSiteId || sites[0].id;
+                    this.$store.commit('intelligence/setActiveSiteId', this.siteId);
+                    this.refresh().catch(() => {});
                 }
             } catch (err) {
                 this.loadError = err.message || err.response?.data?.message || 'Could not load analytics sites.';
