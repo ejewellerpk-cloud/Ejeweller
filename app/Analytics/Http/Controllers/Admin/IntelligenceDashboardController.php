@@ -122,6 +122,18 @@ class IntelligenceDashboardController extends AdminController
         ]);
     }
 
+    public function dailySeries(Request $request): JsonResponse
+    {
+        $site = $this->resolveSite($request);
+        $from = $request->input('from', now()->subDays(6)->toDateString());
+        $to = $request->input('to', now()->toDateString());
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->dashboard->dailySeries($site->id, $from, $to),
+        ]);
+    }
+
     private function resolveSite(Request $request)
     {
         $userId = $request->user()->id;
