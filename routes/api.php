@@ -90,6 +90,7 @@ use App\Http\Controllers\Admin\AdministratorAddressController;
 use App\Http\Controllers\Admin\AiAgentController;
 use App\Http\Controllers\Admin\AiController;
 use App\Http\Controllers\Admin\ProductSectionProductController;
+use App\Analytics\Http\Controllers\Admin\IntelligenceAdvancedController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceCommerceController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceDashboardController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController;
@@ -226,6 +227,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/export', [IntelligenceCommerceController::class, 'exportReport']);
         Route::get('/roles', [IntelligenceCommerceController::class, 'roles']);
         Route::get('/settings', [IntelligenceSettingsController::class, 'show']);
+        Route::prefix('advanced')->name('advanced.')->group(function () {
+            Route::get('/cohort-retention', [IntelligenceAdvancedController::class, 'cohortRetention']);
+            Route::get('/rfm', [IntelligenceAdvancedController::class, 'rfm']);
+            Route::get('/product-affinity', [IntelligenceAdvancedController::class, 'productAffinity']);
+            Route::get('/payments', [IntelligenceAdvancedController::class, 'payments']);
+            Route::get('/returns', [IntelligenceAdvancedController::class, 'returns']);
+            Route::get('/geo-device', [IntelligenceAdvancedController::class, 'geoDevice']);
+            Route::get('/hourly-heatmap', [IntelligenceAdvancedController::class, 'hourlyHeatmap']);
+            Route::get('/inventory-forecast', [IntelligenceAdvancedController::class, 'inventoryForecast']);
+            Route::get('/multi-store-compare', [IntelligenceAdvancedController::class, 'multiStoreCompare']);
+            Route::get('/report-schedule', [IntelligenceAdvancedController::class, 'reportScheduleShow']);
+            Route::post('/report-schedule', [IntelligenceAdvancedController::class, 'reportScheduleSave']);
+            Route::get('/report-send-now', [IntelligenceAdvancedController::class, 'reportSendNow']);
+        });
+
         Route::prefix('commerce')->name('commerce.')->group(function () {
             Route::get('/totals', [IntelligenceCommerceController::class, 'totals']);
             Route::get('/order-statistics', [IntelligenceCommerceController::class, 'orderStatistics']);
