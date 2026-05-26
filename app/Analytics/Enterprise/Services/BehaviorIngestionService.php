@@ -4,6 +4,7 @@ namespace App\Analytics\Enterprise\Services;
 
 use App\Analytics\Models\AnalyticsSite;
 use App\Analytics\Support\AnalyticsSchema;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -39,8 +40,8 @@ class BehaviorIngestionService
                 'viewport_h' => (int) ($ev['viewport_h'] ?? 0),
                 'device_type' => $ev['device_type'] ?? null,
                 'payload' => json_encode($ev['data'] ?? []),
-                'occurred_at' => $ev['occurred_at'] ?? $now,
-                'created_at' => $now,
+                'occurred_at' => $this->parseOccurredAt($ev['occurred_at'] ?? null),
+                'created_at' => $now->format('Y-m-d H:i:s'),
             ];
         }
 
@@ -108,5 +109,19 @@ class BehaviorIngestionService
         }
 
         return false;
+    }
+
+    /** MySQL timestamp columns reject ISO-8601 strings (2026-05-26T10:00:00.000Z). */
+    private function parseOccurredAt(mixed $value): string
+    {
+        try {
+            if ($value === null || $value === '') {
+                return now()->format('Y-m-d H:i:s');
+            }
+
+            return Carbon::parse($value)->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return now()->format('Y-m-d H:i:s');
+        }
     }
 }
