@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="checkout" />
-    <div class="row">
+    <div class="row pb-24 lg:pb-0">
         <div class="col-12 lg:col-8">
             <div class="flex items-center rounded-2xl w-fit mb-6 text-focus bg-[#EAF6FF]" v-if="outlets && outlets.length > 0">
                 <div class="relative cursor-pointer">
@@ -23,7 +23,8 @@
                 </div>
             </div>
 
-            <div v-if="orderType === orderTypeEnum.PICK_UP" class="mb-6 rounded-2xl shadow-card">
+            <div v-if="orderType === orderTypeEnum.PICK_UP" id="checkout-section-outlet"
+                :class="validationErrors.outlet ? 'mb-6 rounded-2xl shadow-card ring-2 ring-red-500 ring-offset-2' : 'mb-6 rounded-2xl shadow-card'">
                 <h4 class="font-bold capitalize p-4 border-b border-gray-100">{{ $t('label.store_location') }}</h4>
 
                 <div v-if="outlets.length > 0" v-for="outlet in outlets" class="px-4 pt-4">
@@ -38,7 +39,7 @@
 
             <AddressComponent v-if="orderType === orderTypeEnum.DELIVERY" :slug="'shipping'"
                               :title="$t('label.shipping_address')" :show="true" :selectedAddress="getShippingAddress"
-                              :method="shippingAddress"/>
+                              :method="shippingAddress" :highlightInvalid="validationErrors.shipping"/>
 
             <div v-if="orderType === orderTypeEnum.DELIVERY" class="flex items-start mb-6">
                 <input checked="checked" :value="shippingAndBillingCheck" @click="checkBillingCheckBox($event)"
@@ -51,7 +52,8 @@
 
             <AddressComponent v-if="orderType === orderTypeEnum.DELIVERY" :slug="'billing'"
                               :title="$t('label.billing_address')" :show="billingStatus"
-                              :selectedAddress="getBillingAddress" :method="billingAddress"/>
+                              :selectedAddress="getBillingAddress" :method="billingAddress"
+                              :highlightInvalid="validationErrors.billing"/>
 
             <div class="mb-6 mt-6 rounded-2xl shadow-card">
                 <h4 class="font-bold capitalize p-4 border-b border-gray-100">
@@ -62,7 +64,8 @@
                 </div>
             </div>
 
-            <div class="mb-6 mt-6 rounded-2xl shadow-card">
+            <div id="checkout-section-payment"
+                :class="validationErrors.payment ? 'mb-6 mt-6 rounded-2xl shadow-card ring-2 ring-red-500 ring-offset-2' : 'mb-6 mt-6 rounded-2xl shadow-card'">
                 <h4 class="font-bold capitalize p-4 border-b border-gray-100">
                     {{ $t('label.select_payment_method') }}
                 </h4>
@@ -117,24 +120,29 @@
             <CouponComponent/>
             <SummeryComponent/>
 
-            <div class="max-lg:flex hidden flex-col-reverse sm:flex-row items-center justify-between gap-5 mt-10">
-                <button type="button" @click.prevent="navigateBackToCart"
-                             class="field-button font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
-                    {{ $t('button.back_to_cart') }}
-                </button>
+        </div>
+    </div>
 
-                <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
-                    class="field-button font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
-                    @click.prevent="confirmOrder($event)">
-                    <i class="lab lab-whatsapp text-sm"></i>
-                    {{ $t('button.proceed_to_whatsapp') }}
-                </button>
-
-                <button v-else @click.prevent="confirmOrder($event)"
-                    class="checkout-cta-glow-btn field-button font-semibold tracking-wide normal-case">
-                    <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
-                </button>
+    <!-- Mobile sticky confirm bar -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-200 shadow-[0_-4px_24px_rgba(0,0,0,0.1)] px-4 py-3">
+        <div class="flex items-center gap-3">
+            <div class="min-w-0 flex-1">
+                <p class="text-[10px] text-gray-400 font-bold uppercase leading-none mb-0.5">{{ $t('label.total') }}</p>
+                <p class="text-lg font-extrabold text-primary leading-tight truncate">
+                    {{ currencyFormat(total, setting.site_digit_after_decimal_point,
+                        setting.site_default_currency_symbol, setting.site_currency_position) }}
+                </p>
             </div>
+            <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
+                class="field-button shrink-0 !w-auto px-5 font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
+                @click.prevent="confirmOrder($event)">
+                <i class="lab lab-whatsapp text-sm"></i>
+                {{ $t('button.proceed_to_whatsapp') }}
+            </button>
+            <button v-else type="button" @click.prevent="confirmOrder($event)"
+                class="checkout-cta-glow-btn field-button shrink-0 !w-auto px-5 font-semibold tracking-wide normal-case">
+                <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
+            </button>
         </div>
     </div>
 </template>
@@ -145,6 +153,7 @@ import AddressComponent from "./AddressComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
 import CouponComponent from "../CouponComponent.vue";
 import router from "../../../../router";
+import appService from "../../../../services/appService";
 import alertService from "../../../../services/alertService";
 import { pixelService } from "../../../../services/pixelService";
 import {
@@ -191,7 +200,13 @@ export default {
             sourceEnum: sourceEnum,
             ActivityEnum: ActivityEnum,
             form: {},
-            orderNote: ""
+            orderNote: "",
+            validationErrors: {
+                shipping: false,
+                billing: false,
+                payment: false,
+                outlet: false,
+            },
         }
     },
     computed: {
@@ -326,15 +341,19 @@ export default {
             this.$store.dispatch('frontendCart/updateOrderType', e)
         },
         shippingAddress: function (e) {
+            this.validationErrors.shipping = false;
             this.$store.dispatch('frontendCart/shippingAddress', e).then().catch();
             if (this.shippingAndBillingCheck) {
+                this.validationErrors.billing = false;
                 this.$store.dispatch('frontendCart/billingAddress', e).then().catch();
             }
         },
         billingAddress: function (e) {
+            this.validationErrors.billing = false;
             this.$store.dispatch('frontendCart/billingAddress', e).then().catch();
         },
         outletAddress: function(e) {
+            this.validationErrors.outlet = false;
             setTimeout(() => {
                 this.$store.dispatch('frontendCart/outletAddress', this.modelOutlet).then().catch();
             }, 100);
@@ -350,47 +369,99 @@ export default {
             }
         },
         selectPaymentMethod: function (paymentMethod) {
+            this.validationErrors.payment = false;
             this.$store.dispatch("frontendCart/paymentMethod", paymentMethod);
             if (paymentMethod?.slug === 'cashondelivery') {
                 trackCodSelected(this.total, window.FACEBOOK_PIXEL_CURRENCY || 'PKR');
             }
         },
-        confirmOrder: function (e) {
-            // Address Validation First
+        currencyFormat: function (amount, decimal, currency, position) {
+            return appService.currencyFormat(amount, decimal, currency, position);
+        },
+        scrollToCheckoutSection: function (sectionId) {
+            const el = document.getElementById(sectionId);
+            if (!el) {
+                return;
+            }
+            const header = document.querySelector('header');
+            const headerOffset = header
+                ? Math.ceil(header.getBoundingClientRect().height) + 16
+                : 96;
+            const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+            window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        },
+        validateCheckout: function () {
+            this.validationErrors = {
+                shipping: false,
+                billing: false,
+                payment: false,
+                outlet: false,
+            };
+
+            let firstSectionId = null;
+            let errorMessage = null;
+
+            const markInvalid = (key, sectionId, message) => {
+                this.validationErrors[key] = true;
+                if (!firstSectionId) {
+                    firstSectionId = sectionId;
+                    errorMessage = message;
+                }
+            };
+
             if (this.orderType === orderTypeEnum.DELIVERY) {
                 const shipping = this.getShippingAddress;
-                const billing = this.getBillingAddress;
-                
-                if (Object.keys(shipping).length === 0 || Object.keys(billing).length === 0) {
-                    alertService.error(this.$t("message.shipping_and_billing_address"));
-                    return;
+                let billing = this.getBillingAddress;
+
+                if (this.shippingAndBillingCheck && Object.keys(shipping).length > 0) {
+                    this.$store.dispatch('frontendCart/billingAddress', shipping);
+                    billing = shipping;
                 }
 
-                // Guest validation
-                if (!this.$store.getters.authStatus) {
+                if (Object.keys(shipping).length === 0) {
+                    markInvalid('shipping', 'checkout-section-shipping', this.$t("message.shipping_and_billing_address"));
+                } else if (!this.$store.getters.authStatus) {
                     if (!shipping.full_name || !shipping.email || !shipping.phone || !shipping.address || !shipping.country || !shipping.state || !shipping.city) {
-                        alertService.error(this.$t("message.fill_all_address_details"));
-                        return;
+                        markInvalid('shipping', 'checkout-section-shipping', this.$t("message.fill_all_address_details"));
                     }
+                } else if (!shipping.id || shipping.id === 0) {
+                    markInvalid('shipping', 'checkout-section-shipping', this.$t("message.please_select_shipping_address") || "Please select a valid shipping address from your address book.");
                 }
-                // Logged in user validation
-                if (this.$store.getters.authStatus) {
-                    if (!shipping.id || shipping.id === 0) {
-                        alertService.error(this.$t("message.please_select_shipping_address") || "Please select a valid shipping address from your address book.");
-                        this.loading.isActive = false;
-                        return;
+
+                if (!this.shippingAndBillingCheck) {
+                    if (Object.keys(billing).length === 0) {
+                        markInvalid('billing', 'checkout-section-billing', this.$t("message.shipping_and_billing_address"));
+                    } else if (!this.$store.getters.authStatus) {
+                        if (!billing.full_name || !billing.email || !billing.phone || !billing.address || !billing.country || !billing.state || !billing.city) {
+                            markInvalid('billing', 'checkout-section-billing', this.$t("message.fill_all_address_details"));
+                        }
+                    } else if (!billing.id || billing.id === 0) {
+                        markInvalid('billing', 'checkout-section-billing', this.$t("message.please_select_shipping_address") || "Please select a valid billing address from your address book.");
                     }
                 }
             } else if (this.orderType === orderTypeEnum.PICK_UP) {
                 const outletAddress = this.getOutletAddress;
                 if (!outletAddress || Object.keys(outletAddress).length === 0) {
-                    alertService.error(this.$t("message.please_select_an_outlet"));
-                    return;
+                    markInvalid('outlet', 'checkout-section-outlet', this.$t("message.please_select_an_outlet"));
                 }
             }
 
             if (Object.keys(this.paymentMethod).length === 0) {
-                alertService.error(this.$t('message.payment_method_required'));
+                markInvalid('payment', 'checkout-section-payment', this.$t('message.payment_method_required'));
+            }
+
+            if (firstSectionId) {
+                alertService.error(errorMessage);
+                this.$nextTick(() => {
+                    this.scrollToCheckoutSection(firstSectionId);
+                });
+                return false;
+            }
+
+            return true;
+        },
+        confirmOrder: function (e) {
+            if (!this.validateCheckout()) {
                 return;
             }
 

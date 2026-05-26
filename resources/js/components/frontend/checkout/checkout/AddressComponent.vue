@@ -1,6 +1,7 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
-    <div v-if="show" class="mb-6 rounded-2xl shadow-card">
+    <div v-if="show" :id="'checkout-section-' + slug"
+        :class="highlightInvalid ? 'mb-6 rounded-2xl shadow-card ring-2 ring-red-500 ring-offset-2 transition-shadow' : 'mb-6 rounded-2xl shadow-card'">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
             <h4 class="font-bold capitalize">{{ title }}</h4>
             <div v-if="logged" class="flex flex-wrap items-center gap-4">
@@ -285,7 +286,8 @@ export default {
         "slug": { type: String, Default: "shipping" },
         "title": { type: String },
         "selectedAddress": { type: Object },
-        "method": { type: Function }
+        "method": { type: Function },
+        "highlightInvalid": { type: Boolean, default: false }
     },
     data() {
         return {
@@ -354,9 +356,9 @@ export default {
             }).then(() => {
                 this.loading.isActive = false;
                 if (this.logged && Object.keys(this.selectedAddress).length === 0) {
-                    const list = this.$store.getters["frontendAddress/lists"];
-                    if (list.length === 1) {
-                        this.activeAddress(list[0]);
+                    const defaultAddress = this.pickDefaultAddress(this.$store.getters["frontendAddress/lists"]);
+                    if (defaultAddress) {
+                        this.activeAddress(defaultAddress);
                     }
                 }
             }).catch(() => {
@@ -386,6 +388,17 @@ export default {
         this.callStates("Pakistan");
     },
     methods: {
+        pickDefaultAddress: function (list) {
+            if (!list || list.length === 0) {
+                return null;
+            }
+            if (list.length === 1) {
+                return list[0];
+            }
+            return list.reduce((latest, address) => {
+                return (parseInt(address.id, 10) > parseInt(latest.id, 10)) ? address : latest;
+            }, list[0]);
+        },
         phoneNumber(e) {
             return appService.phoneNumber(e);
         },
