@@ -9,6 +9,7 @@
                 v-for="(slip, slotIndex) in page"
                 :key="'slot-' + pageIndex + '-' + slotIndex"
                 class="shipping-slip-slot"
+                :class="{ 'shipping-slip-slot--empty': !slip }"
             >
                 <OnlineOrderShippingSlipComponent v-if="slip" :slip="slip" />
             </div>
