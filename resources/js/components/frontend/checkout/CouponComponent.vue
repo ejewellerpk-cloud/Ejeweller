@@ -38,13 +38,14 @@
     </div>
 
     <div id="coupon-modal"
-        class="coupon-modal-overlay fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 transition-all duration-300 opacity-0 invisible">
+        class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 transition-all duration-300 opacity-0 invisible"
+        @click.self="closeCouponModal">
         <div
-            class="coupon-modal-panel w-full sm:max-w-md bg-white transition-all duration-300 rounded-t-2xl sm:rounded-2xl shadow-2xl">
-            <div class="flex items-center justify-between gap-3 py-4 px-4 sm:px-5 border-b border-gray-100 shrink-0">
+            class="w-full max-w-[400px] mx-auto bg-white rounded-2xl shadow-2xl transition-all duration-300">
+            <div class="flex items-center justify-between gap-3 py-4 px-5 border-b border-slate-100">
                 <div class="min-w-0">
-                    <h3 class="text-base sm:text-lg font-bold capitalize text-heading">{{ $t('label.coupon_code') }}</h3>
-                    <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5">{{ $t('message.get_discount_with_your_order') }}</p>
+                    <h3 class="text-lg font-bold capitalize text-heading">{{ $t('label.coupon_code') }}</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ $t('message.get_discount_with_your_order') }}</p>
                 </div>
                 <button @click.prevent="closeCouponModal" type="button"
                     class="shrink-0 w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-[#E93C3C] hover:bg-red-50 transition-colors"
@@ -53,26 +54,25 @@
                 </button>
             </div>
 
-            <div class="px-4 sm:px-5 py-4 pb-5 sm:pb-6">
+            <div class="p-5">
                 <form @submit.prevent="couponChecking" class="w-full">
-                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                    <label for="coupon-code-input" class="text-sm font-medium capitalize mb-1.5 field-title block">
                         {{ $t('label.coupon_code') }}
                     </label>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input
-                            :class="error ? 'invalid' : ''"
-                            type="text"
-                            v-model="code"
-                            autocomplete="off"
-                            :placeholder="$t('label.coupon_code')"
-                            class="h-11 w-full min-w-0 flex-1 px-3 rounded-lg border border-[#D9DBE9] text-sm focus:outline-none focus:border-primary/50" />
-                        <button
-                            type="submit"
-                            class="h-11 w-full sm:w-auto sm:min-w-[100px] px-5 rounded-lg capitalize font-semibold text-white bg-primary hover:bg-primary/95 transition-colors shrink-0">
-                            {{ $t('button.apply') }}
-                        </button>
-                    </div>
-                    <small class="block w-full pt-1.5 text-sm text-red-500" v-if="error">{{ error }}</small>
+                    <input
+                        id="coupon-code-input"
+                        :class="error ? 'invalid' : ''"
+                        type="text"
+                        v-model="code"
+                        autocomplete="off"
+                        :placeholder="$t('label.coupon_code')"
+                        class="w-full h-12 px-4 rounded-lg text-base text-heading placeholder:text-gray-400 border border-[#D9DBE9] bg-white hover:border-primary/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all duration-300" />
+                    <small class="db-field-alert block mt-1.5" v-if="error">{{ error }}</small>
+                    <button
+                        type="submit"
+                        class="mt-4 w-full h-12 rounded-lg capitalize font-semibold text-white bg-primary hover:bg-primary/95 active:scale-[0.99] transition-all duration-300">
+                        {{ $t('button.apply') }}
+                    </button>
                 </form>
             </div>
         </div>
@@ -107,6 +107,9 @@ export default {
     methods: {
         openCouponModal: function () {
             this.showTarget('coupon-modal', 'modal-active');
+            this.$nextTick(() => {
+                document.getElementById('coupon-code-input')?.focus();
+            });
         },
         closeCouponModal: function () {
             this.hideTarget('coupon-modal', 'modal-active');
@@ -153,15 +156,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-@media (max-width: 639px) {
-    .coupon-modal-overlay.modal-active {
-        align-items: flex-end;
-    }
-
-    .coupon-modal-overlay.modal-active .coupon-modal-panel {
-        margin-bottom: 0;
-    }
-}
-</style>
