@@ -69,6 +69,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CityTableSeeder::class);
         $this->call(PwaTableSeeder::class);
         $this->call(WhatsappTableSeeder::class);
+        $this->call(PostExTableSeeder::class);
         $this->call(AiAgentTableSeeder::class);
         $this->call(AiAgentDataTableSeeder::class);
     }

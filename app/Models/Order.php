@@ -30,6 +30,9 @@ class Order extends Model
         'pos_payment_note',
         'pos_received_amount',
         'note',
+        'postex_tracking_number',
+        'postex_status',
+        'postex_booked_at',
         'active'
     ];
 
@@ -52,8 +55,11 @@ class Order extends Model
         'pos_payment_method'  => 'integer',
         'pos_payment_note'    => 'string',
         'pos_received_amount' => 'decimal:6',
-        'note'                => 'string',
-        'active'              => 'integer'
+        'note'                     => 'string',
+        'postex_tracking_number'   => 'string',
+        'postex_status'            => 'string',
+        'postex_booked_at'         => 'datetime',
+        'active'                   => 'integer'
     ];
 
     public function transaction(): \Illuminate\Database\Eloquent\Relations\HasOne

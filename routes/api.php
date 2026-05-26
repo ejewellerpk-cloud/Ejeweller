@@ -40,6 +40,9 @@ use App\Http\Controllers\Admin\PurchaseController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TimezoneController;
 use App\Http\Controllers\Admin\WhatsappController;
+use App\Http\Controllers\Admin\PostExController;
+use App\Http\Controllers\Admin\PostExOrderController;
+use App\Http\Controllers\Admin\PostExOperationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderAreaController;
 use App\Http\Controllers\Admin\PromotionController;
@@ -549,6 +552,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
             Route::match(['put', 'patch'], '/', [WhatsappController::class, 'update']);
         });
 
+        Route::prefix('postex')->name('postex.')->group(function () {
+            Route::get('/', [PostExController::class, 'index']);
+            Route::match(['put', 'patch'], '/', [PostExController::class, 'update']);
+            Route::post('/test-connection', [PostExController::class, 'testConnection']);
+            Route::get('/operational-cities', [PostExOperationController::class, 'operationalCities']);
+            Route::get('/merchant-addresses', [PostExOperationController::class, 'merchantAddresses']);
+            Route::get('/order-types', [PostExOperationController::class, 'orderTypes']);
+            Route::get('/order-statuses', [PostExOperationController::class, 'orderStatuses']);
+            Route::get('/unbooked-orders', [PostExOperationController::class, 'unbookedOrders']);
+            Route::get('/list-orders', [PostExOperationController::class, 'listOrders']);
+            Route::post('/load-sheet', [PostExOperationController::class, 'generateLoadSheet']);
+            Route::put('/shipper-advice/{trackingNumber}', [PostExOperationController::class, 'saveShipperAdvice']);
+            Route::get('/shipper-advice/{trackingNumber}', [PostExOperationController::class, 'getShipperAdvice']);
+        });
+
 
     });
 
@@ -822,6 +840,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
         Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus']);
+        Route::post('/{order}/postex/create', [PostExOrderController::class, 'create']);
+        Route::get('/{order}/postex/track', [PostExOrderController::class, 'track']);
+        Route::put('/{order}/postex/cancel', [PostExOrderController::class, 'cancel']);
+        Route::get('/{order}/postex/payment-status', [PostExOrderController::class, 'paymentStatus']);
+        Route::get('/{order}/postex/airway-bill', [PostExOrderController::class, 'airwayBill']);
     });
 
     Route::prefix('products-report')->name('products-report.')->group(function () {

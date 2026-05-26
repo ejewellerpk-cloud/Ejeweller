@@ -111,6 +111,7 @@ import { transaction } from "./modules/transaction";
 import { unit } from "./modules/unit";
 import { user } from "./modules/user";
 import { whatsapp } from "./modules/whatsapp";
+import { postex } from "./modules/postex";
 import { aiAgent } from "./modules/aiAgent";
 import { ai } from "./modules/ai";
 import { media } from "./modules/media";
@@ -229,6 +230,7 @@ export default new createStore({
         city,
         pwa,
         whatsapp,
+        postex,
         review,
         aiAgent,
         ai,

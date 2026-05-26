@@ -81,6 +81,9 @@ class OrderDetailsResource extends JsonResource
             "pos_currency_received_amount"   => AppLibrary::currencyAmountFormat($this->pos_received_amount),
             "change_currency_amount"         => AppLibrary::currencyAmountFormat($this->pos_received_amount-$this->total),
             "is_cod"                         => $this->is_cod ?? false,
+            'postex_tracking_number'         => $this->postex_tracking_number,
+            'postex_status'                  => $this->postex_status,
+            'postex_booked_at'               => $this->postex_booked_at ? AppLibrary::datetime($this->postex_booked_at) : null,
         ] + $guestPayload;
     }
 }

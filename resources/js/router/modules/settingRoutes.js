@@ -12,6 +12,7 @@ const LicenseComponent = () =>  import("../../components/admin/settings/License/
 const CookiesComponent = () =>  import("../../components/admin/settings/Cookies/CookiesComponent");
 const AnalyticComponent = () =>  import("../../components/admin/settings/analytics/AnalyticComponent");
 const FacebookCapiComponent = () =>  import("../../components/admin/settings/FacebookCapi/FacebookCapiComponent");
+const PostExComponent = () => import("../../components/admin/settings/PostEx/PostExComponent.vue");
 const IntelligenceAnalyticsSettingsComponent = () => import("../../components/admin/settings/Intelligence/IntelligenceAnalyticsSettingsComponent.vue");
 const AnalyticListComponent = () =>  import("../../components/admin/settings/analytics/AnalyticListComponent");
 const AnalyticShowComponent = () =>  import("../../components/admin/settings/analytics/AnalyticShowComponent");
@@ -846,6 +847,17 @@ export default [
                     auth:true,
                     permissionUrl: "settings",
                     breadcrumb: "whatsapp_order_setup"
+                },
+            },
+            {
+                path: "postex",
+                component: PostExComponent,
+                name: "admin.settings.postex",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "postex_cod",
                 },
             }
         ],

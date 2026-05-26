@@ -178,6 +178,56 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12" v-if="postexEnabled && order.order_type === enums.orderTypeEnum.DELIVERY">
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <h3 class="db-card-title">{{ $t('menu.postex_cod') }}</h3>
+                    </div>
+                    <div class="db-card-body space-y-3">
+                        <div v-if="order.postex_tracking_number" class="text-sm space-y-1">
+                            <p>
+                                <span class="font-medium">{{ $t('label.postex_tracking') }}:</span>
+                                {{ order.postex_tracking_number }}
+                            </p>
+                            <p v-if="order.postex_status">
+                                <span class="font-medium">{{ $t('label.postex_shipment_status') }}:</span>
+                                {{ order.postex_status }}
+                            </p>
+                            <p v-if="order.postex_booked_at">
+                                <span class="font-medium">{{ $t('label.booked_at') }}:</span>
+                                {{ order.postex_booked_at }}
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-if="!order.postex_tracking_number" type="button" :disabled="postexLoading"
+                                @click="bookPostEx"
+                                class="db-btn py-2 text-white bg-primary">
+                                {{ $t('button.book_postex') }}
+                            </button>
+                            <button v-if="order.postex_tracking_number" type="button" :disabled="postexLoading"
+                                @click="trackPostEx"
+                                class="db-btn py-2 text-white bg-gray-700">
+                                {{ $t('button.track_postex') }}
+                            </button>
+                            <button v-if="order.postex_tracking_number" type="button" :disabled="postexLoading"
+                                @click="openPostExAirwayBill"
+                                class="db-btn py-2 text-white bg-gray-600">
+                                {{ $t('button.postex_airway_bill') }}
+                            </button>
+                            <button v-if="order.postex_tracking_number" type="button" :disabled="postexLoading"
+                                @click="fetchPostExPaymentStatus"
+                                class="db-btn py-2 text-white bg-gray-500">
+                                {{ $t('button.postex_payment_status') }}
+                            </button>
+                            <button v-if="order.postex_tracking_number" type="button" :disabled="postexLoading"
+                                @click="cancelPostEx"
+                                class="db-btn py-2 text-white bg-[#FB4E4E]">
+                                {{ $t('button.cancel_postex') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -311,6 +361,8 @@ import addressTypeEnum from "../../../enums/modules/addressTypeEnum";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import alertService from "../../../services/alertService";
+import axios from "axios";
+import activityEnum from "../../../enums/modules/activityEnum";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
@@ -329,6 +381,8 @@ export default {
                 isActive: false
             },
             slipPrintLoading: false,
+            postexLoading: false,
+            postexEnabled: false,
             payment_status: null,
             delivery_boy: null,
             order_status: null,
@@ -429,6 +483,12 @@ export default {
         }).catch((error) => {
             this.loading.isActive = false;
         });
+        this.$store.dispatch('postex/lists').then((res) => {
+            this.postexEnabled = Number(res.data.data.postex_status) === activityEnum.ENABLE
+                && Boolean(res.data.data.postex_api_token);
+        }).catch(() => {
+            this.postexEnabled = false;
+        });
     },
     methods: {
         statusClass: function (status) {
@@ -522,6 +582,59 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err.response.data.message);
             }
+        },
+        bookPostEx: function () {
+            this.postexLoading = true;
+            axios.post(`admin/online-order/${this.$route.params.id}/postex/create`)
+                .then((res) => {
+                    this.$store.commit('onlineOrder/show', res.data.data);
+                    alertService.success(this.$t('message.postex_booked'));
+                })
+                .catch((err) => alertService.error(err.response?.data?.message || err))
+                .finally(() => { this.postexLoading = false; });
+        },
+        trackPostEx: function () {
+            this.postexLoading = true;
+            axios.get(`admin/online-order/${this.$route.params.id}/postex/track`)
+                .then((res) => {
+                    const status = res.data?.data?.transactionStatus;
+                    alertService.success(status || 'OK');
+                })
+                .catch((err) => alertService.error(err.response?.data?.message || err))
+                .finally(() => { this.postexLoading = false; });
+        },
+        cancelPostEx: function () {
+            if (!window.confirm(this.$t('button.cancel_postex') + '?')) {
+                return;
+            }
+            this.postexLoading = true;
+            axios.put(`admin/online-order/${this.$route.params.id}/postex/cancel`)
+                .then(() => {
+                    return this.$store.dispatch('onlineOrder/show', this.$route.params.id);
+                })
+                .then(() => alertService.success('OK'))
+                .catch((err) => alertService.error(err.response?.data?.message || err))
+                .finally(() => { this.postexLoading = false; });
+        },
+        openPostExAirwayBill: function () {
+            this.postexLoading = true;
+            axios.get(`admin/online-order/${this.$route.params.id}/postex/airway-bill`, { responseType: 'blob' })
+                .then((res) => {
+                    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                    window.open(url, '_blank');
+                })
+                .catch((err) => alertService.error(err.response?.data?.message || err))
+                .finally(() => { this.postexLoading = false; });
+        },
+        fetchPostExPaymentStatus: function () {
+            this.postexLoading = true;
+            axios.get(`admin/online-order/${this.$route.params.id}/postex/payment-status`)
+                .then((res) => {
+                    const settled = res.data?.data?.settle;
+                    alertService.info(settled ? 'Settled' : 'Not settled yet');
+                })
+                .catch((err) => alertService.error(err.response?.data?.message || err))
+                .finally(() => { this.postexLoading = false; });
         },
     }
 

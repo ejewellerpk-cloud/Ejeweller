@@ -133,6 +133,10 @@
                 <i class="text-sm lab lab-whatsapp"></i>
                 {{ $t("menu.whatsapp_order_setup") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.postex' }" class="settings-menu-link">
+                <i class="text-sm lab lab-line-truck"></i>
+                {{ $t("menu.postex_cod") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.socialLogin' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-social"></i>
                 {{ $t("menu.social_login") }}

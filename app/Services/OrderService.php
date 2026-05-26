@@ -27,6 +27,9 @@ use App\Http\Requests\PosOrderRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Services\PostEx\PostExOrderService;
+use App\Services\PostEx\PostExSettingsService;
+use App\Enums\Activity;
 
 class OrderService
 {
@@ -349,11 +352,30 @@ class OrderService
                 SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 $order->status = $request->status;
                 $order->save();
+                $this->autoBookPostExShipment($order, (int) $request->status);
             }
             return $order;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    protected function autoBookPostExShipment(Order $order, int $status): void
+    {
+        if ($status !== OrderStatus::CONFIRMED || !empty($order->postex_tracking_number)) {
+            return;
+        }
+
+        try {
+            $settings = app(PostExSettingsService::class)->list();
+            if ((int) ($settings['postex_auto_ship'] ?? Activity::DISABLE) !== Activity::ENABLE) {
+                return;
+            }
+
+            app(PostExOrderService::class)->createShipment($order->fresh());
+        } catch (Exception $exception) {
+            Log::warning('PostEx auto-book failed for order ' . $order->id . ': ' . $exception->getMessage());
         }
     }
 
