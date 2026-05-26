@@ -38,7 +38,7 @@
                         :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper" @slideChange="onMainGallerySlideChange">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <div @click="handleImageClick(index)"
+                                <div @click="onGalleryImageTap(index, $event)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
                                     <img :src="media.url" alt="product" loading="lazy"
@@ -121,7 +121,7 @@
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
-                    <div @click="handleImageClick(999)"
+                    <div @click="onGalleryImageTap(999, $event)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
                         <img :src="product.image" alt="products" loading="lazy"
@@ -504,6 +504,11 @@
 
     <!-- Product Gallery Fullscreen Lightbox -->
     <div v-if="showMediaLightbox" class="fixed inset-0 z-[9998] bg-black flex flex-col" @click.self="closeMediaLightbox">
+        <div v-if="animatingWishlist" class="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+            <div class="w-24 h-24 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
+                <i class="lab-fill-heart text-primary text-5xl animate-heart-pulse"></i>
+            </div>
+        </div>
         <div class="absolute top-0 left-0 w-full p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 to-transparent">
             <button @click="closeMediaLightbox" type="button" class="text-white hover:text-gray-300 p-2">
                 <i class="fa-solid fa-xmark text-2xl"></i>
@@ -524,6 +529,7 @@
                 <SwiperSlide v-for="(media, index) in combinedMedia" :key="'lightbox-' + index" class="flex items-center justify-center">
                     <div v-if="media.type === 'image'"
                         class="w-full h-full flex items-center justify-center p-4 overflow-hidden"
+                        @click="onLightboxImageTap($event)"
                         @touchstart.passive="onLightboxPinchStart($event, index)"
                         @touchmove.passive="onLightboxPinchMove($event, index)"
                         @touchend="onLightboxPinchEnd">
@@ -594,7 +600,11 @@
 
      <!-- Full Screen Review Image Viewer Modal (Temu Style) -->
      <div id="imagePreviewModal" class="modal fixed !inset-0 z-[9999] bg-black !left-0 !translate-x-0 flex items-center justify-center" @click.self="hidePreviewImage">
-        
+        <div v-if="animatingWishlist" class="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+            <div class="w-24 h-24 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
+                <i class="lab-fill-heart text-primary text-5xl animate-heart-pulse"></i>
+            </div>
+        </div>
         <!-- Header: Close & Pagination -->
         <div class="absolute top-0 left-0 w-full p-4 sm:p-6 flex items-center justify-between z-20 pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
             <button @click="hidePreviewImage" class="text-white hover:text-gray-300 transition-colors pointer-events-auto p-2">
@@ -613,7 +623,7 @@
         <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
             <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full">
                 <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full" @click.self="hidePreviewImage">
-                    <div class="w-full h-full flex items-center justify-center p-4" @click.self="hidePreviewImage">
+                    <div class="w-full h-full flex items-center justify-center p-4" @click="onPreviewImageTap($event)" @click.self="hidePreviewImage">
                         <img :src="img" alt="review" class="max-w-full max-h-[85vh] object-contain pointer-events-none" loading="lazy" />
                     </div>
                 </SwiperSlide>
@@ -1352,6 +1362,84 @@ export default {
         },
         handleImageClick: function (index) {
             this.openMediaLightbox(index === 999 ? 0 : index);
+        },
+        getTapCoords: function (event) {
+            const t = event.changedTouches?.[0] || event.touches?.[0];
+            return {
+                x: t?.clientX ?? event.clientX ?? 0,
+                y: t?.clientY ?? event.clientY ?? 0,
+            };
+        },
+        isDoubleTap: function (event, stateKey) {
+            const now = Date.now();
+            const { x, y } = this.getTapCoords(event);
+            const last = this[stateKey];
+            if (last && now - last.time < 320 && Math.hypot(x - last.x, y - last.y) < 48) {
+                if (last.timer) {
+                    clearTimeout(last.timer);
+                }
+                this[stateKey] = null;
+                return true;
+            }
+            if (last?.timer) {
+                clearTimeout(last.timer);
+            }
+            this[stateKey] = { time: now, x, y, timer: null };
+            return false;
+        },
+        wishlistFromDoubleTap: function () {
+            if (!this.product?.id) {
+                return;
+            }
+            if (this.isWishlisted(this.product)) {
+                this.animatingWishlist = true;
+                setTimeout(() => {
+                    this.animatingWishlist = false;
+                }, 800);
+                return;
+            }
+            this.wishlist();
+        },
+        onGalleryImageTap: function (index, event) {
+            if (this.isDoubleTap(event, '_galleryImageTapState')) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.wishlistFromDoubleTap();
+                return;
+            }
+            const state = this._galleryImageTapState;
+            state.timer = setTimeout(() => {
+                this._galleryImageTapState = null;
+                this.handleImageClick(index);
+            }, 280);
+        },
+        onLightboxImageTap: function (event) {
+            if (this.isDoubleTap(event, '_lightboxImageTapState')) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.wishlistFromDoubleTap();
+                return;
+            }
+            const state = this._lightboxImageTapState;
+            if (state) {
+                state.timer = setTimeout(() => {
+                    this._lightboxImageTapState = null;
+                }, 350);
+            }
+        },
+        onPreviewImageTap: function (event) {
+            if (this.isDoubleTap(event, '_previewImageTapState')) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.wishlistFromDoubleTap();
+                return;
+            }
+            const state = this._previewImageTapState;
+            if (state) {
+                state.timer = setTimeout(() => {
+                    this._previewImageTapState = null;
+                }, 350);
+            }
         },
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
