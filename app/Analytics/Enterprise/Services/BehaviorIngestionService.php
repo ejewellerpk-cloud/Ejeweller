@@ -13,7 +13,12 @@ class BehaviorIngestionService
     public function accept(AnalyticsSite $site, array $validated): array
     {
         if (!AnalyticsSchema::hasTable('analytics_behavior_events')) {
-            return ['accepted' => false, 'message' => 'Enterprise tables not migrated', 'status' => 503];
+            Log::warning('Behavior ingest skipped: run php artisan migrate (analytics enterprise tables missing)', [
+                'site_id' => $site->id,
+            ]);
+
+            // Accept silently so storefront tracker does not spam 503 until migrate is run
+            return ['accepted' => true, 'queued' => 0, 'status' => 202, 'degraded' => true];
         }
 
         $events = $validated['events'] ?? [];
@@ -44,23 +49,53 @@ class BehaviorIngestionService
                 DB::table('analytics_behavior_events')->insert($chunk);
             }
 
-            dispatch(new \App\Analytics\Enterprise\Jobs\AggregateHeatmapJob($site->id))
-                ->onQueue(config('analytics_enterprise.behavior_ingest.queue', 'analytics'));
+            $this->dispatchOrRun(
+                new \App\Analytics\Enterprise\Jobs\AggregateHeatmapJob($site->id)
+            );
 
             if ($this->hasReplayEvents($events)) {
-                dispatch(new \App\Analytics\Enterprise\Jobs\ProcessReplayChunkJob(
+                $this->dispatchOrRun(new \App\Analytics\Enterprise\Jobs\ProcessReplayChunkJob(
                     $site->id,
                     $validated['session_id'],
                     $validated['visitor_id'] ?? null,
                     $events
-                ))->onQueue(config('analytics_enterprise.behavior_ingest.queue', 'analytics'));
+                ));
             }
 
             return ['accepted' => true, 'queued' => count($rows), 'status' => 202];
         } catch (Throwable $e) {
-            Log::error('Behavior ingest failed', ['site_id' => $site->id, 'error' => $e->getMessage()]);
+            Log::error('Behavior ingest failed', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
 
-            return ['accepted' => false, 'message' => 'Ingest failed', 'status' => 503];
+            return [
+                'accepted' => false,
+                'message' => config('app.debug') ? $e->getMessage() : 'Ingest failed',
+                'status' => 503,
+            ];
+        }
+    }
+
+    private function dispatchOrRun(object $job): void
+    {
+        try {
+            $queue = config('analytics_enterprise.behavior_ingest.queue', 'analytics');
+            dispatch($job)->onQueue($queue);
+        } catch (Throwable $e) {
+            Log::warning('Behavior job queue unavailable, running synchronously', [
+                'job' => $job::class,
+                'error' => $e->getMessage(),
+            ]);
+            try {
+                dispatch_sync($job);
+            } catch (Throwable $syncError) {
+                Log::error('Behavior job sync run failed', [
+                    'job' => $job::class,
+                    'error' => $syncError->getMessage(),
+                ]);
+            }
         }
     }
 

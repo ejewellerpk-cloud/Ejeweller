@@ -14,7 +14,7 @@ class BehaviorIngestController extends Controller
     public function collect(BehaviorIngestRequest $request): JsonResponse
     {
         if (!config('analytics_enterprise.enabled', true)) {
-            return response()->json(['success' => false, 'message' => 'Enterprise analytics disabled'], 503);
+            return response()->json(['success' => true, 'message' => 'Enterprise analytics disabled', 'degraded' => true], 202);
         }
 
         $site = $request->attributes->get('analytics_site');

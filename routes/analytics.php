@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('analytics/v1')->group(function () {
     Route::options('/collect', fn () => response('', 204));
+    Route::options('/collect/behavior', fn () => response('', 204));
 
     Route::middleware([
         'throttle:' . config('analytics.ingest.rate_limit_per_minute', 1200) . ',1',
