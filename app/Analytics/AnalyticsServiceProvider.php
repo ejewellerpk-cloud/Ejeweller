@@ -5,6 +5,7 @@ namespace App\Analytics;
 use App\Analytics\Console\Commands\AnalyticsAggregateDailyCommand;
 use App\Analytics\Console\Commands\AnalyticsInstallSiteCommand;
 use App\Analytics\Console\Commands\AnalyticsResetTablesCommand;
+use App\Analytics\Enterprise\Console\AnalyticsEnsureEnterpriseCommand;
 use App\Analytics\Enterprise\Console\AnalyticsGenerateInsightsCommand;
 use App\Analytics\Contracts\AnalyticsEventRepositoryInterface;
 use App\Analytics\Contracts\AnalyticsSessionRepositoryInterface;
@@ -35,6 +36,7 @@ class AnalyticsServiceProvider extends ServiceProvider
                 AnalyticsAggregateDailyCommand::class,
                 AnalyticsResetTablesCommand::class,
                 AnalyticsGenerateInsightsCommand::class,
+                AnalyticsEnsureEnterpriseCommand::class,
             ]);
         }
 
