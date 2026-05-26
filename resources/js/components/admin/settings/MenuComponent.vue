@@ -141,6 +141,10 @@
                 <i class="text-sm lab lab-line-social"></i>
                 Facebook CAPI
             </router-link>
+            <router-link :to="{ name: 'admin.settings.intelligenceAnalytics' }" class="settings-menu-link">
+                <i class="text-sm lab lab-line-chart-line"></i>
+                {{ $t("menu.intelligence_analytics") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.license' }" class="settings-menu-link">
                 <i class="text-sm lab-line-license-code"></i>
                 {{ $t("menu.license") }}
