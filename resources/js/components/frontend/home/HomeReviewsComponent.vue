@@ -150,8 +150,11 @@ export default {
                 }
                 this.loading.isActive = false;
                 this.$nextTick(() => this.onReviewsManualEnd());
-            }).catch(() => {
+            }).catch((err) => {
                 this.loading.isActive = false;
+                if (err?.response?.status === 508) {
+                    console.warn('[home] featured-reviews: server redirect loop (508) — check SSL/.htaccess on host');
+                }
             });
         },
     },

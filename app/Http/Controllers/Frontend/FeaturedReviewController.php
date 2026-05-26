@@ -13,12 +13,18 @@ class FeaturedReviewController extends Controller
     {
     }
 
-    public function index(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function index(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\JsonResponse
     {
         $limit = min((int) $request->get('limit', 6), 12);
 
-        return ProductReviewResource::collection(
-            $this->reviewService->featuredForHomepage($limit)
-        );
+        try {
+            return ProductReviewResource::collection(
+                $this->reviewService->featuredForHomepage($limit)
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['data' => []]);
+        }
     }
 }

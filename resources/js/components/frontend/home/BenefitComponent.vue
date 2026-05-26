@@ -53,6 +53,9 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                if (err?.response?.status === 508) {
+                    console.warn('[home] benefit: server redirect loop (508) — check SSL/.htaccess on host');
+                }
             });
         }
     }

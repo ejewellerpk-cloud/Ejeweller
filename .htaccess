@@ -1,3 +1,8 @@
 RewriteEngine On
+
+# Only rewrite when the app root is NOT already the public/ folder (avoids /public/public loops → HTTP 508)
 RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{DOCUMENT_ROOT}/public -d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ /public/$1 [L,QSA]

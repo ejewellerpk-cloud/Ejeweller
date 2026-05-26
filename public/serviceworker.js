@@ -1,5 +1,5 @@
 // Increment VERSION whenever you deploy — forces clients to drop old caches
-const VERSION = 'v2.1';
+const VERSION = 'v2.2';
 const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
@@ -46,7 +46,8 @@ const mustBypassCache = (request) => {
     if (request.destination === 'video' || request.destination === 'audio') return true;
 
     const url = request.url || '';
-    if (url.includes('/api/')) return true;
+    // Never touch API/XHR — prevents redirect/cache loops (508) on production
+    if (url.includes('/api/') || url.includes('/install')) return true;
     if (MEDIA_EXT.test(url)) return true;
     if (url.includes('/storage/') && MEDIA_EXT.test(url)) return true;
     // Any non-image under /storage/ (uploads, PDFs, etc.)
