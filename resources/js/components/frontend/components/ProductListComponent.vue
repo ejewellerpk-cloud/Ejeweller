@@ -263,6 +263,10 @@ export default {
             if (swiper && swiper.slides.length > 1) {
                 swiper.slideToLoop(1);
             }
+            if (!this._detailChunkPrefetched) {
+                this._detailChunkPrefetched = true;
+                import('../product/ProductDetailsComponent.vue');
+            }
         },
         onMouseLeave(productId) {
             const swiper = this.swiperInstances[productId];

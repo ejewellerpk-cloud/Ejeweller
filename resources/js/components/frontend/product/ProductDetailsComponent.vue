@@ -901,6 +901,8 @@ export default {
             mainSwiperActiveIndex: 0,
             relatedContinuousSpeed: CONTINUOUS_SWIPER_SPEED,
             relatedAutoplay: { ...continuousAutoplayConfig },
+            loadToken: 0,
+            relatedObserver: null,
         }
     },
     computed: {
@@ -1048,22 +1050,7 @@ export default {
     },
     mounted() {
         this.show();
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !this.isRelatedProductsLoaded) {
-                    this.isRelatedProductsLoaded = true;
-                    this.showRelatedProduct();
-                }
-            });
-        });
-        
-        setTimeout(() => {
-            const target = document.getElementById('related-products-trigger');
-            if (target) {
-                observer.observe(target);
-            }
-        }, 500);
+        this.setupRelatedProductsObserver();
 
         this.tickerInterval = setInterval(() => {
             if (this.discountPercentageDetail() > 0) {
@@ -1092,6 +1079,10 @@ export default {
         }
         if (this.viewersInterval) {
             clearInterval(this.viewersInterval);
+        }
+        if (this.relatedObserver) {
+            this.relatedObserver.disconnect();
+            this.relatedObserver = null;
         }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
@@ -1589,132 +1580,196 @@ export default {
             const text = `Hi, I want to order : ${this.product.name} | ${companyName} URL: ${url}`;
             window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
         },
-        show: function () {
-            if (typeof this.$route.params.slug !== "undefined") {
-                this.loading.isActive = true;
-                this.selectedVariation = null;
-                this.showVariationComponent = false;
-                this.videoPosterMap = {};
-                this.mainSwiperActiveIndex = 0;
-                this.$store.commit('frontendProductVariation/initialVariation', []);
-                this.$store.commit('frontendProductVariation/allVariation', []);
-                this.props.search.slug = this.$route.params.slug;
-                this.$store.dispatch("frontendProduct/show", this.props.search).then((res) => {
-                    this.initProduct = {
-                        isVariation: false,
-                        variationId: null,
-                        sku: res.data.data.sku,
-                        stock: res.data.data.stock,
-                        quantity: 1,
-                        discount: 0,
-                        price: parseAmount(res.data.data.price),
-                        oldPrice: parseAmount(res.data.data.old_price),
-                        totalPrice: parseAmount(res.data.data.price),
-                        maximum_purchase_quantity: res.data.data.maximum_purchase_quantity
-                    };
-                    this.temp = {
-                        name: res.data.data.name,
-                        image: res.data.data.image,
-                        isVariation: false,
-                        variationId: null,
-                        productId: res.data.data.id,
-                        sku: res.data.data.sku,
-                        stock: res.data.data.stock,
-                        taxes: res.data.data.taxes,
-                        shipping: res.data.data.shipping,
-                        quantity: 1,
-                        discount: 0,
-                        price: parseAmount(res.data.data.price),
-                        oldPrice: parseAmount(res.data.data.old_price),
-                        totalPrice: parseAmount(res.data.data.price),
-                        maximum_purchase_quantity: res.data.data.maximum_purchase_quantity
-                    };
+        setupRelatedProductsObserver: function () {
+            if (this.relatedObserver) {
+                this.relatedObserver.disconnect();
+            }
+            this.relatedObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && !this.isRelatedProductsLoaded) {
+                        this.isRelatedProductsLoaded = true;
+                        this.showRelatedProduct();
+                    }
+                });
+            });
+            this.$nextTick(() => {
+                const target = document.getElementById('related-products-trigger');
+                if (target) {
+                    this.relatedObserver.observe(target);
+                }
+            });
+        },
+        scheduleDeferredDetailWork: function (productData) {
+            const run = () => {
+                pixelService.trackViewContent(productData);
+                trackProductViewed(productData);
+                this.fetchRecentlyViewed();
+                this.$nextTick(() => this.generateVideoPosters());
+            };
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(run, { timeout: 2500 });
+            } else {
+                setTimeout(run, 0);
+            }
+        },
+        applyProductFromShowResponse: function (data) {
+            this.initProduct = {
+                isVariation: false,
+                variationId: null,
+                sku: data.sku,
+                stock: data.stock,
+                quantity: 1,
+                discount: 0,
+                price: parseAmount(data.price),
+                oldPrice: parseAmount(data.old_price),
+                totalPrice: parseAmount(data.price),
+                maximum_purchase_quantity: data.maximum_purchase_quantity
+            };
+            this.temp = {
+                name: data.name,
+                image: data.image,
+                isVariation: false,
+                variationId: null,
+                productId: data.id,
+                sku: data.sku,
+                stock: data.stock,
+                taxes: data.taxes,
+                shipping: data.shipping,
+                quantity: 1,
+                discount: 0,
+                price: parseAmount(data.price),
+                oldPrice: parseAmount(data.old_price),
+                totalPrice: parseAmount(data.price),
+                maximum_purchase_quantity: data.maximum_purchase_quantity
+            };
 
-                    // Social Proof sold count initialization
-                    const randomSaleValue = parseInt(res.data.data.use_random_sale);
-                    const isRandomSaleOff = randomSaleValue === 10 || randomSaleValue === 0;
-                    
-                    if (isRandomSaleOff) {
-                        this.soldCount = res.data.data.actual_sales || 0;
-                    } else {
-                        let startingPoint = randomSaleValue === 5 ? ((res.data.data.id * 53) % 450 + 138) : randomSaleValue;
-                        const storageKey = 'sold_count_' + res.data.data.id;
-                        let localCount = localStorage.getItem(storageKey);
-                        if (!localCount || parseInt(localCount) < startingPoint) {
-                            localCount = startingPoint + (res.data.data.actual_sales || 0);
-                            localStorage.setItem(storageKey, localCount);
+            const randomSaleValue = parseInt(data.use_random_sale);
+            const isRandomSaleOff = randomSaleValue === 10 || randomSaleValue === 0;
+
+            if (isRandomSaleOff) {
+                this.soldCount = data.actual_sales || 0;
+            } else {
+                let startingPoint = randomSaleValue === 5 ? ((data.id * 53) % 450 + 138) : randomSaleValue;
+                const storageKey = 'sold_count_' + data.id;
+                let localCount = localStorage.getItem(storageKey);
+                if (!localCount || parseInt(localCount, 10) < startingPoint) {
+                    localCount = startingPoint + (data.actual_sales || 0);
+                    localStorage.setItem(storageKey, localCount);
+                }
+                this.soldCount = parseInt(localCount, 10);
+            }
+
+            let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
+            localViewed = localViewed.filter((id) => id !== data.id);
+            localViewed.unshift(data.id);
+            if (localViewed.length > 10) {
+                localViewed.pop();
+            }
+            localStorage.setItem('recently_viewed_products', JSON.stringify(localViewed));
+
+            if (data.flash_sale && data.offer_end_date) {
+                this.startFlashSaleTimer(data.offer_end_date);
+            }
+        },
+        applyProductSeo: function (data) {
+            if (!data.seo || !data.seo.title || !data.seo.description) {
+                return;
+            }
+            const metaData = [
+                { name: 'title', content: data.seo.title },
+                { name: 'description', content: data.seo.description },
+            ];
+            if (data.seo.thumb && data.seo.cover) {
+                metaData.push({ content: data.seo.thumb });
+                metaData.push({ content: data.seo.cover });
+            }
+            useHead({
+                title: this.setting.company_name + ' - ' + data.seo.title,
+                meta: metaData
+            });
+        },
+        loadSecondaryProductData: function (data, token) {
+            const tasks = [];
+
+            if (data.category_slug) {
+                tasks.push(
+                    this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', data.category_slug).catch(() => {})
+                );
+            }
+
+            const productSlug = data.slug;
+            const productId = data.id;
+
+            tasks.push(
+                this.$store.dispatch('frontendProductVariation/allVariation', productSlug)
+                    .then((allVarRes) => {
+                        if (token !== this.loadToken) {
+                            return;
                         }
-                        this.soldCount = parseInt(localCount);
-                    }
-                    pixelService.trackViewContent(res.data.data);
-                    trackProductViewed(res.data.data);
-
-                    // Handle Recently Viewed local storage
-                    let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
-                    // remove if exists
-                    localViewed = localViewed.filter(id => id !== res.data.data.id);
-                    // insert at start
-                    localViewed.unshift(res.data.data.id);
-                    // keep only 10
-                    if (localViewed.length > 10) localViewed.pop();
-                    localStorage.setItem('recently_viewed_products', JSON.stringify(localViewed));
-                    
-                    if (res.data.data.flash_sale && res.data.data.offer_end_date) {
-                        this.startFlashSaleTimer(res.data.data.offer_end_date);
-                    }
-                    
-                    this.fetchRecentlyViewed();
-                    this.$nextTick(() => this.generateVideoPosters());
-
-                    this.$store.dispatch("frontendProductCategory/ancestorsAndSelf", res.data.data.category_slug).then((categoryRes) => {
-                        this.loading.isActive = false;
-                    }).catch((err) => {
-                        this.loading.isActive = false;
-                    });
-
-                    const productSlug = res.data.data.slug;
-                    const productId = res.data.data.id;
-
-                    this.$store.dispatch("frontendProductVariation/allVariation", productSlug).then((allVarRes) => {
                         const hasTree = (allVarRes.data.data || []).length > 0;
                         if (hasTree) {
                             this.showVariationComponent = true;
                         }
-                    }).catch(() => {});
+                    })
+                    .catch(() => {})
+            );
 
-                    this.$store.dispatch("frontendProductVariation/initialVariation", productId).then((initVariationRes) => {
+            tasks.push(
+                this.$store.dispatch('frontendProductVariation/initialVariation', productId)
+                    .then((initVariationRes) => {
+                        if (token !== this.loadToken) {
+                            return;
+                        }
                         if (initVariationRes.data.data.length > 0) {
                             this.showVariationComponent = true;
                         }
-
-                        if (!this.showVariationComponent && res.data.data.stock > 0) {
+                        if (!this.showVariationComponent && data.stock > 0) {
                             this.enableAddToCardButton = false;
                         }
-                        this.loading.isActive = false;
-                    }).catch((err) => {
-                        this.loading.isActive = false;
-                    });
+                    })
+                    .catch(() => {})
+            );
 
-                    if (Object.keys(res.data.data.seo) && res.data.data.seo.title && res.data.data.seo.description) {
-                        let metaData = [
-                            { name: 'title', content: res.data.data.seo.title },
-                            { name: 'description', content: res.data.data.seo.description },
-                        ];
-
-                        if (res.data.data.seo.thumb && res.data.data.seo.cover) {
-                            metaData.push({ content: res.data.data.seo.thumb });
-                            metaData.push({ content: res.data.data.seo.cover });
-                        }
-
-                        useHead({
-                            title: this.setting.company_name + ' - ' + res.data.data.seo.title,
-                            meta: metaData
-                        });
-                    }
-                }).catch((err) => {
-                    this.loading.isActive = false;
-                });
+            return Promise.allSettled(tasks);
+        },
+        show: function () {
+            if (typeof this.$route.params.slug === 'undefined') {
+                return;
             }
+
+            const token = ++this.loadToken;
+            this.loading.isActive = true;
+            this.selectedVariation = null;
+            this.showVariationComponent = false;
+            this.enableAddToCardButton = false;
+            this.videoPosterMap = {};
+            this.mainSwiperActiveIndex = 0;
+            this.isRelatedProductsLoaded = false;
+            this.$store.commit('frontendProductVariation/initialVariation', []);
+            this.$store.commit('frontendProductVariation/allVariation', []);
+            this.props.search.slug = this.$route.params.slug;
+
+            this.$store.dispatch('frontendProduct/show', this.props.search).then((res) => {
+                if (token !== this.loadToken) {
+                    return;
+                }
+
+                const data = res.data.data;
+                this.applyProductFromShowResponse(data);
+                this.applyProductSeo(data);
+                this.loading.isActive = false;
+
+                this.$nextTick(() => {
+                    this.setupRelatedProductsObserver();
+                });
+
+                this.scheduleDeferredDetailWork(data);
+                this.loadSecondaryProductData(data, token);
+            }).catch(() => {
+                if (token === this.loadToken) {
+                    this.loading.isActive = false;
+                }
+            });
         },
         onRelatedSwiper: function (swiper) {
             this.relatedSwiper = swiper;
@@ -2169,9 +2224,10 @@ export default {
         }
     },
     watch: {
-        $route() {
-            this.show();
-            this.showRelatedProduct();
+        '$route.params.slug'(newSlug, oldSlug) {
+            if (newSlug && newSlug !== oldSlug) {
+                this.show();
+            }
         },
         videos: {
             handler() {
