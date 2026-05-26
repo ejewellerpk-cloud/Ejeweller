@@ -5,6 +5,8 @@ use App\Analytics\Http\Controllers\Admin\IntelligenceProductController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceCommerceController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceDashboardController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController;
+use App\Analytics\Enterprise\Http\Controllers\BehaviorIngestController;
+use App\Analytics\Enterprise\Http\Controllers\Admin\IntelligenceEnterpriseController;
 use App\Analytics\Http\Controllers\IngestController;
 use App\Analytics\Http\Middleware\AnalyticsCorsMiddleware;
 use App\Analytics\Http\Middleware\AnalyticsSiteKeyMiddleware;
@@ -23,6 +25,7 @@ Route::prefix('analytics/v1')->group(function () {
         AnalyticsCorsMiddleware::class,
     ])->group(function () {
         Route::post('/collect', [IngestController::class, 'collect']);
+        Route::post('/collect/behavior', [BehaviorIngestController::class, 'collect']);
     });
 });
 
@@ -41,6 +44,21 @@ Route::prefix('admin/intelligence')
         Route::get('/export', [IntelligenceCommerceController::class, 'exportReport']);
         Route::get('/roles', [IntelligenceCommerceController::class, 'roles']);
         Route::get('/settings', [IntelligenceSettingsController::class, 'show']);
+        Route::prefix('enterprise')->group(function () {
+            Route::get('/features', [IntelligenceEnterpriseController::class, 'features']);
+            Route::get('/heatmaps/pages', [IntelligenceEnterpriseController::class, 'heatmapPages']);
+            Route::get('/heatmaps/snapshot', [IntelligenceEnterpriseController::class, 'heatmapSnapshot']);
+            Route::get('/replay/sessions', [IntelligenceEnterpriseController::class, 'replaySessions']);
+            Route::get('/insights', [IntelligenceEnterpriseController::class, 'insights']);
+            Route::post('/insights/generate', [IntelligenceEnterpriseController::class, 'generateInsights']);
+            Route::patch('/insights/{id}/dismiss', [IntelligenceEnterpriseController::class, 'dismissInsight']);
+            Route::get('/journey/visitors/{visitorUuid}', [IntelligenceEnterpriseController::class, 'journeyVisitor']);
+            Route::get('/segments', [IntelligenceEnterpriseController::class, 'segments']);
+            Route::get('/experiments', [IntelligenceEnterpriseController::class, 'experiments']);
+            Route::get('/attribution', [IntelligenceEnterpriseController::class, 'attribution']);
+            Route::get('/alerts/rules', [IntelligenceEnterpriseController::class, 'alertRules']);
+            Route::get('/billing/plans', [IntelligenceEnterpriseController::class, 'billingPlans']);
+        });
         Route::prefix('advanced')->group(function () {
             Route::get('/cohort-retention', [IntelligenceAdvancedController::class, 'cohortRetention']);
             Route::get('/rfm', [IntelligenceAdvancedController::class, 'rfm']);

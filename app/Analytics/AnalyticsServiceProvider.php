@@ -5,6 +5,7 @@ namespace App\Analytics;
 use App\Analytics\Console\Commands\AnalyticsAggregateDailyCommand;
 use App\Analytics\Console\Commands\AnalyticsInstallSiteCommand;
 use App\Analytics\Console\Commands\AnalyticsResetTablesCommand;
+use App\Analytics\Enterprise\Console\AnalyticsGenerateInsightsCommand;
 use App\Analytics\Contracts\AnalyticsEventRepositoryInterface;
 use App\Analytics\Contracts\AnalyticsSessionRepositoryInterface;
 use App\Analytics\Contracts\AnalyticsSiteRepositoryInterface;
@@ -19,6 +20,7 @@ class AnalyticsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/analytics.php', 'analytics');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/analytics_enterprise.php', 'analytics_enterprise');
 
         $this->app->bind(AnalyticsSiteRepositoryInterface::class, EloquentAnalyticsSiteRepository::class);
         $this->app->bind(AnalyticsEventRepositoryInterface::class, EloquentAnalyticsEventRepository::class);
@@ -32,6 +34,7 @@ class AnalyticsServiceProvider extends ServiceProvider
                 AnalyticsInstallSiteCommand::class,
                 AnalyticsAggregateDailyCommand::class,
                 AnalyticsResetTablesCommand::class,
+                AnalyticsGenerateInsightsCommand::class,
             ]);
         }
 
@@ -39,6 +42,9 @@ class AnalyticsServiceProvider extends ServiceProvider
             if ($this->app->runningInConsole()) {
                 $schedule = $this->app->make(Schedule::class);
                 $schedule->command('analytics:aggregate-daily')->dailyAt('01:15');
+                $schedule->command('analytics:generate-insights')
+                    ->cron(config('analytics_enterprise.insights.schedule', '0 */6 * * *'))
+                    ->when(fn () => config('analytics_enterprise.features.ai_insights', true));
             }
         });
     }

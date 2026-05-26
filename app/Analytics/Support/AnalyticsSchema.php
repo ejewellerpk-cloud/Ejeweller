@@ -24,4 +24,13 @@ class AnalyticsSchema
             return false;
         }
     }
+
+    public static function hasTable(string $table): bool
+    {
+        try {
+            return Schema::hasTable($table);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 }

@@ -72,6 +72,9 @@
             };
         </script>
         <script async src="{{ asset(config('analytics.tracker.cdn_url', '/analytics/tracker.js')) }}"></script>
+        @if (config('analytics_enterprise.enabled', true) && config('analytics_enterprise.features.heatmaps', true))
+        <script async src="{{ asset('/analytics/intelligence-tracker.js') }}"></script>
+        @endif
     @endif
     @laravelPWA
     <script>
