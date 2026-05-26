@@ -24,18 +24,26 @@ readonly class IngestEventDTO
 
     public static function fromArray(array $data): self
     {
-        $occurred = isset($data['occurred_at'])
-            ? Carbon::parse($data['occurred_at'])
-            : now();
+        try {
+            $occurred = isset($data['occurred_at'])
+                ? Carbon::parse($data['occurred_at'])
+                : now();
+        } catch (\Throwable) {
+            $occurred = now();
+        }
 
         $pageUrl = $data['page_url'] ?? $data['url'] ?? null;
         $productId = isset($data['product_id']) ? (int) $data['product_id'] : null;
         if (!$productId) {
-            $path = is_array($data['properties'] ?? null)
-                ? ($data['properties']['path'] ?? null)
-                : null;
-            $productId = ProductUrlAttribution::productIdFromUrl($pageUrl)
-                ?? ($path ? ProductUrlAttribution::productIdFromUrl('https://local' . $path) : null);
+            try {
+                $path = is_array($data['properties'] ?? null)
+                    ? ($data['properties']['path'] ?? null)
+                    : null;
+                $productId = ProductUrlAttribution::productIdFromUrl($pageUrl)
+                    ?? ($path ? ProductUrlAttribution::productIdFromUrl('https://local' . $path) : null);
+            } catch (\Throwable) {
+                $productId = null;
+            }
         }
 
         return new self(

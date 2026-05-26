@@ -6,6 +6,8 @@ use App\Analytics\Http\Requests\AnalyticsIngestRequest;
 use App\Analytics\Services\AnalyticsIngestionService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class IngestController extends Controller
 {
@@ -17,19 +19,31 @@ class IngestController extends Controller
             return response()->json(['success' => false, 'message' => 'Analytics disabled'], 503);
         }
 
-        $site = $request->attributes->get('analytics_site');
-        $result = $this->ingestion->accept(
-            $site,
-            $request->validated(),
-            $request->header('Origin')
-        );
+        try {
+            $site = $request->attributes->get('analytics_site');
+            $result = $this->ingestion->accept(
+                $site,
+                $request->validated(),
+                $request->header('Origin')
+            );
 
-        $status = $result['status'] ?? 202;
+            $status = $result['status'] ?? 202;
 
-        return response()->json([
-            'success' => $result['accepted'] ?? false,
-            'queued' => $result['queued'] ?? 0,
-            'message' => $result['message'] ?? 'Accepted',
-        ], $status);
+            return response()->json([
+                'success' => $result['accepted'] ?? false,
+                'queued' => $result['queued'] ?? 0,
+                'message' => $result['message'] ?? 'Accepted',
+            ], $status);
+        } catch (Throwable $e) {
+            Log::error('Analytics collect endpoint error', [
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => config('app.debug') ? $e->getMessage() : 'Analytics ingest failed',
+            ], 503);
+        }
     }
 }

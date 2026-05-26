@@ -16,9 +16,13 @@ class AnalyticsIngestionBufferService
     public function push(int $siteId, array $payload): void
     {
         if ($this->isAvailable()) {
-            Redis::rpush($this->bufferKey($siteId), json_encode($payload));
+            try {
+                Redis::rpush($this->bufferKey($siteId), json_encode($payload));
 
-            return;
+                return;
+            } catch (\Throwable) {
+                // Fall through to cache buffer
+            }
         }
 
         $cacheKey = $this->cacheBufferKey($siteId);

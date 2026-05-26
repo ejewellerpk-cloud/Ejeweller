@@ -136,12 +136,21 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Analytics-Key': siteKey
+                'X-Analytics-Key': siteKey,
+                Accept: 'application/json'
             },
             body: body,
             keepalive: true,
             credentials: 'omit'
-        }).then(function (r) { return r.ok; }).catch(function () { return false; });
+        }).then(function (r) {
+            if (r.ok) return true;
+            if (r.status >= 400 && r.status < 500) {
+                log('collect rejected', r.status);
+                return 'reject';
+            }
+            log('collect server error', r.status);
+            return false;
+        }).catch(function () { return false; });
     }
 
     function persistOffline(body) {
@@ -160,13 +169,18 @@
             var arr = JSON.parse(storageGet(key) || '[]');
             if (!arr.length) return;
             storageSet(key, '[]');
-            arr.forEach(function (body) {
+            var maxReplay = 10;
+            arr.slice(0, maxReplay).forEach(function (body) {
                 try {
                     var parsed = JSON.parse(body);
+                    if (!parsed.events || !parsed.events.length) return;
                     parsed.site_key = siteKey;
-                    sendFetch(JSON.stringify(parsed));
+                    sendFetch(JSON.stringify(parsed)).then(function (ok) {
+                        if (ok === 'reject') return;
+                        if (!ok) persistOffline(JSON.stringify(parsed));
+                    });
                 } catch (e) {
-                    sendFetch(body);
+                    log('skip corrupt offline batch');
                 }
             });
         } catch (e) {}
@@ -185,7 +199,7 @@
         }
 
         sendFetch(body).then(function (ok) {
-            if (!ok) persistOffline(body);
+            if (ok === false) persistOffline(body);
             done();
         });
     }

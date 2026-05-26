@@ -13,19 +13,23 @@ class ProductUrlAttribution
     /** @return array<string, int> lowercase slug => product id */
     public static function slugToIdMap(): array
     {
-        return Cache::remember('analytics:product_slug_map', 300, function () {
-            $map = [];
-            Product::query()
-                ->where('status', Status::ACTIVE)
-                ->pluck('id', 'slug')
-                ->each(function ($id, $slug) use (&$map) {
-                    if (is_string($slug) && $slug !== '') {
-                        $map[strtolower($slug)] = (int) $id;
-                    }
-                });
+        try {
+            return Cache::remember('analytics:product_slug_map', 300, function () {
+                $map = [];
+                Product::query()
+                    ->where('status', Status::ACTIVE)
+                    ->pluck('id', 'slug')
+                    ->each(function ($id, $slug) use (&$map) {
+                        if (is_string($slug) && $slug !== '') {
+                            $map[strtolower($slug)] = (int) $id;
+                        }
+                    });
 
-            return $map;
-        });
+                return $map;
+            });
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     public static function slugFromProductUrl(?string $url): ?string

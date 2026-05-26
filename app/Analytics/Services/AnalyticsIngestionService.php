@@ -6,6 +6,7 @@ use App\Analytics\DTOs\IngestPayloadDTO;
 use App\Analytics\Jobs\ProcessAnalyticsIngestJob;
 use App\Analytics\Models\AnalyticsSite;
 use App\Analytics\Contracts\AnalyticsSiteRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 
 class AnalyticsIngestionService
 {
@@ -32,9 +33,7 @@ class AnalyticsIngestionService
             return ['accepted' => true, 'queued' => 0, 'status' => 202];
         }
 
-        if (!$this->buffer->isAvailable()) {
-            $this->processor->process($site, $payload);
-
+        if ($this->buffer->isAvailable() && $this->tryQueuedIngest($site, $body, $payload)) {
             return [
                 'accepted' => true,
                 'queued' => count($payload->events),
@@ -42,22 +41,61 @@ class AnalyticsIngestionService
             ];
         }
 
-        $envelope = [
-            'site_id' => $site->id,
-            'body' => $body,
-            'received_at' => now()->toIso8601String(),
-        ];
+        return $this->processSynchronously($site, $payload);
+    }
 
-        $this->buffer->push($site->id, $envelope);
+    private function tryQueuedIngest(AnalyticsSite $site, array $body, IngestPayloadDTO $payload): bool
+    {
+        try {
+            $envelope = [
+                'site_id' => $site->id,
+                'body' => $body,
+                'received_at' => now()->toIso8601String(),
+            ];
 
-        ProcessAnalyticsIngestJob::dispatch($site->id)
-            ->onQueue(config('analytics.ingest.queue', 'analytics'));
+            $this->buffer->push($site->id, $envelope);
 
-        return [
-            'accepted' => true,
-            'queued' => count($payload->events),
-            'status' => 202,
-        ];
+            $queue = config('analytics.ingest.queue', 'default');
+            ProcessAnalyticsIngestJob::dispatch($site->id)->onQueue($queue);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Analytics queued ingest unavailable, using sync fallback', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    private function processSynchronously(AnalyticsSite $site, IngestPayloadDTO $payload): array
+    {
+        try {
+            $count = $this->processor->process($site, $payload);
+
+            return [
+                'accepted' => true,
+                'queued' => $count,
+                'status' => 202,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Analytics sync ingest failed', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            $message = config('app.debug')
+                ? $e->getMessage()
+                : 'Unable to store analytics events';
+
+            return [
+                'accepted' => false,
+                'message' => $message,
+                'status' => 503,
+            ];
+        }
     }
 
     public function drainSite(int $siteId): int
@@ -73,7 +111,14 @@ class AnalyticsIngestionService
         foreach ($batches as $envelope) {
             $body = $envelope['body'] ?? [];
             $dto = IngestPayloadDTO::fromArray($body);
-            $processed += $this->processor->process($site, $dto);
+            try {
+                $processed += $this->processor->process($site, $dto);
+            } catch (\Throwable $e) {
+                Log::error('Analytics drain batch failed', [
+                    'site_id' => $siteId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $processed;

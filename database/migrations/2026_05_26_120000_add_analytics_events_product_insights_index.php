@@ -12,12 +12,20 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('analytics_events', function (Blueprint $table) {
-            $table->index(
-                ['site_id', 'product_id', 'event_date', 'event_name'],
-                'analytics_events_site_product_date_name_idx'
-            );
-        });
+        $indexName = 'analytics_events_site_product_date_name_idx';
+        $exists = collect(\Illuminate\Support\Facades\DB::select(
+            'SHOW INDEX FROM analytics_events WHERE Key_name = ?',
+            [$indexName]
+        ))->isNotEmpty();
+
+        if (!$exists) {
+            Schema::table('analytics_events', function (Blueprint $table) use ($indexName) {
+                $table->index(
+                    ['site_id', 'product_id', 'event_date', 'event_name'],
+                    $indexName
+                );
+            });
+        }
     }
 
     public function down(): void
