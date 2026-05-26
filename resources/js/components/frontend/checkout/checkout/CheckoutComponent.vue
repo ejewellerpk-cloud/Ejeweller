@@ -135,20 +135,6 @@
                     {{ $t('button.confirm_order') }}
                 </button>
             </div>
-
-            <!-- WhatsApp Support Section -->
-            <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col items-center justify-center text-center bg-white rounded-2xl p-5 shadow-sm border">
-                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-2">
-                    <i class="fa-solid fa-headset text-lg"></i>
-                </div>
-                <span class="text-sm text-gray-600 font-bold mb-3">Any Questions or issues?</span>
-                <a :href="'https://api.whatsapp.com/send?phone=' + setting.whatsapp_calling_code + setting.whatsapp_number + '&text=' + encodeURIComponent('Hi, I need assistance with my checkout.')" 
-                   target="_blank" 
-                   class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors font-bold shadow-[0_4px_12px_rgba(37,211,102,0.25)] active:scale-[0.98]">
-                    <i class="fa-brands fa-whatsapp text-xl"></i>
-                    Contact us on WhatsApp
-                </a>
-            </div>
         </div>
     </div>
 </template>

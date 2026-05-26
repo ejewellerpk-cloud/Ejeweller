@@ -351,9 +351,15 @@ export default {
                     order_column: "id",
                     order_type: "asc",
                 }
-            }).then((res) => {
+            }).then(() => {
                 this.loading.isActive = false;
-            }).catch((err) => {
+                if (this.logged && Object.keys(this.selectedAddress).length === 0) {
+                    const list = this.$store.getters["frontendAddress/lists"];
+                    if (list.length === 1) {
+                        this.activeAddress(list[0]);
+                    }
+                }
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         } else {

@@ -332,7 +332,7 @@
 
 
                     <!-- Reviews Section -->
-                    <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
+                    <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6 scroll-mt-24 sm:scroll-mt-28">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="capitalize text-2xl sm:text-3xl font-bold flex items-center gap-3 text-heading">
                                 <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
@@ -1160,9 +1160,15 @@ export default {
         },
         scrollToReviews: function () {
             const element = document.getElementById('product-reviews-section');
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (!element) {
+                return;
             }
+            const header = document.querySelector('header');
+            const headerOffset = header
+                ? Math.ceil(header.getBoundingClientRect().height) + 16
+                : 96;
+            const top = element.getBoundingClientRect().top + window.scrollY - headerOffset;
+            window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
         },
         isEmbedVideo: function (media) {
             if (!media?.data) {
