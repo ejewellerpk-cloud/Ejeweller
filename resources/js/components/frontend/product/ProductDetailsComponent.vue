@@ -784,7 +784,7 @@ import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
 import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
 import axios from "axios";
-import { discountPercentage, getDetailPrices, parseAmount } from "../../../utils/productOffer";
+import { discountPercentage, getDetailPrices, parseAmount, withCartLinePricing } from "../../../utils/productOffer";
 import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
 import {
@@ -1602,9 +1602,9 @@ export default {
                         stock: res.data.data.stock,
                         quantity: 1,
                         discount: 0,
-                        price: res.data.data.price,
-                        oldPrice: res.data.data.old_price,
-                        totalPrice: res.data.data.price,
+                        price: parseAmount(res.data.data.price),
+                        oldPrice: parseAmount(res.data.data.old_price),
+                        totalPrice: parseAmount(res.data.data.price),
                         maximum_purchase_quantity: res.data.data.maximum_purchase_quantity
                     };
                     this.temp = {
@@ -1619,9 +1619,9 @@ export default {
                         shipping: res.data.data.shipping,
                         quantity: 1,
                         discount: 0,
-                        price: res.data.data.price,
-                        oldPrice: res.data.data.old_price,
-                        totalPrice: res.data.data.price,
+                        price: parseAmount(res.data.data.price),
+                        oldPrice: parseAmount(res.data.data.old_price),
+                        totalPrice: parseAmount(res.data.data.price),
                         maximum_purchase_quantity: res.data.data.maximum_purchase_quantity
                     };
 
@@ -1792,7 +1792,7 @@ export default {
                 this.temp.sku = variation.sku;
                 this.temp.stock = variation.stock;
                 this.temp.quantity = 1;
-                this.temp.discount = variation.discount_percentage || 0;
+                this.temp.discount = 0;
                 this.temp.price = parseAmount(variation.price);
                 this.temp.oldPrice = parseAmount(variation.old_price);
                 this.temp.totalPrice = parseAmount(variation.price);
@@ -1870,6 +1870,37 @@ export default {
         totalPriceSetup: function () {
             this.temp.totalPrice = (this.temp.price * this.temp.quantity);
         },
+        cartPricingSource: function () {
+            if (this.selectedVariation && this.selectedVariation.sku) {
+                return this.selectedVariation;
+            }
+            return {
+                price: this.temp.price,
+                old_price: this.temp.oldPrice,
+                is_offer: this.product?.is_offer,
+                discount: this.product?.discount,
+                discount_percentage: this.product?.discount_percentage,
+            };
+        },
+        buildProductArrayForCart: function (extraFields = {}) {
+            const base = {
+                name: this.temp.name,
+                product_id: this.temp.productId,
+                image: this.temp.image,
+                variation_names: '',
+                variation_id: this.temp.variationId ?? null,
+                sku: this.temp.sku,
+                stock: this.temp.stock,
+                taxes: this.temp.taxes,
+                shipping: this.temp.shipping,
+                quantity: this.temp.quantity,
+                maximum_purchase_quantity: this.temp.maximum_purchase_quantity,
+                in_baskets: this.product.in_baskets || 0,
+                bought_last_24_hours: this.product.bought_last_24_hours || 0,
+                ...extraFields,
+            };
+            return withCartLinePricing(base, this.cartPricingSource());
+        },
         addToCart: function () {
             if (!this.validatePurchaseBeforeAction()) {
                 return;
@@ -1882,25 +1913,7 @@ export default {
                 localStorage.setItem(storageKey, this.soldCount);
             }
             this.enableAddToCardButton = true;
-            this.productArray = {
-                name: this.temp.name,
-                product_id: this.temp.productId,
-                image: this.temp.image,
-                variation_names: '',
-                variation_id: this.temp.variationId,
-                sku: this.temp.sku,
-                stock: this.temp.stock,
-                taxes: this.temp.taxes,
-                shipping: this.temp.shipping,
-                quantity: this.temp.quantity,
-                discount: this.temp.discount,
-                price: this.temp.price,
-                old_price: this.temp.oldPrice,
-                total_price: this.temp.totalPrice,
-                maximum_purchase_quantity: this.temp.maximum_purchase_quantity,
-                in_baskets: this.product.in_baskets || 0,
-                bought_last_24_hours: this.product.bought_last_24_hours || 0
-            }
+            this.productArray = this.buildProductArrayForCart();
 
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {
@@ -1975,24 +1988,7 @@ export default {
                 localStorage.setItem(storageKey, this.soldCount);
             }
             this.enableAddToCardButton = true;
-            this.productArray = {
-                name: this.temp.name,
-                product_id: this.temp.productId,
-                image: this.temp.image,
-                variation_names: '',
-                variation_id: this.temp.variationId,
-                sku: this.temp.sku,
-                stock: this.temp.stock,
-                taxes: this.temp.taxes,
-                shipping: this.temp.shipping,
-                quantity: this.temp.quantity,
-                discount: this.temp.discount,
-                price: this.temp.price,
-                old_price: this.temp.oldPrice,
-                total_price: this.temp.totalPrice,
-                maximum_purchase_quantity: this.temp.maximum_purchase_quantity,
-                skipCartDrawer: true
-            }
+            this.productArray = this.buildProductArrayForCart({ skipCartDrawer: true });
 
             if (this.selectedVariation) {
                 this.$store.dispatch("frontendProductVariation/ancestorsToString", this.selectedVariation.id).then((res) => {

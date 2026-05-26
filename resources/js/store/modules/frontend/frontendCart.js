@@ -8,7 +8,26 @@ import alertService from "../../../services/alertService";
 import i18n from "../../../i18n";
 import { pixelService } from "../../../services/pixelService";
 import { trackAddToCart, trackRemoveFromCart } from "../../../services/analyticsEcommerceBridge";
+import { parseAmount } from "../../../utils/productOffer";
 import axios from "axios";
+
+function cartLineKey(productId, variationId) {
+    return `${productId}:${variationId ?? ''}`;
+}
+
+function normalizeCartLine(line) {
+    const price = parseAmount(line.price);
+    const oldPrice = parseAmount(line.old_price);
+    line.price = price;
+    line.old_price = oldPrice > price ? oldPrice : price;
+    // Product/variant offers are in unit price; legacy carts stored offer % here.
+    const legacyDiscount = parseFloat(line.discount) || 0;
+    if (legacyDiscount > 0 && legacyDiscount <= 100) {
+        line.discount = 0;
+    }
+    line.total_price = price * (parseInt(line.quantity, 10) || 1);
+    return line;
+}
 
 function getSessionId() {
     let sessionId = localStorage.getItem('cart_session_id');
@@ -95,8 +114,8 @@ export const frontendCart = {
             let savings = 0;
             if (state.lists.length > 0) {
                 _.forEach(state.lists, (list) => {
-                    const price = parseFloat(list.price) || 0;
-                    const oldPrice = parseFloat(list.old_price) || 0;
+                    const price = parseAmount(list.price);
+                    const oldPrice = parseAmount(list.old_price);
                     if (oldPrice > price) {
                         savings += (oldPrice - price) * (parseInt(list.quantity) || 1);
                     }
@@ -131,14 +150,22 @@ export const frontendCart = {
                     if (context.state.lists.length === 0) {
                         isNew = true;
                     } else {
+                        const payloadKey = cartLineKey(payload.product_id, payload.variation_id);
                         for (let i = 0; i < context.state.lists.length; i++) {
                             const list = context.state.lists[i];
-                            if (list.product_id === payload.product_id && list.variation_id === payload.variation_id) {
+                            if (cartLineKey(list.product_id, list.variation_id) === payloadKey) {
                                 productMatch = true;
                                 if ((payload.quantity + list.quantity) <= list.stock) {
                                     const maxQty = (parseInt(list.maximum_purchase_quantity) > 0) ? parseInt(list.maximum_purchase_quantity) : Infinity;
                                     if ((payload.quantity + list.quantity) <= maxQty) {
                                         context.state.lists[i].quantity += payload.quantity;
+                                        context.state.lists[i].price = parseAmount(payload.price);
+                                        context.state.lists[i].old_price = parseAmount(payload.old_price);
+                                        context.state.lists[i].discount = 0;
+                                        if (payload.offer_percent != null) {
+                                            context.state.lists[i].offer_percent = payload.offer_percent;
+                                        }
+                                        normalizeCartLine(context.state.lists[i]);
                                         if (payload.in_baskets != null) {
                                             context.state.lists[i].in_baskets = payload.in_baskets;
                                         }
@@ -180,29 +207,31 @@ export const frontendCart = {
                         if (payload.quantity <= payload.stock) {
                             const maxQty = (parseInt(payload.maximum_purchase_quantity) > 0) ? parseInt(payload.maximum_purchase_quantity) : Infinity;
                             if (payload.quantity <= maxQty) {
-                                context.state.lists.push({
+                                const line = normalizeCartLine({
                                     name: payload.name,
                                     product_id: payload.product_id,
                                     image: payload.image,
                                     variation_names: payload.variation_names,
-                                    variation_id: payload.variation_id,
+                                    variation_id: payload.variation_id ?? null,
                                     sku: payload.sku,
                                     stock: payload.stock,
                                     taxes: payload.taxes,
                                     shipping: payload.shipping,
                                     quantity: payload.quantity,
-                                    discount: payload.discount || 0,
-                                    price: parseFloat(payload.price) || 0,
-                                    old_price: parseFloat(payload.old_price) || 0,
+                                    discount: 0,
+                                    offer_percent: payload.offer_percent || 0,
+                                    price: payload.price,
+                                    old_price: payload.old_price,
                                     total_tax: 0,
                                     subtotal: 0,
                                     total: 0,
-                                    total_price: parseFloat(payload.total_price) || 0,
+                                    total_price: payload.total_price,
                                     maximum_purchase_quantity: payload.maximum_purchase_quantity,
                                     in_baskets: payload.in_baskets || 0,
                                     bought_last_24_hours: payload.bought_last_24_hours || 0,
                                     actual_sales: payload.actual_sales || 0,
                                 });
+                                context.state.lists.push(line);
                             } else {
                                 reject({
                                     message: "maximum_quantity",
@@ -428,13 +457,13 @@ export const frontendCart = {
                 let subtotal = 0;
                 let total = 0;
                 _.forEach(state.lists, (list, listKey) => {
-                    const price = parseFloat(list.price) || 0;
-                    const quantity = parseInt(list.quantity) || 1;
-                    const totalTax = parseFloat(list.total_tax) || 0;
-                    const discount = parseFloat(list.discount) || 0;
+                    normalizeCartLine(state.lists[listKey]);
+                    const price = state.lists[listKey].price;
+                    const quantity = parseInt(state.lists[listKey].quantity, 10) || 1;
+                    const totalTax = parseFloat(state.lists[listKey].total_tax) || 0;
 
                     state.lists[listKey].subtotal = price * quantity;
-                    state.lists[listKey].total = (price * quantity) + totalTax - discount;
+                    state.lists[listKey].total = (price * quantity) + totalTax;
                     subtotal += state.lists[listKey].subtotal;
                     total += state.lists[listKey].total;
                 });
@@ -477,7 +506,8 @@ export const frontendCart = {
             }
 
             item.quantity = qty;
-            item.total_price = (parseFloat(item.price) || 0) * qty;
+            normalizeCartLine(item);
+            item.total_price = item.price * qty;
             state.lists = [...state.lists]; // Force deep reactivity and sync persisted state
         },
         remove: function (state, payload) {

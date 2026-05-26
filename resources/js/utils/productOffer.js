@@ -73,3 +73,45 @@ export function getDetailPrices(product) {
         percent: discountPercentage(product),
     };
 }
+
+/**
+ * Numeric unit prices for cart/checkout (offer already applied to `price`).
+ * `old_price` is the pre-offer base (variation selling price or product base).
+ */
+export function buildCartLinePricing(source) {
+    if (!source) {
+        return { price: 0, old_price: 0, offer_percent: 0 };
+    }
+
+    const price = parseAmount(source.price);
+    let oldPrice = parseAmount(source.old_price);
+    if (!oldPrice && source.old_currency_price) {
+        oldPrice = parseAmount(source.old_currency_price);
+    }
+
+    const onSale = oldPrice > price && price > 0;
+    if (!onSale) {
+        oldPrice = price;
+    }
+
+    return {
+        price,
+        old_price: oldPrice,
+        offer_percent: onSale ? discountPercentage(source) : 0,
+    };
+}
+
+/** Merge cart item fields with normalized variation/product pricing. */
+export function withCartLinePricing(itemFields, pricingSource) {
+    const { price, old_price, offer_percent } = buildCartLinePricing(pricingSource);
+    const quantity = parseInt(itemFields.quantity, 10) || 1;
+
+    return {
+        ...itemFields,
+        price,
+        old_price,
+        offer_percent,
+        discount: 0,
+        total_price: price * quantity,
+    };
+}

@@ -202,7 +202,11 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
-import { discountPercentage as calcDiscountPercentage, hasActiveDiscount as calcHasActiveDiscount } from "../../../utils/productOffer";
+import {
+    discountPercentage as calcDiscountPercentage,
+    hasActiveDiscount as calcHasActiveDiscount,
+    withCartLinePricing,
+} from "../../../utils/productOffer";
 import {
     hasProductRating,
     getProductAverageRating,
@@ -354,7 +358,7 @@ export default {
                     localStorage.setItem(storageKey, count);
                 }
 
-                this.$store.dispatch("frontendCart/lists", {
+                this.$store.dispatch("frontendCart/lists", withCartLinePricing({
                     name: product.name,
                     product_id: product.id,
                     image: product.cover,
@@ -365,16 +369,12 @@ export default {
                     taxes: product.taxes,
                     shipping: product.shipping,
                     quantity: 1,
-                    discount: product.discount,
-                    price: product.price,
-                    old_price: product.old_price,
-                    total_price: product.price,
                     maximum_purchase_quantity: product.maximum_purchase_quantity,
                     in_baskets: product.in_baskets || 0,
                     bought_last_24_hours: product.bought_last_24_hours || 0,
                     actual_sales: product.actual_sales || 0,
-                    skipCartDrawer: true
-                }).then((res) => {
+                    skipCartDrawer: true,
+                }, product)).then((res) => {
                     this.$router.push({ name: "frontend.checkout.checkout" });
                 }).catch((err) => {
                     if (err && err.message === "stockOut") {
@@ -447,8 +447,7 @@ export default {
                 localStorage.setItem(storageKey, count);
             }
 
-            // Build product payload (exact structure from ProductDetailsComponent)
-            const productPayload = {
+            const productPayload = withCartLinePricing({
                 name: product.name,
                 product_id: product.id,
                 image: product.cover,
@@ -459,15 +458,11 @@ export default {
                 taxes: product.taxes,
                 shipping: product.shipping,
                 quantity: 1,
-                discount: product.discount,
-                price: product.price,
-                old_price: product.old_price,
-                total_price: product.price,
                 maximum_purchase_quantity: product.maximum_purchase_quantity,
                 in_baskets: product.in_baskets || 0,
                 bought_last_24_hours: product.bought_last_24_hours || 0,
                 actual_sales: product.actual_sales || 0,
-            };
+            }, product);
 
             // Dispatch to cart (exact pattern from ProductDetailsComponent else branch)
             this.animatingCartIds[product.id] = true;
