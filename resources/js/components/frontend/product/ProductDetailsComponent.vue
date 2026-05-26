@@ -407,10 +407,7 @@
                 </h2>
             </div>
             
-            <!-- Inline Loading Indicator for Related Products -->
-            <div v-if="relatedProductsLoading" class="flex items-center justify-center py-16 w-full">
-                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            <RelatedProductsSliderSkeleton v-if="relatedProductsLoading" />
 
             <div v-else class="product-section-slider-container relative">
                     <Swiper v-if="loopedRelatedProducts.length > 0"
@@ -456,9 +453,7 @@
                 Recently Viewed
             </h4>
 
-            <div v-if="recentlyViewedLoading" class="flex items-center justify-center py-8 w-full">
-                <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            <RecentlyViewedStripSkeleton v-if="recentlyViewedLoading" />
 
             <div v-else class="flex gap-2.5 overflow-x-auto pb-2 recently-viewed-scroll">
                 <div v-for="product in recentlyViewedProducts" :key="product.id"
@@ -774,6 +769,8 @@ import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import ProductListComponent from "../components/ProductListComponent";
+import RelatedProductsSliderSkeleton from "../components/skeleton/RelatedProductsSliderSkeleton.vue";
+import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import VariationComponent from "../components/VariationComponent";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -799,6 +796,8 @@ export default {
     components: {
         VariationComponent,
         ProductListComponent,
+        RelatedProductsSliderSkeleton,
+        RecentlyViewedStripSkeleton,
         CategoryBreadcrumbComponent,
         starRating,
         Swiper,
