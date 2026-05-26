@@ -1,14 +1,5 @@
 <template>
-    <button
-        ref="printTrigger"
-        type="button"
-        class="hidden"
-        v-print="printObj"
-        aria-hidden="true"
-        tabindex="-1"
-    ></button>
-
-    <div id="shippingSlipPrintArea" class="shipping-slip-print-area" :class="{ 'is-ready': slipsReady }">
+    <div ref="printRoot" class="shipping-slip-print-root" v-show="slipPages.length > 0">
         <div
             v-for="(page, pageIndex) in slipPages"
             :key="'page-' + pageIndex"
@@ -26,11 +17,12 @@
 </template>
 
 <script>
-import print from "vue3-print-nb";
+import alertService from "../../../services/alertService";
 import OnlineOrderShippingSlipComponent from "./OnlineOrderShippingSlipComponent.vue";
 import {
     buildShippingSlip,
     chunkSlips,
+    openPrintWindow,
     preloadImages,
 } from "../../../services/onlineOrderShippingSlip";
 
@@ -39,19 +31,9 @@ export default {
     components: {
         OnlineOrderShippingSlipComponent,
     },
-    directives: {
-        print,
-    },
     data() {
         return {
             slipPages: [],
-            slipsReady: false,
-            printObj: {
-                id: "shippingSlipPrintArea",
-                popTitle: this.$t("menu.online_orders"),
-                extraCss:
-                    "https://fonts.googleapis.com/css2?family=Arial&display=swap",
-            },
         };
     },
     mounted() {
@@ -72,84 +54,52 @@ export default {
             const slips = [];
             for (const id of ids) {
                 const res = await this.$store.dispatch("onlineOrder/show", id);
-                const order = res.data.data;
-                slips.push(buildShippingSlip(order, this.company));
+                slips.push(buildShippingSlip(res.data.data, this.company));
+            }
+
+            if (!slips.length) {
+                alertService.error(this.$t("message.no_data_found"));
+                return false;
             }
 
             await preloadImages(slips.map((s) => s.qrCodeUrl));
 
             this.slipPages = chunkSlips(slips, 3);
-            this.slipsReady = true;
-
             await this.$nextTick();
-            await new Promise((r) => setTimeout(r, 150));
-            this.$refs.printTrigger?.click();
+            await new Promise((r) => setTimeout(r, 350));
+
+            const root = this.$refs.printRoot;
+            const html = root?.innerHTML?.trim();
+            if (!html) {
+                alertService.error(this.$t("message.something_wrong"));
+                return false;
+            }
+
+            const opened = openPrintWindow(html, this.$t("menu.online_orders"));
+            if (!opened) {
+                alertService.error("Please allow pop-ups to print shipping slips.");
+                return false;
+            }
+
             return true;
         },
         clear() {
             this.slipPages = [];
-            this.slipsReady = false;
         },
     },
 };
 </script>
 
-<style>
-.shipping-slip-print-area {
+<style scoped>
+.shipping-slip-print-root {
     position: fixed;
-    left: -9999px;
+    left: 0;
     top: 0;
     width: 210mm;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
     pointer-events: none;
     z-index: -1;
-}
-
-@media print {
-    body * {
-        visibility: hidden;
-    }
-
-    #shippingSlipPrintArea,
-    #shippingSlipPrintArea * {
-        visibility: visible;
-    }
-
-    #shippingSlipPrintArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        pointer-events: auto;
-        z-index: 99999;
-    }
-
-    .shipping-slip-page {
-        width: 210mm;
-        height: 297mm;
-        page-break-after: always;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-sizing: border-box;
-        padding: 3mm 4mm;
-        gap: 2mm;
-    }
-
-    .shipping-slip-page:last-child {
-        page-break-after: auto;
-    }
-
-    .shipping-slip-slot {
-        flex: 0 0 32%;
-        max-height: 32%;
-        min-height: 32%;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    @page {
-        size: A4 portrait;
-        margin: 0;
-    }
 }
 </style>

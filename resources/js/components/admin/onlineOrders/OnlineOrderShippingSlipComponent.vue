@@ -142,7 +142,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .courier-slip {
     box-sizing: border-box;
     width: 100%;
@@ -183,7 +183,7 @@ export default {
     min-height: 34px;
 }
 
-.courier-slip__barcode :deep(svg) {
+.courier-slip__barcode svg {
     max-width: 100%;
     height: 34px;
 }
