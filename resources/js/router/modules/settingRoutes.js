@@ -12,7 +12,6 @@ const LicenseComponent = () =>  import("../../components/admin/settings/License/
 const CookiesComponent = () =>  import("../../components/admin/settings/Cookies/CookiesComponent");
 const AnalyticComponent = () =>  import("../../components/admin/settings/analytics/AnalyticComponent");
 const FacebookCapiComponent = () =>  import("../../components/admin/settings/FacebookCapi/FacebookCapiComponent");
-const IntelligenceAnalyticsSettingsComponent = () => import("../../components/admin/settings/Intelligence/IntelligenceAnalyticsSettingsComponent.vue");
 const AnalyticListComponent = () =>  import("../../components/admin/settings/analytics/AnalyticListComponent");
 const AnalyticShowComponent = () =>  import("../../components/admin/settings/analytics/AnalyticShowComponent");
 const ThemeComponent = () =>  import("../../components/admin/settings/Theme/ThemeComponent");
@@ -179,17 +178,6 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "facebook_capi",
-                },
-            },
-            {
-                path: "intelligence-analytics",
-                component: IntelligenceAnalyticsSettingsComponent,
-                name: "admin.settings.intelligenceAnalytics",
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "intelligence_analytics",
                 },
             },
             {

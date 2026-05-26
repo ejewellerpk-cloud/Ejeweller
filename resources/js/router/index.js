@@ -32,8 +32,6 @@ import settingRoutes from "./modules/settingRoutes";
 import stockRoutes from "./modules/stockRoutes";
 import subscriberRoutes from "./modules/subscriberRoutes";
 import transactionRoutes from "./modules/transactionRoutes";
-import intelligenceRoutes from "./modules/intelligenceRoutes";
-
 const baseRoutes = [
     {
         path: "/",
@@ -95,7 +93,6 @@ const routes = baseRoutes.concat(
     subscriberRoutes,
     reviewRoutes,
     mediaRoutes,
-    intelligenceRoutes,
 );
 
 const permission = store.getters.authPermission;

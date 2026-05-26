@@ -1,6 +1,7 @@
 <?php
 
 use App\Analytics\Http\Controllers\Admin\IntelligenceAdvancedController;
+use App\Analytics\Http\Controllers\Admin\IntelligenceProductController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceCommerceController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceDashboardController;
 use App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController;
@@ -35,6 +36,8 @@ Route::prefix('admin/intelligence')
         Route::get('/funnel', [IntelligenceDashboardController::class, 'funnel']);
         Route::get('/sources', [IntelligenceDashboardController::class, 'sources']);
         Route::get('/products', [IntelligenceDashboardController::class, 'products']);
+        Route::get('/products/catalog', [IntelligenceProductController::class, 'catalog']);
+        Route::get('/products/{productId}/insights', [IntelligenceProductController::class, 'show'])->where('productId', '[0-9]+');
         Route::get('/export', [IntelligenceCommerceController::class, 'exportReport']);
         Route::get('/roles', [IntelligenceCommerceController::class, 'roles']);
         Route::get('/settings', [IntelligenceSettingsController::class, 'show']);
