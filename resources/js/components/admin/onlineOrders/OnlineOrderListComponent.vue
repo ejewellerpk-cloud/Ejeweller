@@ -5,6 +5,16 @@
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
                 <div class="db-card-filter">
+                    <button
+                        v-if="permissionChecker('online-orders') && selectedOrderIds.length > 0"
+                        type="button"
+                        class="db-btn py-2 text-white bg-primary hidden-print"
+                        :disabled="slipPrintLoading"
+                        @click="printSelectedSlips"
+                    >
+                        <i class="lab lab-line-printer lab-font-size-16"></i>
+                        <span>{{ $t('button.print_selected_slips') }} ({{ selectedOrderIds.length }})</span>
+                    </button>
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
                     <FilterComponent @click.prevent="handleSlide('onlineorder-filter')" />
                     <div class="dropdown-group">
@@ -81,6 +91,14 @@
                 <table class="db-table stripe" id="print">
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
+                            <th class="db-table-head-th hidden-print w-10" v-if="permissionChecker('online-orders')">
+                                <input
+                                    type="checkbox"
+                                    class="w-4 h-4"
+                                    :checked="allPageSelected"
+                                    @change="toggleSelectAllPage"
+                                />
+                            </th>
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
                             <th class="db-table-head-th">{{ $t('label.order_type') }}</th>
                             <th class="db-table-head-th">{{ $t('label.customer') }}</th>
@@ -93,7 +111,15 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="orders.length > 0">
-                        <tr class="db-table-body-tr" v-for="order in orders" :key="order">
+                        <tr class="db-table-body-tr" v-for="order in orders" :key="order.id">
+                            <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
+                                <input
+                                    type="checkbox"
+                                    class="w-4 h-4"
+                                    :value="order.id"
+                                    v-model="selectedOrderIds"
+                                />
+                            </td>
                             <td class="db-table-body-td">
                                 {{ order.order_serial_no }}
 
@@ -118,6 +144,15 @@
                             </td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
+                                    <button
+                                        type="button"
+                                        class="db-table-action print"
+                                        :title="$t('button.print_shipping_slip')"
+                                        :disabled="slipPrintLoading"
+                                        @click="printSingleSlip(order.id)"
+                                    >
+                                        <i class="lab lab-line-printer"></i>
+                                    </button>
                                     <SmIconViewComponent :link="'admin.order.show'" :id="order.id"
                                         v-if="permissionChecker('online-orders')" />
                                     <SmIconDeleteComponent @click="destroy(order.id)"
@@ -128,7 +163,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" :colspan="permissionChecker('online-orders') ? 8 : 7">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
@@ -150,6 +185,8 @@
             </div>
         </div>
     </div>
+
+    <OnlineOrderShippingSlipPrintComponent ref="shippingSlipPrint" />
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
@@ -171,6 +208,7 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
 import ENV from "../../../config/env";
+import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
 
 
 export default {
@@ -187,7 +225,8 @@ export default {
         ExportComponent,
         PrintComponent,
         ExcelComponent,
-        Datepicker
+        Datepicker,
+        OnlineOrderShippingSlipPrintComponent
     },
     data() {
         return {
@@ -233,6 +272,8 @@ export default {
             },
             modelValue: null,
             ENV: ENV,
+            selectedOrderIds: [],
+            slipPrintLoading: false,
         }
     },
     mounted() {
@@ -255,7 +296,13 @@ export default {
         },
         paginationPage: function () {
             return this.$store.getters['onlineOrder/page'];
-        }
+        },
+        allPageSelected: function () {
+            if (!this.orders.length) {
+                return false;
+            }
+            return this.orders.every((order) => this.selectedOrderIds.includes(order.id));
+        },
     },
     methods: {
         permissionChecker(e) {
@@ -307,6 +354,35 @@ export default {
                 this.loading.isActive = false;
             });
         },
+        toggleSelectAllPage: function (event) {
+            const pageIds = this.orders.map((order) => order.id);
+            if (event.target.checked) {
+                this.selectedOrderIds = [...new Set([...this.selectedOrderIds, ...pageIds])];
+            } else {
+                this.selectedOrderIds = this.selectedOrderIds.filter((id) => !pageIds.includes(id));
+            }
+        },
+        printSingleSlip: function (orderId) {
+            this.runSlipPrint([orderId]);
+        },
+        printSelectedSlips: function () {
+            this.runSlipPrint(this.selectedOrderIds);
+        },
+        runSlipPrint: async function (orderIds) {
+            if (!orderIds.length) {
+                return;
+            }
+            this.slipPrintLoading = true;
+            this.loading.isActive = true;
+            try {
+                await this.$refs.shippingSlipPrint.printOrders(orderIds);
+            } catch (err) {
+                alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+            } finally {
+                this.slipPrintLoading = false;
+                this.loading.isActive = false;
+            }
+        },
         xls: function () {
             this.loading.isActive = true;
             this.$store.dispatch("onlineOrder/export", this.props.search).then((res) => {
@@ -356,6 +432,9 @@ export default {
     .hidden-print {
         display: none !important;
     }
+}
 
+.db-table-action.print i {
+    @apply text-primary bg-primary/10 hover:bg-primary/20;
 }
 </style>

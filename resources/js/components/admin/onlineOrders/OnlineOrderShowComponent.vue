@@ -47,6 +47,15 @@
                         <i class="lab lab-fill-save"></i>
                         <span class="text-sm capitalize text-white">{{ $t('button.accept') }}</span>
                     </button>
+                    <button
+                        type="button"
+                        :disabled="slipPrintLoading"
+                        @click="printShippingSlip"
+                        class="flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-gray-700"
+                    >
+                        <i class="lab lab-line-printer lab-font-size-16 text-white"></i>
+                        <span class="text-sm capitalize text-white">{{ $t('button.print_shipping_slip') }}</span>
+                    </button>
                 </div>
 
                 <div class="flex flex-wrap gap-3"
@@ -86,6 +95,28 @@
 
                     <OnlineOrderReceiptComponent :order="order" :orderProducts="orderProducts" :orderUser="orderUser"
                         :orderAddress="orderAddress" />
+                    <button
+                        type="button"
+                        :disabled="slipPrintLoading"
+                        @click="printShippingSlip"
+                        class="flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-gray-700"
+                    >
+                        <i class="lab lab-line-printer lab-font-size-16 text-white"></i>
+                        <span class="text-sm capitalize text-white">{{ $t('button.print_shipping_slip') }}</span>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-3"
+                    v-else-if="order.id && (order.status === enums.orderStatusEnum.REJECTED || order.status === enums.orderStatusEnum.CANCELED)">
+                    <button
+                        type="button"
+                        :disabled="slipPrintLoading"
+                        @click="printShippingSlip"
+                        class="flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-gray-700"
+                    >
+                        <i class="lab lab-line-printer lab-font-size-16 text-white"></i>
+                        <span class="text-sm capitalize text-white">{{ $t('button.print_shipping_slip') }}</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -268,6 +299,8 @@
             </div>
         </div>
     </div>
+
+    <OnlineOrderShippingSlipPrintComponent ref="shippingSlipPrint" />
 </template>
 
 <script>
@@ -280,11 +313,13 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import alertService from "../../../services/alertService";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
+import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
 
 export default {
     name: "OnlineOrderShowComponent",
     components: {
         OnlineOrderReceiptComponent,
+        OnlineOrderShippingSlipPrintComponent,
         LoadingComponent,
         OnlineOrderReasonComponent
     },
@@ -293,6 +328,7 @@ export default {
             loading: {
                 isActive: false
             },
+            slipPrintLoading: false,
             payment_status: null,
             delivery_boy: null,
             order_status: null,
@@ -403,6 +439,21 @@ export default {
         },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
+        },
+        printShippingSlip: async function () {
+            if (!this.order?.id) {
+                return;
+            }
+            this.slipPrintLoading = true;
+            this.loading.isActive = true;
+            try {
+                await this.$refs.shippingSlipPrint.printOrders([this.order.id]);
+            } catch (err) {
+                alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+            } finally {
+                this.slipPrintLoading = false;
+                this.loading.isActive = false;
+            }
         },
         changeStatus: function (status) {
             appService.acceptOrder().then((res) => {
