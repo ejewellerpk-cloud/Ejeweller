@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-BG_rWvS1.js";import{l as r,c as t,z as n}from"./vendor-vue-core-frTR4eor.js";import"./vendor-8yHaUXFb.js";const p={name:"SupplierComponent"};function c(s,a,_,m,i,u){const o=r("router-view");return t(),n(o)}const $=e(p,[["render",c]]);export{$ as default};

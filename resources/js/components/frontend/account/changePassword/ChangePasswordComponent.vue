@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
     <h2 class="capitalize text-2xl font-bold mb-7 text-primary">{{ $t('label.change_password') }}</h2>
     <form @submit.prevent="changePassword">
         <div class="p-6 mb-6 rounded-2xl shadow-card bg-white">

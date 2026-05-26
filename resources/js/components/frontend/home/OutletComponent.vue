@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="strip" />
         <section v-if="outlets.length > 0" class="mb-10 sm:mb-20">
             <div class="container">
                 <h2 class="capitalize text-2xl sm:text-4xl font-bold mb-8">
@@ -44,8 +44,11 @@ import 'swiper/css/pagination';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "OutletComponent",
+    mixins: [frontendSectionFetch],
     components: {
         Swiper, SwiperSlide,
         LoadingComponent
@@ -72,20 +75,6 @@ export default {
         outlets: function () {
             return this.$store.getters["frontendOutlet/lists"];
         },
-    },
-    mounted() {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-        
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {

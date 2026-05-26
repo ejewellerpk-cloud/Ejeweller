@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="order-list" :skeleton-count="1" />
 
     <div class="flex items-center gap-4 mb-7">
         <button @click.prevent="$router.back()" class="lab-line-undo text-xl font-bold text-primary"></button>

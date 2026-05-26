@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="promotions" :skeleton-count="3" />
         <section v-if="promotions.length > 0" class="mb-10 sm:mb-20">
             <div class="container">
                 <Swiper dir="ltr" :speed="1000" class="ad-swiper" :breakpoints="breakpoints">
@@ -22,11 +22,11 @@ import {Swiper, SwiperSlide} from 'swiper/vue';
 import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import LoadingComponent from "../components/LoadingComponent";
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "PromotionComponent",
-    props: {
-        immediateFetch: { type: Boolean, default: false },
-    },
+    mixins: [frontendSectionFetch],
     components: {
         Swiper,
         SwiperSlide,
@@ -47,24 +47,6 @@ export default {
         promotions: function () {
             return this.$store.getters["frontendPromotion/lists"];
         },
-    },
-    mounted() {
-        if (this.immediateFetch) {
-            this.fetchData();
-            return;
-        }
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {

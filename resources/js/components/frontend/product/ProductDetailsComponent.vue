@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
     <section class="mb-12">
         <div class="container">
             <div class="row">

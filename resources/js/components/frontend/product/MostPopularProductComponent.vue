@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading"/>
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-grid" :skeleton-count="8" />
     <section class="mb-10 sm:mb-20">
         <div class="container">
             <div class="flex items-center justify-between gap-5 mb-6 max-md:mb-8">

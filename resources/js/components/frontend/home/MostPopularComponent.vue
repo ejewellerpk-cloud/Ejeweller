@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="products" :skeleton-count="8" />
         <section v-if="products.length > 0" class="mb-7 sm:mb-12">
             <div class="container">
                 <div class="flex items-center justify-between gap-4 mb-5 sm:mb-7">
@@ -23,11 +23,11 @@
 import ProductListComponent from "../components/ProductListComponent.vue";
 import LoadingComponent from "../components/LoadingComponent.vue";
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "MostPopularComponent",
-    props: {
-        immediateFetch: { type: Boolean, default: false },
-    },
+    mixins: [frontendSectionFetch],
     components: {
         ProductListComponent,
         LoadingComponent
@@ -43,24 +43,6 @@ export default {
         products: function () {
             return this.$store.getters["frontendProduct/popularProducts"];
         },
-    },
-    mounted() {
-        if (this.immediateFetch) {
-            this.fetchData();
-            return;
-        }
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {

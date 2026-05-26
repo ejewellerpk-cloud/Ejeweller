@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="checkout" />
     <section class="mb-28 sm:mb-20">
         <div class="container">
             <!--  Header Route Start -->

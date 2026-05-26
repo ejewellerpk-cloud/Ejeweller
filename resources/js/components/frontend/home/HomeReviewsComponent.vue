@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="reviews" />
         <section v-if="reviews.length > 0" class="mb-10 sm:mb-20">
             <div class="container">
                 <div class="text-center mb-8 sm:mb-10">
@@ -116,20 +116,7 @@ export default {
         },
     },
     mounted() {
-        this.$nextTick(() => {
-            this.load();
-            const el = this.$refs.lazySection;
-            if (!el || typeof IntersectionObserver === 'undefined') {
-                return;
-            }
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    this.load();
-                    observer.disconnect();
-                }
-            }, { rootMargin: '200px' });
-            observer.observe(el);
-        });
+        this.load();
     },
     methods: {
         onReviewsSwiper(swiper) {

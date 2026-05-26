@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="products" :skeleton-count="4" />
 
         <div class="p-0 m-0" v-if="productSections.length > 0 && promotions.length > 0"
             v-for="(productSection, key) in productSections">
@@ -117,11 +117,11 @@ import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import ProductListComponent from "../components/ProductListComponent.vue";
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "ProductSectionComponent",
-    props: {
-        immediateFetch: { type: Boolean, default: false },
-    },
+    mixins: [frontendSectionFetch],
     components: {
         ProductListComponent,
         LoadingComponent,
@@ -145,24 +145,6 @@ export default {
         productSections: function () {
             return this.$store.getters["frontendProductSection/lists"];
         },
-    },
-    mounted() {
-        if (this.immediateFetch) {
-            this.fetchData();
-            return;
-        }
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {

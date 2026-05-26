@@ -1,6 +1,6 @@
 <template>
-    <LoadingComponent :props="loading" :is-full-screen="false" />
-    <section v-if="categories.length > 0" class="sm:mb-10">
+    <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="categories" :skeleton-count="6" />
+    <section v-else-if="categories.length > 0" class="sm:mb-10">
         <div class="container">
             <h2 class="text-2xl sm:text-4xl font-bold -mb-10">{{ $t('label.browse_by_categories')}}</h2>
             <Swiper dir="ltr" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
@@ -37,7 +37,6 @@ import LoadingComponent from "../components/LoadingComponent";
 
 export default {
     name: "CategoryComponent",
-    emits: ['ready'],
     components: {
         Swiper,
         SwiperSlide,
@@ -73,7 +72,6 @@ export default {
     },
     mounted() {
         if (this.categories.length > 0) {
-            this.emitReady();
             return;
         }
         this.loading.isActive = true;
@@ -85,16 +83,9 @@ export default {
             status: statusEnum.ACTIVE,
         }).then(() => {
             this.loading.isActive = false;
-            this.emitReady();
         }).catch(() => {
             this.loading.isActive = false;
-            this.emitReady();
         });
-    },
-    methods: {
-        emitReady() {
-            this.$emit('ready');
-        },
     },
 }
 </script>

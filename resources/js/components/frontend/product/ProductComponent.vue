@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" :is-full-screen="false" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="product-grid" skeleton-columns="shop" :skeleton-count="8" />
     <section class="shop-page mb-4 sm:mb-6 pb-20 lg:pb-8">
         <div class="container mt-2 sm:mt-4 px-4 sm:px-6">
             <!-- Sticky: search + filters -->

@@ -1,6 +1,6 @@
 <template>
 
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="form" />
     <p class="h-screen"></p>
 
 </template>

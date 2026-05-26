@@ -2,6 +2,7 @@
 
 namespace App\Analytics\DTOs;
 
+use App\Analytics\Support\ProductUrlAttribution;
 use Carbon\Carbon;
 
 readonly class IngestEventDTO
@@ -27,13 +28,23 @@ readonly class IngestEventDTO
             ? Carbon::parse($data['occurred_at'])
             : now();
 
+        $pageUrl = $data['page_url'] ?? $data['url'] ?? null;
+        $productId = isset($data['product_id']) ? (int) $data['product_id'] : null;
+        if (!$productId) {
+            $path = is_array($data['properties'] ?? null)
+                ? ($data['properties']['path'] ?? null)
+                : null;
+            $productId = ProductUrlAttribution::productIdFromUrl($pageUrl)
+                ?? ($path ? ProductUrlAttribution::productIdFromUrl('https://local' . $path) : null);
+        }
+
         return new self(
             eventUuid: (string) ($data['event_uuid'] ?? $data['id'] ?? ''),
             eventName: (string) ($data['event_name'] ?? $data['name'] ?? 'unknown'),
             eventCategory: (string) ($data['event_category'] ?? $data['category'] ?? 'general'),
-            pageUrl: $data['page_url'] ?? $data['url'] ?? null,
+            pageUrl: $pageUrl,
             pageTitle: $data['page_title'] ?? $data['title'] ?? null,
-            productId: isset($data['product_id']) ? (int) $data['product_id'] : null,
+            productId: $productId,
             productSku: $data['product_sku'] ?? $data['sku'] ?? null,
             revenue: isset($data['revenue']) ? (float) $data['revenue'] : null,
             currency: $data['currency'] ?? null,

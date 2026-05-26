@@ -1,18 +1,29 @@
 <template>
-    <VueElementLoading spinner="bar-fade-scale" color="#FD8B0E" :active="props.isActive" :is-full-screen="false" />
+    <template v-if="props.isActive">
+        <ProductCardSkeleton
+            v-for="n in count"
+            :key="'sk-' + n"
+            class="col-span-1"
+            aria-hidden="true"
+        />
+    </template>
 </template>
 
 <script>
-import VueElementLoading from 'vue-element-loading';
+import ProductCardSkeleton from './skeleton/ProductCardSkeleton.vue';
 
 export default {
-    name: "LoadingContentComponent",
-    components: { VueElementLoading },
-    props: ['props'],
-    data() {
-        return {
-            isActive: false
-        }
-    }
-}
+    name: 'LoadingContentComponent',
+    components: { ProductCardSkeleton },
+    props: {
+        props: {
+            type: Object,
+            required: true,
+        },
+        count: {
+            type: Number,
+            default: 4,
+        },
+    },
+};
 </script>

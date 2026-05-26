@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="order-list" />
     <h2 class="capitalize text-2xl font-bold mb-7 text-primary">{{ $t('label.return_orders') }}</h2>
     <div class="rounded-2xl shadow-card bg-white mobile:mb-20">
         <div class="max-md:overflow-x-auto">

@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="page" />
     <div v-if="Object.keys(cartCoupon).length !== 0"
         class="mb-6 rounded-2xl border border-success flex items-center gap-3 p-4 cursor-pointer">
         <div class="relative flex-shrink-0">

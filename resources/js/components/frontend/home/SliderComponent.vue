@@ -1,5 +1,5 @@
 <template>
-    <div v-if="loading.isActive" class="w-full aspect-[21/9] bg-gray-200 animate-pulse mb-10 sm:mb-20"></div>
+    <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="hero" />
     <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden">
         <Swiper
             dir="ltr"
@@ -40,7 +40,6 @@ import LoadingComponent from "../components/LoadingComponent";
 
 export default {
     name: "SliderComponent",
-    emits: ['ready'],
     components: {
         Swiper,
         SwiperSlide,
@@ -73,22 +72,14 @@ export default {
     },
     mounted() {
         if (this.sliders.length > 0) {
-            this.emitReady();
             return;
         }
         this.loading.isActive = true;
         this.$store.dispatch("frontendSlider/lists", this.sliderProps.search).then(() => {
             this.loading.isActive = false;
-            this.emitReady();
         }).catch(() => {
             this.loading.isActive = false;
-            this.emitReady();
         });
-    },
-    methods: {
-        emitReady() {
-            this.$emit('ready');
-        },
     },
 }
 </script>

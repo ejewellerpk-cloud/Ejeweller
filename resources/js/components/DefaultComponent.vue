@@ -1,6 +1,6 @@
 <template>
     <div v-if="theme === 'loading'">
-        <LoadingComponent :props="{isActive:true}" />
+        <LoadingComponent :props="{ isActive: true }" skeleton="app" />
     </div>
     <div v-show="theme === 'frontend'">
         <main class="">

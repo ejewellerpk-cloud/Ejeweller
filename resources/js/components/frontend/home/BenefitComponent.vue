@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="benefits" />
         <section v-if="benefits.length > 0" class="pt-8 pb-24 sm:py-12 border-t border-slate-100">
             <div class="container">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -19,8 +19,11 @@
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "BenefitComponent",
+    mixins: [frontendSectionFetch],
     components: {
         LoadingComponent
     },
@@ -35,20 +38,6 @@ export default {
         benefits: function () {
             return this.$store.getters["frontendBenefit/lists"];
         },
-    },
-    mounted() {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-        
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {

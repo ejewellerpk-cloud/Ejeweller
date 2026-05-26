@@ -1,0 +1,42 @@
+/* Shimmer skeleton utilities — shared across storefront */
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+.skeleton-bone {
+    background: linear-gradient(90deg, #f3f4f6 0%, #e8eaed 42%, #f3f4f6 88%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+    border-radius: 0.75rem;
+}
+
+.skeleton-bone--circle {
+    border-radius: 9999px;
+}
+
+.skeleton-bone--pill {
+    border-radius: 9999px;
+}
+
+.skeleton-bone--sharp {
+    border-radius: 0;
+}
+
+.skeleton-section {
+    width: 100%;
+}
+
+.skeleton-fade-enter-active,
+.skeleton-fade-leave-active {
+    transition: opacity 0.25s ease;
+}
+
+.skeleton-fade-enter-from,
+.skeleton-fade-leave-to {
+    opacity: 0;
+}

@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
     <div v-if="show" class="mb-6 rounded-2xl shadow-card">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
             <h4 class="font-bold capitalize">{{ title }}</h4>

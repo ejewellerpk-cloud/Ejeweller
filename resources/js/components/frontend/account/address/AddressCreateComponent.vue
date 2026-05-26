@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
 
     <button data-modal="#address" @click="showTarget()" type="button"
         class="w-full rounded-2xl py-10 flex items-center justify-center gap-2.5 text-primary bg-[#FFF4F1]">

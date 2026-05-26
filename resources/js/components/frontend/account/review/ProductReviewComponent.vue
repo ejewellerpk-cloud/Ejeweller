@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
     <h2 class="text-2xl font-bold mb-7 text-primary">{{ $t('menu.write_review') }}</h2>
     <form class="w-full mobile:mb-20" @submit.prevent="save">
         <div class="rounded-2xl shadow-card mb-6 bg-white">

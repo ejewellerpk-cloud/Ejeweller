@@ -3,6 +3,7 @@
 namespace App\Analytics\Services;
 
 use App\Analytics\Models\AnalyticsEvent;
+use App\Analytics\Support\ProductUrlAttribution;
 use App\Enums\Ask;
 use App\Enums\PaymentStatus;
 use App\Enums\Status;
@@ -31,16 +32,16 @@ class AnalyticsProductInsightsService
         $tz = config('app.timezone', 'UTC');
         $fromAt = Carbon::parse($from, $tz)->startOfDay();
         $toAt = Carbon::parse($to, $tz)->endOfDay();
+        $fromDate = $fromAt->toDateString();
+        $toDate = $toAt->toDateString();
 
-        $eventAgg = AnalyticsEvent::query()
-            ->where('site_id', $siteId)
-            ->whereBetween('event_date', [$fromAt->toDateString(), $toAt->toDateString()])
-            ->whereNotNull('product_id')
-            ->whereIn('event_name', self::PRODUCT_EVENTS)
-            ->select('product_id', 'event_name', DB::raw('COUNT(*) as total'))
-            ->groupBy('product_id', 'event_name')
-            ->get()
-            ->groupBy('product_id');
+        $eventAgg = ProductUrlAttribution::eventsGroupedByProductId(
+            $siteId,
+            $fromDate,
+            $toDate,
+            self::PRODUCT_EVENTS
+        );
+        $urlPageViews = ProductUrlAttribution::pageViewsByProductId($siteId, $fromDate, $toDate);
 
         $orderClass = Order::class;
         $salesAgg = DB::table('stocks')
@@ -71,12 +72,15 @@ class AnalyticsProductInsightsService
             });
         }
 
-        return $query->orderBy('name')->limit(500)->get()->map(function (Product $product) use ($eventAgg, $salesAgg) {
+        return $query->orderBy('name')->limit(500)->get()->map(function (Product $product) use ($eventAgg, $salesAgg, $urlPageViews) {
             $pid = $product->id;
             $events = $eventAgg->get($pid, collect());
             $byName = $events->pluck('total', 'event_name');
 
-            $views = (int) ($byName['product_viewed'] ?? 0);
+            $views = ProductUrlAttribution::mergeViewCount(
+                (int) ($byName['product_viewed'] ?? 0),
+                (int) ($urlPageViews[$pid] ?? 0)
+            );
             $addToCart = (int) ($byName['add_to_cart'] ?? 0);
             $removeCart = (int) ($byName['remove_from_cart'] ?? 0);
             $checkout = (int) ($byName['checkout_started'] ?? 0);
@@ -106,7 +110,7 @@ class AnalyticsProductInsightsService
                 'view_to_cart_rate' => $viewToCart,
                 'cart_to_purchase_rate' => $cartToOrder,
             ];
-        })->sortByDesc('page_views')->values()->all();
+        })->sortByDesc(fn ($row) => $row['page_views'] + $row['units_sold'])->values()->all();
     }
 
     public function detail(int $siteId, int $productId, string $from, string $to): array
@@ -134,6 +138,12 @@ class AnalyticsProductInsightsService
                 $metrics[$row->event_name] = (int) $row->total;
             });
 
+        $urlViews = ProductUrlAttribution::pageViewsByProductId($siteId, $fromDate, $toDate);
+        $metrics['product_viewed'] = ProductUrlAttribution::mergeViewCount(
+            (int) ($metrics['product_viewed'] ?? 0),
+            (int) ($urlViews[$productId] ?? 0)
+        );
+
         $daily = AnalyticsEvent::query()
             ->where('site_id', $siteId)
             ->where('product_id', $productId)
@@ -158,13 +168,19 @@ class AnalyticsProductInsightsService
             ];
         }
 
+        $productSlug = $product->slug ? strtolower($product->slug) : null;
         $topPages = AnalyticsEvent::query()
             ->where('site_id', $siteId)
-            ->where('product_id', $productId)
-            ->where('event_name', 'product_viewed')
             ->whereBetween('event_date', [$fromDate, $toDate])
+            ->whereIn('event_name', ['product_viewed', 'page_view'])
             ->whereNotNull('page_url')
             ->where('page_url', '!=', '')
+            ->where(function ($q) use ($productId, $productSlug) {
+                $q->where('product_id', $productId);
+                if ($productSlug) {
+                    $q->orWhere('page_url', 'like', '%/product/' . $productSlug . '%');
+                }
+            })
             ->select('page_url', DB::raw('COUNT(*) as views'))
             ->groupBy('page_url')
             ->orderByDesc('views')

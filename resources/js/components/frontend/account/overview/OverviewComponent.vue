@@ -1,6 +1,6 @@
 
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
     <h2 class="capitalize text-2xl font-bold mb-2 text-primary">{{ $t('menu.overview') }}</h2>
     <p class="mb-7 font-medium capitalize">{{ $t('label.welcome_back') }}, {{ name }}!</p>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">

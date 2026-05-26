@@ -1,5 +1,5 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="form" />
     <div class="w-full max-w-3xl mx-auto rounded-2xl flex overflow-hidden gap-y-6 bg-white shadow-card mb-24 sm:mb-0">
         <img :src="APP_URL + '/images/required/auth.jpg'" alt="banners"
             class="w-full hidden sm:block sm:max-w-xs md:max-w-sm flex-shrink-0" />

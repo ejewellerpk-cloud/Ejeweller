@@ -1,6 +1,6 @@
 <template>
-    <div ref="lazySection" class="relative min-h-[50px]">
-        <LoadingComponent v-if="loading.isActive" :props="loading" :isFullScreen="false" />
+    <div class="relative">
+        <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="brands" :skeleton-count="5" />
         <section class="mb-3 sm:mb-10" v-if="brands.length > 0">
             <div class="container">
                 <h2 class="capitalize text-2xl sm:text-4xl font-bold -mb-10">
@@ -34,8 +34,11 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
+
 export default {
     name: "ProductBrandComponent",
+    mixins: [frontendSectionFetch],
     components: {
         Swiper, SwiperSlide,
         LoadingComponent
@@ -62,20 +65,6 @@ export default {
         brands: function () {
             return this.$store.getters["frontendProductBrand/lists"];
         },
-    },
-    mounted() {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.fetchData();
-                observer.disconnect();
-            }
-        }, { rootMargin: '300px' });
-        
-        if (this.$refs.lazySection) {
-            observer.observe(this.$refs.lazySection);
-        } else {
-            this.fetchData();
-        }
     },
     methods: {
         fetchData() {
