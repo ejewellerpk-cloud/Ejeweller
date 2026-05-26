@@ -39,7 +39,8 @@ class ProductUrlAttribution
         }
 
         $path = parse_url($url, PHP_URL_PATH) ?? '';
-        if (!preg_match('#/product/([^/?#]+)/?$#i', $path, $matches)) {
+        // Delimiter ~ avoids # in [^/?#] terminating a #...# pattern
+        if (!preg_match('~/product/([^/?#]+)/?$~i', $path, $matches)) {
             return null;
         }
 
