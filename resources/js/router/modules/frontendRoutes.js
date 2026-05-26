@@ -29,7 +29,7 @@ const  TrackOrderComponent = () => import("../../components/frontend/trackOrder/
 
 export default [
     {
-        path: "/home",
+        path: "/",
         component: HomeComponent,
         name: "frontend.home",
         meta: {
@@ -37,6 +37,10 @@ export default [
             auth: false,
             keepAlive: true,
         },
+    },
+    {
+        path: "/home",
+        redirect: { name: "frontend.home" },
     },
     {
         path: "/product",

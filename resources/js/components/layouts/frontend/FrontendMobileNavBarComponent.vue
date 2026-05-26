@@ -1,6 +1,6 @@
 <template>
     <nav class="lg:hidden w-full flex items-center justify-between px-5 py-3 fixed bottom-0 left-0 z-10 shadow-widget bg-white">
-        <router-link class="flex flex-col items-center gap-1 text-text transition-all duration-300 hover:text-primary" :class="checkIsPathAndRoutePathSame('/home') ? 'router-link-active router-link-exact-active !text-primary' : ''" :to="{name : 'frontend.home'}">
+        <router-link class="flex flex-col items-center gap-1 text-text transition-all duration-300 hover:text-primary" :class="checkIsPathAndRoutePathSame('/') ? 'router-link-active router-link-exact-active !text-primary' : ''" :to="{name : 'frontend.home'}">
             <i class="lab-line-home text-lg leading-none"></i>
             <span class="text-xs font-medium capitalize">{{ $t('label.home') }}</span>
         </router-link>
@@ -95,9 +95,10 @@ export default {
     },
     methods: {
         checkIsPathAndRoutePathSame(path) {
-            if (this.currentRoute === path) {
+            if (path === '/' && (this.currentRoute === '/' || this.currentRoute === '/home')) {
                 return true;
             }
+            return this.currentRoute === path;
         },
         showTarget: function (id, cClass) {
             targetService.showTarget(id, cClass);

@@ -81,7 +81,7 @@
                     <ul class="header-nav-list">
                         <li class="header-nav-item">
                             <router-link class="header-nav-menu"
-                                :class="checkIsPathAndRoutePathSame('/home') ? 'router-link-active router-link-exact-active' : ''"
+                                :class="checkIsPathAndRoutePathSame('/') ? 'router-link-active router-link-exact-active' : ''"
                                 :to="{ name: 'frontend.home' }">
                                 {{ $t("label.home") }}
                             </router-link>
@@ -631,9 +631,10 @@ export default {
             return appService.textShortener(text, number);
         },
         checkIsPathAndRoutePathSame(path) {
-            if (this.currentRoute === path) {
+            if (path === '/' && (this.currentRoute === '/' || this.currentRoute === '/home')) {
                 return true;
             }
+            return this.currentRoute === path;
         },
         changeLanguage: function (id, code, mode) {
             this.defaultLanguage = id;

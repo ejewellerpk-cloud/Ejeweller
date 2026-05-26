@@ -34,11 +34,6 @@ import subscriberRoutes from "./modules/subscriberRoutes";
 import transactionRoutes from "./modules/transactionRoutes";
 const baseRoutes = [
     {
-        path: "/",
-        redirect: { name: "frontend.home" },
-        name: "root",
-    },
-    {
         path: "/:pathMatch(.*)*",
         name: "route.notFound",
         component: NotFoundComponent,
