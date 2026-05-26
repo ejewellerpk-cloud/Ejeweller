@@ -7,6 +7,7 @@ import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
 import i18n from "../../../i18n";
 import { pixelService } from "../../../services/pixelService";
+import { trackAddToCart, trackRemoveFromCart } from "../../../services/analyticsEcommerceBridge";
 import axios from "axios";
 
 function getSessionId() {
@@ -233,6 +234,14 @@ export const frontendCart = {
                 }
                 
                 pixelService.trackAddToCart(payload, payload.quantity);
+                trackAddToCart(
+                    {
+                        id: payload.product_id,
+                        product_id: payload.product_id,
+                        sku: payload.sku,
+                    },
+                    parseInt(payload.quantity, 10) || 1
+                );
                 axios.post('frontend/cart-track/add', {
                     product_id: payload.product_id,
                     session_id: getSessionId()
@@ -271,6 +280,25 @@ export const frontendCart = {
                         }
                         return;
                     }
+                    trackAddToCart(
+                        {
+                            id: item.product_id,
+                            product_id: item.product_id,
+                            sku: item.sku,
+                        },
+                        1
+                    );
+                }
+
+                if (payload.status === "decrement") {
+                    trackRemoveFromCart(
+                        {
+                            id: item.product_id,
+                            product_id: item.product_id,
+                            sku: item.sku,
+                        },
+                        1
+                    );
                 }
 
                 context.commit("quantity", payload);
@@ -288,6 +316,14 @@ export const frontendCart = {
             const productId = item?.product_id;
             const variationId = item?.variation_id;
             if (item) {
+                trackRemoveFromCart(
+                    {
+                        id: item.product_id,
+                        product_id: item.product_id,
+                        sku: item.sku,
+                    },
+                    parseInt(item.quantity, 10) || 1
+                );
                 axios.post('frontend/cart-track/remove', {
                     product_id: item.product_id,
                     session_id: getSessionId()

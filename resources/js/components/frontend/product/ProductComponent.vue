@@ -184,6 +184,7 @@ import appService from "../../../services/appService";
 import VueSimpleRangeSlider from "vue-simple-range-slider";
 import "vue-simple-range-slider/css";
 import LoadingComponent from "../components/LoadingComponent";
+import { trackCategoryViewed, trackSearchPerformed } from "../../../services/analyticsEcommerceBridge";
 import PaginationComponent from "../components/PaginationComponent";
 import LoadingContentComponent from "../components/LoadingContentComponent.vue";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent.vue";
@@ -306,6 +307,7 @@ export default {
 
             if (this.categorySlug) {
                 this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', this.categorySlug).catch(() => {});
+                trackCategoryViewed({ slug: this.categorySlug });
             }
         },
         parseMaxPrice(value) {
@@ -537,6 +539,10 @@ export default {
         },
         executeSearch() {
             this.showSuggestions = false;
+            const q = (this.searchName || '').trim();
+            if (q) {
+                trackSearchPerformed(q);
+            }
             this.loadProducts(1);
         },
         selectSuggestion(name) {

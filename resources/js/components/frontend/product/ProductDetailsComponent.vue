@@ -775,7 +775,7 @@ import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
 import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount } from "../../../utils/productOffer";
-import { trackAddToCart, trackProductViewed } from "../../../services/analyticsEcommerceBridge";
+import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
 import {
     continuousAutoplayConfig,
@@ -1406,7 +1406,11 @@ export default {
                     }, 800);
                 }
                 localStorage.setItem('local_wishlist', JSON.stringify(localWish));
-                this.localWishlist = localWish; // triggers reactivity
+                this.localWishlist = localWish;
+                trackWishlistToggle(
+                    { id: this.product.id, product_id: this.product.id, sku: this.product.sku },
+                    localWish.includes(prodId)
+                );
             }
         },
         readMore: function () {
@@ -1778,16 +1782,6 @@ export default {
         totalPriceSetup: function () {
             this.temp.totalPrice = (this.temp.price * this.temp.quantity);
         },
-        analyticsTrackCartAdd: function () {
-            trackAddToCart(
-                {
-                    id: this.temp.productId,
-                    sku: this.temp.sku,
-                    name: this.temp.name,
-                },
-                this.temp.quantity || 1
-            );
-        },
         addToCart: function () {
             if (!this.validatePurchaseBeforeAction()) {
                 return;
@@ -1825,7 +1819,6 @@ export default {
                     this.productArray.variation_names = res.data.data;
                     this.showVariationComponent = false;
                     this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
-                        this.analyticsTrackCartAdd();
                         this.refreshProductSocialProof();
                         this.showVariationComponent = true;
                         this.productArray = {};
@@ -1855,7 +1848,6 @@ export default {
                 });
             } else {
                 this.$store.dispatch("frontendCart/lists", this.productArray).then((res) => {
-                    this.analyticsTrackCartAdd();
                     this.refreshProductSocialProof();
                     this.enableAddToCardButton = false;
                     this.productArray = {};

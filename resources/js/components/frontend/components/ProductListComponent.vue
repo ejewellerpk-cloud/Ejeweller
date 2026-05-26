@@ -210,7 +210,7 @@ import {
     formatProductRating,
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
-import { trackAddToCart } from "../../../services/analyticsEcommerceBridge";
+import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 
 export default {
     name: "ProductListComponent",
@@ -317,7 +317,11 @@ export default {
                     }, 800);
                 }
                 localStorage.setItem('local_wishlist', JSON.stringify(localWish));
-                this.localWishlist = localWish; // triggers reactivity
+                this.localWishlist = localWish;
+                trackWishlistToggle(
+                    { id: product.id, product_id: product.id, sku: product.sku },
+                    localWish.includes(prodId)
+                );
             }
         },
         getYouTubeId(url) {
@@ -471,12 +475,7 @@ export default {
                 this.animatingCartIds[product.id] = false;
             }, 600);
 
-            this.$store.dispatch("frontendCart/lists", productPayload).then((res) => {
-                trackAddToCart(
-                    { id: product.id, sku: product.sku, name: product.name },
-                    1
-                );
-            }).catch((err) => {
+            this.$store.dispatch("frontendCart/lists", productPayload).catch((err) => {
                 if (err && err.message === "stockOut") {
                     alertService.error(this.$t('message.out_of_stock') || "This product is out of stock!");
                 } else {

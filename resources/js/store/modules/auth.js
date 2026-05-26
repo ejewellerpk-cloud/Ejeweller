@@ -1,6 +1,11 @@
 import axios from 'axios'
 import alertService from "../../services/alertService";
+import { identifyAnalyticsUser } from "../../services/analyticsEcommerceBridge";
 
+function onAuthLogin(commit, data) {
+    commit('authLogin', data);
+    identifyAnalyticsUser(data?.user?.id);
+}
 
 export const auth = {
     state: {
@@ -63,7 +68,7 @@ export const auth = {
         login: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/login', payload).then((res) => {
-                    context.commit('authLogin', res.data);
+                    onAuthLogin(context.commit, res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
@@ -82,7 +87,7 @@ export const auth = {
         otpLoginVerify: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/login/otp-verify', payload).then((res) => {
-                    context.commit('authLogin', res.data);
+                    onAuthLogin(context.commit, res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
@@ -104,7 +109,7 @@ export const auth = {
                 axios
                     .post("auth/login/" + payload.provider, payload.code)
                     .then((res) => {
-                        context.commit("authLogin", res.data);
+                        onAuthLogin(context.commit, res.data);
                         resolve(res);
                     })
                     .catch((err) => {
@@ -191,7 +196,7 @@ export const auth = {
         resetPassword: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/forgot-password/reset-password', payload).then((res) => {
-                    context.commit("authLogin",res.data);
+                    onAuthLogin(context.commit, res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
@@ -231,7 +236,7 @@ export const auth = {
         signupLoginVerify: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/signup/login-verify', payload).then((res) => {
-                    context.commit('authLogin', res.data);
+                    onAuthLogin(context.commit, res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

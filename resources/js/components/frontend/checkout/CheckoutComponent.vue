@@ -141,6 +141,7 @@ import CartListComponent from "./cartList/CartListComponent.vue";
 import router from "../../../router";
 import appService from "../../../services/appService";
 import CouponComponent from "./CouponComponent.vue";
+import { trackCheckoutAbandoned } from "../../../services/analyticsEcommerceBridge";
 import LoadingComponent from "../components/LoadingComponent.vue";
 import activityEnum from "../../../enums/modules/activityEnum";
 
@@ -263,6 +264,10 @@ export default {
         },
         dismissModalAndLeave: function () {
             this.showAbandonedModal = false;
+            trackCheckoutAbandoned(
+                this.$store.getters['frontendCart/total'],
+                window.FACEBOOK_PIXEL_CURRENCY || 'PKR'
+            );
             if (this.abandonedNextCallback) {
                 const next = this.abandonedNextCallback;
                 this.abandonedNextCallback = null;

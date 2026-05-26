@@ -1,5 +1,6 @@
 import axios from "axios";
 import appService from "../../../services/appService";
+import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 
 export const frontendWishlist = {
     namespaced: true,
@@ -29,9 +30,18 @@ export const frontendWishlist = {
         toggle: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post("frontend/wishlist/toggle", payload).then((res) => {
+                    const added = !!payload?.toggle;
+                    trackWishlistToggle(
+                        {
+                            id: payload.product_id,
+                            product_id: payload.product_id,
+                            sku: payload.sku ?? res.data?.data?.sku,
+                        },
+                        added
+                    );
                     context.dispatch("lists").then().catch();
-                    if(!payload?.toggle){
-                        context.dispatch('frontendProduct/wishlistProducts', null, { root:true}).then().catch();
+                    if (!added) {
+                        context.dispatch('frontendProduct/wishlistProducts', null, { root: true }).then().catch();
                     }
                     resolve(res);
                 }).catch((err) => {

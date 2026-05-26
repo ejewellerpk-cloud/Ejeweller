@@ -304,6 +304,7 @@ import alertService from "../../../../services/alertService";
 import targetService from "../../../../services/targetService";
 import { useRoute } from 'vue-router'
 import OrderReceiptComponent from "./OrderReceiptComponent";
+import { trackOrderCompletedOnce } from "../../../../services/analyticsEcommerceBridge";
 import { pixelService } from "../../../../services/pixelService";
 import orderTypeEnum from "../../../../enums/modules/orderTypeEnum";
 import activityEnum from "../../../../enums/modules/activityEnum";
@@ -392,6 +393,11 @@ export default {
                 // Track Purchase event on Facebook Pixel
                 if (this.$route.query.status === "success") {
                     pixelService.trackPurchase(res.data.data);
+                    trackOrderCompletedOnce({
+                        id: res.data.data.id,
+                        total: res.data.data.total,
+                        currency_code: res.data.data.currency_code,
+                    });
                 }
 
                 if (this.$route.query.status === "success" && this.setting.whatsapp_status === activityEnum.ENABLE && this.setting.whatsapp_checkout_status === activityEnum.ENABLE && this.setting.whatsapp_number) {

@@ -78,6 +78,7 @@ import FrontendMobileAccountComponent from "./layouts/frontend/FrontendMobileAcc
 import FrontendMobileSideBarComponent from "./layouts/frontend/FrontendMobileSideBarComponent";
 import FrontendCookiesComponent from "./layouts/frontend/FrontendCookiesComponent";
 import LoadingComponent from "../components/frontend/components/LoadingComponent.vue";
+import { identifyAnalyticsUser } from "../services/analyticsEcommerceBridge";
 import DisplayModeEnum from "../enums/modules/displayModeEnum";
 import env from "../config/env";
 import BackendAiSidebarComponent from "./layouts/backend/BackendAiSidebarComponent.vue";
@@ -286,6 +287,10 @@ export default {
     },
     mounted() {
         this.startTabTicker();
+        const user = this.$store.getters.authInfo;
+        if (this.logged && user?.id) {
+            identifyAnalyticsUser(user.id);
+        }
     },
     beforeUnmount() {
         this.stopAbandonedCartTimer();

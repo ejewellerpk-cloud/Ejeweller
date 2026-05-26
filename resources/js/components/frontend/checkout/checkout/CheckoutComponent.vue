@@ -161,7 +161,12 @@ import CouponComponent from "../CouponComponent.vue";
 import router from "../../../../router";
 import alertService from "../../../../services/alertService";
 import { pixelService } from "../../../../services/pixelService";
-import { trackCheckoutStarted, trackOrderPlaced } from "../../../../services/analyticsEcommerceBridge";
+import {
+    trackCheckoutStarted,
+    trackCodSelected,
+    trackOrderCompletedOnce,
+    trackPaymentAttempted,
+} from "../../../../services/analyticsEcommerceBridge";
 import LoadingComponent from "../../components/LoadingComponent.vue";
 import statusEnum from "../../../../enums/modules/statusEnum";
 import sourceEnum from "../../../../enums/modules/sourceEnum";
@@ -360,6 +365,9 @@ export default {
         },
         selectPaymentMethod: function (paymentMethod) {
             this.$store.dispatch("frontendCart/paymentMethod", paymentMethod);
+            if (paymentMethod?.slug === 'cashondelivery') {
+                trackCodSelected(this.total, window.FACEBOOK_PIXEL_CURRENCY || 'PKR');
+            }
         },
         confirmOrder: function (e) {
             // Address Validation First
@@ -405,6 +413,12 @@ export default {
             }
             this.loading.isActive = true;
 
+            trackPaymentAttempted({
+                method: this.paymentMethod?.slug || this.paymentMethod?.name,
+                total: this.total,
+                currency: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
+            });
+
             this.form = {
                 subtotal: this.subtotal,
                 discount: this.discount,
@@ -439,7 +453,7 @@ export default {
 
                 let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
                 if (orderResponse.data.data.is_cod) {
-                    trackOrderPlaced({
+                    trackOrderCompletedOnce({
                         id: orderResponse.data.data.id,
                         total: orderResponse.data.data.total ?? this.total,
                         currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',

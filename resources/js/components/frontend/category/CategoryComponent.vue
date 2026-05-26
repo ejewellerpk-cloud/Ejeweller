@@ -33,6 +33,8 @@
 </template>
 
 <script>
+import { trackCategoryViewed } from "../../../services/analyticsEcommerceBridge";
+
 export default {
     name: "CategoryComponent",
     computed: {
@@ -43,6 +45,7 @@ export default {
     },
     mounted() {
         window.scrollTo(0, 0);
+        trackCategoryViewed({ slug: 'all', name: 'all_categories' });
     }
 }
 </script>
