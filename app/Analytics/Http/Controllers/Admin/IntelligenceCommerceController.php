@@ -68,11 +68,18 @@ class IntelligenceCommerceController extends AdminController
                 ];
             }
 
+            $periodRevenue = 0.0;
+            foreach ($raw['per_day_sales'] ?? [] as $amount) {
+                $periodRevenue += (float) $amount;
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'total_sales' => $raw['total_sales'] ?? 0,
-                    'avg_per_day' => $raw['avg_per_day'] ?? 0,
+                    'total_sales' => $periodRevenue,
+                    'avg_per_day' => count($raw['per_day_sales'] ?? []) > 0
+                        ? $periodRevenue / count($raw['per_day_sales'])
+                        : 0,
                     'series' => $series,
                 ],
             ]);
