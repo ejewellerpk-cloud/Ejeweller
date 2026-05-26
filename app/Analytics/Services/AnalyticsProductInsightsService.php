@@ -3,16 +3,19 @@
 namespace App\Analytics\Services;
 
 use App\Analytics\Models\AnalyticsEvent;
+use App\Analytics\Support\AnalyticsSchema;
 use App\Analytics\Support\ProductUrlAttribution;
 use App\Enums\Ask;
 use App\Enums\PaymentStatus;
 use App\Enums\Status;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Stock;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AnalyticsProductInsightsService
 {
@@ -35,31 +38,9 @@ class AnalyticsProductInsightsService
         $fromDate = $fromAt->toDateString();
         $toDate = $toAt->toDateString();
 
-        $eventAgg = ProductUrlAttribution::eventsGroupedByProductId(
-            $siteId,
-            $fromDate,
-            $toDate,
-            self::PRODUCT_EVENTS
-        );
-        $urlPageViews = ProductUrlAttribution::pageViewsByProductId($siteId, $fromDate, $toDate);
-
-        $orderClass = Order::class;
-        $salesAgg = DB::table('stocks')
-            ->join('orders', function ($join) use ($orderClass) {
-                $join->on('stocks.model_id', '=', 'orders.id')
-                    ->where('stocks.model_type', '=', $orderClass);
-            })
-            ->where('orders.active', Ask::YES)
-            ->where('orders.payment_status', PaymentStatus::PAID)
-            ->whereBetween('orders.order_datetime', [$fromAt, $toAt])
-            ->select(
-                'stocks.product_id',
-                DB::raw('SUM(stocks.quantity) as units_sold'),
-                DB::raw('SUM(stocks.total) as revenue')
-            )
-            ->groupBy('stocks.product_id')
-            ->get()
-            ->keyBy('product_id');
+        $eventAgg = $this->safeEventAggregation($siteId, $fromDate, $toDate);
+        $urlPageViews = $this->safeUrlPageViews($siteId, $fromDate, $toDate);
+        $salesAgg = $this->salesAggregation($fromAt, $toAt);
 
         $query = Product::query()
             ->withSum('stockItems as stock_qty', 'quantity')
@@ -88,8 +69,8 @@ class AnalyticsProductInsightsService
             $wishlist = (int) (($byName['add_to_wishlist'] ?? 0) - ($byName['remove_wishlist'] ?? 0));
 
             $sale = $salesAgg->get($pid);
-            $unitsSold = (int) ($sale->units_sold ?? 0);
-            $revenue = (float) ($sale->revenue ?? 0);
+            $unitsSold = (int) ($sale?->units_sold ?? 0);
+            $revenue = (float) ($sale?->revenue ?? 0);
 
             $viewToCart = $views > 0 ? round(($addToCart / $views) * 100, 2) : 0;
             $cartToOrder = $addToCart > 0 ? round(($unitsSold / $addToCart) * 100, 2) : 0;
@@ -126,34 +107,70 @@ class AnalyticsProductInsightsService
             ->findOrFail($productId);
 
         $metrics = array_fill_keys(self::PRODUCT_EVENTS, 0);
-        AnalyticsEvent::query()
-            ->where('site_id', $siteId)
-            ->where('product_id', $productId)
-            ->whereIn('event_name', self::PRODUCT_EVENTS)
-            ->whereBetween('event_date', [$fromDate, $toDate])
-            ->select('event_name', DB::raw('COUNT(*) as total'))
-            ->groupBy('event_name')
-            ->get()
-            ->each(function ($row) use (&$metrics) {
-                $metrics[$row->event_name] = (int) $row->total;
-            });
+        $daily = collect();
+        $topPages = [];
 
-        $urlViews = ProductUrlAttribution::pageViewsByProductId($siteId, $fromDate, $toDate);
+        if (AnalyticsSchema::hasEventsTable()) {
+            try {
+                AnalyticsEvent::query()
+                    ->where('site_id', $siteId)
+                    ->where('product_id', $productId)
+                    ->whereIn('event_name', self::PRODUCT_EVENTS)
+                    ->whereBetween('event_date', [$fromDate, $toDate])
+                    ->select('event_name', DB::raw('COUNT(*) as total'))
+                    ->groupBy('event_name')
+                    ->get()
+                    ->each(function ($row) use (&$metrics) {
+                        $metrics[$row->event_name] = (int) $row->total;
+                    });
+
+                $daily = AnalyticsEvent::query()
+                    ->where('site_id', $siteId)
+                    ->where('product_id', $productId)
+                    ->whereIn('event_name', ['product_viewed', 'add_to_cart', 'order_placed'])
+                    ->whereBetween('event_date', [$fromDate, $toDate])
+                    ->select('event_date', 'event_name', DB::raw('COUNT(*) as total'))
+                    ->groupBy('event_date', 'event_name')
+                    ->orderBy('event_date')
+                    ->get()
+                    ->groupBy(fn ($row) => Carbon::parse($row->event_date)->toDateString());
+
+                $productSlug = $product->slug ? strtolower($product->slug) : null;
+                $topPages = AnalyticsEvent::query()
+                    ->where('site_id', $siteId)
+                    ->whereBetween('event_date', [$fromDate, $toDate])
+                    ->whereIn('event_name', ['product_viewed', 'page_view'])
+                    ->whereNotNull('page_url')
+                    ->where('page_url', '!=', '')
+                    ->where(function ($q) use ($productId, $productSlug) {
+                        $q->where('product_id', $productId);
+                        if ($productSlug) {
+                            $q->orWhere('page_url', 'like', '%/product/' . $productSlug . '%');
+                        }
+                    })
+                    ->select('page_url', DB::raw('COUNT(*) as views'))
+                    ->groupBy('page_url')
+                    ->orderByDesc('views')
+                    ->limit(15)
+                    ->get()
+                    ->map(fn ($r) => ['url' => $this->safePageUrl($r->page_url), 'views' => (int) $r->views])
+                    ->filter(fn ($row) => $row['url'] !== null)
+                    ->values()
+                    ->all();
+            } catch (Throwable $e) {
+                Log::warning('Analytics product detail metrics failed', [
+                    'site_id' => $siteId,
+                    'product_id' => $productId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $urlViews = $this->safeUrlPageViews($siteId, $fromDate, $toDate);
         $metrics['product_viewed'] = ProductUrlAttribution::mergeViewCount(
             (int) ($metrics['product_viewed'] ?? 0),
             (int) ($urlViews[$productId] ?? 0)
         );
-
-        $daily = AnalyticsEvent::query()
-            ->where('site_id', $siteId)
-            ->where('product_id', $productId)
-            ->whereIn('event_name', ['product_viewed', 'add_to_cart', 'order_placed'])
-            ->whereBetween('event_date', [$fromDate, $toDate])
-            ->select('event_date', 'event_name', DB::raw('COUNT(*) as total'))
-            ->groupBy('event_date', 'event_name')
-            ->orderBy('event_date')
-            ->get()
-            ->groupBy(fn ($row) => Carbon::parse($row->event_date)->toDateString());
 
         $series = [];
         for ($current = strtotime($fromDate); $current <= strtotime($toDate); $current += 86400) {
@@ -168,44 +185,7 @@ class AnalyticsProductInsightsService
             ];
         }
 
-        $productSlug = $product->slug ? strtolower($product->slug) : null;
-        $topPages = AnalyticsEvent::query()
-            ->where('site_id', $siteId)
-            ->whereBetween('event_date', [$fromDate, $toDate])
-            ->whereIn('event_name', ['product_viewed', 'page_view'])
-            ->whereNotNull('page_url')
-            ->where('page_url', '!=', '')
-            ->where(function ($q) use ($productId, $productSlug) {
-                $q->where('product_id', $productId);
-                if ($productSlug) {
-                    $q->orWhere('page_url', 'like', '%/product/' . $productSlug . '%');
-                }
-            })
-            ->select('page_url', DB::raw('COUNT(*) as views'))
-            ->groupBy('page_url')
-            ->orderByDesc('views')
-            ->limit(15)
-            ->get()
-            ->map(fn ($r) => ['url' => $this->safePageUrl($r->page_url), 'views' => (int) $r->views])
-            ->filter(fn ($row) => $row['url'] !== null)
-            ->values()
-            ->all();
-
-        $orderClass = Order::class;
-        $commerce = DB::table('stocks')
-            ->join('orders', function ($join) use ($orderClass) {
-                $join->on('stocks.model_id', '=', 'orders.id')
-                    ->where('stocks.model_type', '=', $orderClass);
-            })
-            ->where('stocks.product_id', $productId)
-            ->where('orders.active', Ask::YES)
-            ->where('orders.payment_status', PaymentStatus::PAID)
-            ->whereBetween('orders.order_datetime', [$fromAt, $toAt])
-            ->select(
-                DB::raw('SUM(stocks.quantity) as units'),
-                DB::raw('SUM(stocks.total) as revenue')
-            )
-            ->first();
+        $commerce = $this->productCommerceTotals($productId, $fromAt, $toAt);
 
         return [
             'product' => [
@@ -218,17 +198,119 @@ class AnalyticsProductInsightsService
             'daily_series' => $series,
             'top_pages' => $topPages,
             'commerce' => [
-                'units_sold' => (int) ($commerce->units ?? 0),
-                'revenue' => (float) ($commerce->revenue ?? 0),
+                'units_sold' => (int) ($commerce?->units ?? 0),
+                'revenue' => (float) ($commerce?->revenue ?? 0),
             ],
             'funnel' => [
                 ['step' => 'Product views', 'count' => $metrics['product_viewed'] ?? 0],
                 ['step' => 'Add to cart', 'count' => $metrics['add_to_cart'] ?? 0],
                 ['step' => 'Checkout started', 'count' => $metrics['checkout_started'] ?? 0],
                 ['step' => 'Order (tracked)', 'count' => ($metrics['order_placed'] ?? 0) + ($metrics['order_confirmed'] ?? 0)],
-                ['step' => 'Sold (store)', 'count' => (int) ($commerce->units ?? 0)],
+                ['step' => 'Sold (store)', 'count' => (int) ($commerce?->units ?? 0)],
             ],
         ];
+    }
+
+    /** @return Collection<int, Collection<int, object>> */
+    private function safeEventAggregation(int $siteId, string $fromDate, string $toDate): Collection
+    {
+        if (!AnalyticsSchema::hasEventsTable()) {
+            return collect();
+        }
+
+        try {
+            return ProductUrlAttribution::eventsGroupedByProductId(
+                $siteId,
+                $fromDate,
+                $toDate,
+                self::PRODUCT_EVENTS
+            );
+        } catch (Throwable $e) {
+            Log::warning('Analytics product event aggregation failed', [
+                'site_id' => $siteId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return collect();
+        }
+    }
+
+    /** @return array<int, int> */
+    private function safeUrlPageViews(int $siteId, string $fromDate, string $toDate): array
+    {
+        if (!AnalyticsSchema::hasEventsTable()) {
+            return [];
+        }
+
+        try {
+            return ProductUrlAttribution::pageViewsByProductId($siteId, $fromDate, $toDate);
+        } catch (Throwable $e) {
+            Log::warning('Analytics URL page view aggregation failed', [
+                'site_id' => $siteId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    private function productCommerceTotals(int $productId, Carbon $fromAt, Carbon $toAt): ?object
+    {
+        try {
+            $orderClass = Order::class;
+
+            return DB::table('stocks')
+                ->join('orders', function ($join) use ($orderClass) {
+                    $join->on('stocks.model_id', '=', 'orders.id')
+                        ->where('stocks.model_type', '=', $orderClass);
+                })
+                ->where('stocks.product_id', $productId)
+                ->where('orders.active', Ask::YES)
+                ->where('orders.payment_status', PaymentStatus::PAID)
+                ->whereBetween('orders.order_datetime', [$fromAt, $toAt])
+                ->select(
+                    DB::raw('SUM(stocks.quantity) as units'),
+                    DB::raw('SUM(stocks.total) as revenue')
+                )
+                ->first();
+        } catch (Throwable $e) {
+            Log::warning('Analytics product commerce totals failed', [
+                'product_id' => $productId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function salesAggregation(Carbon $fromAt, Carbon $toAt): Collection
+    {
+        try {
+            $orderClass = Order::class;
+
+            return DB::table('stocks')
+                ->join('orders', function ($join) use ($orderClass) {
+                    $join->on('stocks.model_id', '=', 'orders.id')
+                        ->where('stocks.model_type', '=', $orderClass);
+                })
+                ->where('orders.active', Ask::YES)
+                ->where('orders.payment_status', PaymentStatus::PAID)
+                ->whereBetween('orders.order_datetime', [$fromAt, $toAt])
+                ->select(
+                    'stocks.product_id',
+                    DB::raw('SUM(stocks.quantity) as units_sold'),
+                    DB::raw('SUM(stocks.total) as revenue')
+                )
+                ->groupBy('stocks.product_id')
+                ->get()
+                ->keyBy('product_id');
+        } catch (Throwable $e) {
+            Log::warning('Analytics product sales aggregation failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return collect();
+        }
     }
 
     private function safePageUrl(?string $url): ?string

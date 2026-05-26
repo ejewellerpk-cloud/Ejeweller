@@ -4,8 +4,10 @@ namespace App\Analytics\Http\Controllers\Admin;
 
 use App\Analytics\Repositories\EloquentAnalyticsSiteRepository;
 use App\Analytics\Services\AnalyticsProductInsightsService;
+use App\Analytics\Support\AnalyticsSchema;
 use App\Http\Controllers\Admin\AdminController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -79,6 +81,13 @@ class IntelligenceProductController extends AdminController
             'message' => $e->getMessage(),
             'exception' => $e::class,
         ]);
+
+        if ($e instanceof QueryException && !AnalyticsSchema::isInstalled()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Analytics tables are missing. Run: php artisan migrate',
+            ], 503);
+        }
 
         $message = config('app.debug')
             ? $e->getMessage()

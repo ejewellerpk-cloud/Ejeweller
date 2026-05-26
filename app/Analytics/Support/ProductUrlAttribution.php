@@ -73,6 +73,10 @@ class ProductUrlAttribution
      */
     public static function pageViewsByProductId(int $siteId, string $fromDate, string $toDate): array
     {
+        if (!AnalyticsSchema::hasEventsTable()) {
+            return [];
+        }
+
         $slugMap = self::slugToIdMap();
         $counts = [];
 
@@ -103,7 +107,10 @@ class ProductUrlAttribution
         string $toDate,
         array $eventNames
     ): Collection {
-        $slugMap = self::slugToIdMap();
+        if (!AnalyticsSchema::hasEventsTable()) {
+            return collect();
+        }
+
         $grouped = collect();
 
         AnalyticsEvent::query()
