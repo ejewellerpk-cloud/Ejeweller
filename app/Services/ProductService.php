@@ -580,17 +580,9 @@ class ProductService
             $sortBy      = $request->input('sort_by');
             $orderColumn = 'products.name';
             $orderType   = 'asc';
+            $sortByPrice = in_array($sortBy, ['price_low_to_high', 'price_high_to_low'], true);
             if ($sortBy === 'newest') {
-                $orderColumn = 'id';
-                $orderType   = 'desc';
-            } elseif ($sortBy === 'price_low_to_high') {
-                $orderColumn = 'products.variation_price';
-                $orderType   = 'asc';
-            } elseif ($sortBy === 'price_high_to_low') {
-                $orderColumn = 'products.variation_price';
-                $orderType   = 'desc';
-            } elseif ($sortBy === 'top_rated') {
-                $orderColumn = 'rating_star';
+                $orderColumn = 'products.id';
                 $orderType   = 'desc';
             } elseif ($sortBy === 'random') {
                 $orderColumn = 'random';
@@ -650,17 +642,28 @@ class ProductService
                     }
                 })->when($orderColumn === 'random', function ($query) {
                     $query->inRandomOrder();
+                })->when($sortByPrice, function ($query) use ($sortBy) {
+                    $direction = $sortBy === 'price_high_to_low' ? 'desc' : 'asc';
+                    $query->orderByRaw($this->categoryWiseListPriceExpression() . ' ' . $direction)
+                        ->orderBy('products.name', 'asc');
                 })->when($sortBy === 'top_rated', function ($query) {
-                    $query->orderByDesc('rating_star');
-                })->when($orderColumn !== 'random' && $sortBy !== 'top_rated', function ($query) use ($orderColumn, $orderType) {
-                    $query->orderBy($orderColumn, $orderType);
+                    $query->orderByRaw(
+                        'CASE WHEN rating_star_count > 0 THEN (rating_star / rating_star_count) ELSE 0 END DESC'
+                    )->orderByDesc('rating_star_count')->orderBy('products.name', 'asc');
                 })->when(
+                    $orderColumn !== 'random' && $sortBy !== 'top_rated' && !$sortByPrice,
+                    function ($query) use ($orderColumn, $orderType) {
+                        $query->orderBy($orderColumn, $orderType);
+                    }
+                )->when(
                     $request->has('min_price') && $request->has('max_price'),
                     function ($query) use ($request) {
-                        $query->whereBetween('variation_price', [
-                            (float) $request->input('min_price'),
-                            (float) $request->input('max_price'),
-                        ]);
+                        $min = (float) $request->input('min_price');
+                        $max = (float) $request->input('max_price');
+                        $query->whereRaw(
+                            $this->categoryWiseListPriceExpression() . ' BETWEEN ? AND ?',
+                            [$min, $max]
+                        );
                     }
                 )->paginate($perPage, ['*'], 'page', (int) $request->input('page', 1));
 
@@ -708,12 +711,55 @@ class ProductService
                     return $query->brand;
                 })->whereNotNull('id')->unique('id')->values()->all(),
                 'variations' => $variationArray,
-                'max_price'  => ceil($productCategory->max('variation_price') + 50),
+                'max_price'  => ceil($productCategory->max(fn ($product) => $this->productListPrice($product)) + 50),
             ]);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * SQL expression matching SimpleProductResource list price (lowest variation or selling price).
+     */
+    private function categoryWiseListPriceExpression(): string
+    {
+        return '(CASE WHEN EXISTS (
+                SELECT 1 FROM product_variations
+                WHERE product_variations.product_id = products.id
+            ) THEN COALESCE(
+                (SELECT MIN(product_variations.price) FROM product_variations
+                    WHERE product_variations.product_id = products.id
+                    AND product_variations.price IS NOT NULL
+                    AND product_variations.price > 0),
+                products.variation_price,
+                products.selling_price,
+                0
+            ) ELSE COALESCE(products.selling_price, products.variation_price, 0) END)';
+    }
+
+    /**
+     * @param Product $product
+     */
+    private function productListPrice($product): float
+    {
+        $hasVariations = $product->relationLoaded('variations')
+            ? $product->variations->isNotEmpty()
+            : $product->variations()->exists();
+
+        if ($hasVariations) {
+            $minVariation = $product->relationLoaded('variations')
+                ? $product->variations->min('price')
+                : $product->variations()->min('price');
+
+            if ($minVariation !== null && (float) $minVariation > 0) {
+                return (float) $minVariation;
+            }
+
+            return (float) ($product->variation_price ?? $product->selling_price ?? 0);
+        }
+
+        return (float) ($product->selling_price ?? $product->variation_price ?? 0);
     }
 
     /**

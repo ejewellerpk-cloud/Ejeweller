@@ -387,6 +387,9 @@ export default {
                 this.loading.isActive = true;
                 this.loadingContent.isActive = true;
                 this.isLoadingMore = false;
+                if (this.observer) {
+                    this.observer.disconnect();
+                }
             } else {
                 this.isLoadingMore = true;
             }
@@ -453,7 +456,18 @@ export default {
         selectSort(value) {
             this.filters.sortBy = value;
             this.closeDropdown();
-            this.loadProducts(1);
+            this.loadProducts(1).then(() => {
+                this.scrollToProductGrid();
+            });
+        },
+        scrollToProductGrid() {
+            this.$nextTick(() => {
+                const anchor = document.querySelector('.shop-page-sticky');
+                if (anchor) {
+                    const top = anchor.getBoundingClientRect().top + window.scrollY - 8;
+                    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                }
+            });
         },
         applyPrice() {
             let min = Number(this.priceDraft[0] ?? 0);

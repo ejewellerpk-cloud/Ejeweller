@@ -277,7 +277,7 @@ import appService from "../../../../services/appService";
 import targetService from "../../../../services/targetService";
 import alertService from "../../../../services/alertService";
 import LoadingComponent from "../../components/LoadingComponent.vue";
-
+import { bootstrapCheckoutAddress } from "../../../../services/checkoutAddressBootstrap";
 
 export default {
     name: "AddressComponent",
@@ -342,50 +342,39 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
-        setTimeout(() => {
-            this.callCountry();
-        }, 300);
+        bootstrapCheckoutAddress(this.$store, { guest: !this.logged })
+            .then((results) => {
+                const addresses = results[0] || [];
+                const countryMeta = results[1] || {};
+                const statesRes = results[2];
 
-        if (this.logged) {
-            this.$store.dispatch("frontendAddress/lists", {
-                search: {
-                    paginate: 0,
-                    order_column: "id",
-                    order_type: "asc",
+                if (statesRes?.data?.data) {
+                    this.address.states = statesRes.data.data;
                 }
-            }).then(() => {
-                this.loading.isActive = false;
-                if (this.logged && Object.keys(this.selectedAddress).length === 0) {
-                    const defaultAddress = this.pickDefaultAddress(this.$store.getters["frontendAddress/lists"]);
-                    if (defaultAddress) {
-                        this.activeAddress(defaultAddress);
+
+                if (countryMeta.calling_code) {
+                    this.address.form.country_code = countryMeta.calling_code;
+                    this.address.calling_code = countryMeta.calling_code;
+                    this.address.flag = countryMeta.flag_emoji || "";
+                }
+
+                if (this.logged) {
+                    if (this.slug === "shipping" && Object.keys(this.selectedAddress).length === 0) {
+                        const defaultAddress = this.pickDefaultAddress(
+                            addresses.length ? addresses : this.$store.getters["frontendAddress/lists"]
+                        );
+                        if (defaultAddress) {
+                            this.activeAddress(defaultAddress);
+                        }
                     }
+                } else {
+                    this.method(this.address.form);
                 }
-            }).catch(() => {
+            })
+            .catch(() => {})
+            .finally(() => {
                 this.loading.isActive = false;
             });
-        } else {
-            this.loading.isActive = false;
-            // For guest, immediately activate the form as the address
-            this.method(this.address.form);
-        }
-
-        this.loading.isActive = true;
-        this.$store.dispatch('frontendCountryCode/lists');
-        this.$store.dispatch('frontendSetting/lists').then(settingRes => {
-            this.$store.dispatch('frontendCountryCode/show', settingRes.data.data.company_country_code).then(res => {
-                this.address.form.country_code = res.data.data.calling_code;
-                this.address.calling_code = res.data.data.calling_code;
-                this.address.flag = res.data.data.flag_emoji;
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
-
-        this.callStates("Pakistan");
     },
     methods: {
         pickDefaultAddress: function (list) {

@@ -414,6 +414,15 @@ export const frontendCart = {
         paymentMethod: function (context, payload) {
             context.commit('paymentMethod', payload);
         },
+        recalculateTotals: function (context) {
+            context.commit("taxCalculation");
+            context.commit("shippingCharge", {
+                setting: context.rootState.frontendSetting.lists,
+                area: context.rootState.frontendOrderArea.lists,
+            });
+            context.commit("subtotal");
+            return Promise.resolve();
+        },
         resetCart: function (context) {
             axios.post('frontend/cart-track/clear', {
                 session_id: getSessionId()

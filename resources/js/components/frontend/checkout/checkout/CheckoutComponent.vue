@@ -50,8 +50,9 @@
                     }}</label>
             </div>
 
-            <AddressComponent v-if="orderType === orderTypeEnum.DELIVERY" :slug="'billing'"
-                              :title="$t('label.billing_address')" :show="billingStatus"
+            <AddressComponent v-if="orderType === orderTypeEnum.DELIVERY && !shippingAndBillingCheck"
+                              :slug="'billing'"
+                              :title="$t('label.billing_address')" :show="true"
                               :selectedAddress="getBillingAddress" :method="billingAddress"
                               :highlightInvalid="validationErrors.billing"/>
 
@@ -75,14 +76,14 @@
                         @click.prevent="selectPaymentMethod(cashOnDelivery)"
                         :class="Object.keys(paymentMethod).length > 0 && cashOnDelivery.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
                         class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
-                        <img class="h-6" :src="cashOnDelivery.image" alt="payment" />
+                        <img class="h-6" :src="cashOnDelivery.image" alt="payment" loading="lazy" decoding="async" />
                         <span class="text-xs font-medium">{{ cashOnDelivery.name }}</span>
                     </div>
 
                     <div v-if="profile.balance >= total" @click.prevent="selectPaymentMethod(credit)"
                         :class="Object.keys(paymentMethod).length > 0 && credit.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
                         class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
-                        <img class="h-6" :src="credit.image" alt="payment" />
+                        <img class="h-6" :src="credit.image" alt="payment" loading="lazy" decoding="async" />
                         <span class="text-xs font-medium">{{ credit.name }} ({{ profile.balance }})</span>
                     </div>
 
@@ -90,7 +91,7 @@
                         v-for="paymentGateway in paymentGateways" @click.prevent="selectPaymentMethod(paymentGateway)"
                         :class="Object.keys(paymentMethod).length > 0 && paymentGateway.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
                         class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
-                        <img class="h-6" :src="paymentGateway.image" alt="payment" />
+                        <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
                         <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
                     </div>
                 </div>
@@ -167,8 +168,6 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 import sourceEnum from "../../../../enums/modules/sourceEnum";
 import ENV from "../../../../config/env";
 import ActivityEnum from "../../../../enums/modules/activityEnum";
-import _ from "lodash";
-
 
 export default {
     name: "CheckoutComponent",
@@ -270,68 +269,82 @@ export default {
         next();
     },
     mounted() {
-        // Track Initiate Checkout event
-        const cartItems = this.$store.getters['frontendCart/lists'];
-        const cartTotal = this.$store.getters['frontendCart/total'];
-        pixelService.trackInitiateCheckout(cartItems, cartTotal);
-        trackCheckoutStarted(cartTotal, window.FACEBOOK_PIXEL_CURRENCY || 'PKR');
+        this.scheduleCheckoutAnalytics();
+        this.bootstrapCheckoutData();
+    },
+    methods: {
+        scheduleCheckoutAnalytics: function () {
+            const run = () => {
+                const cartItems = this.$store.getters['frontendCart/lists'];
+                const cartTotal = this.$store.getters['frontendCart/total'];
+                pixelService.trackInitiateCheckout(cartItems, cartTotal);
+                trackCheckoutStarted(cartTotal, window.FACEBOOK_PIXEL_CURRENCY || 'PKR');
+            };
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(run, { timeout: 2500 });
+            } else {
+                setTimeout(run, 0);
+            }
+        },
+        bootstrapCheckoutData: function () {
+            this.loading.isActive = true;
+            const activeStatus = this.enums.statusEnum.ACTIVE;
 
-        this.loading.isActive = true;
-        this.$store.dispatch('frontendOrderArea/lists').then(res => {
-            this.loading.isActive = false;
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
+            Promise.allSettled([
+                this.$store.dispatch('frontendOrderArea/lists'),
+                this.$store.dispatch('frontendOutlet/lists', { status: activeStatus }),
+                this.$store.dispatch('frontendPaymentGateway/lists', { status: activeStatus }),
+            ]).then((results) => {
+                if (results[1].status === 'fulfilled') {
+                    this.applyOutletList(results[1].value);
+                }
+                if (results[2].status === 'fulfilled') {
+                    this.applyPaymentGateways(results[2].value);
+                }
+                return this.$store.dispatch('frontendCart/recalculateTotals');
+            }).finally(() => {
+                this.loading.isActive = false;
+            });
+        },
+        applyPaymentGateways: function (res) {
+            const gateways = res?.data?.data || [];
+            this.paymentGateways = [];
+            this.credit = {};
+            this.cashOnDelivery = {};
 
-        this.loading.isActive = true;
-        this.$store.dispatch('frontendOutlet/lists', {
-            status : this.enums.statusEnum.ACTIVE
-        }).then(res => {
-            if (res.data.data.length === 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
+            gateways.forEach((gateway) => {
+                if (gateway.slug === 'credit') {
+                    this.credit = gateway;
+                } else if (gateway.slug === 'cashondelivery') {
+                    this.cashOnDelivery = gateway;
+                    if (this.setting.site_cash_on_delivery === this.ActivityEnum.ENABLE) {
+                        this.selectPaymentMethod(this.cashOnDelivery);
+                    }
+                } else {
+                    this.paymentGateways.push(gateway);
+                }
+            });
+        },
+        applyOutletList: function (res) {
+            const outlets = res?.data?.data || [];
+            if (outlets.length === 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
                 this.$store.dispatch('frontendCart/updateOrderType', this.orderTypeEnum.DELIVERY);
-            } else if (res.data.data.length > 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
-                // If the cached outlet no longer exists in the loaded list, clear it
+            } else if (outlets.length > 0 && this.orderType === this.orderTypeEnum.PICK_UP) {
                 const cachedOutlet = this.getOutletAddress;
                 if (cachedOutlet && cachedOutlet.id) {
-                    const outletExists = res.data.data.find(o => o.id === cachedOutlet.id);
+                    const outletExists = outlets.find((o) => o.id === cachedOutlet.id);
                     if (!outletExists) {
-                        this.modelOutlet = res.data.data[0];
-                        this.$store.dispatch('frontendCart/outletAddress', res.data.data[0]);
+                        this.modelOutlet = outlets[0];
+                        this.$store.dispatch('frontendCart/outletAddress', outlets[0]);
                     } else {
                         this.modelOutlet = cachedOutlet;
                     }
                 } else {
-                    this.modelOutlet = res.data.data[0];
-                    this.$store.dispatch('frontendCart/outletAddress', res.data.data[0]);
+                    this.modelOutlet = outlets[0];
+                    this.$store.dispatch('frontendCart/outletAddress', outlets[0]);
                 }
             }
-            this.loading.isActive = false;
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
-
-        this.loading.isActive = true;
-        this.$store.dispatch('frontendPaymentGateway/lists', { status: this.enums.statusEnum.ACTIVE }).then(res => {
-            if (res.data.data.length > 0) {
-                _.forEach(res.data.data, (gateway) => {
-                    if (gateway.slug === "credit") {
-                        this.credit = gateway;
-                    } else if (gateway.slug === "cashondelivery") {
-                        this.cashOnDelivery = gateway;
-                        if (this.setting.site_cash_on_delivery === this.ActivityEnum.ENABLE) {
-                            this.selectPaymentMethod(this.cashOnDelivery);
-                        }
-                    } else {
-                        this.paymentGateways.push(gateway);
-                    }
-                });
-            }
-            this.loading.isActive = false;
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
-    },
-    methods: {
+        },
         navigateBackToCart: function () {
             this.promptAbandonedCheckoutLeave(() => {
                 this.$router.push({ name: 'frontend.checkout.cartList' });
@@ -526,9 +539,10 @@ export default {
                 if (e && e.target) {
                     e.target.disabled = false;
                 }
-                if (typeof err.response.data.errors === 'object') {
-                    _.forEach(err.response.data.errors, (error) => {
-                        alertService.error(error[0]);
+                const fieldErrors = err.response?.data?.errors;
+                if (fieldErrors && typeof fieldErrors === 'object') {
+                    Object.values(fieldErrors).forEach((error) => {
+                        alertService.error(Array.isArray(error) ? error[0] : error);
                     });
                 } else {
                     alertService.error(err.response.data.message);

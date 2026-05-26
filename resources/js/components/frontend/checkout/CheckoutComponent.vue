@@ -127,17 +127,15 @@
 </template>
 
 <script>
-import CartListComponent from "./cartList/CartListComponent.vue";
 import router from "../../../router";
 import appService from "../../../services/appService";
-import CouponComponent from "./CouponComponent.vue";
 import { trackCheckoutAbandoned } from "../../../services/analyticsEcommerceBridge";
 import LoadingComponent from "../components/LoadingComponent.vue";
 import activityEnum from "../../../enums/modules/activityEnum";
 
 export default {
     name: "CheckoutComponent",
-    components: { LoadingComponent, CouponComponent, CartListComponent },
+    components: { LoadingComponent },
     provide() {
         return {
             promptAbandonedCheckoutLeave: (next) => this.promptAbandonedCheckoutLeave(next),
@@ -276,20 +274,14 @@ export default {
             this.currentRoute = to.path;
             this.checkGuestAccess();
         },
-        isList: {
-            deep: true,
-            handler(isListObject) {
-                if (!isListObject) {
-                    this.$router.push({ name: 'frontend.home' });
-                }
+        isList(isListFlag) {
+            if (!isListFlag) {
+                this.$router.push({ name: 'frontend.home' });
             }
         },
-        setting: {
-            deep: true,
-            handler() {
-                this.checkGuestAccess();
-            }
-        }
+        'setting.site_guest_checkout'() {
+            this.checkGuestAccess();
+        },
     }
 }
 </script>
