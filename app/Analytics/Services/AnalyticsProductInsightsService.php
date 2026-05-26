@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AnalyticsProductInsightsService
 {
@@ -33,7 +34,7 @@ class AnalyticsProductInsightsService
 
         $eventAgg = AnalyticsEvent::query()
             ->where('site_id', $siteId)
-            ->whereBetween('occurred_at', [$fromAt, $toAt])
+            ->whereBetween('event_date', [$fromAt->toDateString(), $toAt->toDateString()])
             ->whereNotNull('product_id')
             ->whereIn('event_name', self::PRODUCT_EVENTS)
             ->select('product_id', 'event_name', DB::raw('COUNT(*) as total'))
@@ -113,44 +114,47 @@ class AnalyticsProductInsightsService
         $tz = config('app.timezone', 'UTC');
         $fromAt = Carbon::parse($from, $tz)->startOfDay();
         $toAt = Carbon::parse($to, $tz)->endOfDay();
+        $fromDate = $fromAt->toDateString();
+        $toDate = $toAt->toDateString();
 
         $product = Product::query()
             ->withSum('stockItems as stock_qty', 'quantity')
             ->findOrFail($productId);
 
-        $metrics = [];
-        foreach (self::PRODUCT_EVENTS as $eventName) {
-            $metrics[$eventName] = (int) AnalyticsEvent::query()
-                ->where('site_id', $siteId)
-                ->where('product_id', $productId)
-                ->where('event_name', $eventName)
-                ->whereBetween('occurred_at', [$fromAt, $toAt])
-                ->count();
-        }
+        $metrics = array_fill_keys(self::PRODUCT_EVENTS, 0);
+        AnalyticsEvent::query()
+            ->where('site_id', $siteId)
+            ->where('product_id', $productId)
+            ->whereIn('event_name', self::PRODUCT_EVENTS)
+            ->whereBetween('event_date', [$fromDate, $toDate])
+            ->select('event_name', DB::raw('COUNT(*) as total'))
+            ->groupBy('event_name')
+            ->get()
+            ->each(function ($row) use (&$metrics) {
+                $metrics[$row->event_name] = (int) $row->total;
+            });
 
         $daily = AnalyticsEvent::query()
             ->where('site_id', $siteId)
             ->where('product_id', $productId)
             ->whereIn('event_name', ['product_viewed', 'add_to_cart', 'order_placed'])
-            ->whereBetween('occurred_at', [$fromAt, $toAt])
-            ->select(
-                DB::raw('DATE(occurred_at) as day'),
-                'event_name',
-                DB::raw('COUNT(*) as total')
-            )
-            ->groupBy('day', 'event_name')
-            ->orderBy('day')
-            ->get();
+            ->whereBetween('event_date', [$fromDate, $toDate])
+            ->select('event_date', 'event_name', DB::raw('COUNT(*) as total'))
+            ->groupBy('event_date', 'event_name')
+            ->orderBy('event_date')
+            ->get()
+            ->groupBy(fn ($row) => Carbon::parse($row->event_date)->toDateString());
 
         $series = [];
-        for ($current = strtotime($from); $current <= strtotime($to); $current += 86400) {
+        for ($current = strtotime($fromDate); $current <= strtotime($toDate); $current += 86400) {
             $day = date('Y-m-d', $current);
-            $dayRows = $daily->where('day', $day);
+            $dayRows = $daily->get($day, collect());
+            $byName = $dayRows->pluck('total', 'event_name');
             $series[] = [
                 'date' => $day,
-                'views' => (int) $dayRows->where('event_name', 'product_viewed')->sum('total'),
-                'add_to_cart' => (int) $dayRows->where('event_name', 'add_to_cart')->sum('total'),
-                'orders' => (int) $dayRows->where('event_name', 'order_placed')->sum('total'),
+                'views' => (int) ($byName['product_viewed'] ?? 0),
+                'add_to_cart' => (int) ($byName['add_to_cart'] ?? 0),
+                'orders' => (int) ($byName['order_placed'] ?? 0),
             ];
         }
 
@@ -158,14 +162,17 @@ class AnalyticsProductInsightsService
             ->where('site_id', $siteId)
             ->where('product_id', $productId)
             ->where('event_name', 'product_viewed')
-            ->whereBetween('occurred_at', [$fromAt, $toAt])
+            ->whereBetween('event_date', [$fromDate, $toDate])
             ->whereNotNull('page_url')
+            ->where('page_url', '!=', '')
             ->select('page_url', DB::raw('COUNT(*) as views'))
             ->groupBy('page_url')
             ->orderByDesc('views')
             ->limit(15)
             ->get()
-            ->map(fn ($r) => ['url' => $r->page_url, 'views' => (int) $r->views])
+            ->map(fn ($r) => ['url' => $this->safePageUrl($r->page_url), 'views' => (int) $r->views])
+            ->filter(fn ($row) => $row['url'] !== null)
+            ->values()
             ->all();
 
         $orderClass = Order::class;
@@ -206,5 +213,19 @@ class AnalyticsProductInsightsService
                 ['step' => 'Sold (store)', 'count' => (int) ($commerce->units ?? 0)],
             ],
         ];
+    }
+
+    private function safePageUrl(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $url);
+        if ($clean === false) {
+            return null;
+        }
+
+        return Str::limit($clean, 500, '…');
     }
 }
