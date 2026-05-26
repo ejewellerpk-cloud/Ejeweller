@@ -55,88 +55,69 @@
                         <i class="fa-solid fa-xmark text-sm"></i>
                     </button>
                     
-                    <div class="bg-gradient-to-br from-primary/10 to-orange-500/10 px-4 pt-5 pb-4 flex flex-col items-center text-center">
-                        <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-md mb-2.5">
-                            <i class="fa-solid fa-cart-arrow-down text-primary text-xl"></i>
+                    <div class="bg-gradient-to-br from-primary/10 to-orange-500/10 px-3 pt-3 pb-2.5 flex items-center gap-2.5 pr-10">
+                        <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
+                            <i class="fa-solid fa-cart-arrow-down text-primary text-base"></i>
                         </div>
-                        <h3 class="text-lg font-black text-heading leading-tight tracking-tight">Wait! Don't Miss Out!</h3>
-                        <p class="text-xs text-gray-500 font-medium mt-0.5">Complete your order to lock in these benefits</p>
+                        <div class="text-left min-w-0">
+                            <h3 class="text-base font-black text-heading leading-tight">Wait! Don't Miss Out!</h3>
+                            <p class="text-[11px] text-gray-500 font-medium leading-tight">Complete your order now</p>
+                        </div>
                     </div>
                     
-                    <div class="px-4 py-4 flex flex-col gap-3">
+                    <div class="px-3 py-2.5 flex flex-col gap-2">
                         
-                        <div v-if="totalSavings > 0" class="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
-                                <i class="fa-solid fa-piggy-bank text-sm"></i>
-                            </div>
-                            <div class="flex flex-col text-left min-w-0">
-                                <span class="text-[10px] text-emerald-600 font-bold uppercase tracking-wide leading-none mb-0.5">Your Total Savings</span>
-                                <span class="text-base font-extrabold text-emerald-700 leading-tight">
-                                    {{
-                                        currencyFormat(totalSavings, setting.site_digit_after_decimal_point,
-                                            setting.site_default_currency_symbol, setting.site_currency_position)
-                                    }} Saved!
-                                </span>
-                            </div>
+                        <div v-if="totalSavings > 0" class="bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5 flex items-center gap-2">
+                            <i class="fa-solid fa-piggy-bank text-emerald-600 text-xs shrink-0"></i>
+                            <span class="text-[11px] font-extrabold text-emerald-700 leading-tight min-w-0">
+                                {{
+                                    currencyFormat(totalSavings, setting.site_digit_after_decimal_point,
+                                        setting.site_default_currency_symbol, setting.site_currency_position)
+                                }} saved
+                            </span>
                         </div>
 
-                        <div v-if="qualifiesForFreeShipping" class="bg-blue-50 border border-blue-100 rounded-xl p-2.5 flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
-                                <i class="fa-solid fa-truck-fast text-sm"></i>
+                        <div v-if="qualifiesForFreeShipping" class="bg-blue-50 border border-blue-100 rounded-lg px-2 py-1.5 flex items-center gap-2">
+                            <i class="fa-solid fa-truck-fast text-blue-600 text-xs shrink-0"></i>
+                            <span class="text-[11px] font-extrabold text-blue-700 leading-tight">FREE shipping on this order</span>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-100 bg-[#F7F7FC] p-2 flex items-center gap-2">
+                            <div class="flex items-center gap-1 overflow-x-auto scrollbar-none min-w-0 flex-1">
+                                <div v-for="(item, idx) in cartLists" :key="idx" class="w-9 h-9 rounded-md border border-gray-100 overflow-hidden relative shrink-0 bg-gray-50">
+                                    <img :src="item.image" alt="cart item" class="w-full h-full object-cover" />
+                                    <span class="absolute bottom-0 right-0 bg-primary text-white text-[7px] font-black px-0.5 leading-none">x{{ item.quantity }}</span>
+                                </div>
                             </div>
-                            <div class="flex flex-col text-left min-w-0">
-                                <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wide leading-none mb-0.5">Bonus unlocked</span>
-                                <span class="text-sm font-extrabold text-blue-700 leading-tight">FREE SHIPPING on this order!</span>
+                            <div class="shrink-0 pl-2 border-l border-gray-200 flex flex-col gap-0.5 text-right">
+                                <div class="text-[9px] text-gray-400 font-bold uppercase leading-none">{{ $t('label.quantity') }}: <span class="text-heading">{{ cartTotalQuantity }}</span></div>
+                                <div class="text-[9px] text-gray-400 font-bold uppercase leading-none">{{ $t('label.total') }}: <span class="text-primary text-xs font-extrabold">{{
+                                    currencyFormat(cartTotal, setting.site_digit_after_decimal_point,
+                                        setting.site_default_currency_symbol, setting.site_currency_position)
+                                }}</span></div>
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-1.5">
-                            <h4 class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-left">Items in your cart</h4>
-                            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
-                                <div v-for="(item, idx) in cartLists" :key="idx" class="w-12 h-12 rounded-lg border border-gray-100 overflow-hidden relative shrink-0 bg-gray-50">
-                                    <img :src="item.image" alt="cart item" class="w-full h-full object-cover" />
-                                    <span class="absolute bottom-0 right-0 bg-primary text-white text-[8px] font-black px-1 py-px rounded-tl leading-none">x{{ item.quantity }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-gray-100 bg-[#F7F7FC] px-3 py-2.5 flex items-center justify-between gap-3">
-                            <div class="flex flex-col text-left min-w-0">
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none mb-0.5">{{ $t('label.quantity') }}</span>
-                                <span class="text-sm font-extrabold text-heading leading-tight">{{ cartTotalQuantity }}</span>
-                            </div>
-                            <div class="h-8 w-px bg-gray-200 shrink-0"></div>
-                            <div class="flex flex-col text-right min-w-0">
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none mb-0.5">{{ $t('label.total') }}</span>
-                                <span class="text-base font-extrabold text-primary leading-tight">
-                                    {{
-                                        currencyFormat(cartTotal, setting.site_digit_after_decimal_point,
-                                            setting.site_default_currency_symbol, setting.site_currency_position)
-                                    }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2">
                             <button @click.prevent="showAbandonedModal = false; abandonedNextCallback = null" type="button" 
-                                class="abandoned-complete-btn relative overflow-hidden w-full h-10 rounded-full bg-primary hover:bg-primary/95 text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-transform duration-300 active:scale-[0.98]">
-                                <i class="fa-solid fa-circle-check relative z-[1]"></i>
+                                class="checkout-cta-glow-btn w-full h-9 rounded-full bg-primary hover:bg-primary/95 text-white text-xs font-bold flex items-center justify-center gap-1 transition-transform duration-300 active:scale-[0.98]">
+                                <i class="fa-solid fa-circle-check relative z-[1] text-sm"></i>
                                 <span class="relative z-[1]">Complete My Order</span>
                             </button>
                             <button @click.prevent="dismissModalAndLeave" type="button" 
-                                class="w-full h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-red-500 font-semibold text-xs transition-all duration-300 active:scale-[0.98]">
+                                class="w-full h-8 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-red-500 font-semibold text-[11px] transition-all duration-300 active:scale-[0.98]">
                                 Lose Savings & Leave
                             </button>
                         </div>
 
-                        <div class="pt-2.5 border-t border-gray-100 text-center text-[11px] text-gray-400 font-medium leading-snug">
-                            Any Questions or issues?
+                        <p class="text-center text-[10px] text-gray-400 leading-tight">
+                            Questions?
                             <a :href="'https://api.whatsapp.com/send?phone=' + setting.whatsapp_calling_code + setting.whatsapp_number + '&text=' + encodeURIComponent('Hi, I need assistance with my checkout.')" 
                                target="_blank" 
-                               class="text-primary hover:underline font-bold inline-flex items-center gap-0.5 ml-0.5">
-                                <i class="fa-brands fa-whatsapp text-emerald-500"></i> Contact us
+                               class="text-primary hover:underline font-bold inline-flex items-center gap-0.5">
+                                <i class="fa-brands fa-whatsapp text-emerald-500"></i> WhatsApp
                             </a>
-                        </div>
+                        </p>
 
                     </div>
                 </div>
@@ -312,73 +293,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-.abandoned-complete-btn {
-    animation: abandonedBtnGlow 2.2s ease-in-out infinite;
-}
-
-.abandoned-complete-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    background: linear-gradient(
-        105deg,
-        transparent 30%,
-        rgba(255, 255, 255, 0.55) 50%,
-        transparent 70%
-    );
-    background-size: 220% 100%;
-    animation: abandonedBtnShimmer 2.4s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 0;
-}
-
-.abandoned-complete-btn::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 9999px;
-    border: 2px solid rgba(255, 255, 255, 0.45);
-    opacity: 0;
-    animation: abandonedBtnRing 2.2s ease-out infinite;
-    pointer-events: none;
-    z-index: 0;
-}
-
-@keyframes abandonedBtnShimmer {
-    0%, 100% {
-        background-position: 200% 0;
-        opacity: 0.35;
-    }
-    50% {
-        background-position: -200% 0;
-        opacity: 1;
-    }
-}
-
-@keyframes abandonedBtnGlow {
-    0%, 100% {
-        box-shadow:
-            0 3px 12px rgba(253, 139, 14, 0.35),
-            0 0 0 0 rgba(253, 139, 14, 0.35);
-    }
-    50% {
-        box-shadow:
-            0 6px 24px rgba(253, 139, 14, 0.6),
-            0 0 0 5px rgba(253, 139, 14, 0.15);
-    }
-}
-
-@keyframes abandonedBtnRing {
-    0% {
-        opacity: 0.7;
-        transform: scale(1);
-    }
-    70%, 100% {
-        opacity: 0;
-        transform: scale(1.12);
-    }
-}
-</style>

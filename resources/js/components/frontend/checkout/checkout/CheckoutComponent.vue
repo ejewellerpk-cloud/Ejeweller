@@ -107,8 +107,8 @@
                 </button>
 
                 <button v-else @click.prevent="confirmOrder"
-                    class="field-button w-fit font-semibold tracking-wide normal-case">
-                    {{ $t('button.confirm_order') }}
+                    class="checkout-cta-glow-btn field-button w-fit font-semibold tracking-wide normal-case">
+                    <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
                 </button>
             </div>
         </div>
@@ -131,8 +131,8 @@
                 </button>
 
                 <button v-else @click.prevent="confirmOrder($event)"
-                    class="field-button font-semibold tracking-wide normal-case">
-                    {{ $t('button.confirm_order') }}
+                    class="checkout-cta-glow-btn field-button font-semibold tracking-wide normal-case">
+                    <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
                 </button>
             </div>
         </div>

@@ -336,6 +336,75 @@
         @apply font-bold text-center w-full px-6 h-12 leading-12 rounded-full bg-primary text-white capitalize
     }
 
+    .checkout-cta-glow-btn {
+        @apply relative overflow-hidden;
+        animation: checkoutCtaGlow 2.2s ease-in-out infinite;
+    }
+
+    .checkout-cta-glow-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 9999px;
+        background: linear-gradient(
+            105deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.55) 50%,
+            transparent 70%
+        );
+        background-size: 220% 100%;
+        animation: checkoutCtaShimmer 2.4s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .checkout-cta-glow-btn::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 9999px;
+        border: 2px solid rgba(255, 255, 255, 0.45);
+        opacity: 0;
+        animation: checkoutCtaRing 2.2s ease-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes checkoutCtaShimmer {
+        0%, 100% {
+            background-position: 200% 0;
+            opacity: 0.35;
+        }
+        50% {
+            background-position: -200% 0;
+            opacity: 1;
+        }
+    }
+
+    @keyframes checkoutCtaGlow {
+        0%, 100% {
+            box-shadow:
+                0 3px 12px rgba(253, 139, 14, 0.35),
+                0 0 0 0 rgba(253, 139, 14, 0.35);
+        }
+        50% {
+            box-shadow:
+                0 6px 24px rgba(253, 139, 14, 0.6),
+                0 0 0 5px rgba(253, 139, 14, 0.15);
+        }
+    }
+
+    @keyframes checkoutCtaRing {
+        0% {
+            opacity: 0.7;
+            transform: scale(1);
+        }
+        70%, 100% {
+            opacity: 0;
+            transform: scale(1.12);
+        }
+    }
+
     .field-checkbox {
         @apply flex items-center pt-1 w-fit cursor-pointer
     }
