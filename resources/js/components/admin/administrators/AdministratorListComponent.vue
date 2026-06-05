@@ -139,6 +139,12 @@
                 </div>
             </div>
         </div>
+
+        <AllUserSessionsComponent
+            v-if="permissionChecker('administrators_show')"
+            api-prefix="administrator"
+            show-route="admin.administrators.show"
+        />
     </div>
 </template>
 <script>
@@ -159,6 +165,7 @@ import ExportComponent from "../components/buttons/export/ExportComponent";
 import print from 'vue3-print-nb';
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
+import AllUserSessionsComponent from "../components/AllUserSessionsComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -178,6 +185,7 @@ export default {
         print,
         PrintComponent,
         ExcelComponent,
+        AllUserSessionsComponent,
     },
     data() {
         return {

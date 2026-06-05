@@ -135,6 +135,12 @@
                 </div>
             </div>
         </div>
+
+        <AllUserSessionsComponent
+            v-if="permissionChecker('customers_show')"
+            api-prefix="customer"
+            show-route="admin.customers.show"
+        />
     </div>
 </template>
 <script>
@@ -155,6 +161,7 @@ import FilterComponent from "../components/buttons/collapse/FilterComponent";
 import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
+import AllUserSessionsComponent from "../components/AllUserSessionsComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -173,6 +180,7 @@ export default {
         ExportComponent,
         PrintComponent,
         ExcelComponent,
+        AllUserSessionsComponent,
     },
     data() {
         return {

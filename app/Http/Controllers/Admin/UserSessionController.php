@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\UserSessionResource;
+use App\Http\Resources\UserSessionWithUserResource;
 use App\Models\User;
 use App\Services\UserSessionService;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +17,36 @@ class UserSessionController extends Controller
 {
     public function __construct(private UserSessionService $userSessionService)
     {
+    }
+
+    public function indexAllAdministrators(PaginateRequest $request): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        return $this->indexAll($request, 'administrator');
+    }
+
+    public function indexAllCustomers(PaginateRequest $request): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        return $this->indexAll($request, 'customer');
+    }
+
+    public function indexAllEmployees(PaginateRequest $request): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        return $this->indexAll($request, 'employee');
+    }
+
+    public function indexAll(PaginateRequest $request, string $group): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        try {
+            $this->userSessionService->authorizeAdminCanListAllSessions($request->user(), $group);
+
+            $sessions = $this->userSessionService->listAllForGroup($group, $request);
+
+            return UserSessionWithUserResource::collection($sessions)->additional([
+                'total_devices' => $sessions->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->errorResponse($exception);
+        }
     }
 
     public function index(Request $request, User $user): JsonResponse

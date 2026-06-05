@@ -672,6 +672,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::post('/change-password/{administrator}', [AdministratorController::class, 'changePassword']);
         Route::post('/change-image/{administrator}', [AdministratorController::class, 'changeImage']);
         Route::get('/my-order/{administrator}', [AdministratorController::class, 'myOrder']);
+        Route::get('/sessions', [UserSessionController::class, 'indexAllAdministrators']);
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);
@@ -692,6 +693,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::post('/change-password/{customer}', [CustomerController::class, 'changePassword']);
         Route::post('/change-image/{customer}', [CustomerController::class, 'changeImage']);
         Route::get('/my-order/{customer}', [CustomerController::class, 'myOrder']);
+        Route::get('/sessions', [UserSessionController::class, 'indexAllCustomers']);
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);
@@ -712,6 +714,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::post('/change-password/{employee}', [EmployeeController::class, 'changePassword']);
         Route::post('/change-image/{employee}', [EmployeeController::class, 'changeImage']);
         Route::get('/my-order/{employee}', [EmployeeController::class, 'myOrder']);
+        Route::get('/sessions', [UserSessionController::class, 'indexAllEmployees']);
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);

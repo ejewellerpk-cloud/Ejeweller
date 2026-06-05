@@ -143,6 +143,12 @@
                 </div>
             </div>
         </div>
+
+        <AllUserSessionsComponent
+            v-if="permissionChecker('employees_show')"
+            api-prefix="employee"
+            show-route="admin.employees.show"
+        />
     </div>
 </template>
 <script>
@@ -163,6 +169,7 @@ import ExportComponent from "../components/buttons/export/ExportComponent";
 import print from "vue3-print-nb";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
+import AllUserSessionsComponent from "../components/AllUserSessionsComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -181,6 +188,7 @@ export default {
         SmIconViewComponent,
         PrintComponent,
         ExcelComponent,
+        AllUserSessionsComponent,
     },
     data() {
         return {

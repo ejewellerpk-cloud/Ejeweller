@@ -74,6 +74,7 @@ return [
         "review"                     => "Review",
         "product"                    => "Product",
         "active_devices"             => "Active Devices",
+        "device_session_history"     => "Device Session History",
         "device"                     => "Device",
         "browser"                    => "Browser",
         "ip_address"                 => "IP Address",
