@@ -352,62 +352,13 @@ export default {
         );
     },
     handleSlide: function (id) {
-        console.log("[appService.handleSlide] start", { id });
-
         const targetElement = document.querySelector(`#${id}`);
 
         if (!targetElement) {
-            console.error("[appService.handleSlide] panel not found", { id });
             return;
         }
 
-        console.log("[appService.handleSlide] panel found", {
-            id,
-            visibility: targetElement.style.visibility,
-            height: targetElement.style.height,
-            scrollHeight: targetElement.scrollHeight,
-            offsetHeight: targetElement.offsetHeight,
-            clientHeight: targetElement.clientHeight,
-        });
-
-        targetElement.classList.add(
-            "transition-all",
-            "duration-300",
-            "ease-in-out"
-        );
-
-        if (targetElement.style.visibility === "visible") {
-            console.log("[appService.handleSlide] closing panel", { id });
-            targetElement.style.height = "0px";
-            targetElement.style.overflow = "hidden";
-            targetElement.style.opacity = "0";
-            targetElement.style.visibility = "hidden";
-            return;
-        }
-
-        targetElement.style.visibility = "hidden";
-        targetElement.style.height = "auto";
-        targetElement.style.overflow = "hidden";
-        const fullHeight = targetElement.scrollHeight;
-        targetElement.style.height = "0px";
-
-        void targetElement.offsetHeight;
-
-        console.log("[appService.handleSlide] opening panel", { id, fullHeight });
-
-        targetElement.style.height = fullHeight + "px";
-        targetElement.style.opacity = "1";
-        targetElement.style.visibility = "visible";
-
-        setTimeout(() => {
-            targetElement.style.overflow = "visible";
-            targetElement.style.height = "auto";
-            console.log("[appService.handleSlide] open complete", {
-                id,
-                height: targetElement.style.height,
-                visibility: targetElement.style.visibility,
-            });
-        }, 300);
+        targetElement.classList.toggle("is-open");
     },
     handleTab: function (event, targetID, targetButton, targetDiv, active) {
         const targetBtns = document.querySelectorAll(targetButton);

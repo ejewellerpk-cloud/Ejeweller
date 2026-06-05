@@ -1451,7 +1451,14 @@
     }
 
     .table-filter-div {
-        @apply h-0 overflow-hidden transition-all duration-500 ease-linear
+        @apply max-h-0 overflow-hidden opacity-0 invisible transition-all duration-300 ease-in-out;
+    }
+
+    .table-filter-div.is-open {
+        max-height: 100rem;
+        overflow: visible;
+        opacity: 1;
+        visibility: visible;
     }
 
     /* TOOLTIP */

@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <div class="table-filter-div" :id="filterId" :style="filterPanelStyles">
+        <div class="table-filter-div" :class="{ 'is-open': isFilterOpen }" :id="filterId">
             <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                 <div class="row">
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -212,18 +212,6 @@ export default {
         },
         paginationPage: function () {
             return this.$store.getters["userSession/allPage"];
-        },
-        filterPanelStyles: function () {
-            if (!this.isFilterOpen) {
-                return {};
-            }
-
-            return {
-                height: "auto",
-                overflow: "visible",
-                opacity: "1",
-                visibility: "visible",
-            };
         },
     },
     mounted() {

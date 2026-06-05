@@ -11,10 +11,6 @@ export default {
     emits: ["click"],
     methods: {
         handleClick: function (event) {
-            console.log("[FilterComponent] filter button clicked", {
-                target: event?.target,
-                currentTarget: event?.currentTarget,
-            });
             this.$emit("click", event);
         },
     },
