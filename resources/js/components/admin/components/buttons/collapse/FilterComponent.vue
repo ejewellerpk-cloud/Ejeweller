@@ -1,5 +1,5 @@
 <template>
-    <button class="db-card-filter-btn table-filter-btn">
+    <button type="button" class="db-card-filter-btn table-filter-btn" v-bind="$attrs">
         <i class="lab lab-line-filter lab-font-size-14"></i>
         <span>{{ $t('button.filter') }}</span>
     </button>
@@ -7,6 +7,7 @@
 
 <script>
 export default {
-    name: "FilterComponent"
+    name: "FilterComponent",
+    inheritAttrs: false,
 }
 </script>
