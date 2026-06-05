@@ -40,33 +40,33 @@
             </div>
         </div>
         <div class="flex flex-col items-start sm:flex-row sm:items-center gap-1.5 mb-6">
-            <button type="button" @click="handleTab($event, '#profile', '.profile-tabBtn', '.profile-tabDiv', 'active')"
-                class="profile-tabBtn active w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+            <button type="button" @click="activeTab = 'profile'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'profile' }]">
                 <i class="lab lab-line-user"></i>
                 <span class="capitalize text-sm">{{ $t("button.profile") }}</span>
             </button>
-            <button type="button" @click="handleTab($event, '#security', '.profile-tabBtn', '.profile-tabDiv', 'active')"
-                class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+            <button type="button" @click="activeTab = 'security'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'security' }]">
                 <i class="lab lab-line-unlock"></i>
                 <span class="capitalize text-sm">{{ $t("button.security") }}</span>
             </button>
-            <button type="button" @click="handleTab($event, '#sessions', '.profile-tabBtn', '.profile-tabDiv', 'active')"
-                class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+            <button type="button" @click="activeTab = 'sessions'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'sessions' }]">
                 <i class="lab lab-line-monitor"></i>
                 <span class="capitalize text-sm">{{ $t("button.active_devices") }}</span>
             </button>
-            <button type="button" @click="handleTab($event, '#address', '.profile-tabBtn', '.profile-tabDiv', 'active')"
-                class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+            <button type="button" @click="activeTab = 'address'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'address' }]">
                 <i class="lab lab-line-location"></i>
                 <span class="capitalize text-sm">{{ $t("button.address") }}</span>
             </button>
-            <button type="button" @click="handleTab($event, '#orders', '.profile-tabBtn', '.profile-tabDiv', 'active')"
-                class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+            <button type="button" @click="activeTab = 'orders'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'orders' }]">
                 <i class="lab lab-line-reserve"></i>
                 <span class="capitalize text-sm">{{ $t("button.my_orders") }}</span>
             </button>
         </div>
-        <div id="profile" class="profile-tabDiv active">
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'profile' }">
             <div class="db-card">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t("label.basic_info") }}</h3>
@@ -110,7 +110,7 @@
             </div>
         </div>
 
-        <div id="security" class="profile-tabDiv">
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'security' }">
             <div class="db-card">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t("label.change_password") }}</h3>
@@ -155,14 +155,14 @@
                 </div>
             </div>
         </div>
-        <div id="sessions" class="profile-tabDiv">
-            <UserSessionsComponent :user-id="$route.params.id" api-prefix="administrator" mode="admin" />
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'sessions' }">
+            <UserSessionsComponent v-if="activeTab === 'sessions'" :user-id="$route.params.id" api-prefix="administrator" mode="admin" />
         </div>
-        <div id="address" class="profile-tabDiv">
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'address' }">
             <AdministratorAddressList :props="$route.params.id" />
         </div>
 
-        <div id="orders" class="profile-tabDiv">
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'orders' }">
             <div class="db-card">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('label.orders') }}</h3>
@@ -261,6 +261,7 @@ export default {
     },
     data() {
         return {
+            activeTab: "profile",
             loading: {
                 isActive: false,
             },
@@ -329,9 +330,6 @@ export default {
         },
         orderStatusClass: function (status) {
             return appService.orderStatusClass(status);
-        },
-        handleTab: function (event, targetID, targetButton, targetDiv, activeClass) {
-            return appService.handleTab(event, targetID, targetButton, targetDiv, activeClass);
         },
         changePreviewImage: function (e) {
             if (e.target.files[0]) {

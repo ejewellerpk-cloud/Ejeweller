@@ -33,6 +33,10 @@
                 {{ $t("label.loading") || "Loading..." }}
             </div>
 
+            <div v-else-if="loadError" class="py-8 text-center">
+                <span class="text-sm text-[#FB4E4E]">{{ loadError }}</span>
+            </div>
+
             <div v-else-if="sessions.length === 0" class="py-8 text-center">
                 <span class="text-sm text-[#6E7191]">{{ $t("message.no_data_found") }}</span>
             </div>
@@ -114,6 +118,7 @@ export default {
             loading: {
                 isActive: false,
             },
+            loadError: null,
         };
     },
     computed: {
@@ -130,14 +135,16 @@ export default {
     methods: {
         loadSessions: function () {
             this.loading.isActive = true;
+            this.loadError = null;
             this.$store.dispatch("userSession/lists", {
                 mode: this.mode,
                 apiPrefix: this.apiPrefix,
                 userId: this.userId,
             }).then(() => {
                 this.loading.isActive = false;
-            }).catch(() => {
+            }).catch((err) => {
                 this.loading.isActive = false;
+                this.loadError = err.response?.data?.message || this.$t("error.something_wrong");
             });
         },
         formatDate: function (value) {
