@@ -274,6 +274,18 @@ export default {
             return appService.phoneNumber(e);
         },
         handleSlide: function (id) {
+            console.log("[AdministratorList] handleSlide called", { id, listView: this.listView });
+
+            const targetElement = document.querySelector(`#${id}`);
+            console.log("[AdministratorList] filter panel element", {
+                found: !!targetElement,
+                id,
+                visibility: targetElement?.style?.visibility,
+                height: targetElement?.style?.height,
+                scrollHeight: targetElement?.scrollHeight,
+                classList: targetElement ? [...targetElement.classList] : [],
+            });
+
             return appService.handleSlide(id);
         },
         search: function () {
