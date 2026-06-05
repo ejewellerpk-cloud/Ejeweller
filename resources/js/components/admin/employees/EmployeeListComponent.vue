@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12">
-        <div class="db-card">
+        <div class="db-card" v-if="listView === 'users'">
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t("menu.employees") }}</h3>
                 <div class="db-card-filter">
@@ -14,6 +14,15 @@
                             <ExcelComponent :method="xls" />
                         </div>
                     </div>
+                    <button
+                        v-if="permissionChecker('employees_show')"
+                        type="button"
+                        class="db-btn py-2 h-[37px] text-white bg-gray-600"
+                        @click="listView = 'sessions'"
+                    >
+                        <i class="lab lab-line-monitor lab-font-size-16"></i>
+                        <span>{{ $t("label.device_session_history") }}</span>
+                    </button>
                     <EmployeeCreateComponent :props="props" v-if="permissionChecker('employees_create')" />
                 </div>
             </div>
@@ -145,9 +154,10 @@
         </div>
 
         <AllUserSessionsComponent
-            v-if="permissionChecker('employees_show')"
+            v-if="listView === 'sessions' && permissionChecker('employees_show')"
             api-prefix="employee"
             show-route="admin.employees.show"
+            @back="listView = 'users'"
         />
     </div>
 </template>
@@ -195,6 +205,7 @@ export default {
             loading: {
                 isActive: false,
             },
+            listView: "users",
             enums: {
                 statusEnum: statusEnum,
                 statusEnumArray: {

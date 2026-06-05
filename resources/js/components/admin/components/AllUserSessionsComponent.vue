@@ -1,11 +1,17 @@
 <template>
-    <div class="db-card mt-6">
+    <div class="db-card">
         <div class="db-card-header border-none flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h3 class="db-card-title">{{ $t("label.device_session_history") }}</h3>
-                <p class="text-xs text-[#6E7191] mt-1">
-                    {{ $t("label.total_devices") }}: <span class="font-semibold text-heading">{{ allTotalDevices }}</span>
-                </p>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" class="db-btn-outline h-[34px] text-xs" @click="$emit('back')">
+                    <i class="lab lab-line-arrow-left"></i>
+                    <span>{{ $t("button.back_to_users") }}</span>
+                </button>
+                <div>
+                    <h3 class="db-card-title">{{ $t("label.device_session_history") }}</h3>
+                    <p class="text-xs text-[#6E7191] mt-1">
+                        {{ $t("label.total_devices") }}: <span class="font-semibold text-heading">{{ allTotalDevices }}</span>
+                    </p>
+                </div>
             </div>
             <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
         </div>
@@ -135,6 +141,7 @@ import PaginationSMBox from "./pagination/PaginationSMBox";
 
 export default {
     name: "AllUserSessionsComponent",
+    emits: ["back"],
     components: {
         TableLimitComponent,
         PaginationTextComponent,
