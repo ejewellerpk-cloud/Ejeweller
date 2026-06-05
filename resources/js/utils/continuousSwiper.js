@@ -11,6 +11,29 @@ export const continuousAutoplayConfig = {
     waitForTransition: false,
 };
 
+/** Smooth related-products carousel (not infinite marquee). */
+export const RELATED_PRODUCTS_SWIPER_SPEED = 650;
+export const RELATED_PRODUCTS_AUTOPLAY_DELAY = 3800;
+
+export const relatedProductsAutoplayConfig = {
+    delay: RELATED_PRODUCTS_AUTOPLAY_DELAY,
+    disableOnInteraction: false,
+    pauseOnMouseEnter: true,
+    stopOnLastSlide: false,
+    waitForTransition: true,
+};
+
+/** Lets the page scroll vertically; only clearly horizontal swipes move the slider. */
+export const touchFriendlySwiperProps = {
+    touchAngle: 40,
+    threshold: 14,
+    touchStartPreventDefault: false,
+    passiveListeners: true,
+    touchReleaseOnEdges: true,
+    resistanceRatio: 0.85,
+    longSwipesMs: 280,
+};
+
 export function pauseContinuousSwiper(swiper) {
     if (!swiper) {
         return;
@@ -35,4 +58,28 @@ export function resumeContinuousSwiper(swiper) {
         autoplay.stop();
         autoplay.start();
     }
+}
+
+export function pauseRelatedProductsSwiper(swiper) {
+    if (!swiper) {
+        return;
+    }
+    if (swiper._relatedResumeTimer) {
+        clearTimeout(swiper._relatedResumeTimer);
+        swiper._relatedResumeTimer = null;
+    }
+    swiper.autoplay?.stop();
+}
+
+export function resumeRelatedProductsSwiper(swiper, delayMs = 2800) {
+    if (!swiper?.autoplay) {
+        return;
+    }
+    if (swiper._relatedResumeTimer) {
+        clearTimeout(swiper._relatedResumeTimer);
+    }
+    swiper._relatedResumeTimer = setTimeout(() => {
+        swiper.autoplay?.start();
+        swiper._relatedResumeTimer = null;
+    }, delayMs);
 }
