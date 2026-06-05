@@ -155,6 +155,7 @@
 
         <AllUserSessionsComponent
             v-if="listView === 'sessions' && permissionChecker('employees_show')"
+            :key="'employee-sessions'"
             api-prefix="employee"
             show-route="admin.employees.show"
             @back="listView = 'users'"

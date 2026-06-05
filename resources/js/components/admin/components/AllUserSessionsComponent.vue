@@ -13,10 +13,13 @@
                     </p>
                 </div>
             </div>
-            <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
+            <div class="db-card-filter">
+                <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
+                <FilterComponent @click.prevent="handleSlide(filterPanelId)" />
+            </div>
         </div>
 
-        <div class="table-filter-div" id="session-history-filter">
+        <div class="table-filter-div" :id="filterPanelId">
             <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                 <div class="row">
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -135,6 +138,7 @@
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import TableLimitComponent from "./TableLimitComponent";
+import FilterComponent from "./buttons/collapse/FilterComponent";
 import PaginationTextComponent from "./pagination/PaginationTextComponent";
 import PaginationBox from "./pagination/PaginationBox";
 import PaginationSMBox from "./pagination/PaginationSMBox";
@@ -144,6 +148,7 @@ export default {
     emits: ["back"],
     components: {
         TableLimitComponent,
+        FilterComponent,
         PaginationTextComponent,
         PaginationBox,
         PaginationSMBox,
@@ -192,11 +197,17 @@ export default {
         paginationPage: function () {
             return this.$store.getters["userSession/allPage"];
         },
+        filterPanelId: function () {
+            return "session-history-filter-" + this.apiPrefix;
+        },
     },
     mounted() {
         this.list();
     },
     methods: {
+        handleSlide: function (id) {
+            return appService.handleSlide(id);
+        },
         list: function (page = 1) {
             this.loading.isActive = true;
             this.loadError = null;
@@ -215,6 +226,8 @@ export default {
             this.list(1);
         },
         clear: function () {
+            this.props.search.paginate = 1;
+            this.props.search.page = 1;
             this.props.search.name = "";
             this.props.search.email = "";
             this.props.search.device_name = "";

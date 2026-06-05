@@ -147,6 +147,7 @@
 
         <AllUserSessionsComponent
             v-if="listView === 'sessions' && permissionChecker('customers_show')"
+            :key="'customer-sessions'"
             api-prefix="customer"
             show-route="admin.customers.show"
             @back="listView = 'users'"
