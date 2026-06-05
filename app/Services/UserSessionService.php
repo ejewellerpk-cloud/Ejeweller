@@ -43,6 +43,10 @@ class UserSessionService
             $query->where('device_name', 'like', '%' . $request->get('device_name') . '%');
         }
 
+        if ($request->filled('browser')) {
+            $query->where('user_agent', 'like', '%' . $request->get('browser') . '%');
+        }
+
         if ($request->filled('ip_address')) {
             $query->where('ip_address', 'like', '%' . $request->get('ip_address') . '%');
         }
@@ -67,7 +71,7 @@ class UserSessionService
 
     private function applyUserSearchFilter(Builder $query, PaginateRequest $request): void
     {
-        foreach (['name', 'email'] as $field) {
+        foreach (['name', 'email', 'phone'] as $field) {
             if ($request->filled($field)) {
                 $query->where($field, 'like', '%' . $request->get($field) . '%');
             }

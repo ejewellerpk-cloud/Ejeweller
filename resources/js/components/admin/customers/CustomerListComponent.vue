@@ -149,6 +149,7 @@
             v-if="listView === 'sessions' && permissionChecker('customers_show')"
             :key="'customer-sessions'"
             api-prefix="customer"
+            filter-id="customer-session-filter"
             show-route="admin.customers.show"
             @back="listView = 'users'"
         />

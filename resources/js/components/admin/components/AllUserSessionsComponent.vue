@@ -15,11 +15,14 @@
             </div>
             <div class="db-card-filter">
                 <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                <FilterComponent @click.prevent="handleSlide(filterPanelId)" />
+                <button type="button" class="db-card-filter-btn table-filter-btn" @click.prevent="toggleFilterPanel">
+                    <i class="lab lab-line-filter lab-font-size-14"></i>
+                    <span>{{ $t("button.filter") }}</span>
+                </button>
             </div>
         </div>
 
-        <div class="table-filter-div" :id="filterPanelId">
+        <div class="table-filter-div" :id="filterId" :style="filterPanelStyles">
             <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                 <div class="row">
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -31,8 +34,16 @@
                         <input v-model="props.search.email" type="text" class="db-field-control">
                     </div>
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                        <label class="db-field-title after:hidden">{{ $t("label.phone") }}</label>
+                        <input v-model="props.search.phone" v-on:keypress="phoneNumber($event)" type="text" class="db-field-control">
+                    </div>
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                         <label class="db-field-title after:hidden">{{ $t("label.device") }}</label>
                         <input v-model="props.search.device_name" type="text" class="db-field-control">
+                    </div>
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                        <label class="db-field-title after:hidden">{{ $t("label.browser") }}</label>
+                        <input v-model="props.search.browser" type="text" class="db-field-control">
                     </div>
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                         <label class="db-field-title after:hidden">{{ $t("label.ip_address") }}</label>
@@ -138,7 +149,6 @@
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import TableLimitComponent from "./TableLimitComponent";
-import FilterComponent from "./buttons/collapse/FilterComponent";
 import PaginationTextComponent from "./pagination/PaginationTextComponent";
 import PaginationBox from "./pagination/PaginationBox";
 import PaginationSMBox from "./pagination/PaginationSMBox";
@@ -148,7 +158,6 @@ export default {
     emits: ["back"],
     components: {
         TableLimitComponent,
-        FilterComponent,
         PaginationTextComponent,
         PaginationBox,
         PaginationSMBox,
@@ -162,9 +171,14 @@ export default {
             type: String,
             required: true,
         },
+        filterId: {
+            type: String,
+            required: true,
+        },
     },
     data() {
         return {
+            isFilterOpen: false,
             loading: {
                 isActive: false,
             },
@@ -178,7 +192,9 @@ export default {
                     order_type: "desc",
                     name: "",
                     email: "",
+                    phone: "",
                     device_name: "",
+                    browser: "",
                     ip_address: "",
                 },
             },
@@ -197,16 +213,28 @@ export default {
         paginationPage: function () {
             return this.$store.getters["userSession/allPage"];
         },
-        filterPanelId: function () {
-            return "session-history-filter-" + this.apiPrefix;
+        filterPanelStyles: function () {
+            if (!this.isFilterOpen) {
+                return {};
+            }
+
+            return {
+                height: "auto",
+                overflow: "visible",
+                opacity: "1",
+                visibility: "visible",
+            };
         },
     },
     mounted() {
         this.list();
     },
     methods: {
-        handleSlide: function (id) {
-            return appService.handleSlide(id);
+        toggleFilterPanel: function () {
+            this.isFilterOpen = !this.isFilterOpen;
+        },
+        phoneNumber: function (event) {
+            return appService.phoneNumber(event);
         },
         list: function (page = 1) {
             this.loading.isActive = true;
@@ -230,7 +258,9 @@ export default {
             this.props.search.page = 1;
             this.props.search.name = "";
             this.props.search.email = "";
+            this.props.search.phone = "";
             this.props.search.device_name = "";
+            this.props.search.browser = "";
             this.props.search.ip_address = "";
             this.list(1);
         },

@@ -153,6 +153,7 @@
             v-if="listView === 'sessions' && permissionChecker('administrators_show')"
             :key="'administrator-sessions'"
             api-prefix="administrator"
+            filter-id="administrator-session-filter"
             show-route="admin.administrators.show"
             @back="listView = 'users'"
         />

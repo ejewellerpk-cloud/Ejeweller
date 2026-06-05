@@ -157,6 +157,7 @@
             v-if="listView === 'sessions' && permissionChecker('employees_show')"
             :key="'employee-sessions'"
             api-prefix="employee"
+            filter-id="employee-session-filter"
             show-route="admin.employees.show"
             @back="listView = 'users'"
         />
