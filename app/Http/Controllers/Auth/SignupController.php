@@ -14,6 +14,7 @@ use App\Enums\Role as EnumRole;
 use Illuminate\Http\JsonResponse;
 use App\Services\OtpManagerService;
 use App\Services\PermissionService;
+use App\Services\AuthTokenService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SignupRequest;
 use App\Http\Resources\MenuResource;
@@ -36,12 +37,18 @@ class SignupController extends Controller
     public string $token;
     public PermissionService $permissionService;
     public MenuService $menuService;
+    public AuthTokenService $authTokenService;
 
-    public function __construct(OtpManagerService $otpManagerService, PermissionService $permissionService, MenuService $menuService)
-    {
+    public function __construct(
+        OtpManagerService $otpManagerService,
+        PermissionService $permissionService,
+        MenuService $menuService,
+        AuthTokenService $authTokenService
+    ) {
         $this->otpManagerService = $otpManagerService;
         $this->permissionService = $permissionService;
         $this->menuService = $menuService;
+        $this->authTokenService = $authTokenService;
     }
 
     public function otpPhone(
@@ -163,7 +170,7 @@ class SignupController extends Controller
             }
             if ($user) {
                 Auth::guard('web')->loginUsingId($user->id);
-                $this->token = $user->createToken('auth_token')->plainTextToken;
+                $this->token = $this->authTokenService->issueToken($user, $request, $request->input('device_name'));
                 $permission = PermissionResource::collection($this->permissionService->permission($user->roles[0]));
                 $defaultPermission = AppLibrary::defaultPermission($permission);
                 return new JsonResponse([

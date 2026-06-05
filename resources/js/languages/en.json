@@ -203,6 +203,14 @@
         "discount_percentage": "Discount Percentage",
         "products": "Products",
         "product": "Product",
+        "active_devices": "Active Devices",
+        "device": "Device",
+        "browser": "Browser",
+        "ip_address": "IP Address",
+        "last_active": "Last Active",
+        "logged_in_at": "Logged In At",
+        "current_device": "Current Device",
+        "total_devices": "Total Devices",
         "price": "Price",
         "video": "Video",
         "additional_price": "Additional Price",
@@ -803,6 +811,10 @@
         "upload_new_photo": "Upload New Photo",
         "profile": "Profile",
         "security": "Security",
+        "active_devices": "Active Devices",
+        "logout_device": "Logout Device",
+        "logout_all_devices": "Logout All Devices",
+        "logout_other_devices": "Logout Other Devices",
         "addresses": "Addresses",
         "my_orders": "My Orders",
         "add_address": "Add Address",
@@ -996,6 +1008,9 @@
         "please_select_a_variation": "Please select a variation first!",
         "select_all_options": "Please select all options above.",
         "select_previous_option": "Select {name} first",
-        "option_unavailable": "Unavailable"
+        "option_unavailable": "Unavailable",
+        "session_logout_success": "Device logged out successfully.",
+        "all_sessions_logout_success": "All devices logged out successfully.",
+        "other_sessions_logout_success": "Other devices logged out successfully."
     }
 }

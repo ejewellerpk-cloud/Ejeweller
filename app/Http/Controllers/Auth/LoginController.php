@@ -18,6 +18,7 @@ use App\Services\DefaultAccessService;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\PermissionResource;
 use App\Services\OtpManagerService;
+use App\Services\AuthTokenService;
 
 class LoginController extends Controller
 {
@@ -26,17 +27,20 @@ class LoginController extends Controller
     public PermissionService $permissionService;
     public MenuService $menuService;
     public OtpManagerService $otpManagerService;
+    public AuthTokenService $authTokenService;
 
     public function __construct(
         MenuService          $menuService,
         PermissionService    $permissionService,
         DefaultAccessService $defaultAccessService,
-        OtpManagerService    $otpManagerService
+        OtpManagerService    $otpManagerService,
+        AuthTokenService     $authTokenService
     ) {
         $this->menuService          = $menuService;
         $this->permissionService    = $permissionService;
         $this->defaultAccessService = $defaultAccessService;
         $this->otpManagerService    = $otpManagerService;
+        $this->authTokenService     = $authTokenService;
     }
 
     /**
@@ -86,7 +90,7 @@ class LoginController extends Controller
             $user = User::where(['phone' => $request['phone'], 'country_code' => $request->country_code])->first();
         }
 
-        $this->token = $user->createToken('auth_token')->plainTextToken;
+        $this->token = $this->authTokenService->issueToken($user, $request, $request->input('device_name'));
 
         if (!isset($user->roles[0])) {
             return new JsonResponse([
@@ -216,7 +220,7 @@ class LoginController extends Controller
 
             // Authentication and token creation
             Auth::guard('web')->loginUsingId($user->id);
-            $this->token = $user->createToken('auth_token')->plainTextToken;
+            $this->token = $this->authTokenService->issueToken($user, $request, $request->input('device_name'));
 
             if (!isset($user->roles[0])) {
                 return new JsonResponse([
@@ -247,7 +251,15 @@ class LoginController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $currentTokenId = $user->currentAccessToken()?->id;
+
+        if ($request->boolean('all_devices')) {
+            app(\App\Services\UserSessionService::class)->revokeAllExcept($user);
+        } elseif ($currentTokenId) {
+            $user->tokens()->where('id', $currentTokenId)->delete();
+        }
+
         return new JsonResponse([
             'message' => trans('all.message.logout_success')
         ], 200);

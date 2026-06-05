@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Services\OtpManagerService;
 use App\Services\PermissionService;
+use App\Services\AuthTokenService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MenuResource;
 use App\Http\Resources\UserResource;
@@ -34,12 +35,18 @@ class ForgotPasswordController extends Controller
     private OtpManagerService $otpManagerService;
     public PermissionService $permissionService;
     public MenuService $menuService;
+    public AuthTokenService $authTokenService;
 
-    public function __construct(OtpManagerService $otpManagerService, PermissionService $permissionService, MenuService $menuService)
-    {
+    public function __construct(
+        OtpManagerService $otpManagerService,
+        PermissionService $permissionService,
+        MenuService $menuService,
+        AuthTokenService $authTokenService
+    ) {
         $this->otpManagerService = $otpManagerService;
         $this->permissionService = $permissionService;
         $this->menuService       = $menuService;
+        $this->authTokenService  = $authTokenService;
     }
 
     public function forgotPassword(Request $request)
@@ -203,7 +210,7 @@ class ForgotPasswordController extends Controller
             ]);
 
             Auth::guard('web')->loginUsingId($userCheckByEmail->id);
-            $this->token = $userCheckByEmail->createToken('auth_token')->plainTextToken;
+            $this->token = $this->authTokenService->issueToken($userCheckByEmail, $request, $request->input('device_name'));
             $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByEmail->roles[0]));
             $defaultPermission = AppLibrary::defaultPermission($permission);
             $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByEmail->roles[0]), $defaultPermission);
@@ -222,7 +229,7 @@ class ForgotPasswordController extends Controller
                 'password' => Hash::make($request->post('password'))
             ]);
             Auth::guard('web')->loginUsingId($userCheckByPhone->id);
-            $this->token = $userCheckByPhone->createToken('auth_token')->plainTextToken;
+            $this->token = $this->authTokenService->issueToken($userCheckByPhone, $request, $request->input('device_name'));
             $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByPhone->roles[0]));
             $defaultPermission = AppLibrary::defaultPermission($permission);
             $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByPhone->roles[0]), $defaultPermission);

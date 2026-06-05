@@ -10,6 +10,7 @@ use App\Models\SocialLogin;
 use Illuminate\Support\Str;
 use App\Services\MenuService;
 use App\Services\PermissionService;
+use App\Services\AuthTokenService;
 use App\Enums\Role as EnumRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -28,9 +29,9 @@ class Google extends SocialLoginAbstract
     /**
      * @throws \Exception
      */
-    public function __construct(MenuService $menuService, PermissionService $permissionService)
+    public function __construct(MenuService $menuService, PermissionService $permissionService, AuthTokenService $authTokenService)
     {
-        parent::__construct($menuService, $permissionService);
+        parent::__construct($menuService, $permissionService, $authTokenService);
         
         $this->provider = SocialLogin::where(['slug' => 'google'])->first();
         if ($this->provider) {

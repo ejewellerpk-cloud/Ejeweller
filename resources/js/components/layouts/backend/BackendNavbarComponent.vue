@@ -82,6 +82,12 @@
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </router-link>
 
+                        <router-link :to="{ name: 'admin.profile.activeDevices' }"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
+                            <i class="lab lab-line-monitor lab-font-size-17"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('button.active_devices') }}</span>
+                        </router-link>
+
                         <button @click="logout()"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-line-logout lab-font-size-17"></i>

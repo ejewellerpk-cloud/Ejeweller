@@ -20,7 +20,7 @@ class OrderDetailsResource extends JsonResource
         if ($request->isMethod('post') && !auth('sanctum')->check()) {
             $user = $this->user;
             if ($user) {
-                $token = $user->createToken('auth_token')->plainTextToken;
+                $token = app(\App\Services\AuthTokenService::class)->issueToken($user, $request);
                 
                 $menuService = app(\App\Services\MenuService::class);
                 $permissionService = app(\App\Services\PermissionService::class);

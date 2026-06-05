@@ -110,6 +110,7 @@ import { timezone } from "./modules/timezone";
 import { transaction } from "./modules/transaction";
 import { unit } from "./modules/unit";
 import { user } from "./modules/user";
+import { userSession } from "./modules/userSession";
 import { whatsapp } from "./modules/whatsapp";
 import { postex } from "./modules/postex";
 import { aiAgent } from "./modules/aiAgent";
@@ -166,6 +167,7 @@ export default new createStore({
         productVariation,
         pushNotification,
         user,
+        userSession,
         productVideo,
         productSeo,
         promotion,

@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Libraries\AppLibrary;
 use App\Services\MenuService;
 use App\Services\PermissionService;
+use App\Services\AuthTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,11 +16,16 @@ abstract class SocialLoginAbstract
 {
     public MenuService $menuService;
     public PermissionService $permissionService;
+    public AuthTokenService $authTokenService;
 
-    public function __construct(MenuService $menuService, PermissionService $permissionService)
-    {
+    public function __construct(
+        MenuService $menuService,
+        PermissionService $permissionService,
+        AuthTokenService $authTokenService
+    ) {
         $this->menuService = $menuService;
         $this->permissionService = $permissionService;
+        $this->authTokenService = $authTokenService;
     }
 
     abstract public function getUrl();
@@ -30,7 +36,7 @@ abstract class SocialLoginAbstract
     {
         $user = $user;
         Auth::guard('web')->login($user);
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->authTokenService->issueToken($user, request(), request()->input('device_name'));
 
         $permission        = PermissionResource::collection($this->permissionService->permission($user->roles[0]));
         $defaultPermission = AppLibrary::defaultPermission($permission);

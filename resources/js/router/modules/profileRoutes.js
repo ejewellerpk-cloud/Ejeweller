@@ -1,5 +1,6 @@
 const ProfileEditProfileComponent = () =>   import("../../components/admin/profile/ProfileEditProfileComponent");
 const ProfileChangePasswordComponent = () =>   import("../../components/admin/profile/ProfileChangePasswordComponent");
+const ProfileActiveSessionsComponent = () =>   import("../../components/admin/profile/ProfileActiveSessionsComponent");
 
 
 export default [
@@ -23,6 +24,17 @@ export default [
             auth: true,
             permissionUrl: "",
             breadcrumb: "change_password",
+        },
+    },
+    {
+        path: "/admin/profile/active-devices",
+        component: ProfileActiveSessionsComponent,
+        name: "admin.profile.activeDevices",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "",
+            breadcrumb: "active_devices",
         },
     }
 ];

@@ -51,6 +51,11 @@
                 <i class="lab lab-line-unlock"></i>
                 <span class="capitalize text-sm">{{ $t("button.security") }}</span>
             </button>
+            <button type="button" @click="handleTab($event, '#sessions', '.profile-tabBtn', '.profile-tabDiv', 'active')"
+                class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
+                <i class="lab lab-line-monitor"></i>
+                <span class="capitalize text-sm">{{ $t("button.active_devices") }}</span>
+            </button>
             <button type="button" @click="handleTab($event, '#address', '.profile-tabBtn', '.profile-tabDiv', 'active')"
                 class="profile-tabBtn w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]">
                 <i class="lab lab-line-location"></i>
@@ -150,6 +155,9 @@
                 </div>
             </div>
         </div>
+        <div id="sessions" class="profile-tabDiv">
+            <UserSessionsComponent :user-id="$route.params.id" api-prefix="customer" mode="admin" />
+        </div>
         <div id="address" class="profile-tabDiv">
             <CustomerAddressList :props="$route.params.id" />
         </div>
@@ -232,6 +240,7 @@ import CustomerAddressList from "./address/CustomerAddressList";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
 import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
+import UserSessionsComponent from "../components/UserSessionsComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -242,6 +251,7 @@ export default {
         PaginationSMBox,
         PaginationBox,
         PaginationTextComponent,
+        UserSessionsComponent,
     },
     data() {
         return {
