@@ -14,7 +14,8 @@ class SimpleProductDetailsResource extends JsonResource
 
     public function toArray($request): array
     {
-        $price = count($this->variations) > 0 ? $this->variation_price : $this->selling_price;
+        $hasVariations = (int) ($this->variations_count ?? 0) > 0;
+        $price = $hasVariations ? $this->variation_price : $this->selling_price;
         $discount = (double) $this->discount;
         $isOffer = AppLibrary::isProductOfferActive($discount, $this->offer_start_date, $this->offer_end_date);
         $offerPrice = AppLibrary::productOfferPrice((float) $price, $discount, $this->offer_start_date, $this->offer_end_date);
@@ -23,12 +24,9 @@ class SimpleProductDetailsResource extends JsonResource
             'id'                        => $this->id,
             'use_random_sale'           => (int)$this->use_random_sale,
             'is_show_viewers'           => (int)$this->is_show_viewers,
-            'actual_sales'              => (int)abs($this->productOrders()->sum('quantity')),
-            'bought_last_24_hours'      => (int) abs(
-                $this->product_orders_last_day_sum_quantity
-                    ?? $this->productOrders()->where('created_at', '>=', now()->subDay())->sum('quantity')
-            ),
-            'in_baskets'                => (int) ($this->cart_trackers_count ?? $this->cartTrackers()->count()),
+            'actual_sales'              => (int) abs($this->product_orders_sum_quantity ?? 0),
+            'bought_last_24_hours'      => (int) abs($this->product_orders_last_day_sum_quantity ?? 0),
+            'in_baskets'                => (int) ($this->cart_trackers_count ?? 0),
             'name'                      => $this->name,
             'slug'                      => $this->slug,
             'price'                     => (double) $offerPrice,

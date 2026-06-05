@@ -884,6 +884,8 @@ class ProductService
                 ->with(['seo' => fn($query) => $query->with('media')])
                 ->withSum('stockItems', 'quantity')
                 ->withCount('cartTrackers')
+                ->withCount('variations')
+                ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->withSum(
                     ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
                     'quantity'
@@ -906,6 +908,8 @@ class ProductService
                 ->with(['seo' => fn($query) => $query->with('media')])
                 ->withSum('stockItems', 'quantity')
                 ->withCount('cartTrackers')
+                ->withCount('variations')
+                ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->withSum(
                     ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
                     'quantity'

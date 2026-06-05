@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
-    <section class="mb-12">
+    <section v-else class="mb-12">
         <div class="container">
             <div class="row">
                 <div class="col-12">
@@ -41,7 +41,10 @@
                                 <div @click="onGalleryImageTap(index, $event)"
                                     style="touch-action: manipulation;"
                                     class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
-                                    <img :src="media.url" alt="product" loading="lazy"
+                                    <img :src="media.url" alt="product"
+                                        :loading="index === 0 ? 'eager' : 'lazy'"
+                                        :fetchpriority="index === 0 ? 'high' : 'auto'"
+                                        decoding="async"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                                         class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
                                 </div>
@@ -124,7 +127,7 @@
                     <div @click="onGalleryImageTap(999, $event)"
                         style="touch-action: manipulation;"
                         class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
-                        <img :src="product.image" alt="products" loading="lazy"
+                        <img :src="product.image" alt="products" loading="eager" fetchpriority="high" decoding="async"
                             @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
                     </div>
@@ -756,7 +759,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, defineAsyncComponent } from "vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -768,10 +771,8 @@ import starRating from "vue-star-rating";
 import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
-import ProductListComponent from "../components/ProductListComponent";
 import RelatedProductsSliderSkeleton from "../components/skeleton/RelatedProductsSliderSkeleton.vue";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
-import VariationComponent from "../components/VariationComponent";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import { useHead } from '@vueuse/head';
@@ -794,8 +795,8 @@ import {
 export default {
     name: "ProductDetailsComponent",
     components: {
-        VariationComponent,
-        ProductListComponent,
+        VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
+        ProductListComponent: defineAsyncComponent(() => import("../components/ProductListComponent")),
         RelatedProductsSliderSkeleton,
         RecentlyViewedStripSkeleton,
         CategoryBreadcrumbComponent,
@@ -831,7 +832,7 @@ export default {
             props: {
                 search: {
                     slug: null,
-                    review_limit: 5
+                    review_limit: 3
                 }
             },
             activityEnum: activityEnum,
@@ -1050,25 +1051,7 @@ export default {
     },
     mounted() {
         this.show();
-        this.setupRelatedProductsObserver();
-
-        this.tickerInterval = setInterval(() => {
-            if (this.discountPercentageDetail() > 0) {
-                this.tickerIndex++;
-            }
-        }, 2200);
-        this.badgeInterval = setInterval(() => {
-            this.badgeIndex++;
-        }, 3000);
-
-        this.activeViewers = Math.floor(Math.random() * (45 - 15 + 1)) + 15;
-        this.viewersInterval = setInterval(() => {
-            const change = Math.floor(Math.random() * 5) - 2;
-            let newViewers = this.activeViewers + change;
-            if (newViewers < 12) newViewers = 12 + Math.floor(Math.random() * 5);
-            if (newViewers > 75) newViewers = 75 - Math.floor(Math.random() * 5);
-            this.activeViewers = newViewers;
-        }, 5000);
+        this.scheduleEngagementWidgets();
     },
     beforeUnmount() {
         if (this.tickerInterval) {
@@ -1095,6 +1078,67 @@ export default {
         document.body.classList.remove('image-preview-open');
     },
     methods: {
+        scheduleEngagementWidgets: function () {
+            const start = () => {
+                this.tickerInterval = setInterval(() => {
+                    if (this.discountPercentageDetail() > 0) {
+                        this.tickerIndex++;
+                    }
+                }, 2200);
+                this.badgeInterval = setInterval(() => {
+                    this.badgeIndex++;
+                }, 3000);
+                this.activeViewers = Math.floor(Math.random() * (45 - 15 + 1)) + 15;
+                this.viewersInterval = setInterval(() => {
+                    const change = Math.floor(Math.random() * 5) - 2;
+                    let newViewers = this.activeViewers + change;
+                    if (newViewers < 12) newViewers = 12 + Math.floor(Math.random() * 5);
+                    if (newViewers > 75) newViewers = 75 - Math.floor(Math.random() * 5);
+                    this.activeViewers = newViewers;
+                }, 5000);
+            };
+
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(start, { timeout: 3000 });
+            } else {
+                setTimeout(start, 500);
+            }
+        },
+        productCacheKey: function (slug) {
+            return 'product_show_v1_' + slug;
+        },
+        readProductCache: function (slug) {
+            try {
+                const raw = sessionStorage.getItem(this.productCacheKey(slug));
+                if (!raw) {
+                    return null;
+                }
+                const parsed = JSON.parse(raw);
+                if (!parsed?.data || Date.now() - parsed.t > 180000) {
+                    return null;
+                }
+                return parsed.data;
+            } catch (e) {
+                return null;
+            }
+        },
+        writeProductCache: function (slug, data) {
+            try {
+                sessionStorage.setItem(this.productCacheKey(slug), JSON.stringify({
+                    t: Date.now(),
+                    data: data,
+                }));
+            } catch (e) {}
+        },
+        preloadHeroImage: function (data) {
+            const hero = data?.image || (Array.isArray(data?.images) && data.images.length ? data.images[0] : null);
+            if (!hero) {
+                return;
+            }
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = hero;
+        },
         getProductSoldCount: function () {
             if (this.product && (parseInt(this.product.use_random_sale) === 10 || parseInt(this.product.use_random_sale) === 0)) {
                 return this.product.actual_sales || 0;
@@ -1670,6 +1714,8 @@ export default {
             if (data.flash_sale && data.offer_end_date) {
                 this.startFlashSaleTimer(data.offer_end_date);
             }
+
+            this.preloadHeroImage(data);
         },
         applyProductSeo: function (data) {
             if (!data.seo || !data.seo.title || !data.seo.description) {
@@ -1689,48 +1735,56 @@ export default {
             });
         },
         loadSecondaryProductData: function (data, token) {
-            const tasks = [];
+            const run = () => {
+                const tasks = [];
 
-            if (data.category_slug) {
+                if (data.category_slug) {
+                    tasks.push(
+                        this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', data.category_slug).catch(() => {})
+                    );
+                }
+
+                const productSlug = data.slug;
+                const productId = data.id;
+
                 tasks.push(
-                    this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', data.category_slug).catch(() => {})
+                    this.$store.dispatch('frontendProductVariation/allVariation', productSlug)
+                        .then((allVarRes) => {
+                            if (token !== this.loadToken) {
+                                return;
+                            }
+                            const hasTree = (allVarRes.data.data || []).length > 0;
+                            if (hasTree) {
+                                this.showVariationComponent = true;
+                            }
+                        })
+                        .catch(() => {})
                 );
+
+                tasks.push(
+                    this.$store.dispatch('frontendProductVariation/initialVariation', productId)
+                        .then((initVariationRes) => {
+                            if (token !== this.loadToken) {
+                                return;
+                            }
+                            if (initVariationRes.data.data.length > 0) {
+                                this.showVariationComponent = true;
+                            }
+                            if (!this.showVariationComponent && data.stock > 0) {
+                                this.enableAddToCardButton = false;
+                            }
+                        })
+                        .catch(() => {})
+                );
+
+                return Promise.allSettled(tasks);
+            };
+
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(run, { timeout: 1500 });
+            } else {
+                setTimeout(run, 150);
             }
-
-            const productSlug = data.slug;
-            const productId = data.id;
-
-            tasks.push(
-                this.$store.dispatch('frontendProductVariation/allVariation', productSlug)
-                    .then((allVarRes) => {
-                        if (token !== this.loadToken) {
-                            return;
-                        }
-                        const hasTree = (allVarRes.data.data || []).length > 0;
-                        if (hasTree) {
-                            this.showVariationComponent = true;
-                        }
-                    })
-                    .catch(() => {})
-            );
-
-            tasks.push(
-                this.$store.dispatch('frontendProductVariation/initialVariation', productId)
-                    .then((initVariationRes) => {
-                        if (token !== this.loadToken) {
-                            return;
-                        }
-                        if (initVariationRes.data.data.length > 0) {
-                            this.showVariationComponent = true;
-                        }
-                        if (!this.showVariationComponent && data.stock > 0) {
-                            this.enableAddToCardButton = false;
-                        }
-                    })
-                    .catch(() => {})
-            );
-
-            return Promise.allSettled(tasks);
         },
         commitShowPayload: function (data) {
             this.$store.commit('frontendProduct/show', data);
@@ -1762,10 +1816,21 @@ export default {
         },
         requestProductShow: function (token, useTrashed) {
             const action = useTrashed ? 'frontendProduct/showWithTrashed' : 'frontendProduct/show';
+            const slug = this.props.search.slug;
+
+            if (!useTrashed) {
+                const cached = this.readProductCache(slug);
+                if (cached) {
+                    this.commitShowPayload(cached);
+                    this.handleShowSuccess({ data: { data: cached } }, token);
+                }
+            }
 
             this.$store.dispatch(action, this.props.search).then((res) => {
                 if (useTrashed) {
                     this.commitShowPayload(res.data.data);
+                } else {
+                    this.writeProductCache(slug, res.data.data);
                 }
                 this.handleShowSuccess(res, token);
             }).catch((err) => {
