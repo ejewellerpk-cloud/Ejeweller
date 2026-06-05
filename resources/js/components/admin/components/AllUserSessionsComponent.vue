@@ -15,62 +15,11 @@
             </div>
             <div class="db-card-filter">
                 <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                <button type="button" class="db-card-filter-btn table-filter-btn" @click.prevent="toggleFilterPanel">
-                    <i class="lab lab-line-filter lab-font-size-14"></i>
-                    <span>{{ $t("button.filter") }}</span>
-                </button>
             </div>
         </div>
 
-        <ListFilterPanel :show="isFilterOpen">
-            <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
-                <div class="row">
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.name") }}</label>
-                        <input v-model="props.search.name" type="text" class="db-field-control">
-                    </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.email") }}</label>
-                        <input v-model="props.search.email" type="text" class="db-field-control">
-                    </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.phone") }}</label>
-                        <input v-model="props.search.phone" v-on:keypress="phoneNumber($event)" type="text" class="db-field-control">
-                    </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.device") }}</label>
-                        <input v-model="props.search.device_name" type="text" class="db-field-control">
-                    </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.browser") }}</label>
-                        <input v-model="props.search.browser" type="text" class="db-field-control">
-                    </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                        <label class="db-field-title after:hidden">{{ $t("label.ip_address") }}</label>
-                        <input v-model="props.search.ip_address" type="text" class="db-field-control" dir="ltr">
-                    </div>
-                    <div class="col-12">
-                        <div class="flex flex-wrap gap-3 mt-4">
-                            <button type="submit" class="db-btn py-2 text-white bg-primary">
-                                <i class="lab lab-line-search lab-font-size-16"></i>
-                                <span>{{ $t("button.search") }}</span>
-                            </button>
-                            <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
-                                <i class="lab lab-line-cross lab-font-size-22"></i>
-                                <span>{{ $t("button.clear") }}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </ListFilterPanel>
-
         <div class="db-card-body !pt-0">
-            <div v-if="loading.isActive" class="py-8 text-center text-sm text-[#6E7191]">
-                {{ $t("label.loading") || "Loading..." }}
-            </div>
-
-            <div v-else-if="loadError" class="py-8 text-center">
+            <div v-if="loadError" class="py-8 text-center">
                 <span class="text-sm text-[#FB4E4E]">{{ loadError }}</span>
             </div>
 
@@ -87,8 +36,75 @@
                             <th class="db-table-head-th">{{ $t("label.logged_in_at") }}</th>
                             <th class="db-table-head-th">{{ $t("label.action") }}</th>
                         </tr>
+                        <tr class="db-table-filter-tr">
+                            <th class="db-table-head-th">
+                                <input
+                                    v-model="props.search.name"
+                                    type="text"
+                                    class="db-table-filter-control"
+                                    :placeholder="$t('label.name')"
+                                    @keyup.enter="search"
+                                >
+                            </th>
+                            <th class="db-table-head-th">
+                                <input
+                                    v-model="props.search.email"
+                                    type="text"
+                                    class="db-table-filter-control"
+                                    :placeholder="$t('label.email')"
+                                    @keyup.enter="search"
+                                >
+                            </th>
+                            <th class="db-table-head-th">
+                                <input
+                                    v-model="props.search.device_name"
+                                    type="text"
+                                    class="db-table-filter-control"
+                                    :placeholder="$t('label.device')"
+                                    @keyup.enter="search"
+                                >
+                            </th>
+                            <th class="db-table-head-th">
+                                <input
+                                    v-model="props.search.browser"
+                                    type="text"
+                                    class="db-table-filter-control"
+                                    :placeholder="$t('label.browser')"
+                                    @keyup.enter="search"
+                                >
+                            </th>
+                            <th class="db-table-head-th">
+                                <input
+                                    v-model="props.search.ip_address"
+                                    type="text"
+                                    class="db-table-filter-control"
+                                    :placeholder="$t('label.ip_address')"
+                                    dir="ltr"
+                                    @keyup.enter="search"
+                                >
+                            </th>
+                            <th class="db-table-head-th"></th>
+                            <th class="db-table-head-th"></th>
+                            <th class="db-table-head-th">
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button type="button" class="db-table-filter-btn bg-primary text-white" @click="search">
+                                        <i class="lab lab-line-search"></i>
+                                    </button>
+                                    <button type="button" class="db-table-filter-btn bg-gray-600 text-white" @click="clear">
+                                        <i class="lab lab-line-cross"></i>
+                                    </button>
+                                </div>
+                            </th>
+                        </tr>
                     </thead>
-                    <tbody class="db-table-body" v-if="sessions.length > 0">
+                    <tbody class="db-table-body" v-if="loading.isActive">
+                        <tr class="db-table-body-tr">
+                            <td class="db-table-body-td text-center" colspan="8">
+                                <span class="text-sm text-[#6E7191]">{{ $t("label.loading") }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="db-table-body" v-else-if="sessions.length > 0">
                         <tr v-for="session in sessions" :key="session.id" class="db-table-body-tr">
                             <td class="db-table-body-td">
                                 <router-link
@@ -134,7 +150,7 @@
                 </table>
             </div>
 
-            <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-6" v-if="sessions.length > 0">
+            <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-6" v-if="!loading.isActive && sessions.length > 0">
                 <PaginationSMBox :pagination="pagination" :method="list" />
                 <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                     <PaginationTextComponent :props="{ page: paginationPage }" />
@@ -149,7 +165,6 @@
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import TableLimitComponent from "./TableLimitComponent";
-import ListFilterPanel from "./ListFilterPanel";
 import PaginationTextComponent from "./pagination/PaginationTextComponent";
 import PaginationBox from "./pagination/PaginationBox";
 import PaginationSMBox from "./pagination/PaginationSMBox";
@@ -159,7 +174,6 @@ export default {
     emits: ["back"],
     components: {
         TableLimitComponent,
-        ListFilterPanel,
         PaginationTextComponent,
         PaginationBox,
         PaginationSMBox,
@@ -176,7 +190,6 @@ export default {
     },
     data() {
         return {
-            isFilterOpen: false,
             loading: {
                 isActive: false,
             },
@@ -216,12 +229,6 @@ export default {
         this.list();
     },
     methods: {
-        toggleFilterPanel: function () {
-            this.isFilterOpen = !this.isFilterOpen;
-        },
-        phoneNumber: function (event) {
-            return appService.phoneNumber(event);
-        },
         list: function (page = 1) {
             this.loading.isActive = true;
             this.loadError = null;
@@ -283,3 +290,41 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.db-table-filter-tr .db-table-head-th {
+    padding-top: 0;
+    padding-bottom: 0.75rem;
+    vertical-align: top;
+}
+
+.db-table-filter-control {
+    width: 100%;
+    min-width: 72px;
+    height: 32px;
+    padding: 0 0.625rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    color: inherit;
+    background: #fff;
+}
+
+.db-table-filter-control:focus {
+    outline: none;
+    border-color: rgb(var(--primary) / 0.35);
+}
+
+.db-table-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+</style>

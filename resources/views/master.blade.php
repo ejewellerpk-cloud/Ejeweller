@@ -9,6 +9,27 @@
     <link rel="preconnect" href="{{ config('app.url') }}" crossorigin>
     <link rel="dns-prefetch" href="{{ config('app.url') }}">
 
+    <script>
+        (function () {
+            var path = window.location.pathname || '';
+            var isAdmin = path.indexOf('/admin') === 0 || path === '/exception';
+            document.documentElement.classList.add(isAdmin ? 'boot-admin' : 'boot-storefront');
+        })();
+    </script>
+    <style>
+        html:not(.app-ready) #app {
+            visibility: hidden;
+        }
+
+        html:not(.app-ready) body {
+            background: #ffffff;
+        }
+
+        html.boot-admin:not(.app-ready) body {
+            background: #f7f7fc;
+        }
+    </style>
+
     <!-- CUSTOM STYLE -->
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">

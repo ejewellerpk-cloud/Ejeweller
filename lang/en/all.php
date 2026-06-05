@@ -80,6 +80,7 @@ return [
         "ip_address"                 => "IP Address",
         "last_active"                => "Last Active",
         "logged_in_at"               => "Logged In At",
+        "loading"                    => "Loading",
         "current_device"             => "Current Device",
         "total_devices"              => "Total Devices",
     ],

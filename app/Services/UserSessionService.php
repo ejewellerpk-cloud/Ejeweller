@@ -19,8 +19,7 @@ class UserSessionService
     public function listForUser(User $user, ?int $currentTokenId = null): Collection
     {
         return $user->tokens()
-            ->orderByDesc('last_used_at')
-            ->orderByDesc('created_at')
+            ->orderByRaw('COALESCE(last_used_at, created_at) DESC')
             ->get()
             ->map(function (PersonalAccessToken $token) use ($currentTokenId) {
                 $token->setAttribute('is_current', $currentTokenId !== null && (int) $token->id === (int) $currentTokenId);
@@ -52,8 +51,7 @@ class UserSessionService
         }
 
         return $query
-            ->orderByDesc('last_used_at')
-            ->orderByDesc('created_at')
+            ->orderByRaw('COALESCE(last_used_at, created_at) DESC')
             ->paginate($request->get('per_page', 10));
     }
 

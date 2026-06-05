@@ -30,7 +30,7 @@
 
         <div class="db-card-body">
             <div v-if="loading.isActive" class="py-8 text-center text-sm text-[#6E7191]">
-                {{ $t("label.loading") || "Loading..." }}
+                {{ $t("label.loading") }}
             </div>
 
             <div v-else-if="loadError" class="py-8 text-center">

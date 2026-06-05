@@ -80,4 +80,13 @@ app.use(VueApexCharts)
 app.use(Toast, toastOptions)
 app.use(i18n)
 app.use(head)
-app.mount('#app');
+
+async function bootstrap() {
+    await router.isReady();
+    app.mount('#app');
+    requestAnimationFrame(() => {
+        document.documentElement.classList.add('app-ready');
+    });
+}
+
+bootstrap();

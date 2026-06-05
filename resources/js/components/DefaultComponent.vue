@@ -1,7 +1,4 @@
 <template>
-    <div v-if="theme === 'loading'">
-        <LoadingComponent :props="{ isActive: true }" skeleton="app" />
-    </div>
     <div v-show="theme === 'frontend'">
         <main class="">
             <FrontendNavbarComponent />
@@ -77,8 +74,8 @@ import FrontendMobileCategoryComponent from "./layouts/frontend/FrontendMobileCa
 import FrontendMobileAccountComponent from "./layouts/frontend/FrontendMobileAccountComponent";
 import FrontendMobileSideBarComponent from "./layouts/frontend/FrontendMobileSideBarComponent";
 import FrontendCookiesComponent from "./layouts/frontend/FrontendCookiesComponent";
-import LoadingComponent from "../components/frontend/components/LoadingComponent.vue";
 import { identifyAnalyticsUser } from "../services/analyticsEcommerceBridge";
+import { resolveThemeFromRoute } from "../services/themeResolver";
 import DisplayModeEnum from "../enums/modules/displayModeEnum";
 import env from "../config/env";
 import BackendAiSidebarComponent from "./layouts/backend/BackendAiSidebarComponent.vue";
@@ -97,11 +94,10 @@ export default {
         BackendMenuComponent,
         FrontendCookiesComponent,
         BackendAiSidebarComponent,
-        LoadingComponent
     },
     data() {
         return {
-            theme: "loading",
+            theme: "frontend",
             showCheckoutReminder: false,
             hasShownReminder: false,
             reminderTimer: null,
@@ -109,6 +105,9 @@ export default {
             originalTitle: "",
             visibilityListenerAdded: false
         }
+    },
+    created() {
+        this.routeClassDefine(this.$route);
     },
     beforeMount() {
         this.displayModeDefine();
@@ -176,20 +175,16 @@ export default {
     methods: {
         routeClassDefine: function (route) {
             if (!route) return;
-            this.$nextTick(() => {
-                document.body.classList.remove('theme-frontend', 'product-details-active', 'checkout-active');
-                if (route.meta && route.meta.isFrontend === true) {
-                    this.theme = "frontend";
-                    document.body.classList.add('theme-frontend');
-                    if (route.name === 'frontend.product.details') {
-                        document.body.classList.add('product-details-active');
-                    } else if (route.name && route.name.startsWith('frontend.checkout')) {
-                        document.body.classList.add('checkout-active');
-                    }
-                } else {
-                    this.theme = "backend";
+            document.body.classList.remove('theme-frontend', 'product-details-active', 'checkout-active');
+            this.theme = resolveThemeFromRoute(route);
+            if (this.theme === 'frontend') {
+                document.body.classList.add('theme-frontend');
+                if (route.name === 'frontend.product.details') {
+                    document.body.classList.add('product-details-active');
+                } else if (route.name && route.name.startsWith('frontend.checkout')) {
+                    document.body.classList.add('checkout-active');
                 }
-            });
+            }
         },
         displayModeDefine: function () {
             let dir = "ltr";
