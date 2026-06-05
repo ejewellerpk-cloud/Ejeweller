@@ -420,20 +420,20 @@
                     dir="ltr"
                     :slides-per-view="2"
                     :space-between="16"
-                    :navigation="true"
+                    :navigation="false"
                     :grab-cursor="true"
                     :allow-touch-move="true"
                     :simulate-touch="true"
                     :touch-ratio="1"
                     :long-swipes="true"
                     :loop="true"
-                    :loop-additional-slides="4"
-                    :speed="relatedSlideSpeed"
+                    :loop-additional-slides="8"
+                    :speed="relatedContinuousSpeed"
                     :autoplay="relatedAutoplay"
                     :modules="relatedSliderModules"
                     v-bind="relatedTouchProps"
                     :breakpoints="relatedBreakpoints"
-                    class="related-products-swiper !pb-10"
+                    class="related-products-swiper related-products-swiper--continuous !pb-10"
                     @swiper="onRelatedSwiper"
                     @touchStart="onRelatedTouchStart"
                     @sliderFirstMove="onRelatedTouchStart"
@@ -785,11 +785,11 @@ import { discountPercentage, getDetailPrices, parseAmount, withCartLinePricing }
 import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
 import {
-    relatedProductsAutoplayConfig,
-    RELATED_PRODUCTS_SWIPER_SPEED,
+    continuousAutoplayConfig,
+    CONTINUOUS_SWIPER_SPEED,
     touchFriendlySwiperProps,
-    pauseRelatedProductsSwiper,
-    resumeRelatedProductsSwiper,
+    pauseContinuousSwiper,
+    resumeContinuousSwiper,
 } from "../../../utils/continuousSwiper";
 
 export default {
@@ -821,7 +821,7 @@ export default {
             setThumbsSwiper,
             setMainSwiper,
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
-            relatedSliderModules: [Autoplay, Navigation],
+            relatedSliderModules: [Autoplay],
             relatedTouchProps: touchFriendlySwiperProps,
             relatedBreakpoints: {
                 640: { slidesPerView: 2, spaceBetween: 20 },
@@ -906,9 +906,10 @@ export default {
             relatedSwiper: null,
             videoPosterMap: {},
             mainSwiperActiveIndex: 0,
-            relatedSlideSpeed: RELATED_PRODUCTS_SWIPER_SPEED,
-            relatedAutoplay: { ...relatedProductsAutoplayConfig },
+            relatedContinuousSpeed: CONTINUOUS_SWIPER_SPEED,
+            relatedAutoplay: { ...continuousAutoplayConfig },
             relatedTouchActive: false,
+            relatedResumeTimer: null,
             loadToken: 0,
             relatedObserver: null,
         }
@@ -1073,6 +1074,10 @@ export default {
         if (this.relatedObserver) {
             this.relatedObserver.disconnect();
             this.relatedObserver = null;
+        }
+        if (this.relatedResumeTimer) {
+            clearTimeout(this.relatedResumeTimer);
+            this.relatedResumeTimer = null;
         }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
@@ -1872,23 +1877,33 @@ export default {
         },
         onRelatedSwiper: function (swiper) {
             this.relatedSwiper = swiper;
+            this.$nextTick(() => resumeContinuousSwiper(swiper));
         },
         onRelatedTouchStart: function () {
             this.relatedTouchActive = true;
-            pauseRelatedProductsSwiper(this.relatedSwiper);
+            if (this.relatedResumeTimer) {
+                clearTimeout(this.relatedResumeTimer);
+                this.relatedResumeTimer = null;
+            }
+            pauseContinuousSwiper(this.relatedSwiper);
         },
         onRelatedTouchEnd: function () {
             if (!this.relatedTouchActive) {
                 return;
             }
             this.relatedTouchActive = false;
-            resumeRelatedProductsSwiper(this.relatedSwiper);
+            if (this.relatedResumeTimer) {
+                clearTimeout(this.relatedResumeTimer);
+            }
+            this.relatedResumeTimer = setTimeout(() => {
+                resumeContinuousSwiper(this.relatedSwiper);
+                this.relatedResumeTimer = null;
+            }, 600);
         },
         onRelatedSlideSettled: function () {
-            if (!this.relatedTouchActive) {
-                return;
+            if (this.relatedTouchActive) {
+                resumeContinuousSwiper(this.relatedSwiper);
             }
-            resumeRelatedProductsSwiper(this.relatedSwiper);
         },
         showRelatedProduct: function () {
             if (typeof this.$route.params.slug !== "undefined") {
@@ -1899,7 +1914,7 @@ export default {
                     rand: 8
                 }).then((res) => {
                     this.relatedProductsLoading = false;
-                    this.$nextTick(() => this.relatedSwiper?.autoplay?.start());
+                    this.$nextTick(() => resumeContinuousSwiper(this.relatedSwiper));
                 }).catch((err) => {
                     this.relatedProductsLoading = false;
                 });
@@ -2377,41 +2392,17 @@ export default {
     -webkit-overflow-scrolling: touch;
 }
 
+.related-products-swiper--continuous :deep(.swiper-wrapper) {
+    transition-timing-function: linear !important;
+}
+
 .related-products-swiper :deep(.swiper-slide) {
     height: auto;
-}
-
-.related-products-swiper :deep(.swiper-button-next),
-.related-products-swiper :deep(.swiper-button-prev) {
-    color: #ff5c00 !important;
-    background: #ffffff;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-    top: 38% !important;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.related-products-swiper :deep(.swiper-button-next):after,
-.related-products-swiper :deep(.swiper-button-prev):after {
-    font-size: 1rem;
-    font-weight: 700;
-}
-
-.related-products-swiper :deep(.swiper-button-disabled) {
-    opacity: 0;
-    pointer-events: none;
 }
 
 @media (max-width: 639px) {
     .related-products-slider__fade {
         width: 1.25rem;
-    }
-
-    .related-products-swiper :deep(.swiper-button-next),
-    .related-products-swiper :deep(.swiper-button-prev) {
-        display: none;
     }
 }
 
