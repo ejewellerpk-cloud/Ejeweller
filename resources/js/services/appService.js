@@ -358,7 +358,37 @@ export default {
             return;
         }
 
-        targetElement.classList.toggle("is-open");
+        targetElement.classList.add(
+            "transition-all",
+            "duration-300",
+            "ease-in-out"
+        );
+
+        if (targetElement.style.visibility === "visible") {
+            targetElement.style.height = "0px";
+            targetElement.style.overflow = "hidden";
+            targetElement.style.opacity = "0";
+            targetElement.style.visibility = "hidden";
+            return;
+        }
+
+        targetElement.style.display = "block";
+        targetElement.style.visibility = "hidden";
+        targetElement.style.height = "auto";
+        targetElement.style.overflow = "hidden";
+        const fullHeight = targetElement.scrollHeight;
+        targetElement.style.height = "0px";
+
+        void targetElement.offsetHeight;
+
+        targetElement.style.height = fullHeight + "px";
+        targetElement.style.opacity = "1";
+        targetElement.style.visibility = "visible";
+
+        setTimeout(() => {
+            targetElement.style.overflow = "visible";
+            targetElement.style.height = "auto";
+        }, 300);
     },
     handleTab: function (event, targetID, targetButton, targetDiv, active) {
         const targetBtns = document.querySelectorAll(targetButton);

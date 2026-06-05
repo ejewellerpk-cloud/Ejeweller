@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <div class="table-filter-div" :class="{ 'is-open': isFilterOpen }" :id="filterId">
+        <ListFilterPanel :show="isFilterOpen">
             <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                 <div class="row">
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -63,7 +63,7 @@
                     </div>
                 </div>
             </form>
-        </div>
+        </ListFilterPanel>
 
         <div class="db-card-body !pt-0">
             <div v-if="loading.isActive" class="py-8 text-center text-sm text-[#6E7191]">
@@ -149,6 +149,7 @@
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import TableLimitComponent from "./TableLimitComponent";
+import ListFilterPanel from "./ListFilterPanel";
 import PaginationTextComponent from "./pagination/PaginationTextComponent";
 import PaginationBox from "./pagination/PaginationBox";
 import PaginationSMBox from "./pagination/PaginationSMBox";
@@ -158,6 +159,7 @@ export default {
     emits: ["back"],
     components: {
         TableLimitComponent,
+        ListFilterPanel,
         PaginationTextComponent,
         PaginationBox,
         PaginationSMBox,
@@ -168,10 +170,6 @@ export default {
             required: true,
         },
         showRoute: {
-            type: String,
-            required: true,
-        },
-        filterId: {
             type: String,
             required: true,
         },

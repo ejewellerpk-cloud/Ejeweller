@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-C7sh21n_.js";import{l as r,c as n,z as t}from"./vendor-vue-core-C2Ezm0Mz.js";import"./vendor-8yHaUXFb.js";const c={name:"CurrencyComponent"};function s(p,a,_,m,i,u){const o=r("router-view");return n(),t(o)}const d=e(c,[["render",s]]);export{d as default};

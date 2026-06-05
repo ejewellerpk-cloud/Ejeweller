@@ -6,7 +6,10 @@
                 <h3 class="db-card-title">{{ $t("menu.customers") }}</h3>
                 <div class="db-card-filter">
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                    <FilterComponent @click.prevent="handleSlide('customer-filter')" />
+                    <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
+                        <i class="lab lab-line-filter lab-font-size-14"></i>
+                        <span>{{ $t("button.filter") }}</span>
+                    </button>
                     <div class="dropdown-group">
                         <ExportComponent />
                         <div class="dropdown-list db-card-filter-dropdown-list">
@@ -27,7 +30,7 @@
                 </div>
             </div>
 
-            <div class="table-filter-div" id="customer-filter">
+            <ListFilterPanel :show="showFilter">
                 <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                     <div class="row">
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -75,7 +78,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
+            </ListFilterPanel>
 
             <div class="db-table-responsive">
                 <table class="db-table stripe" id="print">
@@ -149,7 +152,6 @@
             v-if="listView === 'sessions' && permissionChecker('customers_show')"
             :key="'customer-sessions'"
             api-prefix="customer"
-            filter-id="customer-session-filter"
             show-route="admin.customers.show"
             @back="listView = 'users'"
         />
@@ -169,7 +171,7 @@ import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
 import print from "vue3-print-nb";
-import FilterComponent from "../components/buttons/collapse/FilterComponent";
+import ListFilterPanel from "../components/ListFilterPanel";
 import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
@@ -188,7 +190,7 @@ export default {
         SmIconViewComponent,
         SmIconSidebarModalEditComponent,
         SmIconDeleteComponent,
-        FilterComponent,
+        ListFilterPanel,
         ExportComponent,
         PrintComponent,
         ExcelComponent,
@@ -200,6 +202,7 @@ export default {
                 isActive: false,
             },
             listView: "users",
+            showFilter: false,
             enums: {
                 statusEnum: statusEnum,
                 statusEnumArray: {
@@ -267,9 +270,6 @@ export default {
         },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
-        },
-        handleSlide: function (id) {
-            return appService.handleSlide(id);
         },
         search: function () {
             this.list();
