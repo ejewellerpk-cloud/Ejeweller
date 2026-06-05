@@ -11,6 +11,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class UserSessionService
 {
+    private const GUARD = 'sanctum';
+
     public function listForUser(User $user, ?int $currentTokenId = null): Collection
     {
         return $user->tokens()
@@ -48,16 +50,17 @@ class UserSessionService
 
     public function authorizeAdminCanManageSessions(User $admin, User $target): void
     {
-        $roleId = (int) ($target->roles->first()?->id ?? 0);
+        $target->loadMissing('roles');
+        $admin->loadMissing('roles');
 
-        $allowed = match ($roleId) {
-            Role::ADMIN    => $admin->can('administrators_show'),
-            Role::CUSTOMER => $admin->can('customers_show'),
-            Role::MANAGER, Role::POS_OPERATOR, Role::STUFF => $admin->can('employees_show'),
-            default        => false,
+        $permission = match (true) {
+            $target->hasRole(Role::ADMIN) => 'administrators_show',
+            $target->hasRole(Role::CUSTOMER) => 'customers_show',
+            $target->hasRole([Role::MANAGER, Role::POS_OPERATOR, Role::STUFF]) => 'employees_show',
+            default => null,
         };
 
-        if (!$allowed) {
+        if ($permission === null || !$admin->hasPermissionTo($permission, self::GUARD)) {
             throw new AccessDeniedHttpException(trans('all.message.permission_denied'));
         }
     }

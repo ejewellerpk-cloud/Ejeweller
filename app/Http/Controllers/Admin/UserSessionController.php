@@ -20,6 +20,7 @@ class UserSessionController extends Controller
     public function index(Request $request, User $user): JsonResponse
     {
         try {
+            $user->loadMissing('roles');
             $this->userSessionService->authorizeAdminCanManageSessions($request->user(), $user);
 
             $sessions = $this->userSessionService->listForUser($user);
