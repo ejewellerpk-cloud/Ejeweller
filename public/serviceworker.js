@@ -1,5 +1,5 @@
 // Increment VERSION whenever you deploy — forces clients to drop old caches
-const VERSION = 'v2.2';
+const VERSION = 'v2.3';
 const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
@@ -57,11 +57,27 @@ const mustBypassCache = (request) => {
 };
 
 const passthrough = (request) =>
-    fetch(request, { cache: 'no-store', credentials: 'same-origin' });
+    fetch(request).catch((error) => {
+        const url = request.url || '';
+        if (url.includes('/api/')) {
+            return new Response(JSON.stringify({ success: false, offline: true }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        throw error;
+    });
 
 self.addEventListener('fetch', (event) => {
     if (mustBypassCache(event.request)) {
-        event.respondWith(passthrough(event.request));
+        event.respondWith(
+            passthrough(event.request).catch(() =>
+                new Response(JSON.stringify({ success: false, offline: true }), {
+                    status: 503,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            )
+        );
         return;
     }
 

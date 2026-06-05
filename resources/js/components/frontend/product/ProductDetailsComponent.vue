@@ -1732,6 +1732,53 @@ export default {
 
             return Promise.allSettled(tasks);
         },
+        commitShowPayload: function (data) {
+            this.$store.commit('frontendProduct/show', data);
+            let images = data.images || [];
+            if (images.length === 0 && data.image) {
+                images = [data.image];
+            }
+            this.$store.commit('frontendProduct/showImages', images);
+            this.$store.commit('frontendProduct/showReviews', data.reviews);
+            this.$store.commit('frontendProduct/showVideos', data.videos);
+            this.$store.commit('frontendProduct/showSeo', data.seo);
+        },
+        handleShowSuccess: function (res, token) {
+            if (token !== this.loadToken) {
+                return;
+            }
+
+            const data = res.data.data;
+            this.applyProductFromShowResponse(data);
+            this.applyProductSeo(data);
+            this.loading.isActive = false;
+
+            this.$nextTick(() => {
+                this.setupRelatedProductsObserver();
+            });
+
+            this.scheduleDeferredDetailWork(data);
+            this.loadSecondaryProductData(data, token);
+        },
+        requestProductShow: function (token, useTrashed) {
+            const action = useTrashed ? 'frontendProduct/showWithTrashed' : 'frontendProduct/show';
+
+            this.$store.dispatch(action, this.props.search).then((res) => {
+                if (useTrashed) {
+                    this.commitShowPayload(res.data.data);
+                }
+                this.handleShowSuccess(res, token);
+            }).catch((err) => {
+                if (token !== this.loadToken) {
+                    return;
+                }
+                if (!useTrashed && err.response?.status === 404) {
+                    this.requestProductShow(token, true);
+                    return;
+                }
+                this.loading.isActive = false;
+            });
+        },
         show: function () {
             if (typeof this.$route.params.slug === 'undefined') {
                 return;
@@ -1749,27 +1796,7 @@ export default {
             this.$store.commit('frontendProductVariation/allVariation', []);
             this.props.search.slug = this.$route.params.slug;
 
-            this.$store.dispatch('frontendProduct/show', this.props.search).then((res) => {
-                if (token !== this.loadToken) {
-                    return;
-                }
-
-                const data = res.data.data;
-                this.applyProductFromShowResponse(data);
-                this.applyProductSeo(data);
-                this.loading.isActive = false;
-
-                this.$nextTick(() => {
-                    this.setupRelatedProductsObserver();
-                });
-
-                this.scheduleDeferredDetailWork(data);
-                this.loadSecondaryProductData(data, token);
-            }).catch(() => {
-                if (token === this.loadToken) {
-                    this.loading.isActive = false;
-                }
-            });
+            this.requestProductShow(token, false);
         },
         onRelatedSwiper: function (swiper) {
             this.relatedSwiper = swiper;

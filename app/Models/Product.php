@@ -301,4 +301,39 @@ class Product extends Model implements HasMedia
     {
         return $this->hasMany(CartTracker::class);
     }
+
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $field = $field ?: $this->getRouteKeyName();
+        $query = static::query();
+
+        $product = (clone $query)->where($field, $value)->first();
+        if ($product) {
+            return $product;
+        }
+
+        if (preg_match('/-(\d+)$/', (string) $value, $matches)) {
+            $product = (clone $query)->where('id', (int) $matches[1])->first();
+            if ($product) {
+                return $product;
+            }
+
+            $baseSlug = preg_replace('/-\d+$/', '', (string) $value);
+            if ($baseSlug !== $value) {
+                $product = (clone $query)->where($field, $baseSlug)->first();
+                if ($product) {
+                    return $product;
+                }
+            }
+        }
+
+        if (ctype_digit((string) $value)) {
+            $product = (clone $query)->where('id', (int) $value)->first();
+            if ($product) {
+                return $product;
+            }
+        }
+
+        return (clone $query)->where($field, $value)->firstOrFail();
+    }
 }
