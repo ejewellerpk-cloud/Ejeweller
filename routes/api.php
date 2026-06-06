@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\OtpController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\WhatsappOrderController;
 use App\Http\Controllers\Admin\PWAController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\CityController;
@@ -885,6 +886,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('/customer', [PosController::class, 'storeCustomer']);
         Route::post('/', [PosController::class, 'store']);
+    });
+
+    Route::prefix('whatsapp-order')->name('whatsappOrder.')->group(function () {
+        Route::post('/customer', [WhatsappOrderController::class, 'storeCustomer']);
+        Route::post('/', [WhatsappOrderController::class, 'store']);
+        Route::get('/', [WhatsappOrderController::class, 'index']);
+        Route::get('show/{order}', [WhatsappOrderController::class, 'show']);
+        Route::delete('/{order}', [WhatsappOrderController::class, 'destroy']);
+        Route::get('/export', [WhatsappOrderController::class, 'export']);
+        Route::post('/change-status/{order}', [WhatsappOrderController::class, 'changeStatus']);
+        Route::post('/change-payment-status/{order}', [WhatsappOrderController::class, 'changePaymentStatus']);
     });
 
     Route::prefix('return-and-refund')->name('return-and-refund.')->middleware(['auth:sanctum'])->group(function () {

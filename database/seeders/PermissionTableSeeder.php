@@ -191,6 +191,22 @@ class PermissionTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'title'      => 'WhatsApp Order',
+                'name'       => 'whatsapp-order',
+                'guard_name' => 'sanctum',
+                'url'        => 'whatsapp-order',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'title'      => 'WhatsApp Orders',
+                'name'       => 'whatsapp-orders',
+                'guard_name' => 'sanctum',
+                'url'        => 'whatsapp-orders',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'title'      => 'Return And Refunds',
                 'name'       => 'return-and-refunds',
                 'guard_name' => 'sanctum',

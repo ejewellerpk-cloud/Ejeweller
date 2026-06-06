@@ -139,6 +139,12 @@ export default {
     components: {
         LoadingComponent
     },
+    props: {
+        storeModule: {
+            type: String,
+            default: "posOrder",
+        },
+    },
     data() {
         return {
             loading: {
@@ -219,7 +225,7 @@ export default {
             try {
                 this.loading.isActive = true;
                 this.$store
-                    .dispatch("posOrder/saveCustomer", this.props)
+                    .dispatch(`${this.storeModule}/saveCustomer`, this.props)
                     .then((res) => {
                         appService.sideDrawerHide();
                         this.loading.isActive = false;

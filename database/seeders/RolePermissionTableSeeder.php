@@ -27,6 +27,8 @@ class RolePermissionTableSeeder extends Seeder
                 ['name' => 'pos'],
                 ['name' => 'pos-orders'],
                 ['name' => 'online-orders'],
+                ['name' => 'whatsapp-order'],
+                ['name' => 'whatsapp-orders'],
                 ['name' => 'push-notifications'],
                 ['name' => 'push-notifications_create'],
                 ['name' => 'push-notifications_edit'],
@@ -55,7 +57,9 @@ class RolePermissionTableSeeder extends Seeder
             $posOperatorManagerPermissions = [
                 ['name' => 'dashboard'],
                 ['name' => 'pos'],
-                ['name' => 'pos-orders']
+                ['name' => 'pos-orders'],
+                ['name' => 'whatsapp-order'],
+                ['name' => 'whatsapp-orders'],
             ];
             $posOperatorManagerPermissions = Permission::whereIn('name', $posOperatorManagerPermissions)->get();
             $posOperatorManager->givePermissionTo($posOperatorManagerPermissions);

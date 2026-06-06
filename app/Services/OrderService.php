@@ -13,6 +13,9 @@ use App\Enums\OrderType;
 use App\Models\StockTax;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\Source;
+use App\Models\OrderAddress;
+use App\Enums\AddressType;
 use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
@@ -24,6 +27,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\PosOrderRequest;
+use App\Http\Requests\WhatsappOrderRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Libraries\QueryExceptionLibrary;
@@ -240,6 +244,118 @@ class OrderService
                         }
                     }
                 }
+
+                $this->order->order_serial_no = date('dmy') . $this->order->id;
+                $this->order->save();
+            });
+            return $this->order;
+        } catch (Exception $exception) {
+            DB::rollBack();
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function whatsappOrderStore(WhatsappOrderRequest $request): object
+    {
+        try {
+            DB::transaction(function () use ($request) {
+                $shippingCharge = (float) ($request->shipping_charge ?? 0);
+
+                $this->order = Order::create([
+                    'user_id'          => $request->customer_id,
+                    'subtotal'         => $request->subtotal,
+                    'discount'         => $request->discount ?? 0,
+                    'tax'              => $request->tax,
+                    'shipping_charge'  => $shippingCharge,
+                    'total'            => $request->total,
+                    'order_type'       => OrderType::DELIVERY,
+                    'source'           => Source::WHATSAPP,
+                    'payment_method'   => $request->payment_method,
+                    'payment_status'   => PaymentStatus::UNPAID,
+                    'status'           => OrderStatus::PENDING,
+                    'order_datetime'   => date('Y-m-d H:i:s'),
+                    'active'           => Ask::YES,
+                    'note'             => $request->note,
+                ]);
+
+                $products = json_decode($request->products);
+                if (!blank($products)) {
+                    foreach ($products as $product) {
+                        $stockId = Stock::create([
+                            'product_id'      => $product->product_id,
+                            'model_type'      => Order::class,
+                            'model_id'        => $this->order->id,
+                            'item_type'       => $product->variation_id > 0 ? ProductVariation::class : Product::class,
+                            'item_id'         => $product->variation_id > 0 ? $product->variation_id : $product->product_id,
+                            'variation_names' => $product->variation_names,
+                            'sku'             => $product->sku ?? null,
+                            'price'           => $product->price,
+                            'quantity'        => -$product->quantity,
+                            'discount'        => $product->discount,
+                            'tax'             => number_format($product->total_tax, (int)env('CURRENCY_DECIMAL_POINT'), '.', ''),
+                            'subtotal'        => $product->subtotal,
+                            'total'           => $product->total,
+                            'status'          => Status::ACTIVE,
+                        ]);
+                        if ($product->taxes) {
+                            $j               = 0;
+                            $productTaxArray = [];
+                            foreach ($product->taxes as $tax) {
+                                $productTaxArray[$j] = [
+                                    'stock_id'   => $stockId->id,
+                                    'product_id' => $product->product_id,
+                                    'tax_id'     => $tax->id,
+                                    'name'       => $tax->name,
+                                    'code'       => $tax->code,
+                                    'tax_rate'   => $tax->tax_rate,
+                                    'tax_amount' => $tax->tax_amount,
+                                    'created_at' => now(),
+                                    'updated_at' => now()
+                                ];
+                                $j++;
+                            }
+                            StockTax::insert($productTaxArray);
+                        }
+                    }
+                }
+
+                OrderAddress::create([
+                    'order_id'     => $this->order->id,
+                    'user_id'      => $request->customer_id,
+                    'address_type' => AddressType::SHIPPING,
+                    'full_name'    => $request->shipping_full_name,
+                    'email'        => $request->shipping_email,
+                    'country_code' => $request->shipping_country_code,
+                    'phone'        => $request->shipping_phone,
+                    'country'      => $request->shipping_country,
+                    'address'      => $request->shipping_address,
+                    'state'        => $request->shipping_state,
+                    'city'         => $request->shipping_city,
+                    'zip_code'     => $request->shipping_zip_code,
+                    'latitude'     => null,
+                    'longitude'    => null,
+                ]);
+
+                OrderAddress::create([
+                    'order_id'     => $this->order->id,
+                    'user_id'      => $request->customer_id,
+                    'address_type' => AddressType::BILLING,
+                    'full_name'    => $request->shipping_full_name,
+                    'email'        => $request->shipping_email,
+                    'country_code' => $request->shipping_country_code,
+                    'phone'        => $request->shipping_phone,
+                    'country'      => $request->shipping_country,
+                    'address'      => $request->shipping_address,
+                    'state'        => $request->shipping_state,
+                    'city'         => $request->shipping_city,
+                    'zip_code'     => $request->shipping_zip_code,
+                    'latitude'     => null,
+                    'longitude'    => null,
+                ]);
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
                 $this->order->save();

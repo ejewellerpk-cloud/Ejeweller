@@ -134,6 +134,26 @@ class MenuTableSeeder extends Seeder
 
                     ],
                     [
+                        'name'       => 'WhatsApp Order',
+                        'language'   => 'whatsapp_order',
+                        'url'        => 'whatsapp-order',
+                        'icon'       => 'lab lab-line-whatsapp',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'WhatsApp Orders',
+                        'language'   => 'whatsapp_orders',
+                        'url'        => 'whatsapp-orders',
+                        'icon'       => 'lab lab-line-push-notification',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
                         'name'       => 'Return Orders',
                         'language'   => 'return_orders',
                         'url'        => 'return-orders',

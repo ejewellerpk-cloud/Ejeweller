@@ -17,6 +17,8 @@ import onlineOrderRoutes from "./modules/onlineOrderRoutes";
 import mediaRoutes from "./modules/mediaRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import posRoutes from "./modules/posRoutes";
+import whatsappOrderRoutes from "./modules/whatsappOrderRoutes";
+import whatsappOrdersRoutes from "./modules/whatsappOrdersRoutes";
 import ProductSectionRoutes from "./modules/ProductSectionRoutes";
 import productsReportRoutes from "./modules/productsReportRoutes";
 import productsRoutes from "./modules/productsRoutes";
@@ -84,6 +86,8 @@ const routes = baseRoutes.concat(
     productsReportRoutes,
     posOrderRoutes,
     posRoutes,
+    whatsappOrderRoutes,
+    whatsappOrdersRoutes,
     returnAndRefundRoutes,
     subscriberRoutes,
     reviewRoutes,

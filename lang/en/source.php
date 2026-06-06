@@ -6,5 +6,6 @@ return [
     Source::WEB => 'Web',
     Source::APP => 'App',
     Source::POS => 'Pos',
+    Source::WHATSAPP => 'WhatsApp',
 
 ];
