@@ -25,40 +25,31 @@ export const relatedProductsAutoplayConfig = {
 
 /** Lets the page scroll vertically; only clearly horizontal swipes move the slider. */
 export const touchFriendlySwiperProps = {
-    touchAngle: 40,
-    threshold: 14,
+    followFinger: true,
+    touchRatio: 1,
+    touchAngle: 50,
+    threshold: 8,
     touchStartPreventDefault: false,
     passiveListeners: true,
     touchReleaseOnEdges: true,
-    resistanceRatio: 0.85,
-    longSwipesMs: 280,
+    resistanceRatio: 0.82,
+    longSwipes: true,
+    longSwipesMs: 250,
+    shortSwipes: true,
+    preventInteractionOnTransition: false,
+    simulateTouch: true,
+    allowTouchMove: true,
 };
 
-/** Product card image carousel — nested-safe when inside homepage section row swiper. */
+/** Product card image carousel — nested-safe; tap opens product, swipe changes slide. */
 export const productCardSwiperTouchProps = {
     ...touchFriendlySwiperProps,
     nested: true,
-    followFinger: true,
-    shortSwipes: true,
-    preventInteractionOnTransition: false,
-};
-
-/** Homepage horizontal row carousels (sections, categories, brands, promos, hero). */
-export const homepageCarouselTouchProps = {
-    ...touchFriendlySwiperProps,
-    followFinger: true,
-    shortSwipes: true,
-    preventInteractionOnTransition: false,
-};
-
-/** Continuous marquee sliders (reviews) — vertical scroll friendly. */
-export const continuousCarouselTouchProps = {
-    ...touchFriendlySwiperProps,
-    grabCursor: true,
-    allowTouchMove: true,
-    simulateTouch: true,
-    touchRatio: 1,
-    longSwipes: true,
+    touchAngle: 35,
+    threshold: 10,
+    slideToClickedSlide: false,
+    preventClicks: true,
+    preventClicksPropagation: true,
 };
 
 export function pauseContinuousSwiper(swiper) {

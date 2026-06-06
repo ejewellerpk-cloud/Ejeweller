@@ -3,7 +3,7 @@
     <section v-else-if="categories.length > 0" class="sm:mb-10">
         <div class="container">
             <h2 class="text-2xl sm:text-4xl font-bold -mb-10">{{ $t('label.browse_by_categories')}}</h2>
-            <Swiper dir="ltr" v-bind="carouselTouch" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
+            <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper homepage-touch-swiper" :breakpoints="breakpoints">
                 <SwiperSlide v-for="category in categories" class="mobile:!w-24">
                     <router-link :to="{name: 'frontend.product', query:{ category: category.slug}}"
                                  class="w-full flex flex-col items-center gap-2 sm:gap-3 group">
@@ -33,7 +33,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
-import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
+import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 
 export default {
@@ -46,7 +46,8 @@ export default {
     setup() {
         return {
             modules: [Navigation, Pagination, Autoplay],
-            carouselTouch: homepageCarouselTouchProps,
+            rowTouch: homepageRowSwiperProps,
+            rowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
         }
     },
     data() {

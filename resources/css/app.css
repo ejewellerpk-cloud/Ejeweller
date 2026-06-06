@@ -598,13 +598,24 @@
         @apply !pt-16 sm:!pt-20 !pb-10
     }
 
+    .homepage-touch-swiper,
     .banner-swiper,
     .navigate-swiper,
     .ad-swiper,
     .product-section-swiper,
     .reviews-swiper {
         touch-action: pan-y pinch-zoom;
-        -webkit-overflow-scrolling: touch;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .homepage-touch-swiper :deep(.swiper-wrapper),
+    .product-section-swiper :deep(.swiper-wrapper),
+    .reviews-swiper :deep(.swiper-wrapper) {
+        will-change: transform;
+    }
+
+    .product-section-slider-container {
+        touch-action: pan-y pinch-zoom;
     }
 
     /* iPhone / notch safe areas */
@@ -622,6 +633,15 @@
         padding-top: var(--safe-top);
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+        .mobile-bottom-nav__item:hover,
+        .mobile-header-touch:hover {
+            color: inherit;
+        }
     }
 
     .shop-page-sticky-bar {

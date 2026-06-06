@@ -57,6 +57,5 @@ export default {
 <style scoped>
 .homepage-root {
     min-height: 1px;
-    -webkit-overflow-scrolling: touch;
 }
 </style>

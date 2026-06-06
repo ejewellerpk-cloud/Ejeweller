@@ -6,7 +6,7 @@
                 <h2 class="capitalize text-2xl sm:text-4xl font-bold mb-8">
                     {{ $t('label.our_outlets') }}
                 </h2>
-                <Swiper dir="ltr" v-bind="carouselTouch" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
+                <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper homepage-touch-swiper" :breakpoints="breakpoints">
                     <SwiperSlide v-for="outlet in outlets" :key="outlet.id">
                         <div class="w-full h-full p-6 rounded-2xl shadow-sm border border-slate-100 bg-white group hover:border-primary transition-all duration-300">
                             <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary transition-all duration-300">
@@ -43,7 +43,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
-import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
+import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
@@ -57,7 +57,8 @@ export default {
     setup() {
         return {
             modules: [Navigation, Pagination, Autoplay],
-            carouselTouch: homepageCarouselTouchProps,
+            rowTouch: homepageRowSwiperProps,
+            rowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
         }
     },
     data() {

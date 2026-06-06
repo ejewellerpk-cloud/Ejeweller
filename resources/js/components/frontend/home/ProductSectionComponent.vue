@@ -19,10 +19,11 @@
                     
                     <div class="product-section-slider-container relative">
                         <Swiper
-                            v-bind="carouselTouch"
+                            v-bind="productRowTouch"
                             :dir="'ltr'"
                             :slides-per-view="2"
                             :space-between="6"
+                            :speed="rowSpeed"
                             :navigation="true"
                             :modules="modules"
                             :breakpoints="{
@@ -30,7 +31,7 @@
                                 '768': { slidesPerView: 3, spaceBetween: 24 },
                                 '1024': { slidesPerView: 4, spaceBetween: 24 }
                             }"
-                            class="product-section-swiper !pb-10"
+                            class="product-section-swiper homepage-touch-swiper !pb-10"
                         >
                             <SwiperSlide v-for="product in productSection.products" :key="product.id">
                                 <ProductListComponent :products="[product]" />
@@ -71,10 +72,11 @@
                     
                     <div class="product-section-slider-container relative">
                         <Swiper
-                            v-bind="carouselTouch"
+                            v-bind="productRowTouch"
                             :dir="'ltr'"
                             :slides-per-view="2"
                             :space-between="6"
+                            :speed="rowSpeed"
                             :navigation="true"
                             :modules="modules"
                             :breakpoints="{
@@ -82,7 +84,7 @@
                                 '768': { slidesPerView: 3, spaceBetween: 24 },
                                 '1024': { slidesPerView: 4, spaceBetween: 24 }
                             }"
-                            class="product-section-swiper !pb-10"
+                            class="product-section-swiper homepage-touch-swiper !pb-10"
                         >
                             <SwiperSlide v-for="product in productSection.products" :key="product.id">
                                 <ProductListComponent :products="[product]" />
@@ -118,7 +120,7 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import ProductListComponent from "../components/ProductListComponent.vue";
-import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
+import { homepageProductRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
@@ -134,7 +136,8 @@ export default {
     setup() {
         return {
             modules: [Navigation],
-            carouselTouch: homepageCarouselTouchProps,
+            productRowTouch: homepageProductRowSwiperProps,
+            rowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
         };
     },
     data() {

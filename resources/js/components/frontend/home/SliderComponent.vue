@@ -3,9 +3,9 @@
     <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden">
         <Swiper
             dir="ltr"
-            v-bind="carouselTouch"
+            v-bind="heroTouch"
             :slides-per-view="1"
-            :speed="1000"
+            :speed="heroSpeed"
             :loop="true"
             effect="fade"
             :fadeEffect="{ crossFade: true }"
@@ -13,7 +13,7 @@
             :pagination="{ clickable: true }"
             :autoplay="{ delay: 4000, disableOnInteraction: false }"
             :modules="modules"
-            class="banner-swiper group"
+            class="banner-swiper homepage-touch-swiper group"
         >
             <SwiperSlide v-for="slider in sliders" :key="slider.id" class="relative">
                 <router-link v-if="slider.link" :to="slider.link" class="block w-full h-full">
@@ -38,7 +38,7 @@ import {Navigation, Pagination, Autoplay, EffectFade} from 'swiper/modules';
 import {Swiper, SwiperSlide} from 'swiper/vue';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
-import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
+import { homepageHeroSwiperProps, HOMEPAGE_HERO_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 export default {
     name: "SliderComponent",
@@ -50,7 +50,8 @@ export default {
     setup() {
         return {
             modules: [Navigation, Pagination, Autoplay, EffectFade],
-            carouselTouch: homepageCarouselTouchProps,
+            heroTouch: homepageHeroSwiperProps,
+            heroSpeed: HOMEPAGE_HERO_SWIPER_SPEED,
         }
     },
     data() {

@@ -1,9 +1,23 @@
 <template>
-    <div v-if="products.length > 0" v-for="product in products" :key="product.id"
-        class="p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_16px_32px_rgba(255,92,0,0.08)] transition-all ease-out group cursor-pointer relative"
-        @click="goToProductDetails(product, $event)"
-        @mouseenter="onMouseEnter(product.id)" 
-        @mouseleave="onMouseLeave(product.id)">
+    <template v-if="products.length > 0">
+    <router-link
+        v-for="product in products"
+        :key="product.id"
+        custom
+        v-slot="{ navigate, href }"
+        :to="productRoute(product)"
+    >
+        <a
+            :href="href"
+            class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative block no-underline text-inherit"
+            @touchstart.passive="onCardTouchStart(product, $event)"
+            @touchmove.passive="onCardTouchMove(product, $event)"
+            @touchcancel="onCardTouchEnd(product.id)"
+            @touchend="onCardNav($event, product, navigate)"
+            @click="onCardNav($event, product, navigate)"
+            @mouseenter="onMouseEnter(product.id)"
+            @mouseleave="onMouseLeave(product.id)"
+        >
         <div class="relative overflow-hidden rounded-xl isolate">
             <!-- Heart Screen Overlay Animation -->
             <div v-if="animatingWishlists[product.id]" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-xl animate-fade-overlay">
@@ -11,7 +25,7 @@
                     <i class="lab-fill-heart text-primary text-3xl animate-heart-pulse"></i>
                 </div>
             </div>
- 
+
             <div class="absolute top-2 left-2 z-30 flex flex-col gap-1 items-start pointer-events-none max-w-[calc(100%-3rem)]">
                 <span v-for="badge in getProductBadges(product)" :key="badge.key"
                     class="product-card-badge inline-flex items-center gap-0.5 font-extrabold rounded-full pointer-events-auto max-w-full truncate"
@@ -20,14 +34,13 @@
                     <span class="truncate">{{ badge.label }}</span>
                 </span>
             </div>
- 
+
             <button type="button" @click.prevent.stop="wishlist(product)"
                 :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse shadow-[0_4px_12px_rgba(255,92,0,0.45)]' : 'lab-line-heart text-secondary hover:text-primary hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)]'"
-                class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
+                class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-40 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
             </button>
 
             <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
-                <!-- Main Slider for Product Images + Video -->
                 <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
                     v-bind="cardSwiperTouch"
                     :dir="'ltr'"
@@ -35,15 +48,10 @@
                     :modules="modules"
                     :loop="true"
                     @swiper="onSwiperInit($event, product.id)"
-                    @sliderFirstMove="() => onCardSliderDrag(product.id)"
-                    @touchEnd="() => onCardSliderTouchEnd(product.id)"
-                    @click="(swiper, event) => onSwiperClick(swiper, event, product)"
                     class="w-full h-full product-card-swiper">
-                    
-                    <!-- 1st Slide: First Image -->
+
                     <SwiperSlide v-if="product.previews.length > 0">
-                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative bg-gray-50">
-                            <!-- Loading Dots Indicator -->
+                        <div class="w-full h-full relative bg-gray-50">
                             <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-0']">
                                 <div class="flex gap-1.5">
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
@@ -51,35 +59,29 @@
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                                 </div>
                             </div>
-                            
                             <img :src="product.previews[0]" alt="product" loading="lazy"
                                 @load="onImageLoad(product.id + '-img-0')"
-                                @error="onImageError($event, product.id + '-img-0')" 
+                                @error="onImageError($event, product.id + '-img-0')"
                                 :class="loadedImages[product.id + '-img-0'] ? 'opacity-100' : 'opacity-0'"
-                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
-                            <div class="absolute inset-0 z-20 cursor-pointer"></div>
-                        </router-link>
+                                class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
+                        </div>
                     </SwiperSlide>
 
-                    <!-- 2nd Slide: Video (if exists) -->
                     <SwiperSlide v-if="product.videos && product.videos.length > 0">
-                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative">
-                             <div class="w-full h-full bg-black relative aspect-[4/5]">
-                                 <iframe v-if="product.videos[0].video_provider === 5" 
-                                    :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'" 
-                                    class="w-full h-full pointer-events-none" 
+                        <div class="w-full h-full relative">
+                            <div class="w-full h-full bg-black relative aspect-[4/5]">
+                                <iframe v-if="product.videos[0].video_provider === 5"
+                                    :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
+                                    class="w-full h-full pointer-events-none"
                                     frameborder="0" allow="autoplay; encrypted-media">
-                                 </iframe>
-                                 <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
-                             </div>
-                             <div class="absolute inset-0 z-20 cursor-pointer"></div>
-                        </router-link>
+                                </iframe>
+                                <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
+                            </div>
+                        </div>
                     </SwiperSlide>
 
-                    <!-- Rest of Slides: Remaining Images -->
                     <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
-                        <router-link :to="{ name: 'frontend.product.details', params: { slug: product.slug } }" class="w-full h-full block relative bg-gray-50">
-                            <!-- Loading Dots Indicator -->
+                        <div class="w-full h-full relative bg-gray-50">
                             <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + (index + 1)]">
                                 <div class="flex gap-1.5">
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
@@ -87,23 +89,17 @@
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                                 </div>
                             </div>
-
                             <img :src="image" alt="product" loading="lazy"
                                 @load="onImageLoad(product.id + '-img-' + (index + 1))"
                                 @error="onImageError($event, product.id + '-img-' + (index + 1))"
                                 :class="loadedImages[product.id + '-img-' + (index + 1)] ? 'opacity-100' : 'opacity-0'"
-                                class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
-                            <div class="absolute inset-0 z-20 cursor-pointer"></div>
-                        </router-link>
+                                class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
+                        </div>
                     </SwiperSlide>
                 </Swiper>
-                
-                <!-- Single Image Fallback (no video, only 1 image) -->
-                <router-link v-else class="w-full h-full block relative bg-gray-50"
-                    :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
-                    
+
+                <div v-else class="w-full h-full block relative bg-gray-50">
                     <template v-if="product.cover && !product.cover.includes('default/product')">
-                        <!-- Loading Dots Indicator -->
                         <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-cover']">
                             <div class="flex gap-1.5">
                                 <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
@@ -111,89 +107,83 @@
                                 <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                             </div>
                         </div>
-
                         <img :src="product.cover" alt="product" loading="lazy"
                             @load="onImageLoad(product.id + '-cover')"
                             @error="onImageError($event, product.id + '-cover')"
                             :class="loadedImages[product.id + '-cover'] ? 'opacity-100' : 'opacity-0'"
-                            class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 relative z-10">
+                            class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
                     </template>
                     <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50 absolute inset-0 z-10">
                         <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy"
-                            class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 group-hover:scale-105 group-hover:opacity-70">
+                            class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 pointer-events-none">
                     </div>
-                </router-link>
+                </div>
             </div>
-        </div><!-- /.relative.overflow-hidden.rounded-xl.isolate -->
+        </div>
 
-        <router-link class="block overflow-hidden text-ellipsis" :to="{ name: 'frontend.product.details', params: { slug: product.slug } }">
-            <div class="px-1.5 sm:px-2 pt-2">
-                <!-- 1. Price and Add to Cart Row -->
-                <div class="flex items-center justify-between">
-                    <div class="flex flex-col">
-                        <div class="flex flex-wrap items-baseline gap-1" v-if="hasActiveDiscount(product)">
-                            <span class="text-lg sm:text-xl font-black text-primary leading-none">
-                                {{ product.discounted_price }}
-                            </span>
-                            <span class="text-xs sm:text-sm font-semibold text-shopperz-red line-through leading-none">
-                                {{ product.currency_price }}
-                            </span>
-                            <span v-if="discountPercentage(product) > 0"
-                                class="text-[10px] sm:text-xs font-bold text-shopperz-red leading-none">
-                                {{ discountPercentage(product) }}% OFF
-                            </span>
-                        </div>
-                        <span class="text-lg sm:text-xl font-black text-primary leading-none" v-else>
+        <div class="px-1.5 sm:px-2 pt-2 overflow-hidden text-ellipsis">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col min-w-0">
+                    <div class="flex flex-wrap items-baseline gap-1" v-if="hasActiveDiscount(product)">
+                        <span class="text-lg sm:text-xl font-black text-primary leading-none">
+                            {{ product.discounted_price }}
+                        </span>
+                        <span class="text-xs sm:text-sm font-semibold text-shopperz-red line-through leading-none">
                             {{ product.currency_price }}
                         </span>
+                        <span v-if="discountPercentage(product) > 0"
+                            class="text-[10px] sm:text-xs font-bold text-shopperz-red leading-none">
+                            {{ discountPercentage(product) }}% OFF
+                        </span>
                     </div>
-
-                    <!-- Add to Cart / Sold out -->
-                    <button v-if="!isOutOfStock(product)" type="button" @click.prevent.stop="addToCart(product)"
-                        :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
-                        :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
-                        class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300">
-                        <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
-                    </button>
-                    <span v-else-if="isOutOfStock(product)"
-                        class="inline-flex items-center justify-center min-w-[4.5rem] sm:min-w-[5rem] h-9 sm:h-10 px-2 rounded-xl bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold uppercase tracking-wide shrink-0 pointer-events-none">
-                        {{ $t('label.sold_out') || 'Sold Out' }}
+                    <span class="text-lg sm:text-xl font-black text-primary leading-none" v-else>
+                        {{ product.currency_price }}
                     </span>
                 </div>
 
-                <!-- 2. Product Name (smaller size, mt-1.5) -->
-                <h3 class="capitalize text-xs sm:text-sm font-semibold transition-all duration-300 hover:text-primary overflow-hidden text-ellipsis leading-tight mt-1.5 mb-1 text-gray-800">
-                    {{ product.name }}
-                </h3>
-
-                <!-- Stock Left Alert -->
-                <div v-if="product.stock > 0 && product.stock <= 5" class="mt-1 mb-1">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold text-red-600 bg-red-50 border border-red-100/50 animate-pulse w-full">
-                        <i class="fa-solid fa-fire text-red-500"></i>
-                        Only {{ product.stock }} Left in Stock!
-                    </span>
-                </div>
-
-                <!-- 3. Rating & Sold Count Row (real reviews only — no fake 5.0) -->
-                <div v-if="hasProductRating(product) || shouldShowSoldCount(product)"
-                    class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
-                    <div v-if="hasProductRating(product)" class="flex items-center gap-1">
-                        <div class="flex items-center gap-0.5" :aria-label="formatProductRating(product) + ' out of 5'">
-                            <i v-for="star in 5" :key="star"
-                                :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
-                                class="fa-star text-[9px] sm:text-[10px]"></i>
-                        </div>
-                        <span class="text-gray-900 font-bold">{{ formatProductRating(product) }}</span>
-                        <span>({{ product.rating_star_count }})</span>
-                    </div>
-                    <span v-if="hasProductRating(product) && shouldShowSoldCount(product)" class="text-gray-200">|</span>
-                    <span v-if="shouldShowSoldCount(product)">
-                        {{ getProductSoldCount(product) }} sold
-                    </span>
-                </div>
+                <button v-if="!isOutOfStock(product)" type="button" @click.prevent.stop="addToCart(product)"
+                    :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
+                    :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
+                    class="relative z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
+                    <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
+                </button>
+                <span v-else-if="isOutOfStock(product)"
+                    class="inline-flex items-center justify-center min-w-[4.5rem] sm:min-w-[5rem] h-9 sm:h-10 px-2 rounded-xl bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold uppercase tracking-wide shrink-0 pointer-events-none">
+                    {{ $t('label.sold_out') || 'Sold Out' }}
+                </span>
             </div>
-        </router-link>
-    </div>
+
+            <h3 class="product-card__title capitalize text-xs sm:text-sm font-semibold transition-all duration-300 overflow-hidden text-ellipsis leading-tight mt-1.5 mb-1 text-gray-800">
+                {{ product.name }}
+            </h3>
+
+            <div v-if="product.stock > 0 && product.stock <= 5" class="mt-1 mb-1">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold text-red-600 bg-red-50 border border-red-100/50 animate-pulse w-full">
+                    <i class="fa-solid fa-fire text-red-500"></i>
+                    Only {{ product.stock }} Left in Stock!
+                </span>
+            </div>
+
+            <div v-if="hasProductRating(product) || shouldShowSoldCount(product)"
+                class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
+                <div v-if="hasProductRating(product)" class="flex items-center gap-1">
+                    <div class="flex items-center gap-0.5" :aria-label="formatProductRating(product) + ' out of 5'">
+                        <i v-for="star in 5" :key="star"
+                            :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
+                            class="fa-star text-[9px] sm:text-[10px]"></i>
+                    </div>
+                    <span class="text-gray-900 font-bold">{{ formatProductRating(product) }}</span>
+                    <span>({{ product.rating_star_count }})</span>
+                </div>
+                <span v-if="hasProductRating(product) && shouldShowSoldCount(product)" class="text-gray-200">|</span>
+                <span v-if="shouldShowSoldCount(product)">
+                    {{ getProductSoldCount(product) }} sold
+                </span>
+            </div>
+        </div>
+        </a>
+    </router-link>
+    </template>
 </template>
 
 <script>
@@ -219,6 +209,7 @@ import {
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { productCardSwiperTouchProps } from "../../../utils/continuousSwiper";
+import { onInstantNavigate } from "../../../utils/instantTap";
 
 export default {
     name: "ProductListComponent",
@@ -239,7 +230,7 @@ export default {
     data() {
         return {
             swiperInstances: {},
-            cardSliderDragged: {},
+            cardTouchState: {},
             animatingWishlists: {},
             animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
@@ -264,44 +255,97 @@ export default {
         onSwiperInit(swiper, productId) {
             this.swiperInstances[productId] = swiper;
         },
-        onCardSliderDrag(productId) {
-            this.cardSliderDragged[productId] = true;
+        productRoute(product) {
+            return { name: 'frontend.product.details', params: { slug: product.slug } };
         },
-        onCardSliderTouchEnd(productId) {
-            if (this.cardSliderDragged[productId]) {
-                setTimeout(() => {
-                    delete this.cardSliderDragged[productId];
-                }, 320);
-            }
+        isFinePointer() {
+            return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         },
-        wasCardSliderDragged(productId) {
-            return Boolean(this.cardSliderDragged[productId]);
-        },
-        onMouseEnter(productId) {
-            const swiper = this.swiperInstances[productId];
-            if (swiper && swiper.slides.length > 1) {
-                swiper.slideToLoop(1);
-            }
+        prefetchProductDetails() {
             if (!this._detailChunkPrefetched) {
                 this._detailChunkPrefetched = true;
                 import('../product/ProductDetailsComponent.vue');
             }
         },
+        onCardTouchStart(product, event) {
+            const touch = event.touches?.[0];
+            if (!touch) {
+                return;
+            }
+            this.cardTouchState[product.id] = {
+                startX: touch.clientX,
+                startY: touch.clientY,
+                moved: false,
+            };
+        },
+        onCardTouchMove(product, event) {
+            const state = this.cardTouchState[product.id];
+            const touch = event.touches?.[0];
+            if (!state || !touch) {
+                return;
+            }
+            if (Math.abs(touch.clientX - state.startX) > 10 || Math.abs(touch.clientY - state.startY) > 10) {
+                state.moved = true;
+            }
+        },
+        onCardTouchEnd(productId) {
+            delete this.cardTouchState[productId];
+        },
+        wasCardTouchMoved(productId) {
+            return Boolean(this.cardTouchState[productId]?.moved);
+        },
+        shouldBlockProductNavigation(product, event) {
+            const target = event?.target;
+            if (!target) {
+                return false;
+            }
+            if (target.closest('button')) {
+                return true;
+            }
+            if (target.closest('.swiper-pagination')) {
+                return true;
+            }
+            if (this.wasCardTouchMoved(product.id)) {
+                return true;
+            }
+            const swiper = this.swiperInstances[product.id];
+            if (swiper && swiper.allowClick === false) {
+                return true;
+            }
+            return false;
+        },
+        onCardNav(event, product, navigate) {
+            if (this.shouldBlockProductNavigation(product, event)) {
+                event.preventDefault();
+                if (event.type === 'touchend' || event.type === 'touchcancel') {
+                    this.onCardTouchEnd(product.id);
+                }
+                return;
+            }
+            if (event.type === 'touchend') {
+                this.prefetchProductDetails();
+                this.onCardTouchEnd(product.id);
+            }
+            onInstantNavigate(event, navigate);
+        },
+        onMouseEnter(productId) {
+            if (!this.isFinePointer()) {
+                return;
+            }
+            const swiper = this.swiperInstances[productId];
+            if (swiper && swiper.slides.length > 1) {
+                swiper.slideToLoop(1);
+            }
+            this.prefetchProductDetails();
+        },
         onMouseLeave(productId) {
+            if (!this.isFinePointer()) {
+                return;
+            }
             const swiper = this.swiperInstances[productId];
             if (swiper) {
                 swiper.slideToLoop(0);
             }
-        },
-        onSwiperClick(swiper, event, product) {
-            if (this.wasCardSliderDragged(product.id)) {
-                return;
-            }
-            const target = event.target;
-            if (target && (target.classList.contains('swiper-pagination-bullet') || target.closest('.swiper-pagination'))) {
-                return;
-            }
-            this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
         },
         isWishlisted(product) {
             if (!product) return false;
@@ -524,22 +568,6 @@ export default {
                 });
             }
         },
-        goToProductDetails: function (product, event) {
-            if (this.wasCardSliderDragged(product.id)) {
-                return;
-            }
-            const path = event.composedPath() || [];
-            for (let i = 0; i < path.length; i++) {
-                const target = path[i];
-                if (target.tagName === 'BUTTON' || target.tagName === 'A' || (target.classList && (target.classList.contains('swiper-pagination-bullet') || target.classList.contains('swiper-button-next') || target.classList.contains('swiper-button-prev')))) {
-                    return;
-                }
-                if (target === event.currentTarget) {
-                    break;
-                }
-            }
-            this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
-        },
         getProductSoldCount: function (product) {
             const randomSaleValue = parseInt(product.use_random_sale);
             if (!product || randomSaleValue === 10 || randomSaleValue === 0) {
@@ -603,9 +631,34 @@ export default {
 </script>
 
 <style scoped>
+.product-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .product-card:hover {
+        transform: translateY(-0.375rem);
+        border-color: rgb(255 92 0 / 0.4);
+        box-shadow: 0 16px 32px rgb(255 92 0 / 0.08);
+    }
+
+    .product-card:hover .product-card__image {
+        transform: scale(1.05);
+    }
+
+    .product-card:hover .product-card__title {
+        color: #ff5c00;
+    }
+}
+
+.product-card__image {
+    transform: scale(1);
+}
+
 .product-card-slider {
     touch-action: pan-y pinch-zoom;
-    -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .product-card-swiper {
@@ -633,6 +686,12 @@ export default {
 
 .group:hover .product-card-slider :deep(.swiper-pagination) {
     opacity: 1 !important;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .group:hover .product-card-slider :deep(.swiper-pagination) {
+        opacity: 1 !important;
+    }
 }
 
 @media (max-width: 640px) {

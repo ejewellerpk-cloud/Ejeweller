@@ -31,46 +31,83 @@
                 <!--  Logo & Mobile Responsive Start -->
                 <div class="flex items-center flex-shrink-0 gap-2 sm:gap-5 min-w-0">
                     <button type="button" class="mobile-header-touch leading-none block lg:hidden flex-shrink-0"
-                        @click.prevent="showTarget('mobile-sidebar-canvas', 'canvas-active')">
-                        <i class="lab-line-humburger text-xl"></i>
+                        @touchend="onActionTap($event, openMobileSidebar)"
+                        @click="onActionTap($event, openMobileSidebar)">
+                        <i class="lab-line-humburger text-xl pointer-events-none"></i>
                     </button>
 
-                    <router-link :to="{ name: 'frontend.home' }"
-                        class="router-link-active router-link-exact-active flex-shrink-0 min-w-0">
-                        <img class="w-24 sm:w-28 md:w-32 max-h-10 sm:max-h-none object-contain" :src="setting.theme_logo" alt="logo" loading="lazy">
+                    <router-link
+                        custom
+                        v-slot="{ navigate, href }"
+                        :to="{ name: 'frontend.home' }"
+                        class="flex-shrink-0 min-w-0"
+                    >
+                        <a
+                            :href="href"
+                            class="block"
+                            @touchend="onNavTap($event, navigate)"
+                            @click="onNavTap($event, navigate)"
+                        >
+                            <img class="w-24 sm:w-28 md:w-32 max-h-10 sm:max-h-none object-contain pointer-events-none" :src="setting.theme_logo" alt="logo" loading="lazy">
+                        </a>
                     </router-link>
                 </div>
 
                 <div class="flex items-center gap-1 lg:hidden">
                     <button type="button" class="mobile-header-touch leading-none"
-                        @click.prevent="showTarget('search', 'search-active')">
-                        <i class="lab-line-search text-xl text-heading"></i>
+                        @touchend="onActionTap($event, openSearch)"
+                        @click="onActionTap($event, openSearch)">
+                        <i class="lab-line-search text-xl text-heading pointer-events-none"></i>
                     </button>
 
-                    <!-- Mobile Wishlist -->
-                    <router-link :to="{ name: 'frontend.wishlist' }"
-                        class="mobile-header-touch relative flex-shrink-0 leading-none">
-                        <i class="lab-line-heart text-xl text-heading"></i>
-                        <span v-if="wishlists.length > 0"
-                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
-                            {{ wishlists.length }}
-                        </span>
+                    <router-link
+                        custom
+                        v-slot="{ navigate, href }"
+                        :to="{ name: 'frontend.wishlist' }"
+                    >
+                        <a
+                            :href="href"
+                            class="mobile-header-touch relative flex-shrink-0 leading-none"
+                            @touchend="onNavTap($event, navigate)"
+                            @click="onNavTap($event, navigate)"
+                        >
+                            <i class="lab-line-heart text-xl text-heading pointer-events-none"></i>
+                            <span v-if="wishlists.length > 0"
+                                class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
+                                {{ wishlists.length }}
+                            </span>
+                        </a>
                     </router-link>
 
-                    <button v-if="logged" @click.prevent="showTarget('mobile-profile-canvas', 'canvas-active')" type="button"
-                        class="mobile-header-touch relative flex-shrink-0 leading-none">
-                        <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" loading="lazy" />
-                        <i v-else class="lab-line-user text-xl text-heading"></i>
+                    <button v-if="logged" type="button"
+                        class="mobile-header-touch relative flex-shrink-0 leading-none"
+                        @touchend="onActionTap($event, openMobileProfile)"
+                        @click="onActionTap($event, openMobileProfile)">
+                        <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm pointer-events-none" loading="lazy" />
+                        <i v-else class="lab-line-user text-xl text-heading pointer-events-none"></i>
                     </button>
 
-                    <router-link v-else :to="{ name: 'auth.login' }"
-                        class="mobile-header-touch relative flex-shrink-0 leading-none">
-                        <i class="lab-line-user text-xl text-heading"></i>
+                    <router-link
+                        v-else
+                        custom
+                        v-slot="{ navigate, href }"
+                        :to="{ name: 'auth.login' }"
+                    >
+                        <a
+                            :href="href"
+                            class="mobile-header-touch relative flex-shrink-0 leading-none"
+                            @touchend="onNavTap($event, navigate)"
+                            @click="onNavTap($event, navigate)"
+                        >
+                            <i class="lab-line-user text-xl text-heading pointer-events-none"></i>
+                        </a>
                     </router-link>
 
-                    <button @click.prevent="openCanvas('cart-canvas')" type="button"
-                        class="mobile-header-touch relative flex-shrink-0 leading-none">
-                        <i class="lab-line-bag text-xl text-heading"></i>
+                    <button type="button"
+                        class="mobile-header-touch relative flex-shrink-0 leading-none"
+                        @touchend="onActionTap($event, openMobileCart)"
+                        @click="onActionTap($event, openMobileCart)">
+                        <i class="lab-line-bag text-xl text-heading pointer-events-none"></i>
                         <span v-if="carts.length > 0"
                             class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
                             {{ carts.length }}
@@ -405,6 +442,7 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import _ from "lodash";
 import axios from 'axios';
 import {useCanvas} from "../../../composables/canvas";
+import { onInstantAction, onInstantNavigate } from "../../../utils/instantTap";
 
 
 export default {
@@ -638,6 +676,24 @@ export default {
         }
     },
     methods: {
+        onNavTap(event, navigate) {
+            onInstantNavigate(event, navigate);
+        },
+        onActionTap(event, action) {
+            onInstantAction(event, action);
+        },
+        openMobileSidebar() {
+            targetService.showTarget('mobile-sidebar-canvas', 'canvas-active');
+        },
+        openSearch() {
+            targetService.showTarget('search', 'search-active');
+        },
+        openMobileProfile() {
+            targetService.showTarget('mobile-profile-canvas', 'canvas-active');
+        },
+        openMobileCart() {
+            this.openCanvas('cart-canvas');
+        },
         async installPWA() {
             if (!this.pwaInstallPrompt) {
                 this.closePwaModal();
@@ -771,7 +827,10 @@ export default {
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
-    transition: transform 0.12s ease, opacity 0.12s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.1s ease, opacity 0.1s ease;
 }
 
 .mobile-header-touch:active {

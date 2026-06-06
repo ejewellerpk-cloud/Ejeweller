@@ -6,7 +6,7 @@
                 <h2 class="capitalize text-2xl sm:text-4xl font-bold -mb-10">
                     {{ $t('label.popular_brands') }}
                 </h2>
-                <Swiper dir="ltr" v-bind="carouselTouch" :speed="1000" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper" :breakpoints="breakpoints">
+                <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper homepage-touch-swiper" :breakpoints="breakpoints">
                     <SwiperSlide v-for="brand in brands" class="mobile:!w-[120px]">
                         <router-link :to="{name: 'frontend.product', query:{ brand: brand.slug }}" class="w-full rounded-2xl shadow-xs group border border-gray-100">
                             <figure class="w-full h-[120px] flex items-center justify-center">
@@ -33,7 +33,7 @@ import {Autoplay, Navigation, Pagination} from "swiper/modules";
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
+import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
@@ -60,7 +60,8 @@ export default {
     setup() {
         return {
             modules: [Navigation, Pagination, Autoplay],
-            carouselTouch: homepageCarouselTouchProps,
+            rowTouch: homepageRowSwiperProps,
+            rowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
         }
     },
     computed: {

@@ -20,7 +20,7 @@
                 <Swiper
                     v-if="carouselReviews.length > 0"
                     dir="ltr"
-                    v-bind="carouselTouch"
+                    v-bind="reviewsTouch"
                     :modules="modules"
                     :slides-per-view="1.1"
                     :space-between="12"
@@ -29,13 +29,12 @@
                     :loop-additional-slides="6"
                     :autoplay="reviewsAutoplay"
                     :breakpoints="breakpoints"
-                    class="reviews-swiper continuous-slider !pb-2"
+                    class="reviews-swiper homepage-touch-swiper continuous-slider !pb-2"
                     @swiper="onReviewsSwiper"
                     @touchStart="onReviewsManualStart"
                     @sliderFirstMove="onReviewsManualStart"
                     @touchEnd="onReviewsManualEnd"
                     @touchCancel="onReviewsManualEnd"
-                    @slideChangeTransitionEnd="onReviewsManualEnd"
                 >
                     <SwiperSlide v-for="(review, idx) in carouselReviews" :key="review.id + '-' + idx">
                         <article class="h-full p-5 sm:p-6 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
@@ -64,10 +63,10 @@ import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
 import starRating from 'vue-star-rating';
 import LoadingComponent from '../components/LoadingComponent';
+import { homepageReviewsSwiperProps } from '../../../utils/homepageSwiper';
 import {
     continuousAutoplayConfig,
     CONTINUOUS_SWIPER_SPEED,
-    continuousCarouselTouchProps,
     pauseContinuousSwiper,
     resumeContinuousSwiper,
 } from '../../../utils/continuousSwiper';
@@ -78,7 +77,7 @@ export default {
     setup() {
         return {
             modules: [Autoplay],
-            carouselTouch: continuousCarouselTouchProps,
+            reviewsTouch: homepageReviewsSwiperProps,
         };
     },
     data() {
@@ -87,6 +86,7 @@ export default {
             reviews: [],
             stats: { total: 0, average: 0 },
             reviewsSwiper: null,
+            reviewsResumeTimer: null,
             continuousSpeed: CONTINUOUS_SWIPER_SPEED,
             reviewsAutoplay: { ...continuousAutoplayConfig },
             breakpoints: {
@@ -115,6 +115,12 @@ export default {
     mounted() {
         this.load();
     },
+    beforeUnmount() {
+        if (this.reviewsResumeTimer) {
+            clearTimeout(this.reviewsResumeTimer);
+            this.reviewsResumeTimer = null;
+        }
+    },
     methods: {
         onReviewsSwiper(swiper) {
             this.reviewsSwiper = swiper;
@@ -124,7 +130,13 @@ export default {
             pauseContinuousSwiper(this.reviewsSwiper);
         },
         onReviewsManualEnd() {
-            this.$nextTick(() => resumeContinuousSwiper(this.reviewsSwiper));
+            if (this.reviewsResumeTimer) {
+                clearTimeout(this.reviewsResumeTimer);
+            }
+            this.reviewsResumeTimer = setTimeout(() => {
+                resumeContinuousSwiper(this.reviewsSwiper);
+                this.reviewsResumeTimer = null;
+            }, 450);
         },
         load() {
             if (this.reviews.length > 0) {
