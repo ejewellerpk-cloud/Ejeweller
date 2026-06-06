@@ -932,50 +932,51 @@ class ProductService
     public function relatedProducts(Product $product, PaginateRequest $request)
     {
         try {
-            $productTags = $product->tags;
+            $productTags = $product->tags()->pluck('name')->filter()->unique()->values();
             $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 32) : '*';
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
             $rand        = $request->get('rand', 0) > 0 ? $request->get('rand') : 0;
 
-            // 1. Try fetching by tags first
-            if (count($productTags) > 0) {
-                $products = Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity')
-                    ->withReviewRating()
-                    ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                    ->with('media', 'videos', 'variations', 'reviews', 'tags')
-                    ->active('products.status')
+            $baseQuery = fn () => Product::select(
+                'products.id',
+                'products.name',
+                'products.sku',
+                'products.slug',
+                'products.selling_price',
+                'products.variation_price',
+                'products.add_to_flash_sale',
+                'products.offer_start_date',
+                'products.offer_end_date',
+                'products.discount',
+                'products.status',
+                'products.show_stock_out',
+                'products.can_purchasable',
+                'products.maximum_purchase_quantity'
+            )
+                ->withReviewRating()
+                ->with('media')
+                ->withCount('variations')
+                ->active('products.status')
+                ->whereNot('products.id', $product->id);
+
+            if ($productTags->isNotEmpty()) {
+                $products = $baseQuery()
                     ->whereHas('tags', function ($query) use ($productTags) {
-                        $i = 0;
-                        foreach ($productTags as $productTag) {
-                            if ($i === 0) {
-                                $query->where('name', 'like', '%' . $productTag->name . '%');
-                            } else {
-                                $query->orWhere('name', 'like', '%' . $productTag->name . '%');
-                            }
-                            $i++;
-                        }
-                        return $query;
+                        $query->whereIn('name', $productTags);
                     })
-                    ->whereNot('id', $product->id)
                     ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
                     ->$method($methodValue);
 
-                if (count($products) > 0) {
+                if ($products->count() > 0) {
                     return $products;
                 }
             }
 
-            // 2. Fallback to same Category if no tags match or exist
             if ($product->product_category_id) {
-                return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity')
-                    ->withReviewRating()
-                    ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                    ->with('media', 'videos', 'variations', 'reviews', 'tags')
-                    ->active('products.status')
+                return $baseQuery()
                     ->where('product_category_id', $product->product_category_id)
-                    ->whereNot('id', $product->id)
                     ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
                     ->$method($methodValue);
             }

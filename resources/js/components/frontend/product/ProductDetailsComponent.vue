@@ -424,33 +424,20 @@
                 <div class="related-products-slider__fade related-products-slider__fade--left" aria-hidden="true"></div>
                 <div class="related-products-slider__fade related-products-slider__fade--right" aria-hidden="true"></div>
 
-                <Swiper v-if="loopedRelatedProducts.length > 0"
+                <Swiper v-if="relatedProducts.length > 0"
                     dir="ltr"
                     :slides-per-view="2"
                     :space-between="16"
-                    :navigation="false"
-                    :grab-cursor="true"
-                    :allow-touch-move="true"
-                    :simulate-touch="true"
-                    :touch-ratio="1"
-                    :long-swipes="true"
-                    :loop="true"
-                    :loop-additional-slides="8"
-                    :speed="relatedContinuousSpeed"
-                    :autoplay="relatedAutoplay"
+                    :speed="relatedRowSpeed"
+                    :navigation="relatedProducts.length > 2"
+                    :loop="relatedProducts.length > 4"
                     :modules="relatedSliderModules"
                     v-bind="relatedTouchProps"
                     :breakpoints="relatedBreakpoints"
-                    class="related-products-swiper related-products-swiper--continuous !pb-10"
-                    @swiper="onRelatedSwiper"
-                    @touchStart="onRelatedTouchStart"
-                    @sliderFirstMove="onRelatedTouchStart"
-                    @touchEnd="onRelatedTouchEnd"
-                    @touchCancel="onRelatedTouchEnd"
-                    @slideChangeTransitionEnd="onRelatedSlideSettled"
+                    class="related-products-swiper !pb-10"
                 >
-                    <SwiperSlide v-for="(product, idx) in loopedRelatedProducts" :key="product.id + '-' + idx">
-                        <ProductListComponent :products="[product]" />
+                    <SwiperSlide v-for="product in relatedProducts" :key="product.id">
+                        <RelatedProductCard :product="product" />
                     </SwiperSlide>
                 </Swiper>
             </div>
@@ -780,6 +767,7 @@ import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import RelatedProductsSliderSkeleton from "../components/skeleton/RelatedProductsSliderSkeleton.vue";
+import RelatedProductCard from "../components/RelatedProductCard.vue";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -793,13 +781,7 @@ import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount, withCartLinePricing } from "../../../utils/productOffer";
 import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
-import {
-    continuousAutoplayConfig,
-    CONTINUOUS_SWIPER_SPEED,
-    touchFriendlySwiperProps,
-    pauseContinuousSwiper,
-    resumeContinuousSwiper,
-} from "../../../utils/continuousSwiper";
+import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
 
 import {
     productGalleryMainSwiperProps,
@@ -812,8 +794,8 @@ export default {
     name: "ProductDetailsComponent",
     components: {
         VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
-        ProductListComponent: defineAsyncComponent(() => import("../components/ProductListComponent")),
         RelatedProductsSliderSkeleton,
+        RelatedProductCard,
         RecentlyViewedStripSkeleton,
         CategoryBreadcrumbComponent,
         starRating,
@@ -841,8 +823,9 @@ export default {
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
             gallerySwiperProps: productGalleryMainSwiperProps,
             galleryLightboxSwiperProps: productGalleryLightboxSwiperProps,
-            relatedSliderModules: [Autoplay],
-            relatedTouchProps: touchFriendlySwiperProps,
+            relatedSliderModules: [Navigation],
+            relatedTouchProps: homepageRowSwiperProps,
+            relatedRowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
             relatedBreakpoints: {
                 640: { slidesPerView: 2, spaceBetween: 20 },
                 768: { slidesPerView: 3, spaceBetween: 24 },
@@ -923,13 +906,8 @@ export default {
             recentlyViewedProducts: [],
             recentlyViewedLoading: false,
             recentlyViewedLoadedImages: {},
-            relatedSwiper: null,
             videoPosterMap: {},
             mainSwiperActiveIndex: 0,
-            relatedContinuousSpeed: CONTINUOUS_SWIPER_SPEED,
-            relatedAutoplay: { ...continuousAutoplayConfig },
-            relatedTouchActive: false,
-            relatedResumeTimer: null,
             loadToken: 0,
             relatedObserver: null,
         }
@@ -984,20 +962,6 @@ export default {
         },
         relatedProducts: function () {
             return this.$store.getters["frontendProduct/relatedProducts"];
-        },
-        loopedRelatedProducts: function () {
-            const items = this.relatedProducts || [];
-            if (!items.length) {
-                return [];
-            }
-            if (items.length >= 8) {
-                return items;
-            }
-            let out = [];
-            while (out.length < 10) {
-                out = out.concat(items);
-            }
-            return out;
         },
         animatedBuyNowTexts: function () {
             const texts = [];
@@ -1094,10 +1058,6 @@ export default {
         if (this.relatedObserver) {
             this.relatedObserver.disconnect();
             this.relatedObserver = null;
-        }
-        if (this.relatedResumeTimer) {
-            clearTimeout(this.relatedResumeTimer);
-            this.relatedResumeTimer = null;
         }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
@@ -1683,10 +1643,15 @@ export default {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting && !this.isRelatedProductsLoaded) {
                         this.isRelatedProductsLoaded = true;
-                        this.showRelatedProduct();
+                        const fetchRelated = () => this.showRelatedProduct();
+                        if (typeof requestIdleCallback === 'function') {
+                            requestIdleCallback(fetchRelated, { timeout: 1200 });
+                        } else {
+                            setTimeout(fetchRelated, 150);
+                        }
                     }
                 });
-            });
+            }, { rootMargin: '200px 0px' });
             this.$nextTick(() => {
                 const target = document.getElementById('related-products-trigger');
                 if (target) {
@@ -1914,36 +1879,6 @@ export default {
 
             this.requestProductShow(token, false);
         },
-        onRelatedSwiper: function (swiper) {
-            this.relatedSwiper = swiper;
-            this.$nextTick(() => resumeContinuousSwiper(swiper));
-        },
-        onRelatedTouchStart: function () {
-            this.relatedTouchActive = true;
-            if (this.relatedResumeTimer) {
-                clearTimeout(this.relatedResumeTimer);
-                this.relatedResumeTimer = null;
-            }
-            pauseContinuousSwiper(this.relatedSwiper);
-        },
-        onRelatedTouchEnd: function () {
-            if (!this.relatedTouchActive) {
-                return;
-            }
-            this.relatedTouchActive = false;
-            if (this.relatedResumeTimer) {
-                clearTimeout(this.relatedResumeTimer);
-            }
-            this.relatedResumeTimer = setTimeout(() => {
-                resumeContinuousSwiper(this.relatedSwiper);
-                this.relatedResumeTimer = null;
-            }, 600);
-        },
-        onRelatedSlideSettled: function () {
-            if (this.relatedTouchActive) {
-                resumeContinuousSwiper(this.relatedSwiper);
-            }
-        },
         showRelatedProduct: function () {
             if (typeof this.$route.params.slug !== "undefined") {
                 this.relatedProductsLoading = true;
@@ -1953,7 +1888,6 @@ export default {
                     rand: 8
                 }).then((res) => {
                     this.relatedProductsLoading = false;
-                    this.$nextTick(() => resumeContinuousSwiper(this.relatedSwiper));
                 }).catch((err) => {
                     this.relatedProductsLoading = false;
                 });
