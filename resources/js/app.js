@@ -71,6 +71,11 @@ axios.interceptors.response.use(
 );
 
 /* End axios code */
+
+if (Array.isArray(window.__HOME_HERO_SLIDERS__) && window.__HOME_HERO_SLIDERS__.length > 0) {
+    store.commit('frontendSlider/lists', window.__HOME_HERO_SLIDERS__);
+}
+
 const app = createApp(DefaultComponent);
 app.component('vue-select', VueNextSelect)
 app.use(router)

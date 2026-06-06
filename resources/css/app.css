@@ -627,6 +627,7 @@
         --frontend-header-height: 3.5rem;
         --shop-sticky-top: calc(3.5rem + var(--safe-top));
         --mobile-bottom-nav-height: calc(4.25rem + var(--safe-bottom));
+        --hero-banner-aspect: 1689 / 600;
     }
 
     .frontend-main-header {

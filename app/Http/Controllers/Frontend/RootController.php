@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Enums\Status;
 use App\Models\Analytic;
+use App\Models\Slider;
 use App\Models\ThemeSetting;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SliderResource;
 
 class RootController extends Controller
 {
@@ -21,6 +23,20 @@ class RootController extends Controller
         $seoDescription = null;
         $seoImage       = null;
         $path           = request()->path();
+        $isHomepage     = $path === '' || $path === 'home';
+        $heroSliders    = [];
+        $heroPreloadImage = null;
+
+        if ($isHomepage) {
+            $heroSliders = SliderResource::collection(
+                Slider::with('media')
+                    ->where('status', Status::ACTIVE)
+                    ->orderByDesc('id')
+                    ->get()
+            )->resolve();
+
+            $heroPreloadImage = $heroSliders[0]['image'] ?? null;
+        }
 
         if (preg_match('/^product\/([^\/]+)$/', $path, $matches)) {
             $slug    = $matches[1];
@@ -46,11 +62,14 @@ class RootController extends Controller
         }
 
         return view('master', [
-            'analytics'      => $analytics, 
-            'favicon'        => $favIcon,
-            'seoTitle'       => $seoTitle,
-            'seoDescription' => $seoDescription,
-            'seoImage'       => $seoImage
+            'analytics'        => $analytics,
+            'favicon'          => $favIcon,
+            'seoTitle'         => $seoTitle,
+            'seoDescription'   => $seoDescription,
+            'seoImage'         => $seoImage,
+            'isHomepage'       => $isHomepage,
+            'heroSliders'      => $heroSliders,
+            'heroPreloadImage' => $heroPreloadImage,
         ]);
     }
 }

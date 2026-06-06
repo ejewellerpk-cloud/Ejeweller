@@ -50,6 +50,10 @@
         <title>{{ Settings::group('company')->get('company_name') }}</title>
     @endif
 
+    @if (!empty($isHomepage) && !empty($heroPreloadImage))
+        <link rel="preload" as="image" href="{{ $heroPreloadImage }}" fetchpriority="high">
+    @endif
+
     <!-- FAV ICON -->
     <link rel="icon" type="image/png" href="{{ $favicon }}?v={{ time() }}">
 
@@ -151,6 +155,9 @@
         window.APP_KEY = "{{ config('app.api_key') }}";
         window.FACEBOOK_PIXEL_ID = "{{ Settings::group('site')->get('site_facebook_pixel_id') }}";
         window.FACEBOOK_PIXEL_CURRENCY = "{{ \App\Models\Currency::find(Settings::group('site')->get('site_default_currency'))?->code ?? 'PKR' }}";
+        @if (!empty($heroSliders))
+        window.__HOME_HERO_SLIDERS__ = @json($heroSliders);
+        @endif
     </script>
     @vite('resources/js/app.js')
 

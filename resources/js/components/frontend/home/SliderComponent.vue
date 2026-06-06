@@ -1,29 +1,37 @@
 <template>
-    <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="hero" />
-    <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden">
+    <LoadingComponent v-if="showSkeleton" :props="loading" :is-full-screen="false" skeleton="hero" />
+    <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden hero-banner-section">
         <Swiper
             dir="ltr"
             v-bind="heroTouch"
             :slides-per-view="1"
             :speed="heroSpeed"
-            :loop="true"
+            :loop="sliders.length > 1"
             effect="fade"
             :fadeEffect="{ crossFade: true }"
-            :navigation="true"
-            :pagination="{ clickable: true }"
-            :autoplay="{ delay: 4000, disableOnInteraction: false }"
+            :navigation="sliders.length > 1"
+            :pagination="sliders.length > 1 ? { clickable: true } : false"
+            :autoplay="sliders.length > 1 ? { delay: 4000, disableOnInteraction: false } : false"
             :modules="modules"
             class="banner-swiper homepage-touch-swiper group"
         >
-            <SwiperSlide v-for="slider in sliders" :key="slider.id" class="relative">
-                <router-link v-if="slider.link" :to="slider.link" class="block w-full h-full">
-                    <img class="w-full h-auto block" :src="slider.image" alt="banner" >
-                    <!-- Subtle Dark Gradient Overlay -->
+            <SwiperSlide v-for="(slider, index) in sliders" :key="slider.id" class="relative">
+                <router-link v-if="slider.link" :to="slider.link" class="block w-full h-full hero-banner-frame">
+                    <img
+                        class="hero-banner-image w-full h-full object-cover block"
+                        :src="slider.image"
+                        :alt="slider.title || 'banner'"
+                        v-bind="heroImageAttrs(index)"
+                    >
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
                 </router-link>
-                <div v-else class="w-full h-full relative">
-                    <img class="w-full h-auto block" :src="slider.image" alt="banner" >
-                    <!-- Subtle Dark Gradient Overlay -->
+                <div v-else class="w-full h-full relative hero-banner-frame">
+                    <img
+                        class="hero-banner-image w-full h-full object-cover block"
+                        :src="slider.image"
+                        :alt="slider.title || 'banner'"
+                        v-bind="heroImageAttrs(index)"
+                    >
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
                 </div>
             </SwiperSlide>
@@ -72,9 +80,12 @@ export default {
     computed: {
         sliders: function () {
             return this.$store.getters['frontendSlider/lists'];
-        }
+        },
+        showSkeleton: function () {
+            return this.loading.isActive && this.sliders.length === 0;
+        },
     },
-    mounted() {
+    created() {
         if (this.sliders.length > 0) {
             return;
         }
@@ -85,10 +96,39 @@ export default {
             this.loading.isActive = false;
         });
     },
+    methods: {
+        heroImageAttrs(index) {
+            if (index === 0) {
+                return {
+                    loading: 'eager',
+                    fetchpriority: 'high',
+                    decoding: 'async',
+                    width: 1689,
+                    height: 600,
+                };
+            }
+            return {
+                loading: 'lazy',
+                decoding: 'async',
+                width: 1689,
+                height: 600,
+            };
+        },
+    },
 }
 </script>
 
 <style scoped>
+.hero-banner-frame {
+    aspect-ratio: 1689 / 600;
+    width: 100%;
+    overflow: hidden;
+}
+
+.hero-banner-image {
+    display: block;
+}
+
 .banner-swiper :deep(.swiper-pagination) {
     bottom: 25px !important;
 }
