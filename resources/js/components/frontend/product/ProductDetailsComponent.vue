@@ -34,13 +34,21 @@
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
 
-                    <Swiper dir="ltr" :spaceBetween="10" :navigation="true" :pagination="getPaginationConfig()" :thumbs="{ swiper: thumbsSwiper }"
-                        :modules="modules" :loop="true" class="gallery-swiper mb-4" @swiper="setMainSwiper" @slideChange="onMainGallerySlideChange">
+                    <Swiper dir="ltr"
+                        v-bind="gallerySwiperProps"
+                        :spaceBetween="10"
+                        :navigation="true"
+                        :pagination="getPaginationConfig()"
+                        :thumbs="{ swiper: thumbsSwiper }"
+                        :modules="modules"
+                        :loop="combinedMedia.length > 1"
+                        class="gallery-swiper mb-4"
+                        @swiper="setMainSwiper"
+                        @slideChange="onMainGallerySlideChange"
+                        @click="onGallerySwiperClick">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
-                                <div @click="onGalleryImageTap(index, $event)"
-                                    style="touch-action: manipulation;"
-                                    class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer">
+                                <div class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide">
                                     <img :src="media.url" alt="product"
                                         :loading="index === 0 ? 'eager' : 'lazy'"
                                         :fetchpriority="index === 0 ? 'high' : 'auto'"
@@ -124,9 +132,9 @@
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
-                    <div @click="onGalleryImageTap(999, $event)"
-                        style="touch-action: manipulation;"
-                        class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer rounded-2xl">
+                    <div @touchend="onFallbackImageTap($event)"
+                        @click="onFallbackImageTap($event)"
+                        class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide rounded-2xl">
                         <img :src="product.image" alt="products" loading="eager" fetchpriority="high" decoding="async"
                             @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
                             class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
@@ -518,6 +526,7 @@
         <div class="flex-1 flex items-center justify-center w-full min-h-0 pb-24 sm:pb-28">
             <Swiper
                 :initialSlide="mediaLightboxIndex"
+                v-bind="galleryLightboxSwiperProps"
                 :loop="combinedMedia.length > 1"
                 :navigation="true"
                 :modules="modules"
@@ -532,7 +541,7 @@
                         @touchend="onLightboxPinchEnd">
                         <img :src="media.url" alt="product"
                             :style="getLightboxImageStyle(index)"
-                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center touch-none select-none" />
+                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center select-none" />
                     </div>
                     <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center bg-black max-h-[85vh]">
                         <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
@@ -758,7 +767,7 @@
 </template>
 
 <script>
-import { ref, defineAsyncComponent } from "vue";
+import { ref, defineAsyncComponent, nextTick } from "vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -792,6 +801,13 @@ import {
     resumeContinuousSwiper,
 } from "../../../utils/continuousSwiper";
 
+import {
+    productGalleryMainSwiperProps,
+    productGalleryLightboxSwiperProps,
+    connectGalleryThumbs,
+    getGalleryClickedIndex,
+} from "../../../utils/productGallerySwiper";
+
 export default {
     name: "ProductDetailsComponent",
     components: {
@@ -811,9 +827,11 @@ export default {
         const mainSwiper = ref(null);
         const setThumbsSwiper = (swiper) => {
             thumbsSwiper.value = swiper;
+            nextTick(() => connectGalleryThumbs(mainSwiper.value, swiper));
         };
         const setMainSwiper = (swiper) => {
             mainSwiper.value = swiper;
+            nextTick(() => connectGalleryThumbs(swiper, thumbsSwiper.value));
         };
         return {
             thumbsSwiper,
@@ -821,6 +839,8 @@ export default {
             setThumbsSwiper,
             setMainSwiper,
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
+            gallerySwiperProps: productGalleryMainSwiperProps,
+            galleryLightboxSwiperProps: productGalleryLightboxSwiperProps,
             relatedSliderModules: [Autoplay],
             relatedTouchProps: touchFriendlySwiperProps,
             relatedBreakpoints: {
@@ -1452,14 +1472,33 @@ export default {
             }
             this.wishlist();
         },
+        onGallerySwiperClick: function (swiper, event) {
+            const index = getGalleryClickedIndex(swiper);
+            if (index < 0) {
+                return;
+            }
+            this.onGalleryImageTap(index, event);
+        },
+        onFallbackImageTap: function (event) {
+            this.onGalleryImageTap(999, event);
+        },
         onGalleryImageTap: function (index, event) {
+            if (event?.type === 'click' && event?.detail === 0) {
+                return;
+            }
             if (this.isDoubleTap(event, '_galleryImageTapState')) {
-                event.preventDefault();
-                event.stopPropagation();
+                event.preventDefault?.();
+                event.stopPropagation?.();
                 this.wishlistFromDoubleTap();
                 return;
             }
             const state = this._galleryImageTapState;
+            if (!state) {
+                return;
+            }
+            if (state.timer) {
+                clearTimeout(state.timer);
+            }
             state.timer = setTimeout(() => {
                 this._galleryImageTapState = null;
                 this.handleImageClick(index);
@@ -2388,8 +2427,19 @@ export default {
 }
 
 .related-products-swiper {
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y pinch-zoom;
     -webkit-overflow-scrolling: touch;
+}
+
+.gallery-swiper,
+.gallery-swiper :deep(.swiper-wrapper),
+.product-gallery-lightbox,
+.product-gallery-lightbox :deep(.swiper-wrapper) {
+    touch-action: pan-y pinch-zoom;
+}
+
+.product-gallery-slide {
+    touch-action: pan-y pinch-zoom;
 }
 
 .related-products-swiper--continuous :deep(.swiper-wrapper) {
