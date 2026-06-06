@@ -19,9 +19,12 @@ export function onInstantNavigate(event, navigate) {
     }
 
     if (event.type === 'touchend') {
-        event.preventDefault();
         markTap(event.currentTarget);
-        navigate(event);
+        // Call navigate() without the event — guardEvent aborts when defaultPrevented is true.
+        navigate();
+        if (event.cancelable) {
+            event.preventDefault();
+        }
         return;
     }
 

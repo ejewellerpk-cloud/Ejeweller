@@ -41,8 +41,7 @@
                         class="w-full h-full product-card-swiper"
                         @swiper="onSwiperReady($event, product.id)"
                         @sliderFirstMove="onSliderDragStart(product.id)"
-                        @touchEnd="onSliderDragEnd(product.id)"
-                        @transitionEnd="onSliderDragEnd(product.id)">
+                        @touchEnd="onSliderTouchEnd(product.id)">
 
                         <SwiperSlide v-if="product.previews.length > 0">
                             <div class="w-full h-full relative bg-gray-50">
@@ -208,6 +207,7 @@ import {
     readTouchPoint,
     createTouchSession,
     markSliderDragged,
+    noteSliderTouchEnd,
     shouldOpenProductFromTouch,
     shouldSkipDuplicateClick,
     recordTouchNavigation,
@@ -282,8 +282,8 @@ export default {
         onSliderDragStart(productId) {
             markSliderDragged(this.touchSessions[productId]);
         },
-        onSliderDragEnd(productId) {
-            delete this.touchSessions[productId];
+        onSliderTouchEnd(productId) {
+            noteSliderTouchEnd(this.touchSessions[productId]);
         },
         onCardActivate(product, event) {
             if (isInteractiveCardTarget(event.target)) {

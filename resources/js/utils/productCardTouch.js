@@ -61,9 +61,20 @@ export function markSliderDragged(session) {
     }
 }
 
+/** Swiper touchEnd runs before card touchend — never wipe the session here. */
+export function noteSliderTouchEnd(session) {
+    if (session?.sliderDragged) {
+        session.blockNavigation = true;
+    }
+}
+
 export function classifyTouchIntent(session, endPoint) {
     if (!session || !endPoint) {
         return 'unknown';
+    }
+
+    if (session.blockNavigation) {
+        return 'swipe';
     }
 
     const dx = endPoint.x - session.startX;
