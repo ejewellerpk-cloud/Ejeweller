@@ -1,19 +1,10 @@
 /**
- * Defer below-fold homepage section API calls until after first paint.
+ * Fetch section data on mount (replaces IntersectionObserver lazy sections).
  */
 export default {
     mounted() {
-        if (typeof this.fetchData !== 'function') {
-            return;
+        if (typeof this.fetchData === 'function') {
+            this.fetchData();
         }
-
-        const runFetch = () => this.fetchData();
-
-        if (typeof requestIdleCallback === 'function') {
-            requestIdleCallback(runFetch, { timeout: 1200 });
-            return;
-        }
-
-        setTimeout(runFetch, 100);
     },
 };

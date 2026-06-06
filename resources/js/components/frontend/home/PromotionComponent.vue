@@ -6,7 +6,7 @@
                 <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" class="ad-swiper homepage-touch-swiper" :breakpoints="breakpoints">
                     <SwiperSlide v-for="promotion in promotions" class="mobile:!w-52">
                         <router-link :to="{name: 'frontend.promotion.products', params: { slug: promotion.slug }}" class=" w-full">
-                            <img class="w-full block rounded-2xl" :src="promotion.cover" alt="promotion" loading="lazy" decoding="async">
+                            <img class="w-full block rounded-2xl" :src="promotion.cover" alt="promotion">
                         </router-link>
                     </SwiperSlide>
                 </Swiper>
