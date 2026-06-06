@@ -17,16 +17,88 @@
         })();
     </script>
     <style>
-        html:not(.app-ready) #app {
+        html.boot-admin:not(.app-ready) #app {
             visibility: hidden;
-        }
-
-        html:not(.app-ready) body {
-            background: #ffffff;
         }
 
         html.boot-admin:not(.app-ready) body {
             background: #f7f7fc;
+        }
+
+        html.boot-storefront:not(.app-ready) body {
+            background: #ffffff;
+        }
+
+        .home-hero-shell {
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+            aspect-ratio: 1689 / 600;
+            contain: layout style paint;
+        }
+
+        @media (min-width: 640px) {
+            .home-hero-shell {
+                margin-bottom: 5rem;
+            }
+        }
+
+        .home-hero-shell__img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        html.app-ready .home-hero-shell {
+            display: none;
+        }
+
+        .home-static-chrome {
+            contain: layout style;
+        }
+
+        html.app-ready .home-static-chrome {
+            display: none;
+        }
+
+        .home-static-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            width: 100%;
+            margin-bottom: 1.25rem;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            padding: 0.75rem 0.75rem;
+            padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+        }
+
+        .home-static-header__inner {
+            max-width: 72rem;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            min-height: 2.5rem;
+        }
+
+        .home-static-header__logo {
+            width: 6rem;
+            max-height: 2.5rem;
+            object-fit: contain;
+            display: block;
+        }
+
+        @media (min-width: 640px) {
+            .home-static-header {
+                margin-bottom: 2rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .home-static-header__logo {
+                width: 7rem;
+            }
         }
     </style>
 
@@ -135,6 +207,32 @@
         @endforeach
     @endif
 
+    @if (!empty($isHomepage))
+        <div id="home-static-chrome" class="home-static-chrome">
+            @if (!empty($themeLogo))
+                <header class="home-static-header">
+                    <div class="home-static-header__inner">
+                        <img class="home-static-header__logo" src="{{ $themeLogo }}" alt="logo" width="128" height="40" decoding="async">
+                    </div>
+                </header>
+            @endif
+
+            @if (!empty($heroPreloadImage))
+                <div id="home-hero-shell" class="home-hero-shell" aria-hidden="true">
+                    <img
+                        class="home-hero-shell__img"
+                        src="{{ $heroPreloadImage }}"
+                        alt="banner"
+                        width="1689"
+                        height="600"
+                        fetchpriority="high"
+                        decoding="async"
+                    >
+                </div>
+            @endif
+        </div>
+    @endif
+
     <div id="app"></div>
 
     @if (!blank($analytics))
@@ -157,6 +255,12 @@
         window.FACEBOOK_PIXEL_CURRENCY = "{{ \App\Models\Currency::find(Settings::group('site')->get('site_default_currency'))?->code ?? 'PKR' }}";
         @if (!empty($heroSliders))
         window.__HOME_HERO_SLIDERS__ = @json($heroSliders);
+        @endif
+        @if (!empty($homeCategories))
+        window.__HOME_CATEGORIES__ = @json($homeCategories);
+        @endif
+        @if (!empty($homePromotions))
+        window.__HOME_PROMOTIONS__ = @json($homePromotions);
         @endif
     </script>
     @vite('resources/js/app.js')

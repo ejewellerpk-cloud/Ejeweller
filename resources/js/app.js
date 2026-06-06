@@ -76,6 +76,14 @@ if (Array.isArray(window.__HOME_HERO_SLIDERS__) && window.__HOME_HERO_SLIDERS__.
     store.commit('frontendSlider/lists', window.__HOME_HERO_SLIDERS__);
 }
 
+if (Array.isArray(window.__HOME_CATEGORIES__) && window.__HOME_CATEGORIES__.length > 0) {
+    store.commit('frontendProductCategory/lists', window.__HOME_CATEGORIES__);
+}
+
+if (Array.isArray(window.__HOME_PROMOTIONS__) && window.__HOME_PROMOTIONS__.length > 0) {
+    store.commit('frontendPromotion/lists', window.__HOME_PROMOTIONS__);
+}
+
 const app = createApp(DefaultComponent);
 app.component('vue-select', VueNextSelect)
 app.use(router)
@@ -86,12 +94,10 @@ app.use(Toast, toastOptions)
 app.use(i18n)
 app.use(head)
 
-async function bootstrap() {
-    await router.isReady();
+function bootstrap() {
     app.mount('#app');
-    requestAnimationFrame(() => {
-        document.documentElement.classList.add('app-ready');
-    });
+    document.documentElement.classList.add('app-ready');
+    void router.isReady();
 }
 
 bootstrap();
