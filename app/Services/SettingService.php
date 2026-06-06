@@ -24,4 +24,10 @@ class SettingService
             return array_merge($array, Settings::group('cookies')->all());
         });
     }
+
+    public static function clearCache(): void
+    {
+        Cache::forget('global_settings');
+        Cache::forget('global_settings_v2');
+    }
 }

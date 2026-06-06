@@ -102,6 +102,7 @@ export default {
                     this.loading.isActive = false;
                     alertService.successFlip(res.config.method === "put" ?? 0, this.$t("menu.social_media"));
                     this.errors = {};
+                    this.$store.dispatch("frontendSetting/lists").catch(() => {});
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = err.response.data.errors;

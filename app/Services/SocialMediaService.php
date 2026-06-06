@@ -10,7 +10,6 @@ use Dipokhalder\Settings\Facades\Settings;
 
 class SocialMediaService
 {
-
     /**
      * @throws Exception
      */
@@ -33,6 +32,7 @@ class SocialMediaService
     {
         try {
             Settings::group('social_media')->set($request->validated());
+            SettingService::clearCache();
             return $this->list();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
