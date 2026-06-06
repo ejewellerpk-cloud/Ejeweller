@@ -11,7 +11,9 @@ import VueNextSelect from 'vue-next-select';
 import 'vue-next-select/dist/index.css';
 import ENV from './config/env';
 import "../../public/themes/default/fonts/urbanist/urbanist.css";
+import "../../public/themes/default/fonts/iconly/iconly.css";
 import "../../public/themes/default/fonts/public/public.css";
+import "../../public/themes/default/fonts/fontawesome/fontawesome.css";
 import { createHead } from '@vueuse/head';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import VueApexCharts from "vue3-apexcharts";
@@ -84,24 +86,12 @@ app.use(Toast, toastOptions)
 app.use(i18n)
 app.use(head)
 
-function loadDeferredIconFonts() {
-    import("../../public/themes/default/fonts/iconly/iconly.css");
-    import("../../public/themes/default/fonts/fontawesome/fontawesome.css");
-}
-
 async function bootstrap() {
     await router.isReady();
     app.mount('#app');
     requestAnimationFrame(() => {
         document.documentElement.classList.add('app-ready');
     });
-
-    const scheduleIconFonts = () => loadDeferredIconFonts();
-    if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(scheduleIconFonts, { timeout: 2500 });
-    } else {
-        setTimeout(scheduleIconFonts, 1);
-    }
 }
 
 bootstrap();

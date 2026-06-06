@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-CDdDGnqe.js";import{l as t,c as n,z as r}from"./vendor-vue-core-B-5_7RVc.js";import"./vendor-8yHaUXFb.js";const c={name:"AnalyticComponent"};function s(a,p,_,m,i,f){const o=t("router-view");return n(),r(o)}const $=e(c,[["render",s]]);export{$ as default};
