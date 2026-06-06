@@ -10,21 +10,21 @@
             <ul class="db-sidebar-nav-list" v-if="menus.length > 0" v-for="menu in menus" :key="menu">
                 <li class="db-sidebar-nav-item" v-if="menu.url === '#'" @click.prevent="sidebarActive($event)">
                     <a href="javascript:void(0);" class="db-sidebar-nav-title">
-                        {{ $t('menu.' + menu.language) }}
+                        {{ menuTitle(menu) }}
                     </a>
                 </li>
 
                 <li class="db-sidebar-nav-item" v-else @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
-                        <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
+                        <span class="text-base flex-auto">{{ menuTitle(menu) }}</span>
                     </router-link>
                 </li>
 
                 <li class="db-sidebar-nav-item" v-if="menu.children" v-for="children in menu.children" @click="sidebarActive($event); closeSidebar()">
                     <router-link :to="'/admin/' + children.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="children.icon"></i>
-                        <span class="text-base flex-auto">{{ $t('menu.' + children.language) }}</span>
+                        <span class="text-base flex-auto">{{ menuTitle(children) }}</span>
                     </router-link>
                 </li>
             </ul>
@@ -82,6 +82,16 @@ export default {
         },
         closeSidebar : function(){
             return appService.closeSidebar()
+        },
+        menuTitle: function (item) {
+            if (!item) {
+                return '';
+            }
+            const key = 'menu.' + item.language;
+            if (this.$te(key)) {
+                return this.$t(key);
+            }
+            return item.name || item.language || '';
         }
         }
 }

@@ -137,7 +137,7 @@ class MenuTableSeeder extends Seeder
                         'name'       => 'WhatsApp Order',
                         'language'   => 'whatsapp_order',
                         'url'        => 'whatsapp-order',
-                        'icon'       => 'lab lab-line-whatsapp',
+                        'icon'       => 'lab lab-whatsapp',
                         'priority'   => 100,
                         'status'     => 1,
                         'created_at' => now(),
