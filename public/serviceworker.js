@@ -1,5 +1,5 @@
 // Increment VERSION whenever you deploy — forces clients to drop old caches
-const VERSION = 'v2.3';
+const VERSION = 'v2.4';
 const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
@@ -46,6 +46,8 @@ const mustBypassCache = (request) => {
     if (request.destination === 'video' || request.destination === 'audio') return true;
 
     const url = request.url || '';
+    // Vite build bundles — never intercept (large files + hashed names break SW fetch)
+    if (url.includes('/build/')) return true;
     // Never touch API/XHR — prevents redirect/cache loops (508) on production
     if (url.includes('/api/') || url.includes('/install')) return true;
     if (MEDIA_EXT.test(url)) return true;
