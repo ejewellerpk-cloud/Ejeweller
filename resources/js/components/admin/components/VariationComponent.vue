@@ -12,8 +12,8 @@
         </dd>
     </dl>
 
-    <VariationComponent :method="getFinalVariationId" :key="selectedVariations" v-if="selectedVariations.length > 0"
-        :variations="selectedVariations" />
+    <VariationComponent :method="getFinalVariationId" :key="'variation-child-' + selectedVariationId"
+        v-if="selectedVariations.length > 0" :variations="selectedVariations" />
 </template>
 
 <script>
@@ -31,9 +31,20 @@ export default {
             finalSelectedVariation: null
         }
     },
+    watch: {
+        variations: {
+            handler() {
+                this.selectedVariationId = null;
+                this.selectedVariations = [];
+                this.finalSelectedVariation = null;
+            },
+            deep: true,
+        },
+    },
     methods: {
         selectVariation: function (variation) {
             this.selectedVariationId = variation.id;
+            this.selectedVariations = [];
 
             if (!variation.sku) {
                 this.finalSelectedVariation = null;
@@ -44,10 +55,8 @@ export default {
             }
 
             this.$store.dispatch("posProductVariation/childrenVariation", this.selectedVariationId).then((res) => {
-                this.selectedVariations = res.data.data;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
+                this.selectedVariations = res.data.data || [];
+            }).catch(() => {});
         },
         getFinalVariationId: function (id) {
             this.method(id);

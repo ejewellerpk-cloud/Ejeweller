@@ -95,30 +95,17 @@
         </div>
     </div>
 
-    <Teleport to="body">
-        <div id="variation-modal"
-            class="fixed inset-0 z-[9999] h-dvh w-screen overflow-y-auto bg-black/50 p-3 opacity-0 invisible transition-all duration-500">
-            <div class="mx-auto w-full max-w-4xl rounded-xl bg-white transition-all duration-500">
-                <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-4">
-                    <h3 class="text-lg font-bold capitalize">{{ $t('label.product_variation') }}</h3>
-                    <button type="button" class="lab-line-circle-cross text-lg text-[#E93C3C]" @click="closeProductModal"></button>
-                </div>
-                <ProductDetailsComponent v-if="activeProductId" :key="productModalKey" :method="closeProductModal"
-                    :productId="activeProductId" />
-            </div>
-        </div>
-    </Teleport>
+    <WhatsappOrderVariationModal v-if="activeProductId" :product-id="activeProductId" @close="closeProductModal" />
 </template>
 
 <script>
-import ProductDetailsComponent from "../pos/ProductDetailsComponent";
-import targetService from "../../../services/targetService";
+import WhatsappOrderVariationModal from "./WhatsappOrderVariationModal";
 import alertService from "../../../services/alertService";
 
 export default {
     name: "WhatsappOrderProductCatalog",
     components: {
-        ProductDetailsComponent,
+        WhatsappOrderVariationModal,
     },
     props: {
         products: {
@@ -152,7 +139,6 @@ export default {
             barcode: null,
             quickProductId: null,
             activeProductId: null,
-            productModalKey: 0,
             productLoadingId: null,
             searchDebounce: null,
             props: {
@@ -230,20 +216,10 @@ export default {
             });
         },
         showVariationModal(productId) {
-            this.activeProductId = null;
-            this.productModalKey = Date.now();
-            this.$nextTick(() => {
-                this.activeProductId = Number(productId);
-                this.$nextTick(() => {
-                    targetService.showTarget("variation-modal", "modal-active");
-                });
-            });
+            this.activeProductId = Number(productId);
         },
         closeProductModal() {
-            targetService.hideTarget("variation-modal", "modal-active");
-            setTimeout(() => {
-                this.activeProductId = null;
-            }, 300);
+            this.activeProductId = null;
         },
         directAddToCart(product) {
             const payload = {
