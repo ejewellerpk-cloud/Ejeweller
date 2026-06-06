@@ -22,8 +22,8 @@ class PWARequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pwa_splash' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5048', 'dimensions:min_width=2048,min_height=2732'],
-            'pwa_icon'   => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4048', 'dimensions:ratio=1/1,min_width=512,min_height=512,max_width=1024,max_height=1024']
+            'pwa_splash' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5048', 'dimensions:min_width=2048,min_height=2732'],
+            'pwa_icon'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4048', 'dimensions:ratio=1/1,min_width=512,min_height=512,max_width=1024,max_height=1024']
         ];
     }
     public function messages()

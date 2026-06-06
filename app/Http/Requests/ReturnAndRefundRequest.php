@@ -29,7 +29,7 @@ class ReturnAndRefundRequest extends FormRequest
             'order_id'         => ['required', 'numeric'],
             'order_serial_no'  => ['required', 'string'],
             'products'         => ['required', 'json'],
-            'image[]'          => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'image[]'          => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 

@@ -29,7 +29,7 @@ class PurchasePaymentRequest extends FormRequest
             'reference_no'   => ['nullable', 'string'],
             'amount'         => ['required', 'numeric'],
             'payment_method' => ['required', 'not_in:0', 'not_in:null'],
-            'file'           => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'file'           => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
         ];
     }
 

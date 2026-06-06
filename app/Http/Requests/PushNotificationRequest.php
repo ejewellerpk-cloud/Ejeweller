@@ -33,7 +33,7 @@ class PushNotificationRequest extends FormRequest
             'description' => ['required', 'string', 'max:2000'],
             'role_id'     => ['nullable', 'numeric'],
             'user_id'     => ['nullable', 'numeric'],
-            'image' => ['mimes:jpeg,png,jpg', 'max:5098']
+            'image' => ['mimes:jpeg,png,jpg,webp', 'max:5098']
         ];
     }
 }

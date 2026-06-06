@@ -28,7 +28,7 @@ class ProductSeoRequest extends FormRequest
             'title'        => ['required', 'string', 'max:190'],
             'description'  => ['required', 'string', 'max:5000'],
             'meta_keyword' => ['required', 'max:190'],
-            'image'        => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'image'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']
         ];
     }
 }

@@ -27,7 +27,7 @@ class ReturnOrderRequest extends FormRequest
             'subtotal'      => ['required', 'numeric'],
             'date'          => ['required','string'],
             'total'         => ['required', 'numeric'],
-            'file'          => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'file'          => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
             'reason'        => ['nullable', 'string', 'max:1000'],
             'products'      => ['required','json']
         ];

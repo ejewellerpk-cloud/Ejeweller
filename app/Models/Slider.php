@@ -33,6 +33,6 @@ class Slider extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('cover')->fit(Fit::Fill, 1689, 600)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->fit(Fit::Fill, 1689, 600)->format('webp')->quality(70)->nonOptimized();
     }
 }

@@ -33,7 +33,7 @@ class ProductBrandRequest extends FormRequest
             ],
             'description' => ['nullable', 'string', 'max:900'],
             'status'      => ['required', 'numeric', 'max:24'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']
         ];
     }
 }

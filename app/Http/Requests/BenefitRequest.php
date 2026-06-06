@@ -33,7 +33,7 @@ class BenefitRequest extends FormRequest
             ],
             'description' => ['required', 'string', 'max:900'],
             'status'      => ['required', 'numeric', 'max:24'],
-            'image'       => $this->route('benefit.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'image'       => $this->route('benefit.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

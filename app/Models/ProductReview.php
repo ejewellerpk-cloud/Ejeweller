@@ -27,7 +27,7 @@ class ProductReview extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('product-review'))) {
             $images = $this->getMedia('product-review');
             foreach ($images as $image) {
-                $response[] = $image['original_url'];
+                $response[] = $image->getUrl('thumb') ?: $image->getUrl();
             }
         }
         return $response;
@@ -35,7 +35,7 @@ class ProductReview extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Fill, 112, 72)->keepOriginalImageFormat()->nonOptimized();
+        $this->addMediaConversion('thumb')->fit(Fit::Fill, 112, 72)->format('webp')->quality(70)->nonOptimized();
     }
 
 

@@ -22,7 +22,7 @@ class DamageRequest extends FormRequest
             'discount' => ['nullable', 'numeric'],
             'tax'      => ['required', 'numeric'],
             'total'    => ['required', 'numeric'],
-            'file'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'file'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
             'note'     => ['nullable', 'string', 'max:1000'],
             'products' => ['required', 'json']
         ];

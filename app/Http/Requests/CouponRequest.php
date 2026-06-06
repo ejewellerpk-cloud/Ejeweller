@@ -41,7 +41,7 @@ class CouponRequest extends FormRequest
             'minimum_order'    => ['required', 'numeric'],
             'maximum_discount' => ['required', 'numeric'],
             'limit_per_user'   => ['nullable', 'numeric'],
-            'image'            => $this->route('coupon.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'image'            => $this->route('coupon.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
         ];
     }

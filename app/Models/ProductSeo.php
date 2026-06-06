@@ -41,7 +41,7 @@ class ProductSeo extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Fill, 112, 72)->keepOriginalImageFormat()->nonOptimized();
-        $this->addMediaConversion('cover')->width(600)->keepOriginalImageFormat()->nonOptimized();
+        $this->addMediaConversion('thumb')->fit(Fit::Fill, 112, 72)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->width(600)->format('webp')->quality(70)->nonOptimized();
     }
 }

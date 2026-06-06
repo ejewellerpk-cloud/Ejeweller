@@ -35,7 +35,7 @@ class PageRequest extends FormRequest
             'menu_section_id' => ['required', 'numeric'],
             'menu_template_id'     => ['nullable', 'numeric'],
             'status'          => ['required', 'numeric', 'max:24'],
-            'image'           => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'image'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']
         ];
     }
 

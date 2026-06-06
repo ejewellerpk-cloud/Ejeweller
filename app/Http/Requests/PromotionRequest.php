@@ -34,7 +34,7 @@ class PromotionRequest extends FormRequest
             ],
             'type'     => ['required', 'numeric', 'max:24'],
             'status'     => ['required', 'numeric', 'max:24'],
-            'image'      => $this->route('promotion.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'image'      => $this->route('promotion.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

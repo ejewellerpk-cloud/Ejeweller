@@ -24,6 +24,8 @@ use App\Listeners\SendOrderGotPushNotification;
 use App\Listeners\SendVerifyEmailCodeNotification;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use App\Listeners\ConvertUploadedMediaToWebp;
+use Spatie\MediaLibrary\MediaCollections\Events\MediaHasBeenAddedEvent;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -62,6 +64,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         SendVerifyEmailCode::class              => [
             SendVerifyEmailCodeNotification::class
+        ],
+        MediaHasBeenAddedEvent::class => [
+            ConvertUploadedMediaToWebp::class,
         ],
     ];
 

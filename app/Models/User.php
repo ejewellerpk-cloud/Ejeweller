@@ -102,8 +102,8 @@ class User extends Authenticatable implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->width(168)->height(180)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->fit(Fit::Fill, 1689, 600)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->width(168)->height(180)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->fit(Fit::Fill, 1689, 600)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany

@@ -26,7 +26,7 @@ class PurchaseRequest extends FormRequest
             'date'          => ['required','string'],
             'status'        => ['required','not_in:0','not_in:null'],
             'total'         => ['required', 'numeric'],
-            'file'          => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'file'          => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
             'note'          => ['nullable', 'string', 'max:1000'],
             'products'      => ['required','json']
                 ];

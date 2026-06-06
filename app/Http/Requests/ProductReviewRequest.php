@@ -27,7 +27,7 @@ class ProductReviewRequest extends FormRequest
             'product_id' => ['required', 'numeric'],
             'star'       => ['required', 'numeric'],
             'review'     => ['required', 'string', 'max:5000'],
-            'images[]'   => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'images[]'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

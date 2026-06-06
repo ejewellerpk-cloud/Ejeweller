@@ -111,7 +111,7 @@ class Product extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('product'))) {
             $images = $this->getMedia('product');
             foreach ($images as $image) {
-                $response[] = $image['original_url'];
+                $response[] = $image->getUrl('preview') ?: $image->getUrl();
             }
         }
         return $response;

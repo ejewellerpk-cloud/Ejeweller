@@ -35,7 +35,7 @@ class SupplierRequest extends FormRequest
             'city'         => ['nullable', 'string', 'max:200'],
             'zip_code'     => ['nullable', 'string', 'max:200'],
             'country_code' => ['nullable', 'string', 'max:20'],
-            'image'        => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'image'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']
         ];
     }
 }

@@ -39,6 +39,6 @@ class Outlet extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->width(400)->height(300)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->width(400)->height(300)->format('webp')->quality(70)->nonOptimized();
     }
 }

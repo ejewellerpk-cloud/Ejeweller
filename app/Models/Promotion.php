@@ -45,8 +45,8 @@ class Promotion extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('cover')->fit(Fit::Fill, 540, 336)->keepOriginalImageFormat()->nonOptimized();
-        $this->addMediaConversion('preview')->width(1689)->height(600)->keepOriginalImageFormat()->nonOptimized();
+        $this->addMediaConversion('cover')->fit(Fit::Fill, 540, 336)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('preview')->width(1689)->height(600)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function products(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

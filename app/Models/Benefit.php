@@ -44,7 +44,7 @@ class Benefit extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Fill, 36, 36)->keepOriginalImageFormat()->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->width(600)->keepOriginalImageFormat()->quality(70)->nonOptimized();
+        $this->addMediaConversion('thumb')->fit(Fit::Fill, 36, 36)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')->width(600)->format('webp')->quality(70)->nonOptimized();
     }
 }
