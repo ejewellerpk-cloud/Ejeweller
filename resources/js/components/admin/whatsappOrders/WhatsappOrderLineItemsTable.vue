@@ -31,7 +31,7 @@
                                         class="h-12 w-12 flex-shrink-0 rounded-md object-cover" />
                                     <div class="min-w-0">
                                         <p class="truncate font-medium capitalize">{{ cart.name }}</p>
-                                        <p v-if="cart.variation_id > 0" class="text-xs text-gray-500 capitalize">
+                                        <p v-if="cart.variation_id && cart.variation_names" class="text-xs text-gray-500 capitalize">
                                             {{ cart.variation_names }}
                                         </p>
                                         <p class="text-xs text-gray-400">SKU: {{ cart.sku }}</p>
@@ -49,10 +49,11 @@
                                     <button type="button" @click="$emit('decrement', index, cart)"
                                         :class="cart.quantity === 1 ? 'cursor-not-allowed opacity-50' : ''"
                                         class="lab-fill-circle-minus text-lg leading-none transition hover:text-primary"></button>
-                                    <input type="number" v-model="cart.quantity" min="1"
+                                    <input type="number" :value="cart.quantity" min="1"
                                         class="h-5 w-12 border-0 bg-transparent text-center text-sm font-medium focus:outline-none"
                                         @keypress="$emit('onlyNumber', $event)"
-                                        @keyup="$emit('quantityUp', index, cart, $event)" />
+                                        @keyup="$emit('quantityUp', index, cart, $event)"
+                                        @change="$emit('quantityUp', index, cart, $event)" />
                                     <button type="button" @click="$emit('increment', index, cart)"
                                         :class="cart.quantity >= cart.stock ? 'cursor-not-allowed opacity-50' : ''"
                                         class="lab-fill-circle-plus text-lg leading-none transition hover:text-primary"></button>

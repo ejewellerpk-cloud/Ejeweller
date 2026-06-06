@@ -4,14 +4,14 @@
             <h3 class="db-card-title">{{ $t('label.add_products') }}</h3>
         </div>
         <div class="db-card-body">
-            <form class="mb-4" @submit.prevent="$emit('search')">
+            <form class="mb-4" @submit.prevent="triggerSearch">
                 <div class="form-row">
                     <div class="form-col-12 sm:form-col-6 lg:form-col-4">
                         <label class="db-field-title">{{ $t('label.search') }}</label>
                         <div class="relative">
                             <button type="submit" class="lab-line-search absolute top-1/2 -translate-y-1/2 ltr:left-3 rtl:right-3 text-gray-400"></button>
                             <input type="search" v-model="searchName" :placeholder="$t('label.search_here')"
-                                class="db-field-control ltr:pl-10 rtl:pr-10" @input="$emit('update:name', searchName)" />
+                                class="db-field-control ltr:pl-10 rtl:pr-10" />
                             <button v-if="searchName" type="button" @click="clearName"
                                 class="absolute top-1/2 -translate-y-1/2 ltr:right-3 rtl:left-3 text-sm text-red-500 fa-regular fa-circle-xmark"></button>
                         </div>
@@ -57,7 +57,7 @@
                         <vue-select v-model="quickProductId" class="db-field-control f-b-custom-select" :options="products"
                             label-by="name" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
                             :placeholder="$t('label.select_one')" search-placeholder="--"
-                            @update:modelValue="openProductModal" />
+                            @update:modelValue="handleProductSelect" />
                     </div>
                 </div>
             </div>
@@ -66,7 +66,8 @@
                 class="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                 <div v-for="product in products" :key="product.id"
                     class="group flex flex-col rounded-lg border border-[#EFF0F6] bg-white p-2 transition hover:border-primary hover:shadow-sm">
-                    <button type="button" class="relative mb-2 overflow-hidden rounded-md text-left" @click="openProductModal(product.id)">
+                    <button type="button" class="relative mb-2 overflow-hidden rounded-md text-left"
+                        :disabled="productLoadingId === product.id" @click="handleProductSelect(product.id)">
                         <img :src="product.cover" :alt="product.name"
                             class="aspect-square w-full object-cover transition group-hover:scale-105" />
                         <span v-if="product.is_offer && product.flash_sale"
@@ -80,9 +81,9 @@
                         <span v-else>{{ product.currency_price }}</span>
                     </p>
                     <button type="button" class="db-btn-outline mt-auto w-full py-1.5 text-xs"
-                        @click="openProductModal(product.id)">
+                        :disabled="productLoadingId === product.id" @click="handleProductSelect(product.id)">
                         <i class="lab lab-line-bag"></i>
-                        <span>{{ $t('button.add') }}</span>
+                        <span>{{ productLoadingId === product.id ? '...' : $t('button.add') }}</span>
                     </button>
                 </div>
             </div>
@@ -94,22 +95,26 @@
         </div>
     </div>
 
-    <div id="variation-modal"
-        class="fixed inset-0 z-50 h-dvh w-screen overflow-y-auto bg-black/50 p-3 opacity-0 invisible transition-all duration-500">
-        <div class="mx-auto w-full max-w-4xl rounded-xl bg-white transition-all duration-500">
-            <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-4">
-                <h3 class="text-lg font-bold capitalize">{{ $t('label.product_variation') }}</h3>
-                <button type="button" class="lab-line-circle-cross text-lg text-[#E93C3C]" @click="closeProductModal"></button>
+    <Teleport to="body">
+        <div id="variation-modal"
+            class="fixed inset-0 z-[9999] h-dvh w-screen overflow-y-auto bg-black/50 p-3 opacity-0 invisible transition-all duration-500">
+            <div class="mx-auto w-full max-w-4xl rounded-xl bg-white transition-all duration-500">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-4">
+                    <h3 class="text-lg font-bold capitalize">{{ $t('label.product_variation') }}</h3>
+                    <button type="button" class="lab-line-circle-cross text-lg text-[#E93C3C]" @click="closeProductModal"></button>
+                </div>
+                <ProductDetailsComponent v-if="activeProductId" :key="productModalKey" :method="closeProductModal"
+                    :productId="activeProductId" />
             </div>
-            <ProductDetailsComponent v-if="activeProductId" :method="closeProductModal" :productId="activeProductId" />
         </div>
-    </div>
+    </Teleport>
 </template>
 
 <script>
 import ProductDetailsComponent from "../pos/ProductDetailsComponent";
 import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
+
 export default {
     name: "WhatsappOrderProductCatalog",
     components: {
@@ -144,10 +149,12 @@ export default {
     emits: ["search", "reset", "setCategory", "setBrand", "update:name"],
     data() {
         return {
-            searchName: this.name,
             barcode: null,
             quickProductId: null,
             activeProductId: null,
+            productModalKey: 0,
+            productLoadingId: null,
+            searchDebounce: null,
             props: {
                 search: {
                     product_id: null,
@@ -163,28 +170,103 @@ export default {
         setting() {
             return this.$store.getters["frontendSetting/lists"];
         },
-    },
-    watch: {
-        name(value) {
-            this.searchName = value;
+        searchName: {
+            get() {
+                return this.name;
+            },
+            set(value) {
+                this.$emit("update:name", value);
+                clearTimeout(this.searchDebounce);
+                this.searchDebounce = setTimeout(() => {
+                    this.$emit("search");
+                }, 400);
+            },
         },
     },
+    beforeUnmount() {
+        clearTimeout(this.searchDebounce);
+        this.closeProductModal();
+    },
     methods: {
+        triggerSearch() {
+            clearTimeout(this.searchDebounce);
+            this.$emit("update:name", this.name);
+            this.$emit("search");
+        },
         clearName() {
-            this.searchName = "";
+            clearTimeout(this.searchDebounce);
             this.$emit("update:name", "");
             this.$emit("search");
         },
-        openProductModal(productId) {
-            if (!productId) return;
-            this.activeProductId = productId;
+        handleProductSelect(productId) {
+            if (!productId || this.productLoadingId) return;
+            const id = Number(productId);
+            this.productLoadingId = id;
             this.quickProductId = null;
+
+            this.$store.dispatch("posProduct/show", { product_id: id, review_limit: 3 }).then((res) => {
+                const product = res.data.data;
+                return this.$store.dispatch("posProductVariation/initialVariation", id).then((varRes) => ({
+                    product,
+                    variations: varRes.data.data || [],
+                }));
+            }).then(({ product, variations }) => {
+                if (variations.length > 0) {
+                    this.showVariationModal(id);
+                    return;
+                }
+                if (Number(product.stock) > 0) {
+                    this.directAddToCart(product);
+                    return;
+                }
+                alertService.error(this.$t("label.stock_out"));
+            }).catch((err) => {
+                const message = err.response?.data?.message;
+                if (message) {
+                    alertService.error(message);
+                }
+            }).finally(() => {
+                this.productLoadingId = null;
+            });
+        },
+        showVariationModal(productId) {
+            this.activeProductId = null;
+            this.productModalKey = Date.now();
+            this.$nextTick(() => {
+                this.activeProductId = Number(productId);
+                this.$nextTick(() => {
+                    targetService.showTarget("variation-modal", "modal-active");
+                });
+            });
         },
         closeProductModal() {
             targetService.hideTarget("variation-modal", "modal-active");
             setTimeout(() => {
                 this.activeProductId = null;
             }, 300);
+        },
+        directAddToCart(product) {
+            const payload = {
+                name: product.name,
+                product_id: product.id,
+                image: product.image,
+                variation_names: "",
+                variation_id: null,
+                sku: product.sku,
+                stock: product.stock,
+                taxes: product.taxes,
+                quantity: 1,
+                discount: 0,
+                price: product.price,
+                old_price: product.old_price,
+                total_price: product.price,
+            };
+
+            this.$store.dispatch("posCart/lists", payload).then(() => {
+                alertService.success(this.$t("message.add_to_cart"));
+            }).catch(() => {
+                alertService.error(this.$t("message.maximum_quantity"));
+            });
         },
         scanBarcode() {
             if (!this.barcode) return;

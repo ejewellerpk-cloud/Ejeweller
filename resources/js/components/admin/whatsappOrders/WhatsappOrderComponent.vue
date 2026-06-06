@@ -3,7 +3,8 @@
     <PoscustomerComponent store-module="whatsappOrder" v-on:onCustomverCreate="onCustomverCreate" />
     <ReceiptComponent :order="order" />
 
-    <div class="col-12 pb-20 xl:pb-6">
+    <div class="row">
+        <div class="col-12 pb-20 xl:pb-6">
         <div class="db-card mb-6">
             <div class="db-card-header flex-wrap gap-3">
                 <h3 class="db-card-title">{{ $t('menu.whatsapp_order') }}</h3>
@@ -160,6 +161,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
