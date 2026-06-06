@@ -1,18 +1,18 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="product-grid" skeleton-columns="shop" :skeleton-count="8" />
-    <section class="shop-page mb-4 sm:mb-6 pb-20 lg:pb-8">
-        <div class="container mt-2 sm:mt-4 px-4 sm:px-6">
+    <section class="shop-page mb-4 sm:mb-6 shop-page--mobile-nav-pad lg:pb-8">
+        <div class="container mt-2 sm:mt-4 px-3 sm:px-4 md:px-6">
             <!-- Sticky: search + filters -->
-            <div class="shop-page-sticky sticky top-14 sm:top-16 lg:top-[4.25rem] z-40 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-2 pb-3 mb-3 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+            <div class="shop-page-sticky shop-page-sticky-bar sticky z-40 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 pt-1.5 sm:pt-2 pb-2 sm:pb-3 mb-2 sm:mb-3 bg-white lg:bg-white/95 lg:backdrop-blur-md border-b border-gray-100 shadow-sm">
                 <CategoryBreadcrumbComponent
                     v-if="typeof $route.query.category !== 'undefined' && $route.query.category !== ''"
                     :categories="ancestorsAndSelfCategories" class="mb-2 text-sm" />
 
-                <div class="w-full relative flex items-center gap-2 sm:gap-3">
-                    <button @click="$router.go(-1)" type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                        <i class="fa-solid fa-chevron-left text-xl text-gray-700"></i>
+                <div class="w-full relative flex items-center gap-1.5 sm:gap-3">
+                    <button @click="$router.go(-1)" type="button" class="shop-touch-btn w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fa-solid fa-chevron-left text-lg sm:text-xl text-gray-700"></i>
                     </button>
-                    <div class="relative flex-1 min-w-0 rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1.5 h-[46px] sm:h-12">
+                    <div class="relative flex-1 min-w-0 rounded-full bg-white border-[1.5px] border-gray-900 focus-within:border-black transition-all duration-300 flex items-center pr-1 h-[42px] sm:h-12">
                         <input
                             type="text"
                             v-model="searchName"
@@ -21,7 +21,7 @@
                             @focus="showSuggestions = true"
                             @blur="hideSuggestions"
                             placeholder="Search our premium collection..."
-                            class="w-full pl-5 pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
+                            class="w-full pl-4 sm:pl-5 pr-2 sm:pr-3 py-2 bg-transparent outline-none text-heading font-medium text-sm sm:text-base placeholder:text-gray-500 rounded-full h-full"
                         />
                         <button
                             v-if="searchName"
@@ -52,7 +52,7 @@
                     </div>
                 </div>
 
-                <div class="shop-filters-row mt-2.5 flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth">
+                <div class="shop-filters-row mt-2 sm:mt-2.5 flex flex-nowrap items-center gap-1.5 sm:gap-2 overflow-x-auto overflow-y-hidden pb-1 scroll-smooth">
                     <button v-if="hasActiveFilters" type="button" @click="resetFilters"
                         class="shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary bg-primary/5 text-primary font-medium text-sm hover:bg-primary/10 transition-all active:scale-95">
                         <i class="fa-solid fa-xmark text-[11px]"></i>
@@ -274,7 +274,10 @@ export default {
     mounted() {
         this.initFromRoute();
         this.loadProducts(1);
-        this.$nextTick(() => this.setupInfiniteScroll());
+        this.$nextTick(() => {
+            this.setupInfiniteScroll();
+            this.syncShopStickyOffset();
+        });
         this._onFilterScroll = (e) => {
             if (!this.activeDropdown) {
                 return;
@@ -284,8 +287,11 @@ export default {
             }
             this.closeDropdown();
         };
+        this._onLayoutSync = () => this.syncShopStickyOffset();
         window.addEventListener('scroll', this._onFilterScroll, true);
         window.addEventListener('resize', this._onFilterScroll);
+        window.addEventListener('resize', this._onLayoutSync);
+        window.addEventListener('orientationchange', this._onLayoutSync);
     },
     activated() {
         this.initFromRoute();
@@ -297,8 +303,18 @@ export default {
         }
         window.removeEventListener('scroll', this._onFilterScroll, true);
         window.removeEventListener('resize', this._onFilterScroll);
+        window.removeEventListener('resize', this._onLayoutSync);
+        window.removeEventListener('orientationchange', this._onLayoutSync);
     },
     methods: {
+        syncShopStickyOffset() {
+            const header = document.getElementById('frontend-main-header');
+            if (!header) {
+                return;
+            }
+            const height = Math.ceil(header.getBoundingClientRect().height);
+            document.documentElement.style.setProperty('--shop-sticky-top', `${height}px`);
+        },
         initFromRoute() {
             const q = this.$route.query;
             this.categorySlug = q.category || null;
@@ -464,7 +480,8 @@ export default {
             this.$nextTick(() => {
                 const anchor = document.querySelector('.shop-page-sticky');
                 if (anchor) {
-                    const top = anchor.getBoundingClientRect().top + window.scrollY - 8;
+                    const headerOffset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shop-sticky-top'), 10) || 56;
+                    const top = anchor.getBoundingClientRect().top + window.scrollY - headerOffset - 4;
                     window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
                 }
             });
@@ -618,8 +635,32 @@ export default {
 <style scoped>
 .shop-filters-row {
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
+    scroll-padding-inline: 0.75rem;
+}
+
+.shop-touch-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.shop-touch-btn:active {
+    transform: scale(0.92);
+    opacity: 0.85;
+}
+
+.shop-page-sticky-bar {
+    will-change: transform;
+}
+
+@supports (-webkit-touch-callout: none) {
+    .shop-page-sticky-bar {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 .shop-filters-row::-webkit-scrollbar {

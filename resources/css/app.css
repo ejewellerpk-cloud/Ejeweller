@@ -607,6 +607,51 @@
         -webkit-overflow-scrolling: touch;
     }
 
+    /* iPhone / notch safe areas */
+    :root {
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --frontend-header-height: 3.5rem;
+        --shop-sticky-top: calc(3.5rem + var(--safe-top));
+        --mobile-bottom-nav-height: calc(4.25rem + var(--safe-bottom));
+    }
+
+    .frontend-main-header {
+        padding-top: var(--safe-top);
+        padding-left: var(--safe-left);
+        padding-right: var(--safe-right);
+    }
+
+    .shop-page-sticky-bar {
+        top: var(--shop-sticky-top);
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    @media (min-width: 640px) {
+        :root {
+            --shop-sticky-top: calc(4rem + var(--safe-top));
+        }
+    }
+
+    @media (min-width: 1024px) {
+        :root {
+            --shop-sticky-top: calc(4.25rem + var(--safe-top));
+        }
+    }
+
+    .shop-page--mobile-nav-pad {
+        padding-bottom: var(--mobile-bottom-nav-height);
+    }
+
+    @media (min-width: 1024px) {
+        .shop-page--mobile-nav-pad {
+            padding-bottom: 2rem;
+        }
+    }
+
     .navigate-swiper .swiper-button-prev {
         @apply mobile:hidden w-10 h-10 leading-10 text-center rounded-full bg-primary-slate text-primary ltr:after:content-['\e049'] rtl:after:content-['\e048'] after:font-icon after:text-xl transition-all duration-300 hover:bg-primary hover:after:text-white top-6 ltr:left-auto ltr:right-12 rtl:right-auto rtl:left-12
     }

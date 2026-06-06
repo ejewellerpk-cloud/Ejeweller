@@ -1,5 +1,6 @@
 <template>
     <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar && topBarTitles.length > 0" 
+         id="frontend-top-bar"
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
          class="w-full py-2 z-40 relative min-h-[40px] overflow-hidden">
         <div class="topbar-marquee-viewport w-full overflow-hidden">
@@ -22,19 +23,21 @@
     </div>
 
     <header
-        :class="isSticky === true ? 'fixed top-0 left-0 z-30 w-full mb-5 sm:mb-8 shadow-xs bg-white' : 'mb-5 sm:mb-8 shadow-xs bg-white'">
-        <div class="container py-3.5 px-4 lg:py-0">
-            <div class="flex items-center justify-between gap-5">
+        id="frontend-main-header"
+        class="frontend-main-header max-lg:sticky max-lg:top-0 z-30 w-full mb-5 sm:mb-8 shadow-xs bg-white"
+        :class="isSticky === true ? 'lg:fixed lg:top-0 lg:left-0' : ''">
+        <div class="container py-3 px-3 sm:py-3.5 sm:px-4 lg:py-0">
+            <div class="flex items-center justify-between gap-3 sm:gap-5">
                 <!--  Logo & Mobile Responsive Start -->
-                <div class="flex items-center flex-shrink-0 gap-5">
-                    <button type="button" class="mobile-header-touch leading-none block lg:hidden"
+                <div class="flex items-center flex-shrink-0 gap-2 sm:gap-5 min-w-0">
+                    <button type="button" class="mobile-header-touch leading-none block lg:hidden flex-shrink-0"
                         @click.prevent="showTarget('mobile-sidebar-canvas', 'canvas-active')">
                         <i class="lab-line-humburger text-xl"></i>
                     </button>
 
                     <router-link :to="{ name: 'frontend.home' }"
-                        class="router-link-active router-link-exact-active flex-shrink-0">
-                        <img class="w-28 sm:w-32" :src="setting.theme_logo" alt="logo" loading="lazy">
+                        class="router-link-active router-link-exact-active flex-shrink-0 min-w-0">
+                        <img class="w-24 sm:w-28 md:w-32 max-h-10 sm:max-h-none object-contain" :src="setting.theme_logo" alt="logo" loading="lazy">
                     </router-link>
                 </div>
 
@@ -390,7 +393,7 @@
 
 <script>
 import statusEnum from "../../../enums/modules/statusEnum";
-import { onMounted, ref } from "vue";
+import { onMounted, onBeforeUnmount, ref } from "vue";
 import targetService from "../../../services/targetService";
 import appService from "../../../services/appService";
 import activityEnum from "../../../enums/modules/activityEnum";
@@ -410,6 +413,19 @@ export default {
     setup() {
         const isSticky = ref();
         const {openCanvas} = useCanvas();
+
+        const syncLayoutOffsets = () => {
+            const header = document.getElementById('frontend-main-header');
+            if (!header) {
+                return;
+            }
+            const height = Math.ceil(header.getBoundingClientRect().height);
+            document.documentElement.style.setProperty('--frontend-header-height', `${height}px`);
+            document.documentElement.style.setProperty('--shop-sticky-top', `${height}px`);
+        };
+
+        let headerResizeObserver = null;
+
         onMounted(() => {
             window.addEventListener('scroll', function () {
                 let windowScroll = this.scrollY;
@@ -418,8 +434,25 @@ export default {
                 } else {
                     isSticky.value = false;
                 }
-            })
-        })
+            });
+
+            syncLayoutOffsets();
+            window.addEventListener('resize', syncLayoutOffsets);
+            window.addEventListener('orientationchange', syncLayoutOffsets);
+
+            const header = document.getElementById('frontend-main-header');
+            if (header && typeof ResizeObserver !== 'undefined') {
+                headerResizeObserver = new ResizeObserver(syncLayoutOffsets);
+                headerResizeObserver.observe(header);
+            }
+        });
+
+        onBeforeUnmount(() => {
+            window.removeEventListener('resize', syncLayoutOffsets);
+            window.removeEventListener('orientationchange', syncLayoutOffsets);
+            headerResizeObserver?.disconnect();
+        });
+
         return {
             isSticky,
             openCanvas

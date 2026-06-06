@@ -167,8 +167,8 @@ export default {
             
             // On other standard frontend pages on mobile
             else {
-                // Floating perfectly above the global bottom mobile navigation bar (bottom-[58px])
-                return `${baseClasses} bottom-[84px] sm:bottom-6`;
+                // Floating above the mobile bottom nav (height includes safe-area)
+                return `${baseClasses} bottom-[calc(var(--mobile-bottom-nav-height,5rem)+0.75rem)] sm:bottom-6`;
             }
         }
     },
