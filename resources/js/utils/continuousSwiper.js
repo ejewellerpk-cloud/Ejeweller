@@ -46,10 +46,8 @@ export const productCardSwiperTouchProps = {
     ...touchFriendlySwiperProps,
     nested: true,
     touchAngle: 35,
-    threshold: 10,
+    threshold: 8,
     slideToClickedSlide: false,
-    preventClicks: true,
-    preventClicksPropagation: true,
 };
 
 export function pauseContinuousSwiper(swiper) {

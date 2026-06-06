@@ -4,17 +4,15 @@
         v-for="product in products"
         :key="product.id"
         custom
-        v-slot="{ navigate, href }"
+        v-slot="{ href }"
         :to="productRoute(product)"
     >
         <a
             :href="href"
             class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative block no-underline text-inherit"
             @touchstart.passive="onCardTouchStart(product, $event)"
-            @touchmove.passive="onCardTouchMove(product, $event)"
-            @touchcancel="onCardTouchEnd(product.id)"
-            @touchend="onCardNav($event, product, navigate)"
-            @click="onCardNav($event, product, navigate)"
+            @touchend="openProduct(product, $event)"
+            @click="openProduct(product, $event)"
             @mouseenter="onMouseEnter(product.id)"
             @mouseleave="onMouseLeave(product.id)"
         >
@@ -48,6 +46,8 @@
                     :modules="modules"
                     :loop="true"
                     @swiper="onSwiperInit($event, product.id)"
+                    @touchstart.passive="onCardTouchStart(product, $event)"
+                    @touchend="openProduct(product, $event)"
                     class="w-full h-full product-card-swiper">
 
                     <SwiperSlide v-if="product.previews.length > 0">
@@ -209,7 +209,6 @@ import {
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { productCardSwiperTouchProps } from "../../../utils/continuousSwiper";
-import { onInstantNavigate } from "../../../utils/instantTap";
 
 export default {
     name: "ProductListComponent",
@@ -275,24 +274,18 @@ export default {
             this.cardTouchState[product.id] = {
                 startX: touch.clientX,
                 startY: touch.clientY,
-                moved: false,
             };
         },
-        onCardTouchMove(product, event) {
+        getCardTouchDelta(product, event) {
             const state = this.cardTouchState[product.id];
-            const touch = event.touches?.[0];
+            const touch = event.changedTouches?.[0];
             if (!state || !touch) {
-                return;
+                return { dx: 0, dy: 0 };
             }
-            if (Math.abs(touch.clientX - state.startX) > 10 || Math.abs(touch.clientY - state.startY) > 10) {
-                state.moved = true;
-            }
-        },
-        onCardTouchEnd(productId) {
-            delete this.cardTouchState[productId];
-        },
-        wasCardTouchMoved(productId) {
-            return Boolean(this.cardTouchState[productId]?.moved);
+            return {
+                dx: Math.abs(touch.clientX - state.startX),
+                dy: Math.abs(touch.clientY - state.startY),
+            };
         },
         shouldBlockProductNavigation(product, event) {
             const target = event?.target;
@@ -305,28 +298,53 @@ export default {
             if (target.closest('.swiper-pagination')) {
                 return true;
             }
-            if (this.wasCardTouchMoved(product.id)) {
-                return true;
-            }
-            const swiper = this.swiperInstances[product.id];
-            if (swiper && swiper.allowClick === false) {
-                return true;
+            if (event.type === 'touchend' || event.type === 'touchcancel') {
+                const { dx, dy } = this.getCardTouchDelta(product, event);
+                // Vertical scroll over card — don't navigate
+                if (dy > 18 && dy > dx) {
+                    return true;
+                }
+                // Horizontal swipe on image slider — don't navigate
+                if (dx > 14 && dx >= dy) {
+                    return true;
+                }
             }
             return false;
         },
-        onCardNav(event, product, navigate) {
+        openProduct(product, event) {
             if (this.shouldBlockProductNavigation(product, event)) {
-                event.preventDefault();
-                if (event.type === 'touchend' || event.type === 'touchcancel') {
-                    this.onCardTouchEnd(product.id);
+                if (event.cancelable) {
+                    event.preventDefault();
                 }
+                delete this.cardTouchState[product.id];
                 return;
             }
+
             if (event.type === 'touchend') {
+                const dedupeKey = `nav-${product.id}`;
+                const now = Date.now();
+                if (this.cardTouchState[dedupeKey] && now - this.cardTouchState[dedupeKey] < 80) {
+                    return;
+                }
+                this.cardTouchState[dedupeKey] = now;
+                event.preventDefault();
+                this.cardTouchState[`tap-${product.id}`] = now;
+                delete this.cardTouchState[product.id];
                 this.prefetchProductDetails();
-                this.onCardTouchEnd(product.id);
+                this.$router.push(this.productRoute(product));
+                return;
             }
-            onInstantNavigate(event, navigate);
+
+            if (event.type === 'click') {
+                const lastTap = this.cardTouchState[`tap-${product.id}`];
+                if (lastTap && Date.now() - lastTap < 450) {
+                    event.preventDefault();
+                    return;
+                }
+                event.preventDefault();
+                this.prefetchProductDetails();
+                this.$router.push(this.productRoute(product));
+            }
         },
         onMouseEnter(productId) {
             if (!this.isFinePointer()) {
