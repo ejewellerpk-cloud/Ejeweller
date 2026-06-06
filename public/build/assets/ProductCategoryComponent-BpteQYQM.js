@@ -1,0 +1,1 @@
+import{_ as e}from"./vendor-quill-CDdDGnqe.js";import{l as t,c as r,z as n}from"./vendor-vue-core-B-5_7RVc.js";import"./vendor-8yHaUXFb.js";const c={name:"ProductCategoryComponent"};function s(a,p,_,m,i,u){const o=t("router-view");return r(),n(o)}const C=e(c,[["render",s]]);export{C as default};

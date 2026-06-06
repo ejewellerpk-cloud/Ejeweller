@@ -34,10 +34,12 @@ import 'swiper/css/pagination';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
 import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
+import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
 
 export default {
     name: "CategoryComponent",
+    mixins: [frontendSectionFetch],
     components: {
         Swiper,
         SwiperSlide,
@@ -73,22 +75,25 @@ export default {
             return this.$store.getters["frontendProductCategory/lists"];
         },
     },
-    mounted() {
-        if (this.categories.length > 0) {
-            return;
-        }
-        this.loading.isActive = true;
-        this.$store.dispatch("frontendProductCategory/lists", {
-            paginate: 0,
-            order_column: "id",
-            order_type: "asc",
-            parent_id: null,
-            status: statusEnum.ACTIVE,
-        }).then(() => {
-            this.loading.isActive = false;
-        }).catch(() => {
-            this.loading.isActive = false;
-        });
+    methods: {
+        fetchData() {
+            if (this.categories.length > 0) {
+                return;
+            }
+
+            this.loading.isActive = true;
+            this.$store.dispatch("frontendProductCategory/lists", {
+                paginate: 0,
+                order_column: "id",
+                order_type: "asc",
+                parent_id: null,
+                status: statusEnum.ACTIVE,
+            }).then(() => {
+                this.loading.isActive = false;
+            }).catch(() => {
+                this.loading.isActive = false;
+            });
+        },
     },
 }
 </script>

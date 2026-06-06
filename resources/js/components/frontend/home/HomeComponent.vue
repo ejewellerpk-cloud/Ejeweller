@@ -1,36 +1,70 @@
 <template>
     <div class="homepage-root relative" :class="homepageThemeClass">
         <SliderComponent />
-        <CategoryComponent />
-        <PromotionComponent />
-        <ProductSectionComponent />
-        <MostPopularComponent />
-        <FlashSaleComponent />
-        <ProductBrandComponent />
-        <HomeWhatsappCtaComponent />
-        <OutletComponent />
-        <HomeReviewsComponent />
-        <BenefitComponent />
+
+        <HomeLazySection :min-height="240" root-margin="480px 0px">
+            <CategoryComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="160">
+            <PromotionComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="380">
+            <ProductSectionComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="380">
+            <MostPopularComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="380">
+            <FlashSaleComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="180">
+            <ProductBrandComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="140">
+            <HomeWhatsappCtaComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="280">
+            <OutletComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="320">
+            <HomeReviewsComponent />
+        </HomeLazySection>
+
+        <HomeLazySection :min-height="100">
+            <BenefitComponent />
+        </HomeLazySection>
     </div>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import SliderComponent from './SliderComponent.vue';
-import CategoryComponent from './CategoryComponent.vue';
-import PromotionComponent from './PromotionComponent.vue';
-import ProductSectionComponent from './ProductSectionComponent.vue';
-import MostPopularComponent from './MostPopularComponent.vue';
-import FlashSaleComponent from './FlashSaleComponent.vue';
-import ProductBrandComponent from './ProductBrandComponent.vue';
-import OutletComponent from './OutletComponent.vue';
-import BenefitComponent from './BenefitComponent.vue';
-import HomeReviewsComponent from './HomeReviewsComponent.vue';
-import HomeWhatsappCtaComponent from './HomeWhatsappCtaComponent.vue';
+import HomeLazySection from '../components/HomeLazySection.vue';
+
+const CategoryComponent = defineAsyncComponent(() => import('./CategoryComponent.vue'));
+const PromotionComponent = defineAsyncComponent(() => import('./PromotionComponent.vue'));
+const ProductSectionComponent = defineAsyncComponent(() => import('./ProductSectionComponent.vue'));
+const MostPopularComponent = defineAsyncComponent(() => import('./MostPopularComponent.vue'));
+const FlashSaleComponent = defineAsyncComponent(() => import('./FlashSaleComponent.vue'));
+const ProductBrandComponent = defineAsyncComponent(() => import('./ProductBrandComponent.vue'));
+const OutletComponent = defineAsyncComponent(() => import('./OutletComponent.vue'));
+const BenefitComponent = defineAsyncComponent(() => import('./BenefitComponent.vue'));
+const HomeReviewsComponent = defineAsyncComponent(() => import('./HomeReviewsComponent.vue'));
+const HomeWhatsappCtaComponent = defineAsyncComponent(() => import('./HomeWhatsappCtaComponent.vue'));
 
 export default {
     name: 'HomeComponent',
     components: {
         SliderComponent,
+        HomeLazySection,
         CategoryComponent,
         PromotionComponent,
         ProductSectionComponent,

@@ -1,0 +1,1 @@
+import{o as e}from"./HomeComponent-FEBEXvPu.js";const o={mounted(){if(typeof this.fetchData!="function")return;const t=()=>this.fetchData();if(typeof IntersectionObserver>"u"){t();return}this._sectionFetchCleanup=e(this.$el,t,{rootMargin:"280px 0px"})},beforeUnmount(){var t;(t=this._sectionFetchCleanup)==null||t.call(this)}};export{o as f};
