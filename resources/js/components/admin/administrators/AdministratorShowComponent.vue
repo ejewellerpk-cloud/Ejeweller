@@ -52,7 +52,7 @@
             </button>
             <button type="button" @click="activeTab = 'sessions'"
                 :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'sessions' }]">
-                <i class="lab lab-line-monitor"></i>
+                <i class="lab lab-monitor-mobbile"></i>
                 <span class="capitalize text-sm">{{ $t("button.active_devices") }}</span>
             </button>
             <button type="button" @click="activeTab = 'address'"

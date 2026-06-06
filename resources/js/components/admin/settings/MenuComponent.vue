@@ -134,7 +134,7 @@
                 {{ $t("menu.whatsapp_order_setup") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.postex' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-truck"></i>
+                <i class="text-sm lab lab-line-truck-check"></i>
                 {{ $t("menu.postex_cod") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.socialLogin' }" class="settings-menu-link">
@@ -146,7 +146,7 @@
                 Facebook CAPI
             </router-link>
             <router-link :to="{ name: 'admin.settings.intelligenceAnalytics' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-chart-line"></i>
+                <i class="text-sm lab lab-line-key"></i>
                 {{ $t("menu.intelligence_analytics") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.license' }" class="settings-menu-link">

@@ -119,7 +119,7 @@
                             <td class="db-table-body-td">{{ session.user?.email || "—" }}</td>
                             <td class="db-table-body-td">
                                 <div class="flex items-center gap-2">
-                                    <i class="lab lab-line-monitor text-lg text-primary"></i>
+                                    <i class="lab lab-monitor-mobbile text-lg text-primary"></i>
                                     <span class="capitalize">{{ session.device_name }}</span>
                                 </div>
                             </td>

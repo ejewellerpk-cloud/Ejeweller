@@ -23,7 +23,7 @@
                         class="db-btn py-2 h-[37px] text-white bg-gray-600"
                         @click="listView = 'sessions'"
                     >
-                        <i class="lab lab-line-monitor lab-font-size-16"></i>
+                        <i class="lab lab-monitor-mobbile lab-font-size-16"></i>
                         <span>{{ $t("label.device_session_history") }}</span>
                     </button>
                     <AdministratorCreateComponent :props="props" v-if="permissionChecker('administrators_create')" />

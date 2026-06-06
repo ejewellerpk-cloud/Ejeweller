@@ -57,7 +57,7 @@
                         <tr v-for="session in sessions" :key="session.id" class="db-table-body-tr">
                             <td class="db-table-body-td">
                                 <div class="flex items-center gap-2">
-                                    <i class="lab lab-line-monitor text-lg text-primary"></i>
+                                    <i class="lab lab-monitor-mobbile text-lg text-primary"></i>
                                     <div>
                                         <p class="font-medium capitalize">{{ session.device_name }}</p>
                                         <span
