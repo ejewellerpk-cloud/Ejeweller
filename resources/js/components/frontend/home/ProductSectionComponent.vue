@@ -19,6 +19,7 @@
                     
                     <div class="product-section-slider-container relative">
                         <Swiper
+                            v-bind="carouselTouch"
                             :dir="'ltr'"
                             :slides-per-view="2"
                             :space-between="6"
@@ -70,6 +71,7 @@
                     
                     <div class="product-section-slider-container relative">
                         <Swiper
+                            v-bind="carouselTouch"
                             :dir="'ltr'"
                             :slides-per-view="2"
                             :space-between="6"
@@ -116,6 +118,7 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import ProductListComponent from "../components/ProductListComponent.vue";
+import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
 
 import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
@@ -131,6 +134,7 @@ export default {
     setup() {
         return {
             modules: [Navigation],
+            carouselTouch: homepageCarouselTouchProps,
         };
     },
     data() {

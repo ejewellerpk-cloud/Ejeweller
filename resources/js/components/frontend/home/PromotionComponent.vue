@@ -3,7 +3,7 @@
         <LoadingComponent v-if="loading.isActive" :props="loading" :is-full-screen="false" skeleton="promotions" :skeleton-count="3" />
         <section v-if="promotions.length > 0" class="mb-10 sm:mb-20">
             <div class="container">
-                <Swiper dir="ltr" :speed="1000" class="ad-swiper" :breakpoints="breakpoints">
+                <Swiper dir="ltr" v-bind="carouselTouch" :speed="1000" class="ad-swiper" :breakpoints="breakpoints">
                     <SwiperSlide v-for="promotion in promotions" class="mobile:!w-52">
                         <router-link :to="{name: 'frontend.promotion.products', params: { slug: promotion.slug }}" class=" w-full">
                             <img class="w-full block rounded-2xl" :src="promotion.cover" alt="promotion">
@@ -21,6 +21,7 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import {Swiper, SwiperSlide} from 'swiper/vue';
 import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import LoadingComponent from "../components/LoadingComponent";
+import { homepageCarouselTouchProps } from '../../../utils/continuousSwiper';
 
 import frontendSectionFetch from '../../../mixins/frontendSectionFetch';
 
@@ -31,6 +32,11 @@ export default {
         Swiper,
         SwiperSlide,
         LoadingComponent
+    },
+    setup() {
+        return {
+            carouselTouch: homepageCarouselTouchProps,
+        };
     },
     data() {
         return {

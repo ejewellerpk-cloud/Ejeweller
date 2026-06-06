@@ -29,13 +29,16 @@
             <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
                 <!-- Main Slider for Product Images + Video -->
                 <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
+                    v-bind="cardSwiperTouch"
                     :dir="'ltr'"
                     :pagination="getPaginationConfig(product)"
                     :modules="modules"
                     :loop="true"
                     @swiper="onSwiperInit($event, product.id)"
+                    @sliderFirstMove="() => onCardSliderDrag(product.id)"
+                    @touchEnd="() => onCardSliderTouchEnd(product.id)"
                     @click="(swiper, event) => onSwiperClick(swiper, event, product)"
-                    class="w-full h-full">
+                    class="w-full h-full product-card-swiper">
                     
                     <!-- 1st Slide: First Image -->
                     <SwiperSlide v-if="product.previews.length > 0">
@@ -215,6 +218,7 @@ import {
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
+import { productCardSwiperTouchProps } from "../../../utils/continuousSwiper";
 
 export default {
     name: "ProductListComponent",
@@ -226,6 +230,7 @@ export default {
     setup() {
         return {
             modules: [Pagination],
+            cardSwiperTouch: productCardSwiperTouchProps,
         };
     },
     props: {
@@ -234,6 +239,7 @@ export default {
     data() {
         return {
             swiperInstances: {},
+            cardSliderDragged: {},
             animatingWishlists: {},
             animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
@@ -258,6 +264,19 @@ export default {
         onSwiperInit(swiper, productId) {
             this.swiperInstances[productId] = swiper;
         },
+        onCardSliderDrag(productId) {
+            this.cardSliderDragged[productId] = true;
+        },
+        onCardSliderTouchEnd(productId) {
+            if (this.cardSliderDragged[productId]) {
+                setTimeout(() => {
+                    delete this.cardSliderDragged[productId];
+                }, 320);
+            }
+        },
+        wasCardSliderDragged(productId) {
+            return Boolean(this.cardSliderDragged[productId]);
+        },
         onMouseEnter(productId) {
             const swiper = this.swiperInstances[productId];
             if (swiper && swiper.slides.length > 1) {
@@ -275,6 +294,9 @@ export default {
             }
         },
         onSwiperClick(swiper, event, product) {
+            if (this.wasCardSliderDragged(product.id)) {
+                return;
+            }
             const target = event.target;
             if (target && (target.classList.contains('swiper-pagination-bullet') || target.closest('.swiper-pagination'))) {
                 return;
@@ -503,6 +525,9 @@ export default {
             }
         },
         goToProductDetails: function (product, event) {
+            if (this.wasCardSliderDragged(product.id)) {
+                return;
+            }
             const path = event.composedPath() || [];
             for (let i = 0; i < path.length; i++) {
                 const target = path[i];
@@ -578,6 +603,15 @@ export default {
 </script>
 
 <style scoped>
+.product-card-slider {
+    touch-action: pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+}
+
+.product-card-swiper {
+    touch-action: pan-y pinch-zoom;
+}
+
 .product-card-badge {
     font-size: 9px;
     line-height: 1.1;
@@ -615,6 +649,13 @@ export default {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
     margin: 0 5px !important;
+    position: relative;
+}
+
+.product-card-slider :deep(.swiper-pagination-bullet)::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
 }
 
 .product-card-slider :deep(.swiper-pagination-bullet-active) {

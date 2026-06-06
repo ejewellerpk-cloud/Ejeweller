@@ -598,6 +598,15 @@
         @apply !pt-16 sm:!pt-20 !pb-10
     }
 
+    .banner-swiper,
+    .navigate-swiper,
+    .ad-swiper,
+    .product-section-swiper,
+    .reviews-swiper {
+        touch-action: pan-y pinch-zoom;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .navigate-swiper .swiper-button-prev {
         @apply mobile:hidden w-10 h-10 leading-10 text-center rounded-full bg-primary-slate text-primary ltr:after:content-['\e049'] rtl:after:content-['\e048'] after:font-icon after:text-xl transition-all duration-300 hover:bg-primary hover:after:text-white top-6 ltr:left-auto ltr:right-12 rtl:right-auto rtl:left-12
     }

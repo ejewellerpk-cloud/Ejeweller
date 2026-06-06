@@ -34,6 +34,33 @@ export const touchFriendlySwiperProps = {
     longSwipesMs: 280,
 };
 
+/** Product card image carousel — nested-safe when inside homepage section row swiper. */
+export const productCardSwiperTouchProps = {
+    ...touchFriendlySwiperProps,
+    nested: true,
+    followFinger: true,
+    shortSwipes: true,
+    preventInteractionOnTransition: false,
+};
+
+/** Homepage horizontal row carousels (sections, categories, brands, promos, hero). */
+export const homepageCarouselTouchProps = {
+    ...touchFriendlySwiperProps,
+    followFinger: true,
+    shortSwipes: true,
+    preventInteractionOnTransition: false,
+};
+
+/** Continuous marquee sliders (reviews) — vertical scroll friendly. */
+export const continuousCarouselTouchProps = {
+    ...touchFriendlySwiperProps,
+    grabCursor: true,
+    allowTouchMove: true,
+    simulateTouch: true,
+    touchRatio: 1,
+    longSwipes: true,
+};
+
 export function pauseContinuousSwiper(swiper) {
     if (!swiper) {
         return;

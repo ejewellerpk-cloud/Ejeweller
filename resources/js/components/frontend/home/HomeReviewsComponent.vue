@@ -20,18 +20,13 @@
                 <Swiper
                     v-if="carouselReviews.length > 0"
                     dir="ltr"
+                    v-bind="carouselTouch"
                     :modules="modules"
                     :slides-per-view="1.1"
                     :space-between="12"
                     :speed="continuousSpeed"
                     :loop="true"
                     :loop-additional-slides="6"
-                    :grab-cursor="true"
-                    :allow-touch-move="true"
-                    :simulate-touch="true"
-                    :touch-ratio="1"
-                    :threshold="5"
-                    :long-swipes="true"
                     :autoplay="reviewsAutoplay"
                     :breakpoints="breakpoints"
                     class="reviews-swiper continuous-slider !pb-2"
@@ -72,6 +67,7 @@ import LoadingComponent from '../components/LoadingComponent';
 import {
     continuousAutoplayConfig,
     CONTINUOUS_SWIPER_SPEED,
+    continuousCarouselTouchProps,
     pauseContinuousSwiper,
     resumeContinuousSwiper,
 } from '../../../utils/continuousSwiper';
@@ -82,6 +78,7 @@ export default {
     setup() {
         return {
             modules: [Autoplay],
+            carouselTouch: continuousCarouselTouchProps,
         };
     },
     data() {
@@ -162,9 +159,6 @@ export default {
 </script>
 
 <style scoped>
-.continuous-slider {
-    touch-action: pan-x;
-}
 .continuous-slider :deep(.swiper-wrapper) {
     transition-timing-function: linear !important;
 }

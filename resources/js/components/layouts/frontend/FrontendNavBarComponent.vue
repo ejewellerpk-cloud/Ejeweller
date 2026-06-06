@@ -27,7 +27,7 @@
             <div class="flex items-center justify-between gap-5">
                 <!--  Logo & Mobile Responsive Start -->
                 <div class="flex items-center flex-shrink-0 gap-5">
-                    <button type="button" class="leading-none block lg:hidden"
+                    <button type="button" class="mobile-header-touch leading-none block lg:hidden"
                         @click.prevent="showTarget('mobile-sidebar-canvas', 'canvas-active')">
                         <i class="lab-line-humburger text-xl"></i>
                     </button>
@@ -38,38 +38,38 @@
                     </router-link>
                 </div>
 
-                <div class="flex items-center gap-4 lg:hidden">
-                    <button type="button" class="leading-none"
+                <div class="flex items-center gap-1 lg:hidden">
+                    <button type="button" class="mobile-header-touch leading-none"
                         @click.prevent="showTarget('search', 'search-active')">
                         <i class="lab-line-search text-xl text-heading"></i>
                     </button>
 
                     <!-- Mobile Wishlist -->
                     <router-link :to="{ name: 'frontend.wishlist' }"
-                        class="relative flex-shrink-0 leading-none">
+                        class="mobile-header-touch relative flex-shrink-0 leading-none">
                         <i class="lab-line-heart text-xl text-heading"></i>
                         <span v-if="wishlists.length > 0"
-                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary">
+                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
                             {{ wishlists.length }}
                         </span>
                     </router-link>
 
                     <button v-if="logged" @click.prevent="showTarget('mobile-profile-canvas', 'canvas-active')" type="button"
-                        class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
+                        class="mobile-header-touch relative flex-shrink-0 leading-none">
                         <img v-if="profile && profile.image" :src="profile.image" alt="avatar" class="w-6 h-6 rounded-full object-cover border border-primary/50 shadow-sm" loading="lazy" />
                         <i v-else class="lab-line-user text-xl text-heading"></i>
                     </button>
 
                     <router-link v-else :to="{ name: 'auth.login' }"
-                        class="relative flex-shrink-0 leading-none w-7 h-7 flex items-center justify-center rounded-full hover:scale-105 active:scale-95 transition-all duration-300">
+                        class="mobile-header-touch relative flex-shrink-0 leading-none">
                         <i class="lab-line-user text-xl text-heading"></i>
                     </router-link>
 
                     <button @click.prevent="openCanvas('cart-canvas')" type="button"
-                        class="relative flex-shrink-0 leading-none">
+                        class="mobile-header-touch relative flex-shrink-0 leading-none">
                         <i class="lab-line-bag text-xl text-heading"></i>
                         <span v-if="carts.length > 0"
-                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary">
+                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
                             {{ carts.length }}
                         </span>
                     </button>
@@ -726,5 +726,23 @@ export default {
     100% {
         transform: translateX(-50%);
     }
+}
+
+.mobile-header-touch {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.mobile-header-touch:active {
+    transform: scale(0.9);
+    opacity: 0.75;
 }
 </style>
