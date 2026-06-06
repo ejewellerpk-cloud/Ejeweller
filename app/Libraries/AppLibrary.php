@@ -89,33 +89,34 @@ class AppLibrary
 
     public static function numericToAssociativeArrayBuilder($array): array
     {
-        $i = 0;
-        $parentId = null;
-        $parentIncrementId = null;
         $buildArray = [];
+        $indexedParents = [];
+
         if (count($array)) {
             foreach ($array as $arr) {
-                if (!$arr['parent']) {
-                    $parentId = $arr['id'];
-                    $parentIncrementId = $i;
-                    $buildArray[$i] = $arr;
-                    $i++;
-                }
-
-                if ($arr['parent'] == $parentId) {
-                    $buildArray[$parentIncrementId]['children'][] = $arr;
+                if (!(int) ($arr['parent'] ?? 0)) {
+                    $arr['children'] = [];
+                    $buildArray[$arr['id']] = $arr;
+                    $indexedParents[$arr['id']] = &$buildArray[$arr['id']];
                 }
             }
-        }
-        if ($buildArray) {
-            foreach ($buildArray as $key => $build) {
-                if ($build['url'] == "#" && !isset($build['children'])) {
-                    unset($buildArray[$key]);
+
+            foreach ($array as $arr) {
+                $parentId = (int) ($arr['parent'] ?? 0);
+                if ($parentId > 0 && isset($indexedParents[$parentId])) {
+                    $indexedParents[$parentId]['children'][] = $arr;
                 }
             }
         }
 
-        return $buildArray;
+        $buildArray = array_values($buildArray);
+        foreach ($buildArray as $key => $build) {
+            if ($build['url'] == "#" && empty($build['children'])) {
+                unset($buildArray[$key]);
+            }
+        }
+
+        return array_values($buildArray);
     }
 
     public static function permissionWithAccess(&$permissions, $rolePermissions): object
