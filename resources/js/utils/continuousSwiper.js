@@ -41,15 +41,6 @@ export const touchFriendlySwiperProps = {
     allowTouchMove: true,
 };
 
-/** Product card image carousel — nested-safe; tap opens product, swipe changes slide. */
-export const productCardSwiperTouchProps = {
-    ...touchFriendlySwiperProps,
-    nested: true,
-    touchAngle: 35,
-    threshold: 8,
-    slideToClickedSlide: false,
-};
-
 export function pauseContinuousSwiper(swiper) {
     if (!swiper) {
         return;

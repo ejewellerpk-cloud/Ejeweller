@@ -1,127 +1,121 @@
 <template>
     <template v-if="products.length > 0">
-    <router-link
-        v-for="product in products"
-        :key="product.id"
-        custom
-        v-slot="{ href }"
-        :to="productRoute(product)"
-    >
-        <a
-            :href="href"
-            class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative block no-underline text-inherit"
-            @touchstart.passive="onCardTouchStart(product, $event)"
-            @touchend="openProduct(product, $event)"
-            @click="openProduct(product, $event)"
-            @mouseenter="onMouseEnter(product.id)"
-            @mouseleave="onMouseLeave(product.id)"
+        <article
+            v-for="product in products"
+            :key="product.id"
+            class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative block"
+            @touchstart.passive="onCardTouchStart(product.id, $event)"
+            @touchend="onCardActivate(product, $event)"
+            @click="onCardActivate(product, $event)"
+            @mouseenter="onDesktopHoverEnter(product.id)"
+            @mouseleave="onDesktopHoverLeave(product.id)"
         >
-        <div class="relative overflow-hidden rounded-xl isolate">
-            <!-- Heart Screen Overlay Animation -->
-            <div v-if="animatingWishlists[product.id]" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-xl animate-fade-overlay">
-                <div class="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
-                    <i class="lab-fill-heart text-primary text-3xl animate-heart-pulse"></i>
+            <div class="relative overflow-hidden rounded-xl isolate">
+                <div v-if="animatingWishlists[product.id]" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-xl animate-fade-overlay">
+                    <div class="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
+                        <i class="lab-fill-heart text-primary text-3xl animate-heart-pulse"></i>
+                    </div>
                 </div>
-            </div>
 
-            <div class="absolute top-2 left-2 z-30 flex flex-col gap-1 items-start pointer-events-none max-w-[calc(100%-3rem)]">
-                <span v-for="badge in getProductBadges(product)" :key="badge.key"
-                    class="product-card-badge inline-flex items-center gap-0.5 font-extrabold rounded-full pointer-events-auto max-w-full truncate"
-                    :class="badgeClass(badge.type)">
-                    <i v-if="badge.icon" :class="badge.icon" class="text-[8px] shrink-0"></i>
-                    <span class="truncate">{{ badge.label }}</span>
-                </span>
-            </div>
+                <div class="absolute top-2 left-2 z-30 flex flex-col gap-1 items-start pointer-events-none max-w-[calc(100%-3rem)]">
+                    <span v-for="badge in getProductBadges(product)" :key="badge.key"
+                        class="product-card-badge inline-flex items-center gap-0.5 font-extrabold rounded-full pointer-events-auto max-w-full truncate"
+                        :class="badgeClass(badge.type)">
+                        <i v-if="badge.icon" :class="badge.icon" class="text-[8px] shrink-0"></i>
+                        <span class="truncate">{{ badge.label }}</span>
+                    </span>
+                </div>
 
-            <button type="button" @click.prevent.stop="wishlist(product)"
-                :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse shadow-[0_4px_12px_rgba(255,92,0,0.45)]' : 'lab-line-heart text-secondary hover:text-primary hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)]'"
-                class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-40 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
-            </button>
+                <button type="button" @click.stop="wishlist(product)"
+                    :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse shadow-[0_4px_12px_rgba(255,92,0,0.45)]' : 'lab-line-heart text-secondary hover:text-primary hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)]'"
+                    class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-40 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
+                </button>
 
-            <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
-                <Swiper v-if="product.previews && product.previews.length > 0 && (product.previews.length > 1 || (product.videos && product.videos.length > 0))"
-                    v-bind="cardSwiperTouch"
-                    :dir="'ltr'"
-                    :pagination="getPaginationConfig(product)"
-                    :modules="modules"
-                    :loop="true"
-                    @swiper="onSwiperInit($event, product.id)"
-                    @touchstart.passive="onCardTouchStart(product, $event)"
-                    @touchend="openProduct(product, $event)"
-                    class="w-full h-full product-card-swiper">
+                <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
+                    <Swiper v-if="hasMediaSlider(product)"
+                        v-bind="cardSwiperProps"
+                        :dir="'ltr'"
+                        :pagination="getPaginationConfig(product)"
+                        :modules="modules"
+                        :loop="true"
+                        class="w-full h-full product-card-swiper"
+                        @swiper="onSwiperReady($event, product.id)"
+                        @sliderFirstMove="onSliderDragStart(product.id)"
+                        @touchEnd="onSliderDragEnd(product.id)"
+                        @transitionEnd="onSliderDragEnd(product.id)">
 
-                    <SwiperSlide v-if="product.previews.length > 0">
-                        <div class="w-full h-full relative bg-gray-50">
-                            <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-0']">
+                        <SwiperSlide v-if="product.previews.length > 0">
+                            <div class="w-full h-full relative bg-gray-50">
+                                <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-0']">
+                                    <div class="flex gap-1.5">
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                    </div>
+                                </div>
+                                <img :src="product.previews[0]" alt="product" loading="lazy"
+                                    @load="onImageLoad(product.id + '-img-0')"
+                                    @error="onImageError($event, product.id + '-img-0')"
+                                    :class="loadedImages[product.id + '-img-0'] ? 'opacity-100' : 'opacity-0'"
+                                    class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
+                            </div>
+                        </SwiperSlide>
+
+                        <SwiperSlide v-if="product.videos && product.videos.length > 0">
+                            <div class="w-full h-full relative">
+                                <div class="w-full h-full bg-black relative aspect-[4/5]">
+                                    <iframe v-if="product.videos[0].video_provider === 5"
+                                        :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
+                                        class="w-full h-full pointer-events-none"
+                                        frameborder="0" allow="autoplay; encrypted-media">
+                                    </iframe>
+                                    <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
+                                </div>
+                            </div>
+                        </SwiperSlide>
+
+                        <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
+                            <div class="w-full h-full relative bg-gray-50">
+                                <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + (index + 1)]">
+                                    <div class="flex gap-1.5">
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                    </div>
+                                </div>
+                                <img :src="image" alt="product" loading="lazy"
+                                    @load="onImageLoad(product.id + '-img-' + (index + 1))"
+                                    @error="onImageError($event, product.id + '-img-' + (index + 1))"
+                                    :class="loadedImages[product.id + '-img-' + (index + 1)] ? 'opacity-100' : 'opacity-0'"
+                                    class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
+                            </div>
+                        </SwiperSlide>
+                    </Swiper>
+
+                    <div v-else class="w-full h-full block relative bg-gray-50">
+                        <template v-if="product.cover && !product.cover.includes('default/product')">
+                            <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-cover']">
                                 <div class="flex gap-1.5">
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
                                     <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                                 </div>
                             </div>
-                            <img :src="product.previews[0]" alt="product" loading="lazy"
-                                @load="onImageLoad(product.id + '-img-0')"
-                                @error="onImageError($event, product.id + '-img-0')"
-                                :class="loadedImages[product.id + '-img-0'] ? 'opacity-100' : 'opacity-0'"
+                            <img :src="product.cover" alt="product" loading="lazy"
+                                @load="onImageLoad(product.id + '-cover')"
+                                @error="onImageError($event, product.id + '-cover')"
+                                :class="loadedImages[product.id + '-cover'] ? 'opacity-100' : 'opacity-0'"
                                 class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
+                        </template>
+                        <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50 absolute inset-0 z-10">
+                            <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy"
+                                class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 pointer-events-none">
                         </div>
-                    </SwiperSlide>
-
-                    <SwiperSlide v-if="product.videos && product.videos.length > 0">
-                        <div class="w-full h-full relative">
-                            <div class="w-full h-full bg-black relative aspect-[4/5]">
-                                <iframe v-if="product.videos[0].video_provider === 5"
-                                    :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
-                                    class="w-full h-full pointer-events-none"
-                                    frameborder="0" allow="autoplay; encrypted-media">
-                                </iframe>
-                                <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
-                            </div>
-                        </div>
-                    </SwiperSlide>
-
-                    <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
-                        <div class="w-full h-full relative bg-gray-50">
-                            <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + (index + 1)]">
-                                <div class="flex gap-1.5">
-                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
-                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
-                                    <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
-                                </div>
-                            </div>
-                            <img :src="image" alt="product" loading="lazy"
-                                @load="onImageLoad(product.id + '-img-' + (index + 1))"
-                                @error="onImageError($event, product.id + '-img-' + (index + 1))"
-                                :class="loadedImages[product.id + '-img-' + (index + 1)] ? 'opacity-100' : 'opacity-0'"
-                                class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
-                        </div>
-                    </SwiperSlide>
-                </Swiper>
-
-                <div v-else class="w-full h-full block relative bg-gray-50">
-                    <template v-if="product.cover && !product.cover.includes('default/product')">
-                        <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-cover']">
-                            <div class="flex gap-1.5">
-                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
-                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
-                                <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
-                            </div>
-                        </div>
-                        <img :src="product.cover" alt="product" loading="lazy"
-                            @load="onImageLoad(product.id + '-cover')"
-                            @error="onImageError($event, product.id + '-cover')"
-                            :class="loadedImages[product.id + '-cover'] ? 'opacity-100' : 'opacity-0'"
-                            class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
-                    </template>
-                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50 absolute inset-0 z-10">
-                        <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy"
-                            class="w-3/4 h-3/4 object-contain opacity-40 transition-all duration-700 pointer-events-none">
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="px-1.5 sm:px-2 pt-2 overflow-hidden text-ellipsis">
+            <div class="px-1.5 sm:px-2 pt-2 overflow-hidden text-ellipsis">
             <div class="flex items-center justify-between">
                 <div class="flex flex-col min-w-0">
                     <div class="flex flex-wrap items-baseline gap-1" v-if="hasActiveDiscount(product)">
@@ -141,7 +135,7 @@
                     </span>
                 </div>
 
-                <button v-if="!isOutOfStock(product)" type="button" @click.prevent.stop="addToCart(product)"
+                <button v-if="!isOutOfStock(product)" type="button" @click.stop="addToCart(product)"
                     :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
                     :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
                     class="relative z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
@@ -180,9 +174,8 @@
                     {{ getProductSoldCount(product) }} sold
                 </span>
             </div>
-        </div>
-        </a>
-    </router-link>
+            </div>
+        </article>
     </template>
 </template>
 
@@ -208,7 +201,17 @@ import {
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
-import { productCardSwiperTouchProps } from "../../../utils/continuousSwiper";
+import {
+    productCardSwiperProps,
+    isFinePointerDevice,
+    isInteractiveCardTarget,
+    readTouchPoint,
+    createTouchSession,
+    markSliderDragged,
+    shouldOpenProductFromTouch,
+    shouldSkipDuplicateClick,
+    recordTouchNavigation,
+} from "../../../utils/productCardTouch";
 
 export default {
     name: "ProductListComponent",
@@ -220,7 +223,7 @@ export default {
     setup() {
         return {
             modules: [Pagination],
-            cardSwiperTouch: productCardSwiperTouchProps,
+            cardSwiperProps: productCardSwiperProps,
         };
     },
     props: {
@@ -229,7 +232,8 @@ export default {
     data() {
         return {
             swiperInstances: {},
-            cardTouchState: {},
+            touchSessions: {},
+            touchNavTimestamps: {},
             animatingWishlists: {},
             animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
@@ -251,14 +255,16 @@ export default {
             event.target.classList.remove('object-cover');
             event.target.classList.add('object-contain', 'bg-white', 'p-4');
         },
-        onSwiperInit(swiper, productId) {
+        onSwiperReady(swiper, productId) {
             this.swiperInstances[productId] = swiper;
+        },
+        hasMediaSlider(product) {
+            return product.previews
+                && product.previews.length > 0
+                && (product.previews.length > 1 || (product.videos && product.videos.length > 0));
         },
         productRoute(product) {
             return { name: 'frontend.product.details', params: { slug: product.slug } };
-        },
-        isFinePointer() {
-            return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         },
         prefetchProductDetails() {
             if (!this._detailChunkPrefetched) {
@@ -266,88 +272,53 @@ export default {
                 import('../product/ProductDetailsComponent.vue');
             }
         },
-        onCardTouchStart(product, event) {
-            const touch = event.touches?.[0];
-            if (!touch) {
+        onCardTouchStart(productId, event) {
+            const point = readTouchPoint(event);
+            if (!point) {
                 return;
             }
-            this.cardTouchState[product.id] = {
-                startX: touch.clientX,
-                startY: touch.clientY,
-            };
+            this.touchSessions[productId] = createTouchSession(point);
         },
-        getCardTouchDelta(product, event) {
-            const state = this.cardTouchState[product.id];
-            const touch = event.changedTouches?.[0];
-            if (!state || !touch) {
-                return { dx: 0, dy: 0 };
-            }
-            return {
-                dx: Math.abs(touch.clientX - state.startX),
-                dy: Math.abs(touch.clientY - state.startY),
-            };
+        onSliderDragStart(productId) {
+            markSliderDragged(this.touchSessions[productId]);
         },
-        shouldBlockProductNavigation(product, event) {
-            const target = event?.target;
-            if (!target) {
-                return false;
-            }
-            if (target.closest('button')) {
-                return true;
-            }
-            if (target.closest('.swiper-pagination')) {
-                return true;
-            }
-            if (event.type === 'touchend' || event.type === 'touchcancel') {
-                const { dx, dy } = this.getCardTouchDelta(product, event);
-                // Vertical scroll over card — don't navigate
-                if (dy > 18 && dy > dx) {
-                    return true;
-                }
-                // Horizontal swipe on image slider — don't navigate
-                if (dx > 14 && dx >= dy) {
-                    return true;
-                }
-            }
-            return false;
+        onSliderDragEnd(productId) {
+            delete this.touchSessions[productId];
         },
-        openProduct(product, event) {
-            if (this.shouldBlockProductNavigation(product, event)) {
-                if (event.cancelable) {
-                    event.preventDefault();
-                }
-                delete this.cardTouchState[product.id];
+        onCardActivate(product, event) {
+            if (isInteractiveCardTarget(event.target)) {
                 return;
             }
 
-            if (event.type === 'touchend') {
-                const dedupeKey = `nav-${product.id}`;
-                const now = Date.now();
-                if (this.cardTouchState[dedupeKey] && now - this.cardTouchState[dedupeKey] < 80) {
+            if (event.type === 'touchend' || event.type === 'touchcancel') {
+                const endPoint = readTouchPoint(event);
+                const session = this.touchSessions[product.id];
+
+                if (!shouldOpenProductFromTouch(session, endPoint)) {
+                    delete this.touchSessions[product.id];
                     return;
                 }
-                this.cardTouchState[dedupeKey] = now;
+
                 event.preventDefault();
-                this.cardTouchState[`tap-${product.id}`] = now;
-                delete this.cardTouchState[product.id];
-                this.prefetchProductDetails();
-                this.$router.push(this.productRoute(product));
+                recordTouchNavigation(product.id, this.touchNavTimestamps);
+                delete this.touchSessions[product.id];
+                this.navigateToProduct(product);
                 return;
             }
 
             if (event.type === 'click') {
-                const lastTap = this.cardTouchState[`tap-${product.id}`];
-                if (lastTap && Date.now() - lastTap < 450) {
-                    event.preventDefault();
+                if (shouldSkipDuplicateClick(product.id, this.touchNavTimestamps)) {
                     return;
                 }
-                event.preventDefault();
-                this.prefetchProductDetails();
-                this.$router.push(this.productRoute(product));
+                this.navigateToProduct(product);
             }
         },
-        onMouseEnter(productId) {
-            if (!this.isFinePointer()) {
+        navigateToProduct(product) {
+            this.prefetchProductDetails();
+            this.$router.push(this.productRoute(product));
+        },
+        onDesktopHoverEnter(productId) {
+            if (!isFinePointerDevice()) {
                 return;
             }
             const swiper = this.swiperInstances[productId];
@@ -356,8 +327,8 @@ export default {
             }
             this.prefetchProductDetails();
         },
-        onMouseLeave(productId) {
-            if (!this.isFinePointer()) {
+        onDesktopHoverLeave(productId) {
+            if (!isFinePointerDevice()) {
                 return;
             }
             const swiper = this.swiperInstances[productId];
