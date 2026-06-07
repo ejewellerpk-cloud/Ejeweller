@@ -52,13 +52,14 @@ export const productVideo = {
         },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
-                let method = axios.post;
                 let url = `/admin/product/video/${payload.productId}`;
                 if (this.state['productVideo'].temp.isEditing) {
-                    method = axios.put;
                     url = `/admin/product/video/${payload.productId}/${this.state['productVideo'].temp.temp_id}`;
+                    if (!payload.form.has('_method')) {
+                        payload.form.append('_method', 'PUT');
+                    }
                 }
-                method(url, payload.form, {
+                axios.post(url, payload.form, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },

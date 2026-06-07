@@ -568,8 +568,8 @@ class ProductService
                 }
             }
 
-            $productCategory = Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.status', 'products.product_category_id', 'products.product_brand_id', 'products.variation_price')
-                ->with('brand', 'variations')
+            $productCategory = Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.status', 'products.product_category_id', 'products.product_brand_id', 'products.variation_price', 'products.selling_price')
+                ->with('brand', 'variations.productAttribute')
                 ->where('products.status', $activeStatus)
                 ->where(function ($query) use ($categories) {
                     if (count($categories)) {
@@ -607,8 +607,13 @@ class ProductService
             $products = Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.product_category_id', 'products.product_brand_id', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
+                ->withSum(
+                    ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
+                    'quantity'
+                )
+                ->withCount('cartTrackers')
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with('media', 'videos', 'brand', 'variations', 'reviews')
+                ->with('media', 'videos', 'brand', 'variations', 'reviews', 'taxes')
                 ->where('products.status', $activeStatus)
                 ->where(function ($query) use ($categories) {
                     if (count($categories)) {
@@ -684,56 +689,61 @@ class ProductService
                     }
                 )->paginate($perPage, ['*'], 'page', (int) $request->input('page', 1));
 
-            $variations = $productCategory->map(function ($query) {
-                return $query->variations;
-            });
-
-            $variationArray         = [];
-            $productAttributeOption = ProductAttributeOption::get()->pluck('name', 'id')->toArray();
-            if ($variations) {
-                foreach ($variations->toArray() as $variation) {
-                    if (count($variation)) {
-                        foreach ($variation as $v) {
-                            if (isset($variationArray[Str::slug($v['product_attribute']['name'], '_')])) {
-                                $status = true;
-                                foreach ($variationArray[Str::slug($v['product_attribute']['name'], '_')] as $va) {
-                                    if ($v['product_attribute_option_id'] == $va['product_attribute_option_id']) {
-                                        $status = false;
-                                    }
-                                }
-                                if ($status) {
-                                    $variationArray[Str::slug($v['product_attribute']['name'], '_')][] = [
-                                        'attribute_name'              => $v['product_attribute']['name'],
-                                        'attribute_option_name'       => isset($productAttributeOption[$v['product_attribute_option_id']]) ? $productAttributeOption[$v['product_attribute_option_id']] : '',
-                                        'product_attribute_id'        => (int) $v['product_attribute_id'],
-                                        "product_attribute_option_id" => (int) $v['product_attribute_option_id'],
-                                    ];
-                                }
-                            } else {
-                                $variationArray[Str::slug($v['product_attribute']['name'], '_')][] = [
-                                    'attribute_name'              => $v['product_attribute']['name'],
-                                    'attribute_option_name'       => isset($productAttributeOption[$v['product_attribute_option_id']]) ? $productAttributeOption[$v['product_attribute_option_id']] : '',
-                                    'product_attribute_id'        => (int) $v['product_attribute_id'],
-                                    "product_attribute_option_id" => (int) $v['product_attribute_option_id']
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
+            $maxListPrice = $productCategory->max(fn ($product) => $this->productListPrice($product));
 
             return collect([
                 'products'   => $products,
-                'brands'     => $productCategory->map(function ($query) {
-                    return $query->brand;
-                })->whereNotNull('id')->unique('id')->values()->all(),
-                'variations' => $variationArray,
-                'max_price'  => ceil($productCategory->max(fn ($product) => $this->productListPrice($product)) + 50),
+                'brands'     => $productCategory->map(fn ($product) => $product->brand)
+                    ->filter()
+                    ->unique('id')
+                    ->values()
+                    ->all(),
+                'variations' => $this->buildCategoryWiseVariationFilters($productCategory),
+                'max_price'  => ceil((float) ($maxListPrice ?? 0) + 50),
             ]);
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, Product> $products
+     * @return array<string, array<int, array<string, int|string>>>
+     */
+    private function buildCategoryWiseVariationFilters($products): array
+    {
+        $variationArray = [];
+        $productAttributeOption = ProductAttributeOption::pluck('name', 'id')->toArray();
+
+        foreach ($products as $product) {
+            foreach ($product->variations as $variation) {
+                $attribute = $variation->productAttribute;
+                if (!$attribute?->name) {
+                    continue;
+                }
+
+                $slug = Str::slug($attribute->name, '_');
+                $optionId = (int) $variation->product_attribute_option_id;
+                $existing = $variationArray[$slug] ?? [];
+                $alreadyAdded = collect($existing)->contains(
+                    fn ($row) => (int) ($row['product_attribute_option_id'] ?? 0) === $optionId
+                );
+
+                if ($alreadyAdded) {
+                    continue;
+                }
+
+                $variationArray[$slug][] = [
+                    'attribute_name'              => $attribute->name,
+                    'attribute_option_name'       => $productAttributeOption[$optionId] ?? '',
+                    'product_attribute_id'        => (int) $variation->product_attribute_id,
+                    'product_attribute_option_id' => $optionId,
+                ];
+            }
+        }
+
+        return $variationArray;
     }
 
     /**

@@ -130,8 +130,8 @@ export default {
             this.loading.isActive = true;
             this.$store.dispatch('productVideo/edit', productVideo.id);
             this.props.form = {
-                video_provider: productVideo.video_provider,
-                link: productVideo.link,
+                video_provider: Number(productVideo.video_provider) || 20,
+                link: productVideo.link || "",
                 thumbnail: productVideo.thumbnail || "",
             };
             this.loading.isActive = false;

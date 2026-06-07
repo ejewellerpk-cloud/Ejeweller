@@ -22,7 +22,7 @@
                             </small>
                         </div>
 
-                        <div class="form-col-12" v-if="form.video_provider && form.video_provider !== 20">
+                        <div class="form-col-12" v-if="Number(form.video_provider) && Number(form.video_provider) !== 20">
                             <label for="link" class="db-field-title required">{{ $t("label.link") }}</label>
                             <textarea v-model="form.link" v-bind:class="errors.link ? 'invalid' : ''" id="link"
                                 class="db-field-control" rows="2" placeholder="https://"></textarea>
@@ -31,7 +31,7 @@
                             </small>
                         </div>
 
-                        <div class="form-col-12" v-if="form.video_provider === 20">
+                        <div class="form-col-12" v-if="Number(form.video_provider) === 20">
                             <label for="file" class="db-field-title" :class="{ required: !hasExistingVideo && !form.file }">
                                 {{ $t("label.video") }} (Max: 10MB)
                             </label>
@@ -58,7 +58,7 @@
                         </div>
 
                         <!-- Thumbnail picker -->
-                        <div class="form-col-12" v-if="form.video_provider">
+                        <div class="form-col-12" v-if="Number(form.video_provider)">
                             <label class="db-field-title">{{ $t('label.thumbnail') || 'Video Thumbnail' }}</label>
                             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                 <div class="flex flex-col sm:flex-row gap-4">
@@ -208,13 +208,14 @@ export default {
         'productData.form': {
             handler(newVal) {
                 if (newVal) {
-                    this.form.video_provider = newVal.video_provider || 20;
+                    this.form.video_provider = Number(newVal.video_provider) || 20;
                     this.form.link = newVal.link || "";
                     this.form.file = null;
                     this.revokeVideoFilePreview();
                     this.thumbnailPreview = newVal.thumbnail || "";
                     this.thumbnailFile = null;
                     this.removeThumbnail = false;
+                    this.errors = {};
                 }
             },
             deep: true
@@ -422,7 +423,7 @@ export default {
             try {
                 this.loading.isActive = true;
                 const formData = new FormData();
-                formData.append('video_provider', this.form.video_provider || '');
+                formData.append('video_provider', Number(this.form.video_provider) || 20);
                 formData.append('link', this.form.link || '');
                 if (this.form.file) {
                     formData.append('file', this.form.file);
@@ -435,7 +436,7 @@ export default {
                 }
 
                 if (this.$store.getters['productVideo/temp'].isEditing) {
-                    formData.append('_method', 'put');
+                    formData.append('_method', 'PUT');
                 }
 
                 this.$store.dispatch('productVideo/save', {

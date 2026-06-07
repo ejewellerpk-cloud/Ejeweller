@@ -64,7 +64,7 @@ class ProductController extends Controller
     {
         try {
             return new ProductRelationResource($this->productService->categoryWiseProducts($request));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
