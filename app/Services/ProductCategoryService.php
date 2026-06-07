@@ -9,12 +9,15 @@ use Illuminate\Support\Str;
 use App\Models\ProductCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\ProductCategoryRequest;
 
 class ProductCategoryService
 {
+    private const CATEGORY_TREE_CACHE_KEY = 'product_categories_tree';
+
     protected array $productCateFilter = [
         'name',
         'slug',
@@ -60,7 +63,7 @@ class ProductCategoryService
     public function tree()
     {
         try {
-            return \Illuminate\Support\Facades\Cache::remember('product_categories_tree', 3600, function () {
+            return Cache::remember(self::CATEGORY_TREE_CACHE_KEY, 3600, function () {
                 return ProductCategory::active()->tree()->get();
             });
         } catch (Exception $exception) {
@@ -120,6 +123,8 @@ class ProductCategoryService
             if ($request->image) {
                 $productCategory->addMediaFromRequest('image')->toMediaCollection('product-category');
             }
+            $this->forgetCategoryTreeCache();
+
             return $productCategory;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -143,6 +148,8 @@ class ProductCategoryService
                 $productCategory->clearMediaCollection('product-category');
                 $productCategory->addMediaFromRequest('image')->toMediaCollection('product-category');
             }
+            $this->forgetCategoryTreeCache();
+
             return $productCategory;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -169,6 +176,7 @@ class ProductCategoryService
                     DB::statement('SET FOREIGN_KEY_CHECKS=1');
                 }
             }
+            $this->forgetCategoryTreeCache();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -186,5 +194,10 @@ class ProductCategoryService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function forgetCategoryTreeCache(): void
+    {
+        Cache::forget(self::CATEGORY_TREE_CACHE_KEY);
     }
 }

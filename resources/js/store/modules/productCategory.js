@@ -76,6 +76,7 @@ export const productCategory = {
                 method(url, payload.form).then(res => {
                     context.dispatch('lists', payload.search).then().catch();
                     context.dispatch('depthTrees', payload.search).then().catch();
+                    context.dispatch('frontendProductCategory/trees', null, { root: true }).then().catch();
                     context.commit('reset');
                     resolve(res);
                 }).catch((err) => {
@@ -91,6 +92,7 @@ export const productCategory = {
                 axios.delete(`admin/setting/product-category/${payload.id}`).then((res) => {
                     context.dispatch('lists', payload.search).then().catch();
                     context.dispatch('depthTrees').then().catch();
+                    context.dispatch('frontendProductCategory/trees', null, { root: true }).then().catch();
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

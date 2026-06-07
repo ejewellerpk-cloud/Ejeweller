@@ -137,7 +137,12 @@ class AppLibrary
     {
         if ($menus && $permissions) {
             foreach ($menus as $key => $menu) {
-                if (isset($permissions[$menu['url']]) && !$permissions[$menu['url']]['access']) {
+                $permissionUrl = $menu['url'];
+                if (str_starts_with($permissionUrl, 'settings/')) {
+                    $permissionUrl = 'settings';
+                }
+
+                if (isset($permissions[$permissionUrl]) && !$permissions[$permissionUrl]['access']) {
                     if ($menu['url'] != '#') {
                         unset($menus[$key]);
                     }

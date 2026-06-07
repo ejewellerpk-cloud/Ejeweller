@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-CyZ-4BaN.js";import{l as r,c as t,z as n}from"./vendor-vue-core-D7jgqj_w.js";import"./vendor-8yHaUXFb.js";const c={name:"ProductBrandComponent"};function s(a,p,_,m,d,i){const o=r("router-view");return t(),n(o)}const B=e(c,[["render",s]]);export{B as default};

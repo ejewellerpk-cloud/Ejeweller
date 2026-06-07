@@ -29,10 +29,10 @@ class MenuTableSeeder extends Seeder
             ],
 
             [
-                'name'       => 'Product & Stock',
-                'language'   => 'product_and_stock',
+                'name'       => 'Products',
+                'language'   => 'products',
                 'url'        => '#',
-                'icon'       => 'lab lab-item',
+                'icon'       => 'lab lab-line-items',
                 'priority'   => 100,
                 'status'     => 1,
                 'created_at' => now(),
@@ -48,6 +48,58 @@ class MenuTableSeeder extends Seeder
                         'created_at' => now(),
                         'updated_at' => now()
 
+                    ],
+                    [
+                        'name'       => 'Product Categories',
+                        'language'   => 'product_categories',
+                        'url'        => 'settings/product-categories',
+                        'icon'       => 'lab lab-line-item-categories',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Product Attributes',
+                        'language'   => 'product_attributes',
+                        'url'        => 'settings/product-attributes',
+                        'icon'       => 'lab lab-line-item-attributes',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Product Brands',
+                        'language'   => 'product_brands',
+                        'url'        => 'settings/product-brands',
+                        'icon'       => 'lab lab-line-brand',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                ]
+            ],
+            [
+                'name'       => 'Stock',
+                'language'   => 'stock',
+                'url'        => '#',
+                'icon'       => 'lab lab-line-stock',
+                'priority'   => 100,
+                'status'     => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'children'   => [
+                    [
+                        'name'       => 'Stock',
+                        'url'        => 'stock',
+                        'language'   => 'stock',
+                        'icon'       => 'lab lab-line-stock',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ],
                     [
                         'name'       => 'Purchase',
@@ -70,16 +122,6 @@ class MenuTableSeeder extends Seeder
                         'updated_at' => now()
                     ],
                     [
-                        'name'       => 'Stock',
-                        'url'        => 'stock',
-                        'language'   => 'stock',
-                        'icon'       => 'lab lab-line-stock',
-                        'priority'   => 100,
-                        'status'     => 1,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ],
-                    [
                         'name'       => 'Reviews',
                         'url'        => 'reviews',
                         'language'   => 'reviews',
@@ -88,7 +130,7 @@ class MenuTableSeeder extends Seeder
                         'status'     => 1,
                         'created_at' => now(),
                         'updated_at' => now()
-                    ]
+                    ],
                 ]
             ],
             [
