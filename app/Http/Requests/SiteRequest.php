@@ -43,7 +43,6 @@ class SiteRequest extends FormRequest
             'site_online_payment_gateway'                 => ['required', 'numeric'],
             'site_default_sms_gateway'                    => ['nullable', 'numeric', 'exists:sms_gateways,id'],
             'site_cash_on_delivery'                       => ['required', 'numeric'],
-            'site_non_purchase_product_maximum_quantity'  => ['required', 'numeric'],
             'site_is_return_product_price_add_to_credit' => ['required', 'numeric'],
             'site_whatsapp_status'                        => ['required', 'numeric'],
             'site_facebook_pixel_id'                      => ['required_if:site_facebook_capi_status,' . \App\Enums\Activity::ENABLE, 'nullable', 'string', 'max:190'],

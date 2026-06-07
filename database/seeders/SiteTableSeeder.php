@@ -43,7 +43,6 @@ class SiteTableSeeder extends Seeder
             'site_online_payment_gateway'                => $envService->getValue('DEMO') ? Activity::ENABLE : Activity::DISABLE,
             'site_default_sms_gateway'                   => 0,
             'site_cash_on_delivery'                      => Activity::ENABLE,
-            'site_non_purchase_product_maximum_quantity' => '100',
             'site_is_return_product_price_add_to_credit' => Ask::YES,
             'site_guest_checkout'                        => Activity::DISABLE,
             'site_whatsapp_status'                       => Activity::DISABLE,
@@ -60,7 +59,6 @@ class SiteTableSeeder extends Seeder
             'CURRENCY_DECIMAL_POINT' => '2',
             'DATE_FORMAT'            => 'd-m-Y',
             'TIME_FORMAT'            => 'h:i A',
-            'NON_PURCHASE_QUANTITY'  => '100'
         ]);
         Artisan::call('optimize:clear');
     }

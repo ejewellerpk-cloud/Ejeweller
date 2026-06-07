@@ -112,19 +112,6 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="site_non_purchase_product_maximum_quantity" class="db-field-title required">
-                            {{ $t("label.non_purchase_product_maximum_quantity") }}
-                        </label>
-                        <input v-on:keypress="onlyNumber($event)"
-                            v-model="form.site_non_purchase_product_maximum_quantity"
-                            v-bind:class="errors.site_non_purchase_product_maximum_quantity ? 'invalid' : ''"
-                            type="text" id="site_non_purchase_product_maximum_quantity" class="db-field-control" />
-                        <small class="db-field-alert" v-if="errors.site_non_purchase_product_maximum_quantity">
-                            {{ errors.site_non_purchase_product_maximum_quantity[0] }}
-                        </small>
-                    </div>
-
-                    <div class="form-col-12 sm:form-col-6">
                         <label for="site_digit_after_decimal_point" class="db-field-title required">
                             {{ $t("label.digit_after_decimal_point") }}
                             <span class="text-primary">{{ $t("label.ex") }}</span>
@@ -556,7 +543,6 @@ export default {
                 site_copyright: null,
                 site_online_payment_gateway: null,
                 site_default_sms_gateway: null,
-                site_non_purchase_product_maximum_quantity: null,
                 site_is_return_product_price_add_to_credit: null,
                 site_whatsapp_status: null,
                 site_facebook_pixel_id: null,
@@ -664,7 +650,6 @@ export default {
                     site_copyright: res.data.data.site_copyright,
                     site_online_payment_gateway: res.data.data.site_online_payment_gateway,
                     site_default_sms_gateway: res.data.data.site_default_sms_gateway === 0 || !res.data.data.site_default_sms_gateway ? null : Number(res.data.data.site_default_sms_gateway),
-                    site_non_purchase_product_maximum_quantity: res.data.data.site_non_purchase_product_maximum_quantity,
                     site_is_return_product_price_add_to_credit: res.data.data.site_is_return_product_price_add_to_credit,
                     site_whatsapp_status: res.data.data.site_whatsapp_status,
                     site_facebook_pixel_id: res.data.data.site_facebook_pixel_id,

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\Ask;
 use Exception;
 use App\Models\Stock;
 use App\Enums\Status;
@@ -57,7 +56,7 @@ class StockService
                             'product_name'       => $item->first()['product']['name'],
                             'variation_names'    => $item->first()['variation_names'],
                             'status'             => $item->first()['product']['status'],
-                            'stock'              => $item->first()['product']['can_purchasable'] === Ask::NO ? "N/C" : $item->sum('quantity'),
+                            'stock'              => $item->sum('quantity'),
 
                         ];
                     });

@@ -49,7 +49,7 @@ class SimpleProductVariationResource extends JsonResource
             'is_offer'                      => $isOfferActive,
             'sku'                           => $this->sku,
             'image'                         => $this->image,
-            'stock'                         => $this->product?->show_stock_out == Activity::DISABLE ? ($this->product?->can_purchasable == Ask::NO ? (int)env('NON_PURCHASE_QUANTITY') : (int)$this->stock_items_sum_quantity) : 0,
+            'stock'                         => $this->product?->show_stock_out == Activity::DISABLE ? (int) $this->stock_items_sum_quantity : 0,
             "maximum_purchase_quantity"     => $this->product?->maximum_purchase_quantity,
         ];
     }

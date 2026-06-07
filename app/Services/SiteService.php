@@ -91,7 +91,6 @@ class SiteService
                 'CURRENCY_DECIMAL_POINT' => $request->site_digit_after_decimal_point,
                 'DATE_FORMAT'            => $request->site_date_format,
                 'TIME_FORMAT'            => $request->site_time_format,
-                'NON_PURCHASE_QUANTITY'  => $request->site_non_purchase_product_maximum_quantity
             ]);
 
             Artisan::call('optimize:clear');

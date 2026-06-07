@@ -171,9 +171,6 @@ class Product extends Model implements HasMedia
     public function getStockAttribute(): int
     {
         if ($this->show_stock_out == \App\Enums\Activity::DISABLE) {
-            if ($this->can_purchasable == \App\Enums\Ask::NO) {
-                return (int) env('NON_PURCHASE_QUANTITY', 99999);
-            }
             if (isset($this->attributes['stock_items_sum_quantity'])) {
                 return (int) $this->attributes['stock_items_sum_quantity'];
             }

@@ -391,7 +391,7 @@ export default {
                 tax_id: [],
                 product_brand_id: null,
                 status: statusEnum.ACTIVE,
-                can_purchasable: askEnum.NO,
+                can_purchasable: askEnum.YES,
                 show_stock_out: activityEnum.DISABLE,
                 refundable: askEnum.NO,
                 use_random_sale: askEnum.YES,
