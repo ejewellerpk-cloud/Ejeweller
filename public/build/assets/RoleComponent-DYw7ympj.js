@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-quill-Cz3lb1CG.js";import{l as t,c as n,z as r}from"./vendor-vue-core-BgT5fPy7.js";import"./vendor-8yHaUXFb.js";const c={name:"RoleComponent"};function s(p,a,_,m,i,f){const o=t("router-view");return n(),r(o)}const $=e(c,[["render",s]]);export{$ as default};

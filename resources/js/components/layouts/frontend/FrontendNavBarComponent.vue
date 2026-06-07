@@ -127,12 +127,16 @@
                             </router-link>
                         </li>
 
-                        <li class="header-nav-item header-nav-item--mega" @mouseenter="ensureActiveCategoryTab">
+                        <li
+                            class="header-nav-item header-nav-item--mega"
+                            @mouseleave="resetCategoryMega">
                             <button type="button" class="header-nav-menu down-arrow">
                                 {{ $t('label.categories') }}
                             </button>
                             <div class="header-nav-mega">
-                                <div class="header-nav-mega-panel">
+                                <div
+                                    class="header-nav-mega-panel"
+                                    :class="{ 'header-nav-mega-panel--expanded': showCategorySubPanel }">
                                     <nav v-if="categories.length > 0" class="header-nav-mega-tabs">
                                         <button
                                             v-for="category in categories"
@@ -140,30 +144,30 @@
                                             type="button"
                                             class="header-nav-mega-tab"
                                             :class="{ 'is-active': activeTab === 'category_' + category.slug }"
-                                            @mouseenter="activeTab = 'category_' + category.slug"
+                                            @mouseenter="openCategorySubPanel(category)"
                                             @click="goToCategory(category.slug)">
                                             {{ category.name }}
                                         </button>
                                     </nav>
 
-                                    <div v-for="category in categories" :key="'panel-' + category.id">
-                                        <div
-                                            v-show="activeTab === 'category_' + category.slug"
-                                            class="header-nav-mega-body">
+                                    <div
+                                        v-if="showCategorySubPanel && activeCategory"
+                                        class="header-nav-mega-subpanel">
+                                        <div class="header-nav-mega-body">
                                             <router-link
-                                                v-if="category.cover"
-                                                :to="{ name: 'frontend.product', query: { category: category.slug } }"
+                                                v-if="activeCategory.cover"
+                                                :to="{ name: 'frontend.product', query: { category: activeCategory.slug } }"
                                                 class="header-nav-mega-image">
                                                 <img
                                                     class="w-full h-full object-cover object-top rounded-lg"
                                                     loading="lazy"
-                                                    :src="category.cover"
-                                                    :alt="category.name" />
+                                                    :src="activeCategory.cover"
+                                                    :alt="activeCategory.name" />
                                             </router-link>
 
-                                            <div v-if="category.children.length > 0" class="header-nav-mega-columns">
+                                            <div v-if="activeCategory.children.length > 0" class="header-nav-mega-columns">
                                                 <div
-                                                    v-for="children in category.children"
+                                                    v-for="children in activeCategory.children"
                                                     :key="children.id"
                                                     class="header-nav-mega-column">
                                                     <h3 class="header-nav-mega-column-title">
@@ -181,9 +185,9 @@
 
                                             <div v-else class="header-nav-mega-empty">
                                                 <router-link
-                                                    :to="{ name: 'frontend.product', query: { category: category.slug } }"
+                                                    :to="{ name: 'frontend.product', query: { category: activeCategory.slug } }"
                                                     class="text-sm font-semibold text-primary hover:underline">
-                                                    Browse {{ category.name }}
+                                                    Browse {{ activeCategory.name }}
                                                 </router-link>
                                             </div>
                                         </div>
@@ -528,6 +532,7 @@ export default {
             },
             categoryTabStatus: false,
             activeTab: null,
+            showCategorySubPanel: false,
             searchProduct: "",
             orderNotificationStatus: false,
             orderNotificationMessage: "",
@@ -558,6 +563,13 @@ export default {
         },
         categories: function () {
             return this.$store.getters['frontendProductCategory/trees'];
+        },
+        activeCategory: function () {
+            if (!this.activeTab || !this.categories.length) {
+                return null;
+            }
+            const slug = this.activeTab.replace('category_', '');
+            return this.categories.find((category) => category.slug === slug) || null;
         },
         wishlists: function () {
             return this.$store.getters['frontendWishlist/lists'];
@@ -675,8 +687,7 @@ export default {
         });
 
         this.loading.isActive = true;
-        this.$store.dispatch('frontendProductCategory/trees').then(res => {
-            this.initCategoryMegaTab();
+        this.$store.dispatch('frontendProductCategory/trees').then(() => {
             this.loading.isActive = false;
         }).catch((err) => {
             this.loading.isActive = false;
@@ -804,18 +815,16 @@ export default {
         resetSearch: function(){
             this.searchProduct = "";
         },
-        initCategoryMegaTab: function () {
-            const categories = this.categories;
-            if (categories && categories.length > 0) {
-                this.activeTab = 'category_' + categories[0].slug;
-            }
+        openCategorySubPanel: function (category) {
+            this.activeTab = 'category_' + category.slug;
+            this.showCategorySubPanel = true;
         },
-        ensureActiveCategoryTab: function () {
-            if (!this.activeTab) {
-                this.initCategoryMegaTab();
-            }
+        resetCategoryMega: function () {
+            this.showCategorySubPanel = false;
+            this.activeTab = null;
         },
         goToCategory: function (slug) {
+            this.resetCategoryMega();
             this.$router.push({ name: 'frontend.product', query: { category: slug } });
         }
     },

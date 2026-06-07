@@ -1,1 +1,0 @@
-import{E as t,G as o,c as a,d as r,a2 as n}from"./vendor-vue-core-BgT5fPy7.js";import{_ as l}from"./vendor-quill-Cz3lb1CG.js";const i={name:"ListFilterPanel",props:{show:{type:Boolean,default:!1}}},c={class:"list-filter-panel"};function p(e,f,s,_,d,m){return t((a(),r("div",c,[n(e.$slots,"default")],512)),[[o,s.show]])}const w=l(i,[["render",p]]);export{w as L};
