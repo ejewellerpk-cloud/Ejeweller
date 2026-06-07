@@ -65,18 +65,6 @@
                 <i class="text-sm lab lab-line-currencies"></i>
                 {{ $t("menu.currencies") }}
             </router-link>
-            <router-link :to="{ name: 'admin.productCategory' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-item-categories"></i>
-                {{ $t("menu.product_categories") }}
-            </router-link>
-            <router-link :to="{ name: 'admin.productAttribute' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-item-attributes"></i>
-                {{ $t("menu.product_attributes") }}
-            </router-link>
-            <router-link :to="{ name: 'admin.productBrand' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-brand"></i>
-                {{ $t("menu.product_brands") }}
-            </router-link>
             <router-link :to="{ name: 'admin.settings.returnReason' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-order-setup"></i>
                 {{ $t("menu.return_reasons") }}
@@ -92,14 +80,6 @@
             <router-link :to="{ name: 'admin.settings.benefit' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-benefits"></i>
                 {{ $t("menu.benefits") }}
-            </router-link>
-            <router-link :to="{ name: 'admin.settings.unit' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-unit"></i>
-                {{ $t("menu.units") }}
-            </router-link>
-            <router-link :to="{ name: 'admin.settings.tax' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-taxes"></i>
-                {{ $t("menu.taxes") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.page' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-pages"></i>

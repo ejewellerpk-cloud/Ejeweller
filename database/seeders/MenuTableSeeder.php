@@ -54,7 +54,7 @@ class MenuTableSeeder extends Seeder
                         'language'   => 'product_categories',
                         'url'        => 'product-categories',
                         'icon'       => 'lab lab-line-item-categories',
-                        'priority'   => 100,
+                        'priority'   => 110,
                         'status'     => 1,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -64,7 +64,7 @@ class MenuTableSeeder extends Seeder
                         'language'   => 'product_attributes',
                         'url'        => 'product-attributes',
                         'icon'       => 'lab lab-line-item-attributes',
-                        'priority'   => 100,
+                        'priority'   => 120,
                         'status'     => 1,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -74,7 +74,47 @@ class MenuTableSeeder extends Seeder
                         'language'   => 'product_brands',
                         'url'        => 'product-brands',
                         'icon'       => 'lab lab-line-brand',
-                        'priority'   => 100,
+                        'priority'   => 130,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Product Sections',
+                        'language'   => 'product_sections',
+                        'url'        => 'product-sections',
+                        'icon'       => 'lab lab-line-product-section',
+                        'priority'   => 140,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Reviews',
+                        'language'   => 'reviews',
+                        'url'        => 'reviews',
+                        'icon'       => 'lab lab-line-rating-star',
+                        'priority'   => 150,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Units',
+                        'language'   => 'units',
+                        'url'        => 'settings/units',
+                        'icon'       => 'lab lab-line-unit',
+                        'priority'   => 160,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Taxes',
+                        'language'   => 'taxes',
+                        'url'        => 'settings/taxes',
+                        'icon'       => 'lab lab-line-taxes',
+                        'priority'   => 170,
                         'status'     => 1,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -116,16 +156,6 @@ class MenuTableSeeder extends Seeder
                         'url'        => 'damages',
                         'language'   => 'damages',
                         'icon'       => 'lab lab-line-addons',
-                        'priority'   => 100,
-                        'status'     => 1,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ],
-                    [
-                        'name'       => 'Reviews',
-                        'url'        => 'reviews',
-                        'language'   => 'reviews',
-                        'icon'       => 'lab lab-line-rating-star',
                         'priority'   => 100,
                         'status'     => 1,
                         'created_at' => now(),
@@ -251,17 +281,6 @@ class MenuTableSeeder extends Seeder
                         'updated_at' => now()
 
                     ],
-                    [
-                        'name'       => 'Product Sections',
-                        'language'   => 'product_sections',
-                        'url'        => 'product-sections',
-                        'icon'       => 'lab lab-line-product-section',
-                        'priority'   => 100,
-                        'status'     => 1,
-                        'created_at' => now(),
-                        'updated_at' => now()
-
-                    ]
                 ]
             ],
             [
