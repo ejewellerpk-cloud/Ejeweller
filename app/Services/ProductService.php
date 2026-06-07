@@ -253,6 +253,7 @@ class ProductService
                 }
                 $product->delete();
             });
+            app(ProductSectionService::class)->clearHomeSectionsCache();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();

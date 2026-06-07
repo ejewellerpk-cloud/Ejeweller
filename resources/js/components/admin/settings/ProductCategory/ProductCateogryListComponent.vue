@@ -144,6 +144,8 @@ export default {
                     description: "",
                     parent_id: null,
                     status: statusEnum.ACTIVE,
+                    cover: "",
+                    thumb: "",
                 },
                 search: {
                     paginate: 1,
@@ -194,7 +196,9 @@ export default {
                 name: productCategory.name,
                 parent_id: productCategory.parent_id === 0 ? null : productCategory.parent_id,
                 status: productCategory.status,
-                description: productCategory.description
+                description: productCategory.description,
+                cover: productCategory.cover || "",
+                thumb: productCategory.thumb || "",
             };
             this.loading.isActive = false;
         },

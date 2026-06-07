@@ -55,9 +55,10 @@
                         </div>
                         <div class="form-col-12 sm:form-col-12">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (960px,1440px)</label>
-                            <div class="flex items-center gap-4 mb-3">
-                                <img :src="imagePreview || '/images/default/no-image.png'" 
-                                     class="w-16 h-16 object-cover rounded border border-slate-200 bg-slate-50" />
+                            <div class="flex items-start gap-4 mb-3">
+                                <img :src="displayImage"
+                                     class="w-24 h-36 object-cover rounded-lg border border-slate-200 bg-slate-50 flex-shrink-0"
+                                     alt="category preview" />
                                 <div class="flex-1 flex items-center gap-2">
                                     <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image"
                                         type="file" class="db-field-control flex-1" ref="imageProperty"
@@ -146,8 +147,21 @@ export default {
         },
         addButton: function () {
             return { title: this.$t("button.add_product_category") }
-        }
-
+        },
+        displayImage: function () {
+            if (this.imagePreview) {
+                return this.imagePreview;
+            }
+            const cover = this.props.form?.cover || '';
+            if (cover && !cover.includes('default/category')) {
+                return cover;
+            }
+            const thumb = this.props.form?.thumb || '';
+            if (thumb && !thumb.includes('default/category')) {
+                return thumb;
+            }
+            return '/images/default/no-image.png';
+        },
     },
     mounted() {
         this.$store.dispatch('productCategory/depthTrees')
@@ -190,11 +204,13 @@ export default {
                 name: "",
                 parent_id: null,
                 description: "",
-                status: statusEnum.ACTIVE
+                status: statusEnum.ACTIVE,
+                cover: "",
+                thumb: "",
             }
-            if (this.image) {
-                this.image = "";
-                this.imagePreview = "";
+            this.image = "";
+            this.imagePreview = "";
+            if (this.$refs.imageProperty) {
                 this.$refs.imageProperty.value = null;
             }
         },
@@ -223,6 +239,8 @@ export default {
                         parent_id: null,
                         description: "",
                         status: statusEnum.ACTIVE,
+                        cover: "",
+                        thumb: "",
                     }
                     this.image = "";
                     this.imagePreview = "";

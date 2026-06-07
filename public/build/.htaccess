@@ -1,9 +1,0 @@
-# Vite production assets — serve directly with long cache (hashed filenames)
-<IfModule mod_headers.c>
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</IfModule>
-
-<IfModule mod_mime.c>
-    AddType text/css .css
-    AddType application/javascript .js
-</IfModule>

@@ -15,7 +15,9 @@ use App\Libraries\QueryExceptionLibrary;
 
 class ProductSectionService
 {
-    public const HOME_SECTIONS_CACHE_PREFIX = 'product_sections_v3_user_';
+    public const HOME_SECTIONS_CACHE_PREFIX = 'product_sections_v3';
+
+    private const HOME_SECTIONS_VERSION_KEY = 'product_sections_v3_version';
 
     protected array $productCateFilter = [
         'name',
@@ -123,8 +125,7 @@ class ProductSectionService
     public function productSectionWithProduct()
     {
         try {
-            $userId = Auth::id() ?? 0;
-            return Cache::remember(self::HOME_SECTIONS_CACHE_PREFIX . $userId, 3600, function () {
+            return Cache::remember($this->homeSectionsCacheKey(), 3600, function () {
                 return ProductSection::select('product_sections.id', 'product_sections.name', 'product_sections.slug', 'product_sections.status')->with(['products' => function ($query) {
                     $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.created_at', 'products.use_random_sale')
                         ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
@@ -152,9 +153,18 @@ class ProductSectionService
 
     public function clearHomeSectionsCache(): void
     {
-        Cache::forget(self::HOME_SECTIONS_CACHE_PREFIX . '0');
-        if (Auth::check()) {
-            Cache::forget(self::HOME_SECTIONS_CACHE_PREFIX . Auth::id());
-        }
+        Cache::put(
+            self::HOME_SECTIONS_VERSION_KEY,
+            (int) Cache::get(self::HOME_SECTIONS_VERSION_KEY, 1) + 1,
+            86400 * 30
+        );
+    }
+
+    private function homeSectionsCacheKey(): string
+    {
+        $version = Cache::get(self::HOME_SECTIONS_VERSION_KEY, 1);
+        $userId = Auth::id() ?? 0;
+
+        return self::HOME_SECTIONS_CACHE_PREFIX . '_v' . $version . '_user_' . $userId;
     }
 }

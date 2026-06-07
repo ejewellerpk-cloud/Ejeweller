@@ -32,13 +32,29 @@
                         </div>
 
                         <div class="form-col-12" v-if="form.video_provider === 20">
-                            <label for="file" class="db-field-title required">{{ $t("label.video") }} (Max: 10MB)</label>
+                            <label for="file" class="db-field-title" :class="{ required: !hasExistingVideo && !form.file }">
+                                {{ $t("label.video") }} (Max: 10MB)
+                            </label>
+
+                            <div v-if="videoPreviewUrl" class="mb-3 rounded-xl border border-slate-200 bg-slate-900 overflow-hidden">
+                                <video
+                                    :key="videoPreviewUrl"
+                                    :src="videoPreviewUrl"
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                    class="w-full max-h-52 object-contain bg-black"
+                                ></video>
+                                <p v-if="hasExistingVideo && !form.file" class="px-3 py-2 text-[11px] text-slate-500 bg-slate-50 border-t border-slate-200">
+                                    Current uploaded video — choose a new file below only if you want to replace it.
+                                </p>
+                            </div>
+
                             <input type="file" @change="onFileChange" v-bind:class="errors.file ? 'invalid' : ''" id="file"
                                 class="db-field-control" accept="video/*">
                             <small class="db-field-alert" v-if="errors.file">
                                 {{ errors.file[0] }}
                             </small>
-                            <p v-if="form.link && !form.file" class="text-[11px] text-slate-500 mt-1 truncate">Current: {{ form.link }}</p>
                         </div>
 
                         <!-- Thumbnail picker -->
@@ -177,6 +193,7 @@ export default {
             thumbnailPreview: "",
             thumbnailFile: null,
             removeThumbnail: false,
+            videoFilePreview: "",
             enums: {
                 videoProviderEnum: videoProviderEnum,
             },
@@ -194,6 +211,7 @@ export default {
                     this.form.video_provider = newVal.video_provider || 20;
                     this.form.link = newVal.link || "";
                     this.form.file = null;
+                    this.revokeVideoFilePreview();
                     this.thumbnailPreview = newVal.thumbnail || "";
                     this.thumbnailFile = null;
                     this.removeThumbnail = false;
@@ -205,6 +223,24 @@ export default {
     computed: {
         addButton: function () {
             return { title: this.$t("button.add_video") }
+        },
+        isEditing: function () {
+            return this.$store.getters['productVideo/temp'].isEditing;
+        },
+        hasExistingVideo: function () {
+            return this.isEditing
+                && Number(this.form.video_provider) === 20
+                && !!this.form.link
+                && !this.form.link.includes('uploading');
+        },
+        videoPreviewUrl: function () {
+            if (this.videoFilePreview) {
+                return this.videoFilePreview;
+            }
+            if (this.hasExistingVideo) {
+                return this.form.link;
+            }
+            return "";
         },
         canCaptureFromVideo: function () {
             if (Number(this.form.video_provider) !== 20) {
@@ -218,6 +254,7 @@ export default {
     },
     beforeUnmount() {
         this.closeFramePicker();
+        this.revokeVideoFilePreview();
     },
     methods: {
         createButtonClick: function () {
@@ -232,6 +269,7 @@ export default {
             this.thumbnailPreview = "";
             this.thumbnailFile = null;
             this.removeThumbnail = false;
+            this.revokeVideoFilePreview();
             this.isCapturingThumbnail = false;
             this.closeFramePicker();
             this.form = {
@@ -244,8 +282,18 @@ export default {
                 fileInput.value = "";
             }
         },
+        revokeVideoFilePreview() {
+            if (this.videoFilePreview) {
+                URL.revokeObjectURL(this.videoFilePreview);
+                this.videoFilePreview = "";
+            }
+        },
         onFileChange: function (e) {
             this.form.file = e.target.files[0] || null;
+            this.revokeVideoFilePreview();
+            if (this.form.file) {
+                this.videoFilePreview = URL.createObjectURL(this.form.file);
+            }
             this.closeFramePicker();
         },
         onThumbnailFileChange: function (e) {
@@ -328,6 +376,9 @@ export default {
                     this.frameVideoObjectUrl = URL.createObjectURL(this.form.file);
                 }
                 return this.frameVideoObjectUrl;
+            }
+            if (this.hasExistingVideo) {
+                return this.form.link;
             }
             return this.form.link || "";
         },

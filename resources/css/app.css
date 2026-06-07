@@ -564,6 +564,38 @@
         @apply scale-y-100 pointer-events-auto
     }
 
+    .header-category-mega__tab {
+        @apply text-heading hover:text-primary
+    }
+
+    .header-category-mega__tab::after {
+        @apply content-[''] absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-0 bg-primary transition-all duration-300 rounded-full
+    }
+
+    .header-category-mega__tab--active {
+        @apply text-primary
+    }
+
+    .header-category-mega__tab--active::after {
+        @apply w-3/4
+    }
+
+    .header-category-mega__sub-pill {
+        @apply border-slate-200 bg-white text-slate-600 hover:border-primary/30 hover:text-primary
+    }
+
+    .header-category-mega__sub-pill--active {
+        @apply border-primary bg-primary text-white shadow-sm
+    }
+
+    .header-category-mega__panel {
+        @apply bg-white
+    }
+
+    .header-category-mega__hero {
+        @apply ring-1 ring-slate-200/80
+    }
+
     .header-nav-menu {
         @apply capitalize font-semibold py-5
     }
