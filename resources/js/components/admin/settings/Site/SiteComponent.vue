@@ -446,6 +446,37 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title required" for="site_abandoned_cart_reminder_enable">{{
+                            $t("label.site_abandoned_cart_reminder")
+                            }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.ENABLE" v-model="form.site_abandoned_cart_reminder"
+                                        id="site_abandoned_cart_reminder_enable" type="radio" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="site_abandoned_cart_reminder_enable" class="db-field-label">
+                                    {{ $t("label.enable") }}
+                                </label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input :value="enums.activityEnum.DISABLE" v-model="form.site_abandoned_cart_reminder"
+                                        type="radio" id="site_abandoned_cart_reminder_disable" class="custom-radio-field" />
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="site_abandoned_cart_reminder_disable" class="db-field-label">
+                                    {{ $t("label.disable") }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.site_abandoned_cart_reminder">
+                            {{ errors.site_abandoned_cart_reminder[0] }}
+                        </small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label for="site_homepage_theme" class="db-field-title">
                             {{ $t("label.homepage_theme") }}
                         </label>
@@ -551,6 +582,7 @@ export default {
                 site_guest_checkout: null,
                 site_homepage_theme: 'default',
                 site_show_stock_out: null,
+                site_abandoned_cart_reminder: null,
             },
             homepageThemeOptions: [
                 { id: 'default', name: 'Default' },
@@ -659,6 +691,9 @@ export default {
                     site_homepage_theme: res.data.data.site_homepage_theme || 'default',
                     site_show_stock_out: res.data.data.site_show_stock_out !== null && res.data.data.site_show_stock_out !== undefined
                         ? Number(res.data.data.site_show_stock_out)
+                        : activityEnum.ENABLE,
+                    site_abandoned_cart_reminder: res.data.data.site_abandoned_cart_reminder !== null && res.data.data.site_abandoned_cart_reminder !== undefined
+                        ? Number(res.data.data.site_abandoned_cart_reminder)
                         : activityEnum.ENABLE,
                 }
                 this.loading.isActive = false;

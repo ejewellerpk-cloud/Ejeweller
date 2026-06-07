@@ -31,7 +31,7 @@
 
     <!-- Abandoned Cart Checkout Reminder Banner -->
     <transition name="slide-left-fade">
-        <div v-if="showCheckoutReminder && theme === 'frontend'" class="checkout-reminder-popup fixed top-[100px] sm:top-[120px] right-4 sm:right-6 z-50 w-[70%] max-w-[240px] sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
+        <div v-if="showCheckoutReminder && theme === 'frontend' && abandonedCartReminderEnabled" class="checkout-reminder-popup fixed top-[100px] sm:top-[120px] right-4 sm:right-6 z-50 w-[70%] max-w-[240px] sm:w-[20vw] sm:max-w-[260px] bg-white/95 backdrop-blur-md border border-red-100 p-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-start gap-2 transition-all duration-300">
             <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-red-500 animate-pulse text-base">
                 <i class="lab-line-bag"></i>
             </div>
@@ -77,6 +77,7 @@ import FrontendCookiesComponent from "./layouts/frontend/FrontendCookiesComponen
 import { identifyAnalyticsUser } from "../services/analyticsEcommerceBridge";
 import { resolveThemeFromRoute } from "../services/themeResolver";
 import DisplayModeEnum from "../enums/modules/displayModeEnum";
+import activityEnum from "../enums/modules/activityEnum";
 import env from "../config/env";
 import BackendAiSidebarComponent from "./layouts/backend/BackendAiSidebarComponent.vue";
 
@@ -133,6 +134,10 @@ export default {
         },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        abandonedCartReminderEnabled: function () {
+            const status = this.setting?.site_abandoned_cart_reminder;
+            return status === undefined || status === null || Number(status) === activityEnum.ENABLE;
         },
         showWhatsappFloating: function () {
             if (this.theme !== 'frontend') {
@@ -195,7 +200,7 @@ export default {
         },
         startAbandonedCartTimer() {
             this.stopAbandonedCartTimer();
-            if (this.hasShownReminder || (this.$route.name && this.$route.name.startsWith('frontend.checkout'))) return;
+            if (!this.abandonedCartReminderEnabled || this.hasShownReminder || (this.$route.name && this.$route.name.startsWith('frontend.checkout'))) return;
 
             this.reminderTimer = setTimeout(() => {
                 if (this.cartList && this.cartList.length > 0 && (!this.$route.name || !this.$route.name.startsWith('frontend.checkout'))) {
@@ -267,7 +272,7 @@ export default {
         },
         cartList: {
             handler(newList) {
-                if (newList && newList.length > 0) {
+                if (newList && newList.length > 0 && this.abandonedCartReminderEnabled) {
                     this.startAbandonedCartTimer();
                     this.startTabTicker();
                 } else {
@@ -278,6 +283,14 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        'setting.site_abandoned_cart_reminder'() {
+            if (!this.abandonedCartReminderEnabled) {
+                this.stopAbandonedCartTimer();
+                this.showCheckoutReminder = false;
+            } else if (this.cartList && this.cartList.length > 0) {
+                this.startAbandonedCartTimer();
+            }
         }
     },
     mounted() {

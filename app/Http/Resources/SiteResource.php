@@ -53,6 +53,7 @@ class SiteResource extends JsonResource
             "site_facebook_capi_status"                  => $this->info['site_facebook_capi_status'] ?? 10,
             "site_homepage_theme"                        => $this->info['site_homepage_theme'] ?? 'default',
             "site_show_stock_out"                        => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,
+            "site_abandoned_cart_reminder"               => isset($this->info['site_abandoned_cart_reminder']) ? (int) $this->info['site_abandoned_cart_reminder'] : \App\Enums\Activity::ENABLE,
         ];
     }
 }

@@ -184,6 +184,10 @@ export default {
         },
         cartTotalQuantity: function () {
             return this.cartLists.reduce((sum, item) => sum + (parseInt(item.quantity, 10) || 0), 0);
+        },
+        abandonedCartReminderEnabled: function () {
+            const status = this.setting?.site_abandoned_cart_reminder;
+            return status === undefined || status === null || Number(status) === activityEnum.ENABLE;
         }
     },
     beforeRouteLeave(to, from, next) {
@@ -191,7 +195,7 @@ export default {
         const goingToCartList = to.path === '/checkout/cart-list';
         const leavingCheckoutFlow = !to.path.startsWith('/checkout');
 
-        if (leavingCheckoutStep && this.isList && !this.showAbandonedModal && (goingToCartList || leavingCheckoutFlow)) {
+        if (this.abandonedCartReminderEnabled && leavingCheckoutStep && this.isList && !this.showAbandonedModal && (goingToCartList || leavingCheckoutFlow)) {
             if (to.name === 'frontend.account.orderDetails') {
                 next();
                 return;
@@ -226,6 +230,12 @@ export default {
         },
         promptAbandonedCheckoutLeave: function (next) {
             if (!this.isList) {
+                if (typeof next === 'function') {
+                    next();
+                }
+                return;
+            }
+            if (!this.abandonedCartReminderEnabled) {
                 if (typeof next === 'function') {
                     next();
                 }

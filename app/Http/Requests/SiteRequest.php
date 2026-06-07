@@ -51,6 +51,7 @@ class SiteRequest extends FormRequest
             'site_guest_checkout'                         => ['nullable', 'numeric'],
             'site_homepage_theme'                         => ['nullable', 'string', 'in:default,ramadan,eid,wedding,winter'],
             'site_show_stock_out'                         => ['nullable', 'numeric'],
+            'site_abandoned_cart_reminder'                => ['nullable', 'numeric'],
         ];
     }
 }
