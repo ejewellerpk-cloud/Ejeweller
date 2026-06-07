@@ -3,6 +3,7 @@
         <article
             v-for="product in products"
             :key="product.id"
+            :data-card-product-id="product.id"
             class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative isolate z-0 block"
             @touchstart.passive="onCardTouchStart(product.id, $event)"
             @touchend="onCardActivate(product, $event)"
@@ -37,9 +38,10 @@
                         :dir="'ltr'"
                         :pagination="getPaginationConfig(product)"
                         :modules="modules"
-                        :loop="true"
+                        :loop="!(product.videos && product.videos.length > 0)"
                         class="w-full h-full product-card-swiper"
                         @swiper="onSwiperReady($event, product.id)"
+                        @slideChange="onCardSlideChange($event, product.id)"
                         @sliderFirstMove="onSliderDragStart(product.id)"
                         @touchEnd="onSliderTouchEnd(product.id)">
 
@@ -63,23 +65,26 @@
                         <SwiperSlide v-if="product.videos && product.videos.length > 0">
                             <div class="w-full h-full relative">
                                 <div class="w-full h-full bg-black relative aspect-[4/5]">
-                                    <template v-if="shouldUseVideoPosterSlide(product.videos[0])">
-                                        <img :src="getVideoPosterForCard(product.videos[0], product)" alt="video thumbnail"
-                                            class="w-full h-full object-cover pointer-events-none" loading="lazy" />
-                                        <div class="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-                                            <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
-                                                <i class="fa-solid fa-play text-primary text-xs sm:text-sm ml-0.5"></i>
-                                            </span>
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <iframe v-if="product.videos[0].video_provider === 5"
-                                            :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
-                                            class="w-full h-full pointer-events-none"
-                                            frameborder="0" allow="autoplay; encrypted-media">
-                                        </iframe>
-                                        <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
-                                    </template>
+                                    <iframe v-if="isEmbedVideo(product.videos[0])"
+                                        :key="`card-embed-${product.id}`"
+                                        :src="formatProductCardVideoLink(product.videos[0])"
+                                        class="w-full h-full pointer-events-none"
+                                        frameborder="0"
+                                        allow="autoplay; encrypted-media; picture-in-picture"
+                                        loading="lazy">
+                                    </iframe>
+                                    <video v-else
+                                        :key="`card-video-${product.id}`"
+                                        data-card-video
+                                        :src="product.videos[0].link"
+                                        :poster="getVideoPosterForCard(product.videos[0], product)"
+                                        muted
+                                        loop
+                                        playsinline
+                                        webkit-playsinline
+                                        preload="metadata"
+                                        class="w-full h-full object-cover pointer-events-none">
+                                    </video>
                                 </div>
                             </div>
                         </SwiperSlide>
@@ -209,7 +214,8 @@ import {
 } from "../../../utils/productSoldCount";
 import {
     getVideoPoster as resolveVideoPoster,
-    shouldUseVideoPosterSlide as canUseVideoPosterSlide,
+    formatProductCardVideoLink,
+    isEmbedVideo,
     getYouTubeId,
 } from "../../../utils/videoPoster";
 import {
@@ -257,8 +263,49 @@ export default {
             animatingWishlists: {},
             animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
-            loadedImages: {}
+            loadedImages: {},
+            cardVideoObserver: null,
         }
+    },
+    mounted() {
+        if (typeof IntersectionObserver === 'undefined') {
+            return;
+        }
+
+        this.cardVideoObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                const productId = Number(entry.target.getAttribute('data-card-product-id'));
+                if (!productId) {
+                    return;
+                }
+
+                const product = this.products.find((item) => item.id === productId);
+                if (!product?.videos?.length) {
+                    return;
+                }
+
+                if (entry.isIntersecting) {
+                    if (!isFinePointerDevice()) {
+                        this.goToCardSlide(productId, this.getVideoSlideIndex(product));
+                    }
+                    this.$nextTick(() => this.playCardVideos(productId));
+                } else {
+                    this.pauseCardVideos(productId);
+                    if (!isFinePointerDevice()) {
+                        this.goToCardSlide(productId, 0);
+                    }
+                }
+            });
+        }, { threshold: 0.45 });
+
+        this.$nextTick(() => this.registerCardVideoObservers());
+    },
+    updated() {
+        this.$nextTick(() => this.registerCardVideoObservers());
+    },
+    beforeUnmount() {
+        this.cardVideoObserver?.disconnect();
+        this.cardVideoObserver = null;
     },
     computed: {
         setting() {
@@ -277,6 +324,79 @@ export default {
         },
         onSwiperReady(swiper, productId) {
             this.swiperInstances[productId] = swiper;
+            this.syncCardVideoPlayback(productId, swiper);
+        },
+        registerCardVideoObservers() {
+            if (!this.cardVideoObserver || !this.$el?.querySelectorAll) {
+                return;
+            }
+
+            this.$el.querySelectorAll('[data-card-product-id]').forEach((element) => {
+                if (element.dataset.videoObserved === '1') {
+                    return;
+                }
+
+                element.dataset.videoObserved = '1';
+                this.cardVideoObserver.observe(element);
+            });
+        },
+        getVideoSlideIndex(product) {
+            return product.previews?.length > 0 ? 1 : 0;
+        },
+        goToCardSlide(productId, index) {
+            const swiper = this.swiperInstances[productId];
+            if (!swiper || swiper.slides.length <= index) {
+                return;
+            }
+
+            if (swiper.params.loop && typeof swiper.slideToLoop === 'function') {
+                swiper.slideToLoop(index);
+                return;
+            }
+
+            swiper.slideTo(index);
+        },
+        onCardSlideChange(swiper, productId) {
+            this.syncCardVideoPlayback(productId, swiper);
+        },
+        syncCardVideoPlayback(productId, swiper) {
+            const product = this.products.find((item) => item.id === productId);
+            if (!product?.videos?.length || !swiper) {
+                return;
+            }
+
+            const videoIndex = this.getVideoSlideIndex(product);
+            const activeIndex = swiper.params.loop ? swiper.realIndex : swiper.activeIndex;
+
+            if (activeIndex === videoIndex) {
+                this.$nextTick(() => this.playCardVideos(productId));
+            } else {
+                this.pauseCardVideos(productId);
+            }
+        },
+        playCardVideos(productId) {
+            const root = this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`);
+            if (!root) {
+                return;
+            }
+
+            root.querySelectorAll('video[data-card-video]').forEach((video) => {
+                video.muted = true;
+                const playPromise = video.play();
+                if (playPromise?.catch) {
+                    playPromise.catch(() => {});
+                }
+            });
+        },
+        pauseCardVideos(productId) {
+            const root = this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`);
+            if (!root) {
+                return;
+            }
+
+            root.querySelectorAll('video[data-card-video]').forEach((video) => {
+                video.pause();
+            });
         },
         hasMediaSlider(product) {
             return product.previews
@@ -341,9 +461,12 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
-            const swiper = this.swiperInstances[productId];
-            if (swiper && swiper.slides.length > 1) {
-                swiper.slideToLoop(1);
+            const product = this.products.find((item) => item.id === productId);
+            if (product?.videos?.length) {
+                this.goToCardSlide(productId, this.getVideoSlideIndex(product));
+                this.$nextTick(() => this.playCardVideos(productId));
+            } else {
+                this.goToCardSlide(productId, 1);
             }
             this.prefetchProductDetails();
         },
@@ -351,10 +474,8 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
-            const swiper = this.swiperInstances[productId];
-            if (swiper) {
-                swiper.slideToLoop(0);
-            }
+            this.pauseCardVideos(productId);
+            this.goToCardSlide(productId, 0);
         },
         isWishlisted(product) {
             if (!product) return false;
@@ -408,14 +529,13 @@ export default {
             }
         },
         getYouTubeId,
+        formatProductCardVideoLink,
+        isEmbedVideo,
         getProductSoldCount(product) {
             return calcDisplaySoldCount(product);
         },
         getVideoPosterForCard(video, product) {
             return resolveVideoPoster(video, product.previews?.[0] || product.cover || '');
-        },
-        shouldUseVideoPosterSlide(video) {
-            return canUseVideoPosterSlide(video);
         },
         getProductAverageRating,
         getStarFillCount,
