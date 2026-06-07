@@ -157,7 +157,7 @@
                 </span>
             </div>
 
-            <h3 class="product-card__title capitalize text-xs sm:text-sm font-semibold transition-all duration-300 overflow-hidden text-ellipsis leading-tight mt-1.5 mb-1 text-gray-800">
+            <h3 class="product-card__title capitalize text-xs sm:text-sm font-semibold transition-all duration-300 mt-1.5 mb-1 text-gray-800 line-clamp-2 leading-snug">
                 {{ product.name }}
             </h3>
 
@@ -168,20 +168,22 @@
                 </span>
             </div>
 
-            <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
-                <div class="flex items-center gap-1">
-                    <div class="flex items-center gap-0.5" :aria-label="formatListProductRating(product) + ' out of 5'">
+            <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium flex-nowrap overflow-hidden">
+                <div class="flex items-center gap-1 shrink-0 min-w-0">
+                    <div class="flex items-center gap-0.5 shrink-0" :aria-label="formatListProductRating(product) + ' out of 5'">
                         <i v-for="star in 5" :key="star"
                             :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
                             class="fa-star text-[9px] sm:text-[10px]"></i>
                     </div>
-                    <span class="text-gray-900 font-bold">{{ formatListProductRating(product) }}</span>
-                    <span>({{ getListReviewCount(product) }})</span>
+                    <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatListProductRating(product) }}</span>
+                    <span class="whitespace-nowrap">({{ getListReviewCount(product) }})</span>
                 </div>
-                <span class="text-gray-200">|</span>
-                <span>
-                    <span class="text-gray-900 font-bold">{{ getProductSoldCount(product) }}</span> sold
-                </span>
+                <template v-if="getProductSoldCount(product) > 0">
+                    <span class="text-gray-200 shrink-0">|</span>
+                    <span class="whitespace-nowrap shrink-0">
+                        <span class="text-gray-900 font-bold">{{ getProductSoldCount(product) }}</span> sold
+                    </span>
+                </template>
             </div>
             </div>
         </article>

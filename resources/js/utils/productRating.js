@@ -17,7 +17,7 @@ export function getProductAverageRating(product) {
 
     const count = parseInt(product?.rating_star_count, 10) || 0;
     if (count <= 0) {
-        return null;
+        return 5;
     }
 
     const sum = parseFloat(product?.rating_star) || 0;
@@ -28,20 +28,12 @@ export function getProductAverageRating(product) {
 
 export function getStarFillCount(product) {
     const average = getProductAverageRating(product);
-    if (average === null) {
-        return 0;
-    }
 
     return Math.min(5, Math.max(0, Math.round(average)));
 }
 
 export function formatListProductRating(product) {
-    const average = getProductAverageRating(product);
-    if (average === null) {
-        return '0.0';
-    }
-
-    return average.toFixed(1);
+    return getProductAverageRating(product).toFixed(1);
 }
 
 export function getListReviewCount(product) {
@@ -49,6 +41,5 @@ export function getListReviewCount(product) {
 }
 
 export function formatProductRating(product) {
-    const average = getProductAverageRating(product);
-    return average === null ? null : average.toFixed(1);
+    return getProductAverageRating(product).toFixed(1);
 }

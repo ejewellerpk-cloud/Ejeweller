@@ -7,7 +7,6 @@
         <MostPopularComponent />
         <FlashSaleComponent />
         <ProductBrandComponent />
-        <HomeWhatsappCtaComponent />
         <OutletComponent />
         <HomeReviewsComponent />
         <BenefitComponent />
@@ -25,7 +24,6 @@ import ProductBrandComponent from './ProductBrandComponent.vue';
 import OutletComponent from './OutletComponent.vue';
 import BenefitComponent from './BenefitComponent.vue';
 import HomeReviewsComponent from './HomeReviewsComponent.vue';
-import HomeWhatsappCtaComponent from './HomeWhatsappCtaComponent.vue';
 
 export default {
     name: 'HomeComponent',
@@ -40,7 +38,6 @@ export default {
         OutletComponent,
         BenefitComponent,
         HomeReviewsComponent,
-        HomeWhatsappCtaComponent,
     },
     computed: {
         setting() {
