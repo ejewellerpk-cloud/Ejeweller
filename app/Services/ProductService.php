@@ -67,7 +67,7 @@ class ProductService
             $orderType   = $request->get('order_type') ?? 'desc';
 
             if ($orderColumn === 'random') {
-                return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->where(function ($query) use ($requests) {
+                return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->productFilter)) {
                             if ($key == "except") {
@@ -100,7 +100,7 @@ class ProductService
                 );
             }
 
-            return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->where(function ($query) use ($requests) {
+            return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->productFilter)) {
                         if ($key == "except") {

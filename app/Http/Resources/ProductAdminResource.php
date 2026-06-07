@@ -26,7 +26,7 @@ class ProductAdminResource extends JsonResource
         return [
             "id"                         => $this->id,
             "use_random_sale"            => (int)$this->use_random_sale,
-            "actual_sales"               => (int)abs($this?->productOrders?->sum('quantity') ?? 0),
+            "actual_sales"               => (int) abs($this->product_orders_sum_quantity ?? $this?->productOrders?->sum('quantity') ?? 0),
             "is_show_viewers"            => (int)$this->is_show_viewers,
             "name"                       => $this->name,
             "sku"                        => $this->sku,
@@ -50,7 +50,7 @@ class ProductAdminResource extends JsonResource
             "shipping_and_return"        => $this->shipping_and_return === null ? '' : $this->shipping_and_return,
             "product_tags"               => ProductTagResource::collection($this->tags),
             "category_name"              => $this?->category?->name,
-            "order"                      => abs($this?->productOrders->sum('quantity')),
+            "order"                      => (int) abs($this->product_orders_sum_quantity ?? $this?->productOrders?->sum('quantity') ?? 0),
             'currency_price'             => AppLibrary::currencyAmountFormat($price),
             "cover"                      => $this->cover,
             'flash_sale'                 => $this->add_to_flash_sale == Ask::YES,

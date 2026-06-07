@@ -26,7 +26,7 @@ class SimpleProductResource extends JsonResource
             'id'                => $this->id,
             'created_at'        => $this->created_at ? $this->created_at->toIso8601String() : null,
             'use_random_sale'   => (int)$this->use_random_sale,
-            'actual_sales'      => (int)abs($this->productOrders()->sum('quantity')),
+            'actual_sales'      => (int) abs($this->product_orders_sum_quantity ?? $this->productOrders()->sum('quantity')),
             'in_baskets'            => (int) ($this->cart_trackers_count ?? $this->cartTrackers()->count()),
             'bought_last_24_hours'  => (int) abs(
                 $this->product_orders_last_day_sum_quantity
