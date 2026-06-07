@@ -27,18 +27,22 @@ class OrderPushNotificationBuilder
     public function send(): void
     {
         if (!blank($this->order)) {
-            $user = User::find($this->order->user_id);
-            if (!blank($user)) {
-                if (!blank($user->web_token) || !blank($user->device_token)) {
-                    $fcmTokenArray = [];
+            $fcmTokenArray = app(UserFcmTokenService::class)->getActiveTokenStrings([$this->order->user_id]);
+
+            if (blank($fcmTokenArray)) {
+                $user = User::find($this->order->user_id);
+                if (!blank($user)) {
                     if (!blank($user->web_token)) {
                         $fcmTokenArray[] = $user->web_token;
                     }
                     if (!blank($user->device_token)) {
                         $fcmTokenArray[] = $user->device_token;
                     }
-                    $this->message($fcmTokenArray, $this->status, $this->orderId);
                 }
+            }
+
+            if (!blank($fcmTokenArray)) {
+                $this->message($fcmTokenArray, $this->status, $this->orderId);
             }
         }
     }

@@ -25,6 +25,8 @@ import productsRoutes from "./modules/productsRoutes";
 import productCategoryRoutes from "./modules/productCategoryRoutes";
 import productBrandRoutes from "./modules/productBrandRoutes";
 import productAttributeRoutes from "./modules/productAttributeRoutes";
+import unitRoutes from "./modules/unitRoutes";
+import taxRoutes from "./modules/taxRoutes";
 import profileRoutes from "./modules/profileRoutes";
 import PromotionRoutes from "./modules/PromotionRoutes";
 import purchaseRoutes from "./modules/purchaseRoutes";
@@ -73,6 +75,8 @@ const routes = baseRoutes.concat(
     productCategoryRoutes,
     productBrandRoutes,
     productAttributeRoutes,
+    unitRoutes,
+    taxRoutes,
     administratorRoutes,
     customerRoutes,
     employeeRoutes,

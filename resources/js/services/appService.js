@@ -520,4 +520,32 @@ export default {
 
         return fallback;
     },
+
+    fcmDeviceId: function () {
+        const storageKey = 'fcm_device_id';
+        let deviceId = localStorage.getItem(storageKey);
+
+        if (!deviceId) {
+            deviceId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            localStorage.setItem(storageKey, deviceId);
+        }
+
+        return deviceId;
+    },
+
+    fcmDeviceName: function () {
+        const ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) {
+            return 'Android Browser';
+        }
+        if (/iPhone|iPad|iPod/i.test(ua)) {
+            return 'iOS Browser';
+        }
+        if (/Mobile/i.test(ua)) {
+            return 'Mobile Browser';
+        }
+        return 'Web Browser';
+    },
 };

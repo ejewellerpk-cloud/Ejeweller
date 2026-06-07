@@ -26,6 +26,15 @@
                         <i class="lab lab-monitor-mobbile lab-font-size-16"></i>
                         <span>{{ $t("label.device_session_history") }}</span>
                     </button>
+                    <button
+                        v-if="permissionChecker('administrators_show')"
+                        type="button"
+                        class="db-btn py-2 h-[37px] text-white bg-gray-600"
+                        @click="listView = 'fcm_tokens'"
+                    >
+                        <i class="lab lab-line-notification lab-font-size-16"></i>
+                        <span>{{ $t("label.push_device_history") }}</span>
+                    </button>
                     <AdministratorCreateComponent :props="props" v-if="permissionChecker('administrators_create')" />
                 </div>
             </div>
@@ -160,6 +169,14 @@
             show-route="admin.administrators.show"
             @back="listView = 'users'"
         />
+
+        <AllUserFcmTokensComponent
+            v-if="listView === 'fcm_tokens' && permissionChecker('administrators_show')"
+            :key="'administrator-fcm-tokens'"
+            api-prefix="administrator"
+            show-route="admin.administrators.show"
+            @back="listView = 'users'"
+        />
     </div>
 </template>
 <script>
@@ -181,6 +198,7 @@ import print from 'vue3-print-nb';
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import AllUserSessionsComponent from "../components/AllUserSessionsComponent";
+import AllUserFcmTokensComponent from "../components/AllUserFcmTokensComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -201,6 +219,7 @@ export default {
         PrintComponent,
         ExcelComponent,
         AllUserSessionsComponent,
+        AllUserFcmTokensComponent,
     },
     data() {
         return {

@@ -22,8 +22,6 @@ const SliderListComponent = () =>  import("../../components/admin/settings/Slide
 const SliderShowComponent = () =>  import("../../components/admin/settings/Slider/SliderShowComponent");
 const CurrencyComponent = () =>  import("../../components/admin/settings/Currency/CurrencyComponent");
 const CurrencyListComponent = () =>  import("../../components/admin/settings/Currency/CurrencyListComponent");
-const TaxComponent = () =>  import("../../components/admin/settings/Tax/TaxComponent");
-const TaxListComponent = () =>  import("../../components/admin/settings/Tax/TaxListComponent");
 const PageComponent = () =>  import("../../components/admin/settings/Page/PageComponent");
 const PageListComponent = () =>  import("../../components/admin/settings/Page/PageListComponent");
 const PageShowComponent = () =>  import("../../components/admin/settings/Page/PageShowComponent");
@@ -38,8 +36,6 @@ const RoleShowComponent = () =>  import("../../components/admin/settings/Role/Ro
 const BenefitComponent = () =>  import("../../components/admin/settings/Benefit/BenefitComponent");
 const BenefitListComponent = () =>  import("../../components/admin/settings/Benefit/BenefitListComponent");
 const BenefitShowComponent = () =>  import("../../components/admin/settings/Benefit/BenefitShowComponent");
-const UnitComponent = () =>  import("../../components/admin/settings/Unit/UnitComponent");
-const UnitListComponent = () =>  import("../../components/admin/settings/Unit/UnitListComponent");
 const SupplierComponent = () =>  import("../../components/admin/settings/Supplier/SupplierComponent");
 const SupplierListComponent = () =>  import("../../components/admin/settings/Supplier/SupplierListComponent");
 const SupplierShowComponent = () =>  import("../../components/admin/settings/Supplier/SupplierShowComponent");
@@ -433,53 +429,21 @@ export default [
             },
             {
                 path: "units",
-                component: UnitComponent,
                 name: "admin.settings.unit",
-                redirect: { name: "admin.settings.unit.list" },
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "units",
-                },
-                children: [
-                    {
-                        path: "list",
-                        component: UnitListComponent,
-                        name: "admin.settings.unit.list",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "",
-                        },
-                    },
-                ],
+                redirect: { name: "admin.unit.list" },
+            },
+            {
+                path: "units/list",
+                redirect: { name: "admin.unit.list" },
             },
             {
                 path: "taxes",
-                component: TaxComponent,
                 name: "admin.settings.tax",
-                redirect: { name: "admin.settings.tax.list" },
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "taxes",
-                },
-                children: [
-                    {
-                        path: "list",
-                        component: TaxListComponent,
-                        name: "admin.settings.tax.list",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "",
-                        },
-                    },
-                ],
+                redirect: { name: "admin.tax.list" },
+            },
+            {
+                path: "taxes/list",
+                redirect: { name: "admin.tax.list" },
             },
             {
                 path: "pages",

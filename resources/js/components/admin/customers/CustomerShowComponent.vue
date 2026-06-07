@@ -56,6 +56,11 @@
                 <i class="lab lab-monitor-mobbile"></i>
                 <span class="capitalize text-sm">{{ $t("button.active_devices") }}</span>
             </button>
+            <button type="button" @click="activeTab = 'push_devices'"
+                :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'push_devices' }]">
+                <i class="lab lab-line-notification"></i>
+                <span class="capitalize text-sm">{{ $t("button.push_devices") }}</span>
+            </button>
             <button type="button" @click="activeTab = 'address'"
                 :class="['profile-tabBtn', 'w-full justify-start sm:w-fit inline-flex items-center sm:justify-center gap-2 h-[38px] py-2 px-4 rounded-md text-[#6E7191] stroke-[#6E7191]', { active: activeTab === 'address' }]">
                 <i class="lab lab-line-location"></i>
@@ -158,6 +163,9 @@
         <div class="profile-tabDiv" :class="{ active: activeTab === 'sessions' }">
             <UserSessionsComponent v-if="activeTab === 'sessions'" :user-id="$route.params.id" api-prefix="customer" mode="admin" />
         </div>
+        <div class="profile-tabDiv" :class="{ active: activeTab === 'push_devices' }">
+            <UserFcmTokensComponent v-if="activeTab === 'push_devices'" :user-id="$route.params.id" api-prefix="customer" mode="admin" />
+        </div>
         <div class="profile-tabDiv" :class="{ active: activeTab === 'address' }">
             <CustomerAddressList :props="$route.params.id" />
         </div>
@@ -241,6 +249,7 @@ import PaginationTextComponent from "../components/pagination/PaginationTextComp
 import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import UserSessionsComponent from "../components/UserSessionsComponent";
+import UserFcmTokensComponent from "../components/UserFcmTokensComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -252,6 +261,7 @@ export default {
         PaginationBox,
         PaginationTextComponent,
         UserSessionsComponent,
+        UserFcmTokensComponent,
     },
     data() {
         return {

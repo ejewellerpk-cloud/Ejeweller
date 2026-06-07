@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\SiteController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\UserSessionController as AuthUserSessionController;
+use App\Http\Controllers\Auth\UserFcmTokenController as AuthUserFcmTokenController;
 use App\Http\Controllers\Admin\StateController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ThemeController;
@@ -72,6 +73,7 @@ use App\Http\Controllers\Admin\ProductVideoController;
 use App\Http\Controllers\Admin\ReturnReasonController;
 use App\Http\Controllers\Admin\AdministratorController;
 use App\Http\Controllers\Admin\UserSessionController;
+use App\Http\Controllers\Admin\UserFcmTokenController;
 use App\Http\Controllers\Admin\ShippingSetupController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Frontend\TokenStoreController;
@@ -186,6 +188,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         Route::delete('/sessions/others', [AuthUserSessionController::class, 'destroyOthers']);
         Route::delete('/sessions/all', [AuthUserSessionController::class, 'destroyAll']);
         Route::delete('/sessions/{token}', [AuthUserSessionController::class, 'destroy'])->whereNumber('token');
+
+        Route::get('/fcm-tokens', [AuthUserFcmTokenController::class, 'index']);
+        Route::post('/fcm-tokens/revoke-current', [AuthUserFcmTokenController::class, 'revokeCurrent']);
+        Route::delete('/fcm-tokens/others', [AuthUserFcmTokenController::class, 'destroyOthers']);
+        Route::delete('/fcm-tokens/all', [AuthUserFcmTokenController::class, 'destroyAll']);
+        Route::delete('/fcm-tokens/{token}', [AuthUserFcmTokenController::class, 'destroy'])->whereNumber('token');
     });
 
     Route::post('/authcheck', function () {
@@ -677,6 +685,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);
+        Route::get('/fcm-tokens', [UserFcmTokenController::class, 'indexAllAdministrators']);
+        Route::get('/fcm-tokens/{user}', [UserFcmTokenController::class, 'index']);
+        Route::delete('/fcm-tokens/{user}/{token}', [UserFcmTokenController::class, 'destroy'])->whereNumber('token');
+        Route::delete('/fcm-tokens/{user}', [UserFcmTokenController::class, 'destroyAll']);
         Route::get('/address/{administrator}', [AdministratorAddressController::class, 'index']);
         Route::get('/address/show/{administrator}/{address}', [AdministratorAddressController::class, 'show']);
         Route::post('/address/{administrator}', [AdministratorAddressController::class, 'store']);
@@ -698,6 +710,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);
+        Route::get('/fcm-tokens', [UserFcmTokenController::class, 'indexAllCustomers']);
+        Route::get('/fcm-tokens/{user}', [UserFcmTokenController::class, 'index']);
+        Route::delete('/fcm-tokens/{user}/{token}', [UserFcmTokenController::class, 'destroy'])->whereNumber('token');
+        Route::delete('/fcm-tokens/{user}', [UserFcmTokenController::class, 'destroyAll']);
         Route::get('/address/{customer}', [CustomerAddressController::class, 'index']);
         Route::get('/address/show/{customer}/{address}', [CustomerAddressController::class, 'show']);
         Route::post('/address/{customer}', [CustomerAddressController::class, 'store']);
@@ -719,6 +735,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/sessions/{user}', [UserSessionController::class, 'index']);
         Route::delete('/sessions/{user}/{token}', [UserSessionController::class, 'destroy'])->whereNumber('token');
         Route::delete('/sessions/{user}', [UserSessionController::class, 'destroyAll']);
+        Route::get('/fcm-tokens', [UserFcmTokenController::class, 'indexAllEmployees']);
+        Route::get('/fcm-tokens/{user}', [UserFcmTokenController::class, 'index']);
+        Route::delete('/fcm-tokens/{user}/{token}', [UserFcmTokenController::class, 'destroy'])->whereNumber('token');
+        Route::delete('/fcm-tokens/{user}', [UserFcmTokenController::class, 'destroyAll']);
         Route::get('/address/{employee}', [EmployeeAddressController::class, 'index']);
         Route::get('/address/show/{employee}/{address}', [EmployeeAddressController::class, 'show']);
         Route::post('/address/{employee}', [EmployeeAddressController::class, 'store']);

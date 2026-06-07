@@ -1,6 +1,7 @@
 const ProfileEditProfileComponent = () =>   import("../../components/admin/profile/ProfileEditProfileComponent");
 const ProfileChangePasswordComponent = () =>   import("../../components/admin/profile/ProfileChangePasswordComponent");
 const ProfileActiveSessionsComponent = () =>   import("../../components/admin/profile/ProfileActiveSessionsComponent");
+const ProfilePushDevicesComponent = () =>   import("../../components/admin/profile/ProfilePushDevicesComponent");
 
 
 export default [
@@ -35,6 +36,17 @@ export default [
             auth: true,
             permissionUrl: "",
             breadcrumb: "active_devices",
+        },
+    },
+    {
+        path: "/admin/profile/push-devices",
+        component: ProfilePushDevicesComponent,
+        name: "admin.profile.pushDevices",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "",
+            breadcrumb: "push_devices",
         },
     }
 ];

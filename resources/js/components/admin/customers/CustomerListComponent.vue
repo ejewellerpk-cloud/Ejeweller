@@ -26,6 +26,15 @@
                         <i class="lab lab-monitor-mobbile lab-font-size-16"></i>
                         <span>{{ $t("label.device_session_history") }}</span>
                     </button>
+                    <button
+                        v-if="permissionChecker('customers_show')"
+                        type="button"
+                        class="db-btn py-2 h-[37px] text-white bg-gray-600"
+                        @click="listView = 'fcm_tokens'"
+                    >
+                        <i class="lab lab-line-notification lab-font-size-16"></i>
+                        <span>{{ $t("label.push_device_history") }}</span>
+                    </button>
                     <CustomerCreateComponent :props="props" v-if="permissionChecker('customers_create')" />
                 </div>
             </div>
@@ -155,6 +164,14 @@
             show-route="admin.customers.show"
             @back="listView = 'users'"
         />
+
+        <AllUserFcmTokensComponent
+            v-if="listView === 'fcm_tokens' && permissionChecker('customers_show')"
+            :key="'customer-fcm-tokens'"
+            api-prefix="customer"
+            show-route="admin.customers.show"
+            @back="listView = 'users'"
+        />
     </div>
 </template>
 <script>
@@ -176,6 +193,7 @@ import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import AllUserSessionsComponent from "../components/AllUserSessionsComponent";
+import AllUserFcmTokensComponent from "../components/AllUserFcmTokensComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -195,6 +213,7 @@ export default {
         PrintComponent,
         ExcelComponent,
         AllUserSessionsComponent,
+        AllUserFcmTokensComponent,
     },
     data() {
         return {

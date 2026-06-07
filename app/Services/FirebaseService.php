@@ -59,7 +59,11 @@ class FirebaseService
                         "body"    => json_encode($payload)
                     ]);
                 } catch (\Throwable $th) {
-
+                    $message = $th->getMessage();
+                    if (str_contains($message, 'NOT_FOUND') || str_contains($message, 'Unregistered') || str_contains($message, 'invalid-argument')) {
+                        app(UserFcmTokenService::class)->deactivateByToken($fcmToken);
+                    }
+                    Log::info($message);
                 }
             }
         } catch (Exception $e) {

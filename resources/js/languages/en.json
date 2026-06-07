@@ -216,6 +216,15 @@
         "loading": "Loading",
         "current_device": "Current Device",
         "total_devices": "Total Devices",
+        "push_devices": "Push Devices",
+        "push_device_history": "Push Notification Devices",
+        "platform": "Platform",
+        "token_preview": "Token",
+        "registered_at": "Registered At",
+        "revoke_push_device": "Remove Device",
+        "revoke_all_push_devices": "Remove All Devices",
+        "revoke_other_push_devices": "Remove Other Devices",
+        "push_device_removed": "Push device removed.",
         "price": "Price",
         "video": "Video",
         "additional_price": "Additional Price",
@@ -822,6 +831,10 @@
         "logout_device": "Logout Device",
         "logout_all_devices": "Logout All Devices",
         "logout_other_devices": "Logout Other Devices",
+        "revoke_push_device": "Remove Push Device",
+        "revoke_all_push_devices": "Remove All Push Devices",
+        "revoke_other_push_devices": "Remove Other Push Devices",
+        "push_devices": "Push Devices",
         "addresses": "Addresses",
         "my_orders": "My Orders",
         "add_address": "Add Address",
@@ -1020,6 +1033,7 @@
         "option_unavailable": "Unavailable",
         "session_logout_success": "Device logged out successfully.",
         "all_sessions_logout_success": "All devices logged out successfully.",
-        "other_sessions_logout_success": "Other devices logged out successfully."
+        "other_sessions_logout_success": "Other devices logged out successfully.",
+        "push_device_removed": "Push notification device removed successfully."
     }
 }

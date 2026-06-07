@@ -130,4 +130,9 @@ class User extends Authenticatable implements HasMedia
     {
         $this->hasMany(ReturnOrder::class, 'user_id', 'id');
     }
+
+    public function fcmTokens(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserFcmToken::class);
+    }
 }

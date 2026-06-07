@@ -27,7 +27,10 @@ class TokenStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token'  => ['required', 'string']
+            'token'       => ['required', 'string', 'max:512'],
+            'platform'    => ['nullable', 'string', 'in:web,android,ios'],
+            'device_name' => ['nullable', 'string', 'max:190'],
+            'device_id'   => ['nullable', 'string', 'max:100'],
         ];
     }
 }

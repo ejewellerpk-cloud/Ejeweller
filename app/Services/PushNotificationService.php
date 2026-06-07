@@ -68,27 +68,20 @@ class PushNotificationService
             }
 
             if ($pushNotification->role_id == 0 && $pushNotification->user_id == 0) {
-                $fcmWebDeviceToken    = User::whereNotNull('web_token')->pluck('web_token')->toArray();
-                $fcmMobileDeviceToken = User::whereNotNull('device_token')->pluck('device_token')->toArray();
+                $fcmTokenArray = app(UserFcmTokenService::class)->getActiveTokenStrings();
             } else {
                 if ($pushNotification->role_id !== 0 && $pushNotification->user_id == 0) {
-                    $fcmWebDeviceToken    = User::role(
-                        $pushNotification->role_id
-                    )->whereNotNull('web_token')->pluck('web_token')->toArray();
-                    $fcmMobileDeviceToken = User::role(
-                        $pushNotification->role_id
-                    )->whereNotNull('device_token')->pluck('device_token')->toArray();
+                    $fcmTokenArray = app(UserFcmTokenService::class)->getActiveTokenStrings(null, $pushNotification->role_id);
                 } else {
-                    $fcmWebDeviceToken    = User::where(['id' => $pushNotification->user_id])->whereNotNull(
-                        'web_token'
-                    )->pluck('web_token')->toArray();
-                    $fcmMobileDeviceToken = User::where(['id' => $pushNotification->user_id])->whereNotNull(
-                        'device_token'
-                    )->pluck('device_token')->toArray();
+                    $fcmTokenArray = app(UserFcmTokenService::class)->getActiveTokenStrings([$pushNotification->user_id]);
                 }
             }
 
-            $fcmTokenArray = array_merge($fcmWebDeviceToken, $fcmMobileDeviceToken);
+            if (blank($fcmTokenArray)) {
+                $fcmWebDeviceToken    = User::whereNotNull('web_token')->pluck('web_token')->toArray();
+                $fcmMobileDeviceToken = User::whereNotNull('device_token')->pluck('device_token')->toArray();
+                $fcmTokenArray        = array_values(array_unique(array_merge($fcmWebDeviceToken, $fcmMobileDeviceToken)));
+            }
             $firebase      = new FirebaseService();
             $firebase->sendNotification($pushNotification, $fcmTokenArray, "promotion");
             return $pushNotification;

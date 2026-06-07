@@ -131,12 +131,20 @@ export const auth = {
         },
         logout: function (context) {
             return new Promise((resolve, reject) => {
-                axios.post('auth/logout').then((res) => {
-                    context.commit('authLogout');
-                    alertService.success("Logged out successfully!");
-                    resolve(res);
-                }).catch((err) => {
-                    reject(err);
+                const fcmToken = localStorage.getItem('fcm_web_token');
+                const revokeFcm = fcmToken
+                    ? axios.post('auth/fcm-tokens/revoke-current', { token: fcmToken }).catch(() => null)
+                    : Promise.resolve();
+
+                revokeFcm.then(() => {
+                    axios.post('auth/logout').then((res) => {
+                        localStorage.removeItem('fcm_web_token');
+                        context.commit('authLogout');
+                        alertService.success("Logged out successfully!");
+                        resolve(res);
+                    }).catch((err) => {
+                        reject(err);
+                    });
                 });
             });
         },

@@ -623,7 +623,13 @@ export default {
                         if (permission === 'granted') {
                             getToken(messaging, { vapidKey: res.data.data.notification_fcm_public_vapid_key }).then((currentToken) => {
                                 if (currentToken) {
-                                    axios.post('/frontend/device-token/web', { token: currentToken }).then().catch((error) => {
+                                    localStorage.setItem('fcm_web_token', currentToken);
+                                    axios.post('/frontend/device-token/web', {
+                                        token: currentToken,
+                                        platform: 'web',
+                                        device_id: appService.fcmDeviceId(),
+                                        device_name: appService.fcmDeviceName(),
+                                    }).then().catch((error) => {
                                         if (error.response.data.message === 'Unauthenticated.') {
                                             this.$store.dispatch('loginDataReset');
                                         }

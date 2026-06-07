@@ -88,6 +88,12 @@
                             <span class="text-sm leading-6 capitalize">{{ $t('button.active_devices') }}</span>
                         </router-link>
 
+                        <router-link :to="{ name: 'admin.profile.pushDevices' }"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
+                            <i class="lab lab-line-notification lab-font-size-17"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('button.push_devices') }}</span>
+                        </router-link>
+
                         <button @click="logout()"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-line-logout lab-font-size-17"></i>
@@ -229,7 +235,13 @@ export default {
                     if (permission === 'granted') {
                         getToken(messaging, { vapidKey: this.setting.notification_fcm_public_vapid_key }).then((currentToken) => {
                             if (currentToken) {
-                                axios.post('/frontend/device-token/web', { token: currentToken }).then().catch((error) => {
+                                localStorage.setItem('fcm_web_token', currentToken);
+                                axios.post('/frontend/device-token/web', {
+                                    token: currentToken,
+                                    platform: 'web',
+                                    device_id: appService.fcmDeviceId(),
+                                    device_name: appService.fcmDeviceName(),
+                                }).then().catch((error) => {
                                     if (error.response.data.message === 'Unauthenticated.') {
                                         this.$store.dispatch('loginDataReset');
                                     }

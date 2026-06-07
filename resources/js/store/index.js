@@ -111,6 +111,7 @@ import { transaction } from "./modules/transaction";
 import { unit } from "./modules/unit";
 import { user } from "./modules/user";
 import { userSession } from "./modules/userSession";
+import { userFcmToken } from "./modules/userFcmToken";
 import { whatsappOrder } from "./modules/whatsappOrder";
 import { whatsapp } from "./modules/whatsapp";
 import { postex } from "./modules/postex";
@@ -169,6 +170,7 @@ export default new createStore({
         pushNotification,
         user,
         userSession,
+        userFcmToken,
         productVideo,
         productSeo,
         promotion,

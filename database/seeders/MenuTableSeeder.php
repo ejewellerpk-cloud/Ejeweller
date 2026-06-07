@@ -102,7 +102,7 @@ class MenuTableSeeder extends Seeder
                     [
                         'name'       => 'Units',
                         'language'   => 'units',
-                        'url'        => 'settings/units',
+                        'url'        => 'units',
                         'icon'       => 'lab lab-line-unit',
                         'priority'   => 160,
                         'status'     => 1,
@@ -112,7 +112,7 @@ class MenuTableSeeder extends Seeder
                     [
                         'name'       => 'Taxes',
                         'language'   => 'taxes',
-                        'url'        => 'settings/taxes',
+                        'url'        => 'taxes',
                         'icon'       => 'lab lab-line-taxes',
                         'priority'   => 170,
                         'status'     => 1,
