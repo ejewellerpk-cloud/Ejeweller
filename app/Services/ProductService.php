@@ -68,6 +68,7 @@ class ProductService
 
             if ($orderColumn === 'random') {
                 return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
+                    $this->applyHasVideoFilter($query, $requests);
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->productFilter)) {
                             if ($key == "except") {
@@ -101,6 +102,7 @@ class ProductService
             }
 
             return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
+                $this->applyHasVideoFilter($query, $requests);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->productFilter)) {
                         if ($key == "except") {
@@ -1222,5 +1224,21 @@ class ProductService
         $product->addMedia($tempFilePath)
             ->usingFileName('barcode-' . $product->id . '.jpg')
             ->toMediaCollection('product-barcode');
+    }
+
+    private function applyHasVideoFilter($query, array $requests): void
+    {
+        if (!isset($requests['has_video']) || $requests['has_video'] === '' || $requests['has_video'] === null) {
+            return;
+        }
+
+        if ((int) $requests['has_video'] === Ask::YES) {
+            $query->whereHas('videos');
+            return;
+        }
+
+        if ((int) $requests['has_video'] === Ask::NO) {
+            $query->whereDoesntHave('videos');
+        }
     }
 }

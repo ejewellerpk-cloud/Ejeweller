@@ -459,7 +459,10 @@ export default {
                 return;
             }
             const product = this.products.find((item) => item.id === productId);
-            if (product && !product.videos?.length) {
+            if (product?.videos?.length) {
+                this.goToCardSlide(productId, this.getVideoSlideIndex(product));
+                this.scheduleCardVideoActivation(productId);
+            } else if (product) {
                 this.goToCardSlide(productId, 1);
             }
             this.prefetchProductDetails();
@@ -469,7 +472,10 @@ export default {
                 return;
             }
             const product = this.products.find((item) => item.id === productId);
-            if (product && !product.videos?.length) {
+            if (product?.videos?.length) {
+                this.deactivateCardVideo(productId);
+                this.goToCardSlide(productId, 0);
+            } else if (product) {
                 this.goToCardSlide(productId, 0);
             }
         },

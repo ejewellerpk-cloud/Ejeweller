@@ -166,6 +166,18 @@
                                 :clearOnClose="true" placeholder="--" search-placeholder="--" />
                         </div>
 
+                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                            <label for="searchHasVideo" class="db-field-title after:hidden">
+                                {{ $t("label.has_video") }}
+                            </label>
+                            <vue-select class="db-field-control f-b-custom-select" id="searchHasVideo"
+                                v-model="props.search.has_video" :options="[
+                                    { id: enums.askEnum.YES, name: $t('label.yes') },
+                                    { id: enums.askEnum.NO, name: $t('label.no') },
+                                ]" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
+                                :clearOnClose="true" placeholder="--" search-placeholder="--" />
+                        </div>
+
                         <div class="col-12">
                             <div class="flex flex-wrap gap-3 mt-4">
                                 <button class="db-btn py-2 text-white bg-primary">
@@ -366,7 +378,8 @@ export default {
                     status: null,
                     can_purchasable: null,
                     show_stock_out: null,
-                    refundable: null
+                    refundable: null,
+                    has_video: null
                 }
             },
             productCategories: [],
@@ -444,6 +457,7 @@ export default {
             this.props.search.status = null;
             this.props.search.can_purchasable = null;
             this.props.search.refundable = null;
+            this.props.search.has_video = null;
             this.list();
         },
         list: function (page = 1) {
