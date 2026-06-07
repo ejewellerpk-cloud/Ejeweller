@@ -595,7 +595,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::match(['post', 'put', 'patch'], '/{product}', [ProductController::class, 'update']);
         Route::delete('/{product}', [ProductController::class, 'destroy']);
         Route::post('/upload-image/{product}', [ProductController::class, 'uploadImage']);
-        Route::post('/attach-gallery-image/{product}', [ProductController::class, 'attachGalleryImage']);
         Route::post('/reorder-images/{product}', [ProductController::class, 'reorderImages']);
         Route::delete('/delete-image/{product}/{media}', [ProductController::class, 'deleteImage']);
         Route::get('/export', [ProductController::class, 'export']);

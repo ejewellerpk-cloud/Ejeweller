@@ -346,51 +346,8 @@ class ProductService
         try {
             $media = $product->getMedia('product')->firstWhere('id', $mediaId);
 
-            if (!$media) {
-                throw new Exception('Image not found.', 422);
-            }
-
-            app(MediaAssetService::class)->detachMediaRecord($media);
-
-            return Product::find($product->id);
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
-            throw new Exception(QueryExceptionLibrary::message($exception), 422);
-        }
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function attachGalleryImage(Product $product, string $path): Product
-    {
-        try {
-            $path = str_replace('\\', '/', trim($path));
-
-            if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
-                throw new Exception('Gallery image not found.', 422);
-            }
-
-            $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
-            $alreadyAttached = $product->getMedia('product')->contains(function ($media) use ($path) {
-                $mediaPath = str_replace('\\', '/', trim($media->getPath(), '/') . '/' . $media->file_name);
-
-                return $mediaPath === $path;
-            });
-
-            if ($alreadyAttached) {
-                return $product;
-            }
-
-            $previousLimit = (string) ini_get('memory_limit');
-            @ini_set('memory_limit', '256M');
-
-            try {
-                $product->addMedia($absolutePath)
-                    ->preservingOriginal()
-                    ->toMediaCollection('product');
-            } finally {
-                @ini_set('memory_limit', $previousLimit);
+            if ($media) {
+                $media->delete();
             }
 
             return Product::find($product->id);

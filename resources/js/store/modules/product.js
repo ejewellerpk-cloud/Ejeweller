@@ -161,18 +161,6 @@ export const product = {
                 });
             });
         },
-        attachGalleryImage: function (context, payload) {
-            return new Promise((resolve, reject) => {
-                axios.post(`/admin/product/attach-gallery-image/${payload.id}`, {
-                    path: payload.path,
-                }).then(res => {
-                    context.commit('show', res.data.data);
-                    resolve(res);
-                }).catch((err) => {
-                    reject(err);
-                });
-            });
-        },
         reorderImages: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post(`/admin/product/reorder-images/${payload.id}`, {

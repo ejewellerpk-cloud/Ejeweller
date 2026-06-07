@@ -17,20 +17,16 @@ class MediaController extends Controller
 
     public function index(Request $request)
     {
-        $folder = $this->mediaAssetService->normalizeFolder($request->get('folder'));
+        $folder = trim(str_replace('\\', '/', (string) $request->get('folder', 'all')));
         $search = strtolower(trim((string) $request->get('search', '')));
         $disk = Storage::disk('public');
 
-        $directories = [$folder];
-        if (!$disk->exists($folder)) {
-            $directories = [];
-        }
-
-        $files = [];
-        foreach ($directories as $directory) {
-            foreach ($disk->allFiles($directory) as $file) {
-                $files[] = $file;
-            }
+        if ($folder === '' || $folder === 'all') {
+            $files = $disk->allFiles();
+        } elseif ($disk->exists($folder)) {
+            $files = $disk->allFiles($folder);
+        } else {
+            $files = [];
         }
 
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
@@ -77,7 +73,7 @@ class MediaController extends Controller
 
         return response()->json([
             'folders' => $this->mediaAssetService->buildFolderTree(),
-            'currentFolder' => $folder,
+            'currentFolder' => $folder === '' ? 'all' : $folder,
             'items' => $pagedItems,
             'pagination' => [
                 'total' => $total,
@@ -149,7 +145,9 @@ class MediaController extends Controller
 
     public function destroy($id)
     {
-        if ($this->mediaAssetService->deleteGalleryAsset($id)) {
+        if (Storage::disk('public')->exists($id)) {
+            Storage::disk('public')->delete($id);
+
             return response()->json(['message' => 'Media deleted successfully']);
         }
 
@@ -167,7 +165,8 @@ class MediaController extends Controller
         $failed = 0;
 
         foreach ($request->ids as $id) {
-            if ($this->mediaAssetService->deleteGalleryAsset($id)) {
+            if (Storage::disk('public')->exists($id)) {
+                Storage::disk('public')->delete($id);
                 $deleted++;
             } else {
                 $failed++;

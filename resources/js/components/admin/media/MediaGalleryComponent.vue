@@ -278,7 +278,7 @@ export default {
             completedCount: 0,
             queueIdSeed: 0,
             selectedIds: [],
-            selectedFolder: 'media/miscellaneous',
+            selectedFolder: 'all',
         }
     },
     computed: {
@@ -308,7 +308,7 @@ export default {
         },
     },
     mounted() {
-        this.selectedFolder = this.currentFolder || 'media/miscellaneous';
+        this.selectedFolder = this.currentFolder || 'all';
         this.fetchMedia();
     },
     beforeUnmount() {

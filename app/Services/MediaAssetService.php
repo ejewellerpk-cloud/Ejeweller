@@ -20,7 +20,13 @@ class MediaAssetService
     public function buildFolderTree(): array
     {
         $disk = Storage::disk('public');
-        $tree = [];
+        $tree = [
+            [
+                'id' => 'all',
+                'name' => 'All Assets',
+                'children' => [],
+            ],
+        ];
 
         foreach (self::ROOT_FOLDERS as $slug => $label) {
             $basePath = 'media/' . $slug;

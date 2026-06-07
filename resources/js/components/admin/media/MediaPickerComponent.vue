@@ -196,7 +196,7 @@ export default {
             overallProgress: 0,
             completedCount: 0,
             queueIdSeed: 0,
-            selectedFolder: 'media/miscellaneous',
+            selectedFolder: 'all',
             selectedAssets: [],
         }
     },

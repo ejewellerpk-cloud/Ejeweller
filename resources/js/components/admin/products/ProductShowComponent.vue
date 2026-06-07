@@ -261,8 +261,9 @@
                                 <label for="addImage"
                                     class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all">
                                     <input type="file" id="addImage" @change="saveImage" ref="imageProperty"
+                                        multiple
                                         class="w-full h-full absolute -z-10 rounded-2xl opacity-0"
-                                        accept="image/png, image/jpeg, image/jpg">
+                                        accept="image/png, image/jpeg, image/jpg, image/webp">
                                     <i class="lab-fill-circle-plus text-sm"></i>
                                     Upload
                                 </label>
@@ -741,9 +742,15 @@ export default {
                 this.showMediaPicker = false;
 
                 for (const asset of items) {
-                    await this.$store.dispatch("product/attachGalleryImage", {
+                    const response = await fetch(asset.url);
+                    const blob = await response.blob();
+                    const file = new File([blob], asset.filename || 'gallery-image.jpg', { type: blob.type || 'image/jpeg' });
+                    const formData = new FormData();
+                    formData.append("image", file);
+
+                    await this.$store.dispatch("product/uploadImage", {
                         id: this.$route.params.id,
-                        path: asset.id,
+                        form: formData,
                     });
                 }
 
@@ -755,42 +762,50 @@ export default {
                 this.show();
             } catch (error) {
                 this.loading.isActive = false;
-                alertService.error(error?.response?.data?.message || "Failed to attach gallery images");
+                alertService.error(error?.response?.data?.message || "Failed to load image from gallery");
             }
         },
-        saveImage: function () {
-            if (this.$refs.imageProperty.files[0]) {
-                const image = this.$refs.imageProperty.files[0];
-                if (image.size > 2 * 1024 * 1024) {
-                    alertService.error(this.$t('message.image_size_too_large') + " (Max 2MB)");
-                    this.$refs.imageProperty.value = null;
-                    return;
-                }
-                try {
-                    this.loading.isActive = true;
+        async saveImage() {
+            const files = Array.from(this.$refs.imageProperty?.files || []);
+            if (files.length === 0) {
+                return;
+            }
+
+            const oversized = files.find((file) => file.size > 2 * 1024 * 1024);
+            if (oversized) {
+                alertService.error(this.$t('message.image_size_too_large') + " (Max 2MB per image)");
+                this.$refs.imageProperty.value = null;
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+
+                for (const image of files) {
                     const formData = new FormData();
                     formData.append("image", image);
-                    this.$store.dispatch("product/uploadImage", {
+                    await this.$store.dispatch("product/uploadImage", {
                         id: this.$route.params.id,
-                        form: formData
-                    }).then((res) => {
-                        alertService.success(this.$t("message.image_update"));
-                        this.defaultImage = res.data.data.preview;
-                        this.previewImage = res.data.data.preview;
-                        this.livePreview = res.data.data.image;
-                        this.imageCount = res.data.data.images.length;
-
-                        if (this.$refs.imageProperty) {
-                            this.$refs.imageProperty.value = null;
-                        }
-                        this.loading.isActive = false;
-                    }).catch((err) => {
-                        this.loading.isActive = false;
-                        alertService.error(err.response.data.errors.image[0]);
+                        form: formData,
                     });
-                } catch (err) {
-                    this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                }
+
+                alertService.success(
+                    files.length === 1
+                        ? this.$t("message.image_update")
+                        : `${files.length} images uploaded successfully`
+                );
+                this.show();
+            } catch (err) {
+                this.loading.isActive = false;
+                alertService.error(
+                    err?.response?.data?.errors?.image?.[0]
+                    || err?.response?.data?.message
+                    || 'Upload failed'
+                );
+            } finally {
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
                 }
             }
         },

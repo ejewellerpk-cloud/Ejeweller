@@ -6,7 +6,7 @@ export const media = {
     state: {
         lists: [],
         folders: [],
-        currentFolder: 'media/miscellaneous',
+        currentFolder: 'all',
         page: {},
         pagination: [],
     },
@@ -46,7 +46,7 @@ export const media = {
                 axios.get(url).then((res) => {
                     context.commit("lists", res.data.items);
                     context.commit("folders", res.data.folders || []);
-                    context.commit("currentFolder", res.data.currentFolder || 'media/miscellaneous');
+                    context.commit("currentFolder", res.data.currentFolder || 'all');
                     context.commit("page", res.data.pagination);
                     context.commit("pagination", res.data);
                     resolve(res);
