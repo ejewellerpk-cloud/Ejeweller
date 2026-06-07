@@ -78,6 +78,16 @@ export const media = {
                 });
             });
         },
+        bulkDestroy: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.post('admin/media-library/bulk-delete', { ids: payload.ids }).then((res) => {
+                    context.dispatch("lists", payload.search).then().catch();
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
     },
     mutations: {
         lists: function (state, payload) {

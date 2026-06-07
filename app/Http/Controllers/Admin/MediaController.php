@@ -124,4 +124,30 @@ class MediaController extends Controller
 
         return response()->json(['error' => 'File not found'], 404);
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'string'],
+        ]);
+
+        $deleted = 0;
+        $failed = 0;
+
+        foreach ($request->ids as $id) {
+            if (Storage::disk('public')->exists($id)) {
+                Storage::disk('public')->delete($id);
+                $deleted++;
+            } else {
+                $failed++;
+            }
+        }
+
+        return response()->json([
+            'message' => 'Bulk delete completed',
+            'deleted' => $deleted,
+            'failed' => $failed,
+        ]);
+    }
 }

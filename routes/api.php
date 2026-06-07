@@ -216,6 +216,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
     Route::prefix('media-library')->name('media-library.')->group(function () {
         Route::get('', [MediaController::class, 'index']);
         Route::post('', [MediaController::class, 'store']);
+        Route::post('bulk-delete', [MediaController::class, 'bulkDestroy']);
         Route::delete('{id}', [MediaController::class, 'destroy'])->where('id', '.*');
     });
 

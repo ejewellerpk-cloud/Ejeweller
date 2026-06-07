@@ -120,7 +120,18 @@
                 <input type="text" v-model="search" @input="handleSearch" placeholder="Search assets..."
                     class="w-full pl-12 pr-6 h-12 bg-white border border-slate-200 rounded-xl focus:border-primary outline-none text-sm" />
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-3">
+                <label v-if="mediaList && mediaList.length > 0"
+                    class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-600 cursor-pointer select-none">
+                    <input type="checkbox" :checked="allSelected" :indeterminate.prop="someSelected && !allSelected"
+                        @change="toggleSelectAll" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                    <span>Select all</span>
+                </label>
+                <button v-if="selectedIds.length > 0" type="button" @click="bulkDeleteAssets"
+                    class="db-btn py-2 px-4 bg-white border border-rose-200 text-rose-500 hover:bg-rose-500 hover:text-white text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Delete selected ({{ selectedIds.length }})</span>
+                </button>
                 <button @click="viewMode = 'grid'" :class="viewMode === 'grid' ? 'bg-white shadow text-primary' : 'text-slate-400'"
                     class="p-3 rounded-xl transition-all">
                     <i class="fa-solid fa-grid-2"></i>
@@ -135,7 +146,12 @@
         <!-- Grid View -->
         <div v-if="viewMode === 'grid'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
             <div v-for="asset in mediaList" :key="asset.id" 
-                class="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all flex flex-col">
+                class="group relative bg-white border rounded-2xl overflow-hidden hover:shadow-xl transition-all flex flex-col"
+                :class="isSelected(asset.id) ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'">
+                <label class="absolute top-2 left-2 z-10 cursor-pointer">
+                    <input type="checkbox" :checked="isSelected(asset.id)" @change="toggleSelect(asset.id)"
+                        class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary bg-white shadow" />
+                </label>
                 <div class="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
                     <img :src="asset.url" :alt="asset.originalName" class="w-full h-full object-contain p-2 group-hover:scale-110 transition-all" />
                     <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -162,6 +178,10 @@
             <table class="db-table">
                 <thead class="db-table-head">
                     <tr class="db-table-head-tr">
+                        <th class="db-table-head-th w-10">
+                            <input type="checkbox" :checked="allSelected" :indeterminate.prop="someSelected && !allSelected"
+                                @change="toggleSelectAll" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                        </th>
                         <th class="db-table-head-th">Asset</th>
                         <th class="db-table-head-th">Name</th>
                         <th class="db-table-head-th">Size</th>
@@ -170,7 +190,12 @@
                     </tr>
                 </thead>
                 <tbody class="db-table-body">
-                    <tr v-for="asset in mediaList" :key="asset.id" class="db-table-body-tr">
+                    <tr v-for="asset in mediaList" :key="asset.id" class="db-table-body-tr"
+                        :class="isSelected(asset.id) ? 'bg-primary/5' : ''">
+                        <td class="db-table-body-td">
+                            <input type="checkbox" :checked="isSelected(asset.id)" @change="toggleSelect(asset.id)"
+                                class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                        </td>
                         <td class="db-table-body-td">
                             <img :src="asset.url" class="w-10 h-10 object-cover rounded" />
                         </td>
@@ -235,13 +260,20 @@ export default {
             overallProgress: 0,
             completedCount: 0,
             queueIdSeed: 0,
+            selectedIds: [],
         }
     },
     computed: {
         ...mapGetters({
             mediaList: 'media/lists',
             pagination: 'media/page'
-        })
+        }),
+        allSelected() {
+            return this.mediaList?.length > 0 && this.mediaList.every((asset) => this.selectedIds.includes(asset.id));
+        },
+        someSelected() {
+            return this.selectedIds.length > 0;
+        },
     },
     mounted() {
         this.fetchMedia();
@@ -254,9 +286,11 @@ export default {
             lists: 'media/lists',
             save: 'media/save',
             uploadFile: 'media/uploadFile',
-            destroy: 'media/destroy'
+            destroy: 'media/destroy',
+            bulkDestroy: 'media/bulkDestroy',
         }),
         fetchMedia(page = 1) {
+            this.clearSelection();
             this.lists({ page: page, search: this.search });
         },
         handleSearch() {
@@ -465,9 +499,55 @@ export default {
             appService.destroyConfirmation().then(async (res) => {
                 try {
                     await this.destroy({ id: id, search: { page: this.pagination.currentPage, search: this.search } });
+                    this.selectedIds = this.selectedIds.filter((selectedId) => selectedId !== id);
                     alertService.success("Asset purged successfully");
                 } catch (err) {
                     alertService.error("Purge failed");
+                }
+            }).catch(() => {});
+        },
+        isSelected(id) {
+            return this.selectedIds.includes(id);
+        },
+        toggleSelect(id) {
+            if (this.isSelected(id)) {
+                this.selectedIds = this.selectedIds.filter((selectedId) => selectedId !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
+        toggleSelectAll() {
+            if (this.allSelected) {
+                this.clearSelection();
+            } else {
+                this.selectedIds = this.mediaList.map((asset) => asset.id);
+            }
+        },
+        clearSelection() {
+            this.selectedIds = [];
+        },
+        async bulkDeleteAssets() {
+            if (this.selectedIds.length === 0) {
+                return;
+            }
+
+            appService.destroyConfirmation().then(async () => {
+                try {
+                    const res = await this.bulkDestroy({
+                        ids: [...this.selectedIds],
+                        search: { page: this.pagination.currentPage, search: this.search },
+                    });
+                    const deleted = res?.data?.deleted ?? this.selectedIds.length;
+                    const failed = res?.data?.failed ?? 0;
+                    this.clearSelection();
+
+                    if (failed > 0) {
+                        alertService.warning(`${deleted} deleted, ${failed} not found`);
+                    } else {
+                        alertService.success(`${deleted} asset(s) deleted successfully`);
+                    }
+                } catch (err) {
+                    alertService.error("Bulk delete failed");
                 }
             }).catch(() => {});
         },

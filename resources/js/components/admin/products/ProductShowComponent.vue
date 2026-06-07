@@ -255,11 +255,11 @@
                         <div class="flex items-center justify-between gap-3 flex-wrap">
                             <p class="text-sm font-semibold text-gray-500">
                                 {{ $t('label.images') }} &mdash;
-                                <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>/6
+                                <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>
                                 &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag & drop to reorder. Image #1 = Cover photo. (Recommended Size: 1000x1000 px Square)</span>
                             </p>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <label for="addImage" v-if="product.images && product.images.length < 6"
+                                <label for="addImage"
                                     class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all">
                                     <input type="file" id="addImage" @change="saveImage" ref="imageProperty"
                                         class="w-full h-full absolute -z-10 rounded-2xl opacity-0"
@@ -267,7 +267,7 @@
                                     <i class="lab-fill-circle-plus text-sm"></i>
                                     Upload
                                 </label>
-                                <button type="button" @click="showMediaPicker = true" v-if="product.images && product.images.length < 6"
+                                <button type="button" @click="showMediaPicker = true"
                                     class="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-primary border border-slate-200 transition-all">
                                     <i class="fa-solid fa-images text-xs"></i>
                                     Gallery
@@ -305,7 +305,7 @@
                                     </span>
                                 </div>
 
-                                <!-- Up / Down Reorder Controls -->
+                                <!-- Reorder + Delete Controls -->
                                 <div class="flex items-center gap-1">
                                     <button type="button"
                                         :disabled="index === 0"
@@ -322,6 +322,12 @@
                                         @click.prevent="moveImage(index, index + 1)"
                                         title="Move Right">
                                         <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                                    </button>
+                                    <button type="button"
+                                        class="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center transition-all text-xs"
+                                        @click.prevent="deleteImage(index)"
+                                        title="Delete">
+                                        <i class="fa-solid fa-trash-can text-[9px]"></i>
                                     </button>
                                 </div>
                             </div>
@@ -764,13 +770,14 @@ export default {
                 }
             }
         },
-        deleteImage: function () {
+        deleteImage: function (index) {
+            const imageIndex = typeof index === 'number' ? index : this.deleteIndex;
             appService.destroyConfirmation().then((res) => {
                 try {
                     this.loading.isActive = true;
                     this.$store.dispatch("product/deleteImage", {
                         id: this.$route.params.id,
-                        index: this.deleteIndex,
+                        index: imageIndex,
                     }).then((res) => {
                         this.show();
                         this.loading.isActive = false;
