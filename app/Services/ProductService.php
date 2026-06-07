@@ -28,6 +28,7 @@ use App\Http\Requests\ChangeImageRequest;
 use App\Http\Requests\ProductOfferRequest;
 use App\Http\Requests\ShippingAndReturnRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Services\WebpImageService;
 
 class ProductService
 {
@@ -162,8 +163,6 @@ class ProductService
                         ]);
                     }
                 }
-
-                $this->attachProductBarcode($this->product);
             });
             app(ProductSectionService::class)->clearHomeSectionsCache();
             return $this->product;
@@ -234,6 +233,8 @@ class ProductService
 
     public function downloadBarcode(Product $product)
     {
+        $this->ensureProductBarcode($product);
+
         return $product->getMedia('product-barcode')->first();
     }
 
@@ -265,6 +266,8 @@ class ProductService
     public function show(Product $product): Product
     {
         try {
+            $this->ensureProductBarcode($product);
+
             return $product;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -309,7 +312,25 @@ class ProductService
     public function uploadImage(ChangeImageRequest $request, Product $product): Product
     {
         try {
-            $product->addMedia($request->image)->toMediaCollection('product');
+            $sourcePath = $request->image->getRealPath();
+            $preparedPath = app(WebpImageService::class)->prepareUploadFile($sourcePath);
+
+            if (!$preparedPath) {
+                throw new Exception(
+                    'Image is too large to process. Use JPG/PNG/WebP under 2 MB with maximum dimensions 2048×2048 pixels.',
+                    422
+                );
+            }
+
+            $previousLimit = (string) ini_get('memory_limit');
+            @ini_set('memory_limit', '256M');
+
+            try {
+                $product->addMedia($preparedPath)->toMediaCollection('product');
+            } finally {
+                @ini_set('memory_limit', $previousLimit);
+            }
+
             return $product;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -1121,6 +1142,15 @@ class ProductService
         }
     }
 
+    private function ensureProductBarcode(Product $product): void
+    {
+        if ($product->hasMedia('product-barcode')) {
+            return;
+        }
+
+        $this->attachProductBarcode($product);
+    }
+
     private function attachProductBarcode(Product $product): void
     {
         $barcode = $this->generateBarcodeImage($product->sku, (int) $product->barcode_id);
@@ -1129,8 +1159,26 @@ class ProductService
             return;
         }
 
-        $tempFilePath = storage_path('app/public/barcode.jpg');
-        file_put_contents($tempFilePath, $barcode);
-        $product->addMedia($tempFilePath)->toMediaCollection('product-barcode');
+        $tempFilePath = tempnam(sys_get_temp_dir(), 'product_barcode_') . '.jpg';
+
+        if (file_put_contents($tempFilePath, $barcode) === false) {
+            @unlink($tempFilePath);
+
+            return;
+        }
+
+        if (@filesize($tempFilePath) > 512_000) {
+            Log::warning('Product barcode file unexpectedly large; skipping media attach.', [
+                'product_id' => $product->id,
+                'bytes' => @filesize($tempFilePath),
+            ]);
+            @unlink($tempFilePath);
+
+            return;
+        }
+
+        $product->addMedia($tempFilePath)
+            ->usingFileName('barcode-' . $product->id . '.jpg')
+            ->toMediaCollection('product-barcode');
     }
 }

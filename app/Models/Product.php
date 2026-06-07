@@ -121,7 +121,8 @@ class Product extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
-            return $product->getUrl('thumb');
+
+            return $product->getUrl('thumb') ?: $product->getUrl();
         }
         return asset('images/default/product/thumb.png');
     }
@@ -130,7 +131,8 @@ class Product extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
-            return $product->getUrl('cover');
+
+            return $product->getUrl('cover') ?: $product->getUrl();
         }
         return asset('images/default/product/cover.png');
     }
@@ -139,7 +141,8 @@ class Product extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
-            return $product->getUrl('preview');
+
+            return $product->getUrl('preview') ?: $product->getUrl();
         }
         return asset('images/default/product/preview.png');
     }
@@ -181,9 +184,19 @@ class Product extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->width(168)->height(180)->format('webp')->quality(70)->nonOptimized();
-        $this->addMediaConversion('cover')->width(372)->height(405)->format('webp')->quality(70)->nonOptimized();
-        $this->addMediaConversion('preview')->width(1536)->height(1536)->format('webp')->quality(70)->nonOptimized();
+        if ($media !== null && $media->collection_name !== 'product') {
+            return;
+        }
+
+        $this->addMediaConversion('thumb')
+            ->performOnCollections('product')
+            ->width(168)->height(180)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('cover')
+            ->performOnCollections('product')
+            ->width(372)->height(405)->format('webp')->quality(70)->nonOptimized();
+        $this->addMediaConversion('preview')
+            ->performOnCollections('product')
+            ->width(1536)->height(1536)->format('webp')->quality(70)->nonOptimized();
     }
 
     public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo

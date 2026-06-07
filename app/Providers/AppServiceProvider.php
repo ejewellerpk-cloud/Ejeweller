@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\PersonalAccessToken;
+use App\MediaLibrary\SafeFileManipulator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
+use Spatie\MediaLibrary\Conversions\FileManipulator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(FileManipulator::class, SafeFileManipulator::class);
     }
 
     /**

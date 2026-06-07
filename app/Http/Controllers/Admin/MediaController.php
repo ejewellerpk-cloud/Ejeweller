@@ -82,10 +82,12 @@ class MediaController extends Controller
                 $mimetype = $isSvg ? 'image/svg+xml' : 'image/webp';
             } else {
                 $tempPath = $file->getRealPath();
-                $webpPath = $this->webpImageService->convertPathToWebp($tempPath);
+                $webpPath = $this->webpImageService->prepareUploadFile($tempPath);
 
                 if (!$webpPath) {
-                    continue;
+                    return response()->json([
+                        'error' => 'Image exceeds safe size. Maximum 2048×2048 pixels and 2 MB.',
+                    ], 422);
                 }
 
                 $filename = time() . '-' . Str::random(10) . '.webp';
