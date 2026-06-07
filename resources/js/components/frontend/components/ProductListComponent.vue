@@ -1,5 +1,5 @@
 <template>
-    <template v-if="products.length > 0">
+    <div v-if="products.length > 0" class="product-list-root contents">
         <article
             v-for="product in products"
             :key="product.id"
@@ -42,6 +42,7 @@
                         class="w-full h-full product-card-swiper"
                         @swiper="onSwiperReady($event, product.id)"
                         @slideChange="onCardSlideChange($event, product.id)"
+                        @slideChangeTransitionEnd="onCardSlideChange($event, product.id)"
                         @sliderFirstMove="onSliderDragStart(product.id)"
                         @touchEnd="onSliderTouchEnd(product.id)">
 
@@ -67,7 +68,7 @@
                                 <div class="w-full h-full bg-black relative aspect-[4/5]">
                                     <iframe v-if="isEmbedVideo(product.videos[0])"
                                         :key="`card-embed-${product.id}`"
-                                        :src="formatProductCardVideoLink(product.videos[0])"
+                                        :src="isCardVideoActive(product.id) ? formatProductCardVideoLink(product.videos[0]) : ''"
                                         class="w-full h-full pointer-events-none"
                                         frameborder="0"
                                         allow="autoplay; encrypted-media; picture-in-picture"
@@ -78,12 +79,14 @@
                                         data-card-video
                                         :src="product.videos[0].link"
                                         :poster="getVideoPosterForCard(product.videos[0], product)"
+                                        :autoplay="isCardVideoActive(product.id)"
                                         muted
                                         loop
                                         playsinline
                                         webkit-playsinline
-                                        preload="metadata"
-                                        class="w-full h-full object-cover pointer-events-none">
+                                        preload="auto"
+                                        class="w-full h-full object-cover pointer-events-none"
+                                        @canplay="onCardVideoCanPlay(product.id, $event)">
                                     </video>
                                 </div>
                             </div>
@@ -192,7 +195,7 @@
             </div>
             </div>
         </article>
-    </template>
+    </div>
 </template>
 
 <script>
@@ -265,6 +268,8 @@ export default {
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
             loadedImages: {},
             cardVideoObserver: null,
+            cardVideoActiveIds: {},
+            hoveredCardIds: {},
         }
     },
     mounted() {
@@ -285,15 +290,14 @@ export default {
                 }
 
                 if (entry.isIntersecting) {
-                    if (!isFinePointerDevice()) {
+                    const shouldAutoPlay = !isFinePointerDevice() || !this.hoveredCardIds[productId];
+                    if (shouldAutoPlay) {
                         this.goToCardSlide(productId, this.getVideoSlideIndex(product));
+                        this.scheduleCardVideoActivation(productId);
                     }
-                    this.$nextTick(() => this.playCardVideos(productId));
-                } else {
-                    this.pauseCardVideos(productId);
-                    if (!isFinePointerDevice()) {
-                        this.goToCardSlide(productId, 0);
-                    }
+                } else if (!isFinePointerDevice() || !this.hoveredCardIds[productId]) {
+                    this.deactivateCardVideo(productId);
+                    this.goToCardSlide(productId, 0);
                 }
             });
         }, { threshold: 0.45 });
@@ -325,6 +329,44 @@ export default {
         onSwiperReady(swiper, productId) {
             this.swiperInstances[productId] = swiper;
             this.syncCardVideoPlayback(productId, swiper);
+
+            const product = this.products.find((item) => item.id === productId);
+            if (!product?.videos?.length) {
+                return;
+            }
+
+            const root = this.getCardRoot(productId);
+            if (root && this.cardVideoObserver) {
+                const rect = root.getBoundingClientRect();
+                const inView = rect.top < window.innerHeight && rect.bottom > 0 && rect.width > 0;
+                if (inView && (!isFinePointerDevice() || !this.hoveredCardIds[productId])) {
+                    this.goToCardSlide(productId, this.getVideoSlideIndex(product));
+                    this.scheduleCardVideoActivation(productId);
+                }
+            }
+        },
+        getCardRoot(productId) {
+            return this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`) || null;
+        },
+        scheduleCardVideoActivation(productId) {
+            this.activateCardVideo(productId);
+            window.setTimeout(() => this.playCardVideos(productId), 180);
+        },
+        onCardVideoCanPlay(productId, event) {
+            if (!this.isCardVideoActive(productId)) {
+                return;
+            }
+
+            const video = event.target;
+            if (!video || video.paused === false) {
+                return;
+            }
+
+            video.muted = true;
+            const playPromise = video.play();
+            if (playPromise?.catch) {
+                playPromise.catch(() => {});
+            }
         },
         registerCardVideoObservers() {
             if (!this.cardVideoObserver || !this.$el?.querySelectorAll) {
@@ -369,13 +411,38 @@ export default {
             const activeIndex = swiper.params.loop ? swiper.realIndex : swiper.activeIndex;
 
             if (activeIndex === videoIndex) {
-                this.$nextTick(() => this.playCardVideos(productId));
+                this.scheduleCardVideoActivation(productId);
             } else {
-                this.pauseCardVideos(productId);
+                this.deactivateCardVideo(productId);
             }
         },
+        isCardVideoActive(productId) {
+            return !!this.cardVideoActiveIds[productId];
+        },
+        activateCardVideo(productId) {
+            const product = this.products.find((item) => item.id === productId);
+            if (!product?.videos?.length) {
+                return;
+            }
+
+            this.cardVideoActiveIds = { ...this.cardVideoActiveIds, [productId]: true };
+            this.$nextTick(() => {
+                this.playCardVideos(productId);
+                window.setTimeout(() => this.playCardVideos(productId), 120);
+            });
+        },
+        deactivateCardVideo(productId) {
+            if (!this.cardVideoActiveIds[productId]) {
+                return;
+            }
+
+            const next = { ...this.cardVideoActiveIds };
+            delete next[productId];
+            this.cardVideoActiveIds = next;
+            this.pauseCardVideos(productId);
+        },
         playCardVideos(productId) {
-            const root = this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`);
+            const root = this.getCardRoot(productId);
             if (!root) {
                 return;
             }
@@ -389,7 +456,7 @@ export default {
             });
         },
         pauseCardVideos(productId) {
-            const root = this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`);
+            const root = this.getCardRoot(productId);
             if (!root) {
                 return;
             }
@@ -461,10 +528,11 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
+            this.hoveredCardIds = { ...this.hoveredCardIds, [productId]: true };
             const product = this.products.find((item) => item.id === productId);
             if (product?.videos?.length) {
                 this.goToCardSlide(productId, this.getVideoSlideIndex(product));
-                this.$nextTick(() => this.playCardVideos(productId));
+                this.scheduleCardVideoActivation(productId);
             } else {
                 this.goToCardSlide(productId, 1);
             }
@@ -474,7 +542,10 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
-            this.pauseCardVideos(productId);
+            const next = { ...this.hoveredCardIds };
+            delete next[productId];
+            this.hoveredCardIds = next;
+            this.deactivateCardVideo(productId);
             this.goToCardSlide(productId, 0);
         },
         isWishlisted(product) {
