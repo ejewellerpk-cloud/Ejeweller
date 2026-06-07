@@ -10,7 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Throwable;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class Handler extends ExceptionHandler
 {
@@ -92,10 +93,30 @@ class Handler extends ExceptionHandler
         if ($e instanceof QueryException) {
             return new JsonResponse(
                 [
-                    'success' => false,
-                    'message' => $e->getMessage()
+                    'status' => false,
+                    'message' => env('APP_DEBUG') ? $e->getMessage() : 'A database error occurred. Please try again.'
                 ],
                 422
+            );
+        }
+
+        if ($request->is('api/*') || $request->expectsJson()) {
+            if ($e instanceof ValidationException) {
+                return parent::render($request, $e);
+            }
+
+            $message = env('APP_DEBUG')
+                ? $e->getMessage()
+                : 'Something went wrong on the server. Please try again.';
+
+            $statusCode = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+
+            return new JsonResponse(
+                [
+                    'status' => false,
+                    'message' => $message,
+                ],
+                $statusCode
             );
         }
 

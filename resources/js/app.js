@@ -10,6 +10,8 @@ import VueSimpleAlert from "vue3-simple-alert";
 import VueNextSelect from 'vue-next-select';
 import 'vue-next-select/dist/index.css';
 import ENV from './config/env';
+import appService from './services/appService';
+import alertService from './services/alertService';
 import "../../public/themes/default/fonts/urbanist/urbanist.css";
 import "../../public/themes/default/fonts/iconly/iconly.css";
 import "../../public/themes/default/fonts/public/public.css";
@@ -65,7 +67,12 @@ axios.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             store.dispatch('loginDataReset');
             router.push({ name: 'auth.login' });
+        } else if (error.response && error.response.status >= 500) {
+            alertService.error(appService.apiErrorMessage(error));
         }
+
+        error.apiMessage = appService.apiErrorMessage(error);
+
         return Promise.reject(error);
     }
 );

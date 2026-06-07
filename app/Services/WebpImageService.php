@@ -2,15 +2,19 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Image\Image;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 class WebpImageService
 {
     private const EXCLUDED_COLLECTIONS = [
         'product_video',
         'notification-file',
+        'product-barcode',
+        'product-variation-barcode',
     ];
 
     private const EXCLUDED_MIMES = [
@@ -34,17 +38,51 @@ class WebpImageService
         return str_starts_with($mimeType, 'image/');
     }
 
+    public function isSupported(): bool
+    {
+        if (function_exists('imagewebp')) {
+            return true;
+        }
+
+        if (extension_loaded('imagick')) {
+            $formats = \Imagick::queryFormats('WEBP');
+
+            return !empty($formats);
+        }
+
+        return false;
+    }
+
     public function convertMediaToWebp(Media $media, int $quality = 70): bool
     {
         if (!$this->shouldConvert($media)) {
             return false;
         }
 
-        if ($media->getDiskDriverName() === 'local') {
-            return $this->convertLocalMedia($media, $quality);
+        if (!$this->isSupported()) {
+            Log::warning('WebP conversion skipped: server does not support WebP encoding.', [
+                'media_id' => $media->id,
+                'collection' => $media->collection_name,
+            ]);
+
+            return false;
         }
 
-        return $this->convertRemoteMedia($media, $quality);
+        try {
+            if ($media->getDiskDriverName() === 'local') {
+                return $this->convertLocalMedia($media, $quality);
+            }
+
+            return $this->convertRemoteMedia($media, $quality);
+        } catch (Throwable $exception) {
+            Log::warning('WebP conversion failed; keeping original image.', [
+                'media_id' => $media->id,
+                'collection' => $media->collection_name,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     public function convertPathToWebp(string $sourcePath, int $quality = 70): ?string
@@ -57,22 +95,35 @@ class WebpImageService
             return $sourcePath;
         }
 
-        $webpPath = preg_replace('/\.[^.]+$/', '.webp', $sourcePath);
-
-        if ($webpPath === $sourcePath) {
-            $webpPath .= '.webp';
+        if (!$this->isSupported()) {
+            return null;
         }
 
-        Image::load($sourcePath)
-            ->quality($quality)
-            ->format('webp')
-            ->save($webpPath);
+        try {
+            $webpPath = preg_replace('/\.[^.]+$/', '.webp', $sourcePath);
 
-        if ($webpPath !== $sourcePath && is_file($sourcePath)) {
-            unlink($sourcePath);
+            if ($webpPath === $sourcePath) {
+                $webpPath .= '.webp';
+            }
+
+            Image::load($sourcePath)
+                ->quality($quality)
+                ->format('webp')
+                ->save($webpPath);
+
+            if ($webpPath !== $sourcePath && is_file($sourcePath)) {
+                unlink($sourcePath);
+            }
+
+            return is_file($webpPath) ? $webpPath : null;
+        } catch (Throwable $exception) {
+            Log::warning('WebP path conversion failed.', [
+                'source' => $sourcePath,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
         }
-
-        return is_file($webpPath) ? $webpPath : null;
     }
 
     private function convertLocalMedia(Media $media, int $quality): bool

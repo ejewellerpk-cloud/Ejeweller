@@ -489,4 +489,35 @@ export default {
             document.body.style.overflowY = 'auto';
         }
     },
+
+    apiErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+        const data = error?.response?.data;
+
+        if (!data) {
+            return error?.message || fallback;
+        }
+
+        if (typeof data === 'string') {
+            return fallback;
+        }
+
+        if (data.message) {
+            return data.message;
+        }
+
+        if (data.errors && typeof data.errors === 'object') {
+            const firstField = Object.keys(data.errors)[0];
+            const firstMessage = data.errors[firstField];
+
+            if (Array.isArray(firstMessage) && firstMessage.length > 0) {
+                return firstMessage[0];
+            }
+
+            if (typeof firstMessage === 'string') {
+                return firstMessage;
+            }
+        }
+
+        return fallback;
+    },
 };
