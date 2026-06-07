@@ -6,7 +6,10 @@
                 <h3 class="db-card-title">{{ $t('menu.return_orders') }}</h3>
                 <div class="db-card-filter">
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                    <FilterComponent @click.prevent="handleSlide('return-filter')" />
+                    <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
+                        <i class="lab lab-line-filter lab-font-size-14"></i>
+                        <span>{{ $t("button.filter") }}</span>
+                    </button>
                     <div class="dropdown-group">
                         <ExportComponent />
                         <div class="dropdown-list db-card-filter-dropdown-list">
@@ -21,8 +24,8 @@
                     </router-link>
                 </div>
             </div>
-            <div class="table-filter-div" id="return-filter">
-                <form class="p-4 sm:p-5 mb-5" @submit.prevent="search">
+            <ListFilterPanel :show="showFilter">
+                <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                     <div class="row">
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="customer" class="db-field-title after:hidden">{{ $t('label.customer') }}</label>
@@ -58,7 +61,7 @@
                                     <i class="lab lab-line-search lab-font-size-16"></i>
                                     <span>{{ $t('button.search') }}</span>
                                 </button>
-                                <button class="db-btn py-2 text-white bg-gray-600" @click="clear">
+                                <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
                                     <i class="lab lab-line-cross lab-font-size-22"></i>
                                     <span>{{ $t('button.clear') }}</span>
                                 </button>
@@ -66,7 +69,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
+            </ListFilterPanel>
 
             <div class="db-table-responsive">
                 <table class="db-table stripe" id="print">
@@ -128,7 +131,7 @@
 <script lang="js">
 import LoadingComponent from "../components/LoadingComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
-import FilterComponent from "../components/buttons/collapse/FilterComponent";
+import ListFilterPanel from "../components/ListFilterPanel";
 import TableLimitComponent from "../components/TableLimitComponent";
 import ExportComponent from "../components/buttons/export/ExportComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
@@ -153,7 +156,7 @@ export default {
         PaginationSMBox,
         PaginationTextComponent,
         TableLimitComponent,
-        FilterComponent,
+        ListFilterPanel,
         PrintComponent,
         ExcelComponent,
         ExportComponent,
@@ -169,6 +172,7 @@ export default {
             loading: {
                 isActive: false
             },
+            showFilter: false,
             printObj: {
                 id: "print",
                 popTitle: this.$t('menu.return_orders')
@@ -219,9 +223,6 @@ export default {
         },
         floatNumber(e) {
             return appService.floatNumber(e);
-        },
-        handleSlide: function (id) {
-            return appService.handleSlide(id);
         },
         permissionChecker(e) {
             return appService.permissionChecker(e);

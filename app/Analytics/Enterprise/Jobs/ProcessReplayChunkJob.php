@@ -26,6 +26,10 @@ class ProcessReplayChunkJob implements ShouldQueue
             return;
         }
 
+        if (!AnalyticsSchema::hasColumn('analytics_replay_chunks', 'sequence')) {
+            return;
+        }
+
         $replayEvents = array_values(array_filter(
             $this->events,
             fn ($e) => str_starts_with((string) ($e['type'] ?? ''), 'replay_')

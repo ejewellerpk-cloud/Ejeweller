@@ -42,21 +42,26 @@ class AnalyticsEnsureEnterpriseCommand extends Command
             }
         }
 
-        if ($missing === []) {
-            $this->info('All enterprise tables exist.');
+        $schemaIssues = $this->detectSchemaIssues();
+        foreach ($schemaIssues as $issue) {
+            $this->warn('  [SCHEMA] ' . $issue);
+        }
+
+        if ($missing === [] && $schemaIssues === []) {
+            $this->info('All enterprise tables exist with expected schema.');
 
             return self::SUCCESS;
         }
 
-        $this->warn(count($missing) . ' table(s) missing.');
+        if ($missing !== []) {
+            $this->warn(count($missing) . ' table(s) missing.');
+        }
 
         if (!$this->option('fix')) {
             $this->newLine();
-            $this->comment('Migration may show "Nothing to migrate" while tables are missing (failed run or wrong DB).');
+            $this->comment('Migration may show "Nothing to migrate" while tables are missing or outdated (failed run or wrong DB).');
             $this->comment('Run: php artisan analytics:ensure-enterprise --fix');
-            $this->comment('Or rollback + re-run:');
-            $this->comment('  php artisan migrate:rollback --path=database/migrations/2026_05_27_100000_create_analytics_enterprise_tables.php');
-            $this->comment('  php artisan migrate --path=database/migrations/2026_05_27_100000_create_analytics_enterprise_tables.php --force');
+            $this->comment('Or: php artisan migrate --force');
 
             return self::FAILURE;
         }
@@ -67,20 +72,41 @@ class AnalyticsEnsureEnterpriseCommand extends Command
             return self::FAILURE;
         }
 
-        $path = database_path('migrations/2026_05_27_100000_create_analytics_enterprise_tables.php');
-        if (!is_file($path)) {
-            $this->error('Migration file not found: ' . $path);
+        if ($schemaIssues !== []) {
+            $upgradePath = database_path('migrations/2026_06_07_100000_upgrade_analytics_replay_chunks_schema.php');
+            if (!is_file($upgradePath)) {
+                $this->error('Replay chunks schema upgrade migration not found: ' . $upgradePath);
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
+
+            $this->info('Upgrading analytics_replay_chunks to enterprise schema…');
+            $upgrade = require $upgradePath;
+            $upgrade->up();
         }
 
-        $this->info('Running enterprise migration up() for missing tables…');
-        $migration = require $path;
-        $migration->up();
+        if ($missing !== []) {
+            $path = database_path('migrations/2026_05_27_100000_create_analytics_enterprise_tables.php');
+            if (!is_file($path)) {
+                $this->error('Migration file not found: ' . $path);
+
+                return self::FAILURE;
+            }
+
+            $this->info('Running enterprise migration up() for missing tables…');
+            $migration = require $path;
+            $migration->up();
+        }
 
         $stillMissing = array_filter(self::TABLES, fn ($t) => !AnalyticsSchema::hasTable($t));
-        if ($stillMissing !== []) {
-            $this->error('Still missing: ' . implode(', ', $stillMissing));
+        $stillBroken = $this->detectSchemaIssues();
+        if ($stillMissing !== [] || $stillBroken !== []) {
+            if ($stillMissing !== []) {
+                $this->error('Still missing: ' . implode(', ', $stillMissing));
+            }
+            foreach ($stillBroken as $issue) {
+                $this->error($issue);
+            }
 
             return self::FAILURE;
         }
@@ -88,5 +114,20 @@ class AnalyticsEnsureEnterpriseCommand extends Command
         $this->info('Enterprise tables are ready.');
 
         return self::SUCCESS;
+    }
+
+    /** @return list<string> */
+    private function detectSchemaIssues(): array
+    {
+        $issues = [];
+
+        if (
+            AnalyticsSchema::hasTable('analytics_replay_chunks')
+            && !AnalyticsSchema::hasColumn('analytics_replay_chunks', 'sequence')
+        ) {
+            $issues[] = 'analytics_replay_chunks has legacy platform schema (missing sequence column)';
+        }
+
+        return $issues;
     }
 }

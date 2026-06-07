@@ -33,4 +33,13 @@ class AnalyticsSchema
             return false;
         }
     }
+
+    public static function hasColumn(string $table, string $column): bool
+    {
+        try {
+            return Schema::hasTable($table) && Schema::hasColumn($table, $column);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 }

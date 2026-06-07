@@ -66,7 +66,7 @@
                                     <i class="lab lab-line-search lab-font-size-16"></i>
                                     <span>{{ $t('button.search') }}</span>
                                 </button>
-                                <button class="db-btn py-2 text-white bg-gray-600" @click="clear">
+                                <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
                                     <i class="lab lab-line-cross lab-font-size-22"></i>
                                     <span>{{ $t('button.clear') }}</span>
                                 </button>

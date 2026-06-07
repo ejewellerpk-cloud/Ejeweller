@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
@@ -22,6 +23,10 @@ class WebpImageService
         'image/webp',
         'image/gif',
     ];
+
+    private const MAX_SOURCE_BYTES = 15_728_640; // 15 MB — skip conversion above this
+
+    private const MAX_DIMENSION = 2048;
 
     public function shouldConvert(Media $media): bool
     {
@@ -99,6 +104,10 @@ class WebpImageService
             return null;
         }
 
+        if (!$this->canSafelyConvert($sourcePath)) {
+            return null;
+        }
+
         try {
             $webpPath = preg_replace('/\.[^.]+$/', '.webp', $sourcePath);
 
@@ -107,6 +116,7 @@ class WebpImageService
             }
 
             Image::load($sourcePath)
+                ->fit(Fit::Max, self::MAX_DIMENSION, self::MAX_DIMENSION)
                 ->quality($quality)
                 ->format('webp')
                 ->save($webpPath);
@@ -159,7 +169,14 @@ class WebpImageService
 
         file_put_contents($tempSource, $disk->get($relativePath));
 
+        if (!$this->canSafelyConvert($tempSource)) {
+            @unlink($tempSource);
+
+            return false;
+        }
+
         Image::load($tempSource)
+            ->fit(Fit::Max, self::MAX_DIMENSION, self::MAX_DIMENSION)
             ->quality($quality)
             ->format('webp')
             ->save($tempWebp);
@@ -189,5 +206,31 @@ class WebpImageService
         $media->mime_type = 'image/webp';
         $media->size = $size;
         $media->save();
+    }
+
+    private function canSafelyConvert(string $sourcePath): bool
+    {
+        $size = @filesize($sourcePath);
+
+        if ($size !== false && $size > self::MAX_SOURCE_BYTES) {
+            Log::warning('WebP conversion skipped: source image too large.', [
+                'source' => $sourcePath,
+                'bytes' => $size,
+            ]);
+
+            return false;
+        }
+
+        $dimensions = @getimagesize($sourcePath);
+
+        if ($dimensions === false) {
+            Log::warning('WebP conversion skipped: unable to read image dimensions.', [
+                'source' => $sourcePath,
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 }

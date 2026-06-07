@@ -6,7 +6,10 @@
                 <h3 class="db-card-title">{{ $t('menu.reviews') }}</h3>
                 <div class="db-card-filter">
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                    <FilterComponent @click.prevent="handleSlide('review-filter')" />
+                    <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
+                        <i class="lab lab-line-filter lab-font-size-14"></i>
+                        <span>{{ $t("button.filter") }}</span>
+                    </button>
                     <div class="dropdown-group">
                         <ExportComponent />
                         <div class="dropdown-list db-card-filter-dropdown-list">
@@ -16,7 +19,7 @@
                     </div>
                 </div>
             </div>
-            <div class="table-filter-div" id="review-filter">
+            <ListFilterPanel :show="showFilter">
                 <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                     <div class="row">
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
@@ -44,7 +47,7 @@
                                     <i class="lab lab-line-search lab-font-size-16"></i>
                                     <span>{{ $t('button.search') }}</span>
                                 </button>
-                                <button class="db-btn py-2 text-white bg-gray-600" @click="clear">
+                                <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
                                     <i class="lab lab-line-cross lab-font-size-22"></i>
                                     <span>{{ $t('button.clear') }}</span>
                                 </button>
@@ -52,7 +55,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
+            </ListFilterPanel>
 
             <div class="db-table-responsive">
                 <table class="db-table stripe" id="print">
@@ -123,7 +126,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
-import FilterComponent from "../components/buttons/collapse/FilterComponent";
+import ListFilterPanel from "../components/ListFilterPanel";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
@@ -138,7 +141,7 @@ export default {
         PaginationSMBox,
         PaginationTextComponent,
         TableLimitComponent,
-        FilterComponent,
+        ListFilterPanel,
         PrintComponent,
         ExcelComponent,
         ExportComponent,
@@ -152,6 +155,7 @@ export default {
             loading: {
                 isActive: false
             },
+            showFilter: false,
             printObj: {
                 id: "print",
                 popTitle: this.$t('menu.reviews')
@@ -213,9 +217,6 @@ export default {
         },
         search: function () {
             this.list();
-        },
-        handleSlide: function (id) {
-            return appService.handleSlide(id);
         },
         permissionChecker(e) {
             return appService.permissionChecker(e);

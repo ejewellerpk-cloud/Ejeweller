@@ -4,12 +4,15 @@
             <h3 class="db-card-title">{{ $t("menu.states") }}</h3>
             <div class="db-card-filter">
                 <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                <FilterComponent @click.prevent="handleSlide('state-filter')" />
+                <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
+                    <i class="lab lab-line-filter lab-font-size-14"></i>
+                    <span>{{ $t("button.filter") }}</span>
+                </button>
                 <StateCreateComponent :props="props" />
             </div>
         </div>
-        <div class="table-filter-div" id="state-filter">
-            <form class="form-row p-4 sm:p-5 mb-5" @submit.prevent="search">
+        <ListFilterPanel :show="showFilter">
+            <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
                 <div class="form-col-12 sm:form-col-6 lg:form-col-4">
                     <label for="name" class="db-field-title ">{{ $t("label.name") }}</label>
                     <input v-model="props.search.name" v-bind:class="errors.name ? 'invalid' : ''" type="text" id="name"
@@ -38,14 +41,14 @@
                             <i class="lab lab-line-search lab-font-size-16"></i>
                             <span>{{ $t('button.search') }}</span>
                         </button>
-                        <button class="db-btn py-2 text-white bg-gray-600" @click="clear">
+                        <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
                             <i class="lab lab-line-cross lab-font-size-22"></i>
                             <span>{{ $t('button.clear') }}</span>
                         </button>
                     </div>
                 </div>
             </form>
-        </div>
+        </ListFilterPanel>
         <div class="db-table-responsive">
             <LoadingContentComponent :props="loading" />
             <table class="db-table stripe" id="print">
@@ -113,7 +116,7 @@ import TableLimitComponent from "../../components/TableLimitComponent";
 import SmDeleteComponent from "../../components/buttons/SmDeleteComponent";
 import SmViewComponent from "../../components/buttons/SmViewComponent";
 import SmModalEditComponent from "../../components/buttons/SmModalEditComponent";
-import FilterComponent from "../../components/buttons/collapse/FilterComponent";
+import ListFilterPanel from "../../components/ListFilterPanel";
 import SmIconViewComponent from "../../components/buttons/SmIconViewComponent";
 import ENV from "../../../../config/env";
 import LoadingContentComponent from "../../../frontend/components/LoadingContentComponent.vue";
@@ -130,12 +133,13 @@ export default {
     StateCreateComponent,
     SmDeleteComponent,
     SmViewComponent,
-    FilterComponent,
+    ListFilterPanel,
     SmIconViewComponent,
     LoadingContentComponent
 },
     data() {
         return {
+            showFilter: false,
             loading: {
                 isActive: false,
             },
@@ -194,9 +198,6 @@ export default {
         },
         search: function () {
             this.list();
-        },
-        handleSlide: function (id) {
-            return appService.handleSlide(id);
         },
         clear: function () {
             this.props.search.name = "";

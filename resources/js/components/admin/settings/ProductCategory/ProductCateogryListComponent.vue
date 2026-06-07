@@ -1,7 +1,8 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <div class="db-card db-tab-div active">
+    <div class="col-12">
+        <div class="db-card">
         <div class="db-card-header border-none">
             <h3 class="db-card-title">{{ $t('menu.product_categories') }}</h3>
             <div class="db-card-filter">
@@ -74,6 +75,7 @@
                 <PaginationTextComponent :props="{ page: paginationPage }" />
                 <PaginationBox :pagination="pagination" :method="list" />
             </div>
+        </div>
         </div>
     </div>
     <ProductCategoryFileUploadComponent />
