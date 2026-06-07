@@ -555,8 +555,64 @@
         @apply relative
     }
 
-    .header-nav-item:hover>div {
-        @apply scale-y-100
+    .header-nav-item:hover>.header-nav-mega,
+    .header-nav-item:focus-within>.header-nav-mega {
+        @apply opacity-100 visible pointer-events-auto
+    }
+
+    .header-nav-mega {
+        @apply absolute top-full left-1/2 z-50 w-screen max-w-[100vw] -translate-x-1/2 pt-2
+        opacity-0 invisible pointer-events-none transition-all duration-300
+    }
+
+    .header-nav-mega-panel {
+        @apply container mx-auto rounded-b-2xl bg-white shadow-paper overflow-hidden
+    }
+
+    .header-nav-mega-tabs {
+        @apply flex items-center justify-center border-b border-gray-100
+    }
+
+    .header-nav-mega-tab {
+        @apply capitalize text-base font-bold tracking-wide px-6 lg:px-8 py-4 relative text-heading
+        transition-colors duration-300 hover:text-primary bg-transparent border-0 cursor-pointer
+    }
+
+    .header-nav-mega-tab.is-active {
+        @apply text-primary
+    }
+
+    .header-nav-mega-tab.is-active::after {
+        content: '';
+        @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary
+    }
+
+    .header-nav-mega-body {
+        @apply flex items-start gap-5 px-5 pb-5 pt-5 border-t border-gray-100 min-h-[20rem]
+    }
+
+    .header-nav-mega-image {
+        @apply w-60 h-80 flex-shrink-0 overflow-hidden rounded-lg block
+    }
+
+    .header-nav-mega-columns {
+        @apply w-full h-80 thin-scrolling grid gap-5 grid-cols-2 md:grid-cols-3 xl:grid-cols-4
+    }
+
+    .header-nav-mega-column {
+        @apply self-start
+    }
+
+    .header-nav-mega-column-title {
+        @apply text-sm font-semibold capitalize pb-3 mb-2 border-b border-slate-200
+    }
+
+    .header-nav-mega-links {
+        @apply flex flex-col mt-1
+    }
+
+    .header-nav-mega-empty {
+        @apply flex items-center justify-center w-full py-10
     }
 
     .header-nav-menu {

@@ -1,0 +1,1 @@
+import{_ as o}from"./vendor-quill-Cz3lb1CG.js";import{l as t,c as n,z as r}from"./vendor-vue-core-BgT5fPy7.js";import"./vendor-8yHaUXFb.js";const c={name:"BenefitComponent"};function s(p,a,_,m,i,f){const e=t("router-view");return n(),r(e)}const B=o(c,[["render",s]]);export{B as default};
