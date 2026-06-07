@@ -21,7 +21,8 @@ class ProductVideoResource extends JsonResource
             'product_id'     => $this->product_id,
             'video_provider' => $this->video_provider,
             'provider_name'  => trans('videoProvider.' . $this->video_provider),
-            'link'           => $this->link
+            'link'           => $this->link,
+            'thumbnail'      => $this->thumbnail_url ?: null,
         ];
     }
 }

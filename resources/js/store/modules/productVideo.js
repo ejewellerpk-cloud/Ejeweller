@@ -58,7 +58,11 @@ export const productVideo = {
                     method = axios.put;
                     url = `/admin/product/video/${payload.productId}/${this.state['productVideo'].temp.temp_id}`;
                 }
-                method(url, payload.form).then(res => {
+                method(url, payload.form, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }).then(res => {
                     context.dispatch('lists', payload).then().catch();
                     context.commit('reset');
                     resolve(res);

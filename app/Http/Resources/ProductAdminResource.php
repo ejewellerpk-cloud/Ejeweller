@@ -26,6 +26,7 @@ class ProductAdminResource extends JsonResource
         return [
             "id"                         => $this->id,
             "use_random_sale"            => (int)$this->use_random_sale,
+            "actual_sales"               => (int)abs($this?->productOrders?->sum('quantity') ?? 0),
             "is_show_viewers"            => (int)$this->is_show_viewers,
             "name"                       => $this->name,
             "sku"                        => $this->sku,

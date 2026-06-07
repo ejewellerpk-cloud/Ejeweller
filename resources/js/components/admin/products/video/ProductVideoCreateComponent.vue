@@ -3,7 +3,7 @@
     <SmModalCreateComponent @click="createButtonClick" :props="addButton" />
 
     <div id="videoModal" class="modal">
-        <div class="modal-dialog">
+        <div class="modal-dialog max-w-2xl">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.product_video") }}</h3>
                 <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" @click.prevent="reset"></button>
@@ -25,7 +25,7 @@
                         <div class="form-col-12" v-if="form.video_provider && form.video_provider !== 20">
                             <label for="link" class="db-field-title required">{{ $t("label.link") }}</label>
                             <textarea v-model="form.link" v-bind:class="errors.link ? 'invalid' : ''" id="link"
-                                class="db-field-control"></textarea>
+                                class="db-field-control" rows="2" placeholder="https://"></textarea>
                             <small class="db-field-alert" v-if="errors.link">
                                 {{ errors.link[0] }}
                             </small>
@@ -38,6 +38,64 @@
                             <small class="db-field-alert" v-if="errors.file">
                                 {{ errors.file[0] }}
                             </small>
+                            <p v-if="form.link && !form.file" class="text-[11px] text-slate-500 mt-1 truncate">Current: {{ form.link }}</p>
+                        </div>
+
+                        <!-- Thumbnail picker -->
+                        <div class="form-col-12" v-if="form.video_provider">
+                            <label class="db-field-title">{{ $t('label.thumbnail') || 'Video Thumbnail' }}</label>
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <div class="relative w-full sm:w-36 h-36 rounded-xl overflow-hidden border border-slate-200 bg-white flex-shrink-0">
+                                        <img v-if="thumbnailPreview" :src="thumbnailPreview" alt="Video thumbnail"
+                                            class="w-full h-full object-cover" />
+                                        <div v-else class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 p-3 text-center">
+                                            <i class="fa-solid fa-clapperboard text-2xl"></i>
+                                            <span class="text-[10px] font-semibold uppercase tracking-wide">No thumbnail</span>
+                                        </div>
+                                        <span v-if="thumbnailPreview"
+                                            class="absolute bottom-1.5 left-1.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-black/60 text-white uppercase">
+                                            Preview
+                                        </span>
+                                    </div>
+
+                                    <div class="flex-1 min-w-0 space-y-2">
+                                        <p class="text-xs text-slate-500 leading-relaxed">
+                                            Shown on product gallery and listing cards. Recommended: 1000×1000 px square JPG/PNG/WebP.
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <label class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg cursor-pointer bg-primary text-white hover:bg-primary/90">
+                                                <input type="file" class="hidden" accept="image/png,image/jpeg,image/jpg,image/webp" @change="onThumbnailFileChange" />
+                                                <i class="fa-solid fa-upload text-[10px]"></i>
+                                                Upload
+                                            </label>
+                                            <button type="button" @click="showMediaPicker = true"
+                                                class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-primary hover:border-primary/40">
+                                                <i class="fa-solid fa-images text-[10px]"></i>
+                                                Gallery
+                                            </button>
+                                            <button v-if="canCaptureFromVideo" type="button" @click="captureFromVideo"
+                                                :disabled="isCapturingThumbnail"
+                                                class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-primary/40 disabled:opacity-50">
+                                                <i v-if="isCapturingThumbnail" class="fa-solid fa-circle-notch animate-spin text-[10px]"></i>
+                                                <i v-else class="fa-solid fa-film text-[10px]"></i>
+                                                From Video
+                                            </button>
+                                            <button v-if="canUseYoutubeThumbnail" type="button" @click="useYoutubeThumbnail"
+                                                class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-red-600 hover:border-red-200">
+                                                <i class="fa-brands fa-youtube text-[10px]"></i>
+                                                YouTube Frame
+                                            </button>
+                                            <button v-if="thumbnailPreview" type="button" @click="clearThumbnail"
+                                                class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-rose-200 text-rose-500 hover:bg-rose-50">
+                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <small class="db-field-alert" v-if="errors.thumbnail">{{ errors.thumbnail[0] }}</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-col-12">
@@ -58,17 +116,21 @@
             </div>
         </div>
     </div>
+
+    <MediaPickerComponent :show="showMediaPicker" @close="showMediaPicker = false" @selected="handleMediaSelected" />
 </template>
 <script>
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../../components/LoadingComponent";
+import MediaPickerComponent from "../../media/MediaPickerComponent";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
 import videoProviderEnum from "../../../../enums/modules/videoProviderEnum";
+import { captureVideoThumbnail } from "../../../../utils/videoThumbnail";
 
 export default {
     name: "ProductVideoCreateComponent",
-    components: { SmModalCreateComponent, LoadingComponent },
+    components: { SmModalCreateComponent, LoadingComponent, MediaPickerComponent },
     props: ["productData"],
     data() {
         return {
@@ -76,6 +138,11 @@ export default {
                 isActive: false
             },
             errors: {},
+            showMediaPicker: false,
+            isCapturingThumbnail: false,
+            thumbnailPreview: "",
+            thumbnailFile: null,
+            removeThumbnail: false,
             enums: {
                 videoProviderEnum: videoProviderEnum,
             },
@@ -87,13 +154,15 @@ export default {
         }
     },
     watch: {
-        // When parent updates the form (e.g. for editing), sync to local form
         'productData.form': {
             handler(newVal) {
                 if (newVal) {
                     this.form.video_provider = newVal.video_provider || 20;
-                    this.form.link = newVal.link;
-                    this.form.file = newVal.file;
+                    this.form.link = newVal.link || "";
+                    this.form.file = null;
+                    this.thumbnailPreview = newVal.thumbnail || "";
+                    this.thumbnailFile = null;
+                    this.removeThumbnail = false;
                 }
             },
             deep: true
@@ -101,11 +170,20 @@ export default {
     },
     computed: {
         addButton: function () {
-              return {title: this.$t("button.add_video")}
-        }
+            return { title: this.$t("button.add_video") }
+        },
+        canCaptureFromVideo: function () {
+            if (Number(this.form.video_provider) !== 20) {
+                return false;
+            }
+            return !!(this.form.file || (this.form.link && !this.form.link.includes('uploading')));
+        },
+        canUseYoutubeThumbnail: function () {
+            return Number(this.form.video_provider) === 5 && !!this.getYouTubeId(this.form.link);
+        },
     },
     methods: {
-        createButtonClick: function() {
+        createButtonClick: function () {
             appService.modalShow('#videoModal');
         },
         reset: function () {
@@ -113,17 +191,108 @@ export default {
             appService.modalHide('#variationModal');
             this.$store.dispatch('productVideo/reset').then().catch();
             this.errors = {};
+            this.showMediaPicker = false;
+            this.thumbnailPreview = "";
+            this.thumbnailFile = null;
+            this.removeThumbnail = false;
+            this.isCapturingThumbnail = false;
             this.form = {
                 video_provider: 20,
                 link: "",
                 file: null
             };
-            if (document.getElementById('file')) {
-                document.getElementById('file').value = "";
+            const fileInput = document.getElementById('file');
+            if (fileInput) {
+                fileInput.value = "";
             }
         },
         onFileChange: function (e) {
-            this.form.file = e.target.files[0];
+            this.form.file = e.target.files[0] || null;
+        },
+        onThumbnailFileChange: function (e) {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+            this.setThumbnailFile(file);
+            e.target.value = null;
+        },
+        setThumbnailFile: function (file) {
+            this.thumbnailFile = file;
+            this.removeThumbnail = false;
+            this.thumbnailPreview = URL.createObjectURL(file);
+        },
+        clearThumbnail: function () {
+            this.thumbnailFile = null;
+            this.thumbnailPreview = "";
+            this.removeThumbnail = true;
+        },
+        async handleMediaSelected(asset) {
+            try {
+                this.loading.isActive = true;
+                const response = await fetch(asset.url);
+                const blob = await response.blob();
+                const extension = asset.filename?.split('.').pop() || 'jpg';
+                const file = new File([blob], `video-thumb.${extension}`, { type: blob.type || 'image/jpeg' });
+                this.setThumbnailFile(file);
+                this.showMediaPicker = false;
+            } catch (err) {
+                alertService.error('Failed to load image from gallery');
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        getYouTubeId: function (url) {
+            if (!url) {
+                return null;
+            }
+            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+            return match ? match[1] : null;
+        },
+        async useYoutubeThumbnail() {
+            const videoId = this.getYouTubeId(this.form.link);
+            if (!videoId) {
+                alertService.error('Enter a valid YouTube link first');
+                return;
+            }
+            try {
+                this.loading.isActive = true;
+                const response = await fetch(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
+                const blob = await response.blob();
+                this.setThumbnailFile(new File([blob], 'youtube-thumb.jpg', { type: blob.type || 'image/jpeg' }));
+            } catch (err) {
+                alertService.error('Could not fetch YouTube thumbnail');
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        async captureFromVideo() {
+            let videoUrl = "";
+            if (this.form.file) {
+                videoUrl = URL.createObjectURL(this.form.file);
+            } else if (this.form.link) {
+                videoUrl = this.form.link;
+            }
+
+            if (!videoUrl) {
+                alertService.error('Upload or select a video first');
+                return;
+            }
+
+            this.isCapturingThumbnail = true;
+            try {
+                const dataUrl = await captureVideoThumbnail(videoUrl);
+                const response = await fetch(dataUrl);
+                const blob = await response.blob();
+                this.setThumbnailFile(new File([blob], 'video-frame.jpg', { type: 'image/jpeg' }));
+            } catch (err) {
+                alertService.error('Could not capture frame from video');
+            } finally {
+                this.isCapturingThumbnail = false;
+                if (this.form.file && videoUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(videoUrl);
+                }
+            }
         },
         save: function () {
             try {
@@ -133,6 +302,12 @@ export default {
                 formData.append('link', this.form.link || '');
                 if (this.form.file) {
                     formData.append('file', this.form.file);
+                }
+                if (this.thumbnailFile) {
+                    formData.append('thumbnail', this.thumbnailFile);
+                }
+                if (this.removeThumbnail) {
+                    formData.append('remove_thumbnail', '1');
                 }
 
                 if (this.$store.getters['productVideo/temp'].isEditing) {
@@ -157,7 +332,7 @@ export default {
                 })
             } catch (err) {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || 'Save failed');
             }
         }
     }

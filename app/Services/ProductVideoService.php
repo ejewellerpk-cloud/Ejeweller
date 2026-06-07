@@ -76,8 +76,9 @@ class ProductVideoService
                     $this->productVideo->link = $this->productVideo->getFirstMediaUrl('product_video');
                     $this->productVideo->save();
                 }
+                $this->syncThumbnail($this->productVideo, $request);
             });
-            return $this->productVideo;
+            return $this->productVideo->fresh();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
@@ -104,9 +105,10 @@ class ProductVideoService
                         $productVideo->link = $productVideo->getFirstMediaUrl('product_video');
                         $productVideo->save();
                     }
+                    $this->syncThumbnail($productVideo, $request);
                 }
             });
-            return $productVideo;
+            return $productVideo->fresh();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
@@ -129,6 +131,19 @@ class ProductVideoService
             Log::info($exception->getMessage());
             DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    private function syncThumbnail(ProductVideo $productVideo, ProductVideoRequest $request): void
+    {
+        if ($request->boolean('remove_thumbnail')) {
+            $productVideo->clearMediaCollection('product_video_thumbnail');
+            return;
+        }
+
+        if ($request->hasFile('thumbnail')) {
+            $productVideo->clearMediaCollection('product_video_thumbnail');
+            $productVideo->addMediaFromRequest('thumbnail')->toMediaCollection('product_video_thumbnail');
         }
     }
 }

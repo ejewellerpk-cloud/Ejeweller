@@ -199,6 +199,9 @@
                                 {{ $t('label.selling_price') }}
                             </th>
                             <th class="db-table-head-th">
+                                Sales
+                            </th>
+                            <th class="db-table-head-th">
                                 {{ $t('label.status') }}
                             </th>
                             <th class="db-table-head-th hidden-print"
@@ -225,6 +228,18 @@
                             <td class="db-table-body-td">{{ product.flat_buying_price }}</td>
                             <td class="db-table-body-td">{{ product.flat_selling_price }}</td>
                             <td class="db-table-body-td">
+                                <div class="flex flex-col gap-0.5 text-[11px] leading-tight min-w-[5.5rem]">
+                                    <span>
+                                        <span class="font-bold text-emerald-700">{{ getDisplaySoldCount(product) }}</span>
+                                        <span class="text-slate-400"> display</span>
+                                    </span>
+                                    <span>
+                                        <span class="font-semibold text-slate-700">{{ getActualSales(product) }}</span>
+                                        <span class="text-slate-400"> actual</span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="db-table-body-td">
                                 <span :class="statusClass(product.status)">
                                     {{ enums.statusEnumArray[product.status] }}
                                 </span>
@@ -244,7 +259,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="6">
+                            <td class="db-table-body-td text-center" colspan="7">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
@@ -291,6 +306,10 @@ import ProductFileUploadComponent from "./ProductFileUploadComponent";
 import SampleFileComponent from "../components/buttons/import/SampleFileComponent";
 import UploadFileComponent from "../components/buttons/import/UploadFileComponent";
 import ENV from "../../../config/env";
+import {
+    getDisplaySoldCount as calcDisplaySoldCount,
+    getActualSales as calcActualSales,
+} from "../../../utils/productSoldCount";
 
 export default {
     name: "ProductListComponent",
@@ -402,6 +421,12 @@ export default {
     methods: {
         permissionChecker(e) {
             return appService.permissionChecker(e);
+        },
+        getDisplaySoldCount(product) {
+            return calcDisplaySoldCount(product, { useLocalStorage: false });
+        },
+        getActualSales(product) {
+            return calcActualSales(product);
         },
         statusClass: function (status) {
             return appService.statusClass(status);

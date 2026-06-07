@@ -1208,6 +1208,9 @@ export default {
             if (!media?.data?.link) {
                 return this.fallbackVideoPoster();
             }
+            if (media.data.thumbnail) {
+                return media.data.thumbnail;
+            }
             if (this.isEmbedVideo(media)) {
                 return this.getEmbedVideoThumbnail(media);
             }

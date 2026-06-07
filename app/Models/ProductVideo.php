@@ -18,4 +18,17 @@ class ProductVideo extends Model implements HasMedia
         'video_provider' => 'integer',
         'link'           => 'string',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('product_video')->singleFile();
+        $this->addMediaCollection('product_video_thumbnail')->singleFile();
+    }
+
+    public function getThumbnailUrlAttribute(): string
+    {
+        $url = $this->getFirstMediaUrl('product_video_thumbnail');
+
+        return $url ? asset($url) : '';
+    }
 }

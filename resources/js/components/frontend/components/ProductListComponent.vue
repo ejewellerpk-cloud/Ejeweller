@@ -63,12 +63,23 @@
                         <SwiperSlide v-if="product.videos && product.videos.length > 0">
                             <div class="w-full h-full relative">
                                 <div class="w-full h-full bg-black relative aspect-[4/5]">
-                                    <iframe v-if="product.videos[0].video_provider === 5"
-                                        :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
-                                        class="w-full h-full pointer-events-none"
-                                        frameborder="0" allow="autoplay; encrypted-media">
-                                    </iframe>
-                                    <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
+                                    <template v-if="shouldUseVideoPosterSlide(product.videos[0])">
+                                        <img :src="getVideoPosterForCard(product.videos[0], product)" alt="video thumbnail"
+                                            class="w-full h-full object-cover pointer-events-none" loading="lazy" />
+                                        <div class="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                                            <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
+                                                <i class="fa-solid fa-play text-primary text-xs sm:text-sm ml-0.5"></i>
+                                            </span>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <iframe v-if="product.videos[0].video_provider === 5"
+                                            :src="product.videos[0].link + '?autoplay=1&mute=1&loop=1&playlist=' + getYouTubeId(product.videos[0].link) + '&controls=0&showinfo=0&modestbranding=1&playsinline=1'"
+                                            class="w-full h-full pointer-events-none"
+                                            frameborder="0" allow="autoplay; encrypted-media">
+                                        </iframe>
+                                        <video v-else :src="product.videos[0].link" autoplay="true" muted="true" loop="true" playsinline="true" webkit-playsinline="true" class="w-full h-full object-cover pointer-events-none"></video>
+                                    </template>
                                 </div>
                             </div>
                         </SwiperSlide>
@@ -170,7 +181,10 @@
                 </div>
                 <span v-if="hasProductRating(product) && shouldShowSoldCount(product)" class="text-gray-200">|</span>
                 <span v-if="shouldShowSoldCount(product)">
-                    {{ getProductSoldCount(product) }} sold
+                    <span class="text-gray-900 font-bold">{{ getProductSoldCount(product) }}</span> sold
+                    <span v-if="shouldShowActualSales(product)" class="text-gray-400 font-normal">
+                        · {{ getActualSales(product) }} actual
+                    </span>
                 </span>
             </div>
             </div>
@@ -192,6 +206,17 @@ import {
     hasActiveDiscount as calcHasActiveDiscount,
     withCartLinePricing,
 } from "../../../utils/productOffer";
+import {
+    getDisplaySoldCount as calcDisplaySoldCount,
+    getActualSales as calcActualSales,
+    shouldShowSoldCount as calcShouldShowSoldCount,
+    shouldShowActualSales as calcShouldShowActualSales,
+} from "../../../utils/productSoldCount";
+import {
+    getVideoPoster as resolveVideoPoster,
+    shouldUseVideoPosterSlide as canUseVideoPosterSlide,
+    getYouTubeId,
+} from "../../../utils/videoPoster";
 import {
     hasProductRating,
     getProductAverageRating,
@@ -387,10 +412,24 @@ export default {
                 );
             }
         },
-        getYouTubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
+        getYouTubeId,
+        getProductSoldCount(product) {
+            return calcDisplaySoldCount(product);
+        },
+        getActualSales(product) {
+            return calcActualSales(product);
+        },
+        shouldShowSoldCount(product) {
+            return calcShouldShowSoldCount(product);
+        },
+        shouldShowActualSales(product) {
+            return calcShouldShowActualSales(product);
+        },
+        getVideoPosterForCard(video, product) {
+            return resolveVideoPoster(video, product.previews?.[0] || product.cover || '');
+        },
+        shouldUseVideoPosterSlide(video) {
+            return canUseVideoPosterSlide(video);
         },
         hasProductRating,
         getProductAverageRating,
@@ -556,30 +595,6 @@ export default {
                     alertService.error("Failed to copy link.");
                 });
             }
-        },
-        getProductSoldCount: function (product) {
-            const randomSaleValue = parseInt(product.use_random_sale);
-            if (!product || randomSaleValue === 10 || randomSaleValue === 0) {
-                return product.actual_sales || 0;
-            }
-            
-            let startingPoint = randomSaleValue === 5 ? ((product.id * 53) % 450 + 138) : randomSaleValue;
-            
-            const storageKey = 'sold_count_' + product.id;
-            let localCount = localStorage.getItem(storageKey);
-            if (!localCount || parseInt(localCount) < startingPoint) {
-                localCount = startingPoint + (product.actual_sales || 0);
-                localStorage.setItem(storageKey, localCount);
-            }
-            return parseInt(localCount);
-        },
-        shouldShowSoldCount: function (product) {
-            if (!product) return false;
-            const isRandomSaleOff = parseInt(product.use_random_sale) === 10 || parseInt(product.use_random_sale) === 0;
-            if (isRandomSaleOff && (!product.actual_sales || parseInt(product.actual_sales) === 0)) {
-                return false;
-            }
-            return true;
         },
         getPaginationConfig: function (product) {
             const hasVideo = product.videos && product.videos.length > 0;

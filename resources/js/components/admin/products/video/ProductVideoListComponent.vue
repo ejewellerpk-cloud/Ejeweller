@@ -9,15 +9,22 @@
 
     <div class="db-table-responsive">
         <table class="db-table stripe">
-            <thead class="db-table-head">
+                <thead class="db-table-head">
                 <tr class="db-table-head-tr">
+                    <th class="db-table-head-th w-16">{{ $t("label.thumbnail") || 'Thumb' }}</th>
                     <th class="db-table-head-th">{{ $t("label.video_provider") }}</th>
                     <th class="db-table-head-th">{{ $t("label.link") }}</th>
                     <th class="db-table-head-th">{{ $t("label.action") }}</th>
                 </tr>
             </thead>
             <tbody class="db-table-body" v-if="productVideos.length > 0">
-                <tr class="db-table-body-tr" v-for="productVideo in productVideos" :key="productVideo">
+                <tr class="db-table-body-tr" v-for="productVideo in productVideos" :key="productVideo.id">
+                    <td class="db-table-body-td">
+                        <div class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+                            <img v-if="productVideo.thumbnail" :src="productVideo.thumbnail" alt="thumbnail" class="w-full h-full object-cover" />
+                            <i v-else class="fa-solid fa-clapperboard text-slate-300 text-sm"></i>
+                        </div>
+                    </td>
                     <td class="db-table-body-td">
                         {{ productVideo.provider_name }}
                     </td>
@@ -125,6 +132,7 @@ export default {
             this.props.form = {
                 video_provider: productVideo.video_provider,
                 link: productVideo.link,
+                thumbnail: productVideo.thumbnail || "",
             };
             this.loading.isActive = false;
         },

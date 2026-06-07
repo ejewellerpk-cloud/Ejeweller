@@ -30,6 +30,8 @@ class ProductVideoRequest extends FormRequest
                 Rule::unique("product_videos", "link")->where('product_id', $this->route('product.id'))->ignore($this->route('productVideo.id'))
             ],
             'file'           => ['required_if:video_provider,20', 'nullable', 'file', 'mimetypes:video/mp4,video/x-m4v,video/quicktime,video/webm,video/x-msvideo,video/x-flv', 'max:20480'],
+            'thumbnail'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_thumbnail' => ['nullable', 'boolean'],
         ];
     }
 }
