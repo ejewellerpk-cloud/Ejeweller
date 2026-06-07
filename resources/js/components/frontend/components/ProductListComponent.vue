@@ -267,49 +267,8 @@ export default {
             animatingCartIds: {},
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
             loadedImages: {},
-            cardVideoObserver: null,
             cardVideoActiveIds: {},
-            hoveredCardIds: {},
         }
-    },
-    mounted() {
-        if (typeof IntersectionObserver === 'undefined') {
-            return;
-        }
-
-        this.cardVideoObserver = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                const productId = Number(entry.target.getAttribute('data-card-product-id'));
-                if (!productId) {
-                    return;
-                }
-
-                const product = this.products.find((item) => item.id === productId);
-                if (!product?.videos?.length) {
-                    return;
-                }
-
-                if (entry.isIntersecting) {
-                    const shouldAutoPlay = !isFinePointerDevice() || !this.hoveredCardIds[productId];
-                    if (shouldAutoPlay) {
-                        this.goToCardSlide(productId, this.getVideoSlideIndex(product));
-                        this.scheduleCardVideoActivation(productId);
-                    }
-                } else if (!isFinePointerDevice() || !this.hoveredCardIds[productId]) {
-                    this.deactivateCardVideo(productId);
-                    this.goToCardSlide(productId, 0);
-                }
-            });
-        }, { threshold: 0.45 });
-
-        this.$nextTick(() => this.registerCardVideoObservers());
-    },
-    updated() {
-        this.$nextTick(() => this.registerCardVideoObservers());
-    },
-    beforeUnmount() {
-        this.cardVideoObserver?.disconnect();
-        this.cardVideoObserver = null;
     },
     computed: {
         setting() {
@@ -329,21 +288,6 @@ export default {
         onSwiperReady(swiper, productId) {
             this.swiperInstances[productId] = swiper;
             this.syncCardVideoPlayback(productId, swiper);
-
-            const product = this.products.find((item) => item.id === productId);
-            if (!product?.videos?.length) {
-                return;
-            }
-
-            const root = this.getCardRoot(productId);
-            if (root && this.cardVideoObserver) {
-                const rect = root.getBoundingClientRect();
-                const inView = rect.top < window.innerHeight && rect.bottom > 0 && rect.width > 0;
-                if (inView && (!isFinePointerDevice() || !this.hoveredCardIds[productId])) {
-                    this.goToCardSlide(productId, this.getVideoSlideIndex(product));
-                    this.scheduleCardVideoActivation(productId);
-                }
-            }
         },
         getCardRoot(productId) {
             return this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`) || null;
@@ -367,20 +311,6 @@ export default {
             if (playPromise?.catch) {
                 playPromise.catch(() => {});
             }
-        },
-        registerCardVideoObservers() {
-            if (!this.cardVideoObserver || !this.$el?.querySelectorAll) {
-                return;
-            }
-
-            this.$el.querySelectorAll('[data-card-product-id]').forEach((element) => {
-                if (element.dataset.videoObserved === '1') {
-                    return;
-                }
-
-                element.dataset.videoObserved = '1';
-                this.cardVideoObserver.observe(element);
-            });
         },
         getVideoSlideIndex(product) {
             return product.previews?.length > 0 ? 1 : 0;
@@ -528,12 +458,8 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
-            this.hoveredCardIds = { ...this.hoveredCardIds, [productId]: true };
             const product = this.products.find((item) => item.id === productId);
-            if (product?.videos?.length) {
-                this.goToCardSlide(productId, this.getVideoSlideIndex(product));
-                this.scheduleCardVideoActivation(productId);
-            } else {
+            if (product && !product.videos?.length) {
                 this.goToCardSlide(productId, 1);
             }
             this.prefetchProductDetails();
@@ -542,11 +468,10 @@ export default {
             if (!isFinePointerDevice()) {
                 return;
             }
-            const next = { ...this.hoveredCardIds };
-            delete next[productId];
-            this.hoveredCardIds = next;
-            this.deactivateCardVideo(productId);
-            this.goToCardSlide(productId, 0);
+            const product = this.products.find((item) => item.id === productId);
+            if (product && !product.videos?.length) {
+                this.goToCardSlide(productId, 0);
+            }
         },
         isWishlisted(product) {
             if (!product) return false;
