@@ -52,7 +52,7 @@ class MenuTableSeeder extends Seeder
                     [
                         'name'       => 'Product Categories',
                         'language'   => 'product_categories',
-                        'url'        => 'settings/product-categories',
+                        'url'        => 'product-categories',
                         'icon'       => 'lab lab-line-item-categories',
                         'priority'   => 100,
                         'status'     => 1,
@@ -62,7 +62,7 @@ class MenuTableSeeder extends Seeder
                     [
                         'name'       => 'Product Attributes',
                         'language'   => 'product_attributes',
-                        'url'        => 'settings/product-attributes',
+                        'url'        => 'product-attributes',
                         'icon'       => 'lab lab-line-item-attributes',
                         'priority'   => 100,
                         'status'     => 1,
@@ -72,7 +72,7 @@ class MenuTableSeeder extends Seeder
                     [
                         'name'       => 'Product Brands',
                         'language'   => 'product_brands',
-                        'url'        => 'settings/product-brands',
+                        'url'        => 'product-brands',
                         'icon'       => 'lab lab-line-brand',
                         'priority'   => 100,
                         'status'     => 1,

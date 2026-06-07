@@ -140,6 +140,8 @@ class AppLibrary
                 $permissionUrl = $menu['url'];
                 if (str_starts_with($permissionUrl, 'settings/')) {
                     $permissionUrl = 'settings';
+                } elseif (in_array($permissionUrl, ['product-categories', 'product-brands', 'product-attributes'], true)) {
+                    $permissionUrl = 'settings';
                 }
 
                 if (isset($permissions[$permissionUrl]) && !$permissions[$permissionUrl]['access']) {

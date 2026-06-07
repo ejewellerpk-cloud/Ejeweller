@@ -55,16 +55,10 @@ import PaginationBox from "../../components/pagination/PaginationBox";
 import PaginationSMBox from "../../components/pagination/PaginationSMBox";
 import SmIconDeleteComponent from "../../components/buttons/SmIconDeleteComponent";
 import SmIconModalEditComponent from "../../components/buttons/SmIconModalEditComponent";
-import ExcelComponent from "../../components/buttons/export/ExcelComponent.vue";
-import ProductCreateComponent from "../ProductCreateComponent.vue";
-import ExportComponent from "../../components/buttons/export/ExportComponent.vue";
-import FilterComponent from "../../components/buttons/collapse/FilterComponent.vue";
-import PrintComponent from "../../components/buttons/export/PrintComponent.vue";
 
 export default {
     name: "ProductVideoListComponent",
     components: {
-        PrintComponent, FilterComponent, ExportComponent, ProductCreateComponent, ExcelComponent,
         ProductVideoCreateComponent,
         TableLimitComponent,
         PaginationTextComponent,

@@ -21,7 +21,12 @@
                             <UploadFileComponent props="productFileUloadModal" />
                         </div>
                     </div>
-                    <ProductCreateComponent :props="props" v-if="permissionChecker('products_create')" />
+                    <router-link @click="reset" v-if="permissionChecker('products_create')"
+                        :to="{ name: 'admin.products.create' }"
+                        class="db-btn h-[37px] text-white bg-primary">
+                        <i class="lab lab-line-add-circle"></i>
+                        <span>{{ $t('button.add_product') }}</span>
+                    </router-link>
                 </div>
             </div>
 
@@ -226,7 +231,7 @@
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
                                     <SmIconViewComponent :link="'admin.product.show'" :id="product.id"
                                         v-if="permissionChecker('products_show')" />
-                                    <SmIconSidebarModalEditComponent @click="edit(product)"
+                                    <SmIconEditComponent :link="'admin.products.edit'" :id="product.id"
                                         v-if="permissionChecker('products_edit')" />
                                     <SmIconDeleteComponent @click="destroy(product.id)"
                                         v-if="permissionChecker('products_delete')" />
@@ -262,7 +267,6 @@
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
-import ProductCreateComponent from "./ProductCreateComponent";
 import alertService from "../../../services/alertService";
 import statusEnum from "../../../enums/modules/statusEnum";
 import askEnum from "../../../enums/modules/askEnum";
@@ -271,7 +275,7 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import appService from "../../../services/appService";
 import TableLimitComponent from "../components/TableLimitComponent";
-import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
+import SmIconEditComponent from "../components/buttons/SmIconEditComponent";
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import FilterComponent from "../components/buttons/collapse/FilterComponent";
@@ -279,7 +283,6 @@ import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import activityEnum from "../../../enums/modules/activityEnum";
-import _ from "lodash";
 import ImportComponent from "../components/buttons/import/ImportComponent";
 import ProductFileUploadComponent from "./ProductFileUploadComponent";
 import SampleFileComponent from "../components/buttons/import/SampleFileComponent";
@@ -293,9 +296,8 @@ export default {
         PaginationSMBox,
         PaginationBox,
         PaginationTextComponent,
-        ProductCreateComponent,
         LoadingComponent,
-        SmIconSidebarModalEditComponent,
+        SmIconEditComponent,
         SmIconDeleteComponent,
         SmIconViewComponent,
         FilterComponent,
@@ -332,30 +334,6 @@ export default {
                 order_type: 'asc'
             },
             props: {
-                form: {
-                    name: "",
-                    sku: "",
-                    product_category_id: null,
-                    barcode_id: null,
-                    buying_price: "",
-                    selling_price: "",
-                    tax_id: [],
-                    product_brand_id: null,
-                    status: statusEnum.ACTIVE,
-                    can_purchasable: askEnum.NO,
-                    show_stock_out: activityEnum.DISABLE,
-                    refundable: askEnum.NO,
-                    use_random_sale: askEnum.YES,
-                    is_show_viewers: askEnum.YES,
-                    maximum_purchase_quantity: "",
-                    low_stock_quantity_warning: "",
-                    unit_id: null,
-                    weight: "",
-                    warranty: "",
-                    tags: "",
-                    convertTags: [],
-                    description: "",
-                },
                 search: {
                     paginate: 1,
                     page: 1,
@@ -463,48 +441,8 @@ export default {
                 this.loading.isActive = false;
             });
         },
-        edit: function (product) {
-            this.loading.isActive = true;
-            appService.sideDrawerShow();
-            this.$store.dispatch('product/edit', product.id);
-            this.loading.isActive = false;
-
-            this.props.form.name = product.name;
-            this.props.form.sku = product.sku;
-            this.props.form.product_category_id = product.product_category_id;
-            this.props.form.barcode_id = product.barcode_id;
-            this.props.form.buying_price = product.flat_buying_price;
-            this.props.form.selling_price = product.flat_selling_price;
-            this.props.form.tax_id = this.taxUpdate(product.tax_id);
-            this.props.form.product_brand_id = product.product_brand_id;
-            this.props.form.status = product.status;
-            this.props.form.can_purchasable = product.can_purchasable;
-            this.props.form.show_stock_out = product.show_stock_out;
-            this.props.form.refundable = product.refundable;
-            this.props.form.use_random_sale = product.use_random_sale;
-            this.props.form.is_show_viewers = product.is_show_viewers;
-            this.props.form.maximum_purchase_quantity = product.maximum_purchase_quantity;
-            this.props.form.low_stock_quantity_warning = product.low_stock_quantity_warning;
-            this.props.form.unit_id = product.unit_id;
-            this.props.form.weight = product.weight;
-            this.props.form.warranty = product.warranty;
-            this.props.form.convertTags = this.tagUpdate(product.product_tags);
-            this.props.form.tags = ""
-            this.props.form.description = product.description;
-        },
-        tagUpdate: function (objects) {
-            let tags = [];
-            _.forEach(objects, (object) => {
-                tags.push({ "text": object.name, "tiClasses": ["ti-valid"] });
-            });
-            return tags;
-        },
-        taxUpdate: function (objects) {
-            let taxes = [];
-            _.forEach(objects, (object, key) => {
-                taxes.push(object.tax_id);
-            });
-            return taxes;
+        reset: function () {
+            this.$store.dispatch('product/reset');
         },
         destroy: function (id) {
             appService.destroyConfirmation().then((res) => {

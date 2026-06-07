@@ -37,7 +37,7 @@
                         </td>
                         <td class="db-table-body-td">
                             <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
-                                <SmViewComponent :link="'admin.settings.productBrand.show'" :id="productBrand.id" />
+                                <SmViewComponent :link="'admin.productBrand.show'" :id="productBrand.id" />
                                 <SmModalEditComponent @click="edit(productBrand)" />
                                 <SmDeleteComponent @click="destroy(productBrand.id)" />
                             </div>

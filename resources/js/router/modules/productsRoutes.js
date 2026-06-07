@@ -1,6 +1,7 @@
 const ProductComponent = ()=> import("../../components/admin/products/ProductComponent");
 const ProductListComponent = ()=> import("../../components/admin/products/ProductListComponent");
 const ProductShowComponent = ()=> import("../../components/admin/products/ProductShowComponent");
+const ProductCreateAndEditComponent = ()=> import("../../components/admin/products/ProductCreateAndEditComponent");
 
 export default [
     {
@@ -24,6 +25,28 @@ export default [
                     auth: true,
                     permissionUrl: 'products',
                     breadcrumb: ''
+                },
+            },
+            {
+                path: 'add',
+                component: ProductCreateAndEditComponent,
+                name: 'admin.products.create',
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: 'products_create',
+                    breadcrumb: 'create',
+                },
+            },
+            {
+                path: 'edit/:id',
+                component: ProductCreateAndEditComponent,
+                name: 'admin.products.edit',
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: 'products_edit',
+                    breadcrumb: 'edit',
                 },
             },
             {

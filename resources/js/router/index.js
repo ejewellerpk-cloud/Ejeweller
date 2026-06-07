@@ -22,6 +22,9 @@ import whatsappOrdersRoutes from "./modules/whatsappOrdersRoutes";
 import ProductSectionRoutes from "./modules/ProductSectionRoutes";
 import productsReportRoutes from "./modules/productsReportRoutes";
 import productsRoutes from "./modules/productsRoutes";
+import productCategoryRoutes from "./modules/productCategoryRoutes";
+import productBrandRoutes from "./modules/productBrandRoutes";
+import productAttributeRoutes from "./modules/productAttributeRoutes";
 import profileRoutes from "./modules/profileRoutes";
 import PromotionRoutes from "./modules/PromotionRoutes";
 import purchaseRoutes from "./modules/purchaseRoutes";
@@ -67,6 +70,9 @@ const routes = baseRoutes.concat(
     settingRoutes,
     profileRoutes,
     productsRoutes,
+    productCategoryRoutes,
+    productBrandRoutes,
+    productAttributeRoutes,
     administratorRoutes,
     customerRoutes,
     employeeRoutes,

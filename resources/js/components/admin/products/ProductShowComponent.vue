@@ -2,6 +2,15 @@
     <LoadingComponent :props="loading" />
 
     <div class="col-12">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-800">{{ product.name }}</h2>
+            <router-link v-if="permissionChecker('products_edit')"
+                :to="{ name: 'admin.products.edit', params: { id: $route.params.id } }"
+                class="db-btn h-[37px] text-white bg-primary">
+                <i class="lab lab-line-edit"></i>
+                <span>{{ $t('button.edit') }}</span>
+            </router-link>
+        </div>
         <div id="product" class="db-tab-div active">
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-5">
 
@@ -661,6 +670,9 @@ export default {
         this.show();
     },
     methods: {
+        permissionChecker(e) {
+            return appService.permissionChecker(e);
+        },
         // Removed manual multiTargets in favor of Vue reactive activeTab state
         floatNumber(e) {
             return appService.floatNumber(e);

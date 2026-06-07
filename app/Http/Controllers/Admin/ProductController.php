@@ -74,7 +74,7 @@ class ProductController extends AdminController implements HasMiddleware
     {
         try {
             return new ProductAdminResource($this->productService->store($request));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }

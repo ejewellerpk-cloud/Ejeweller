@@ -86,6 +86,16 @@ export const product = {
         edit: function (context, payload) {
             context.commit('temp', payload);
         },
+        editProduct: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.get(`admin/product?paginate=0&ids=${payload}`).then((res) => {
+                    context.commit('temp', payload);
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.delete(`admin/product/${payload.id}`).then((res) => {

@@ -41,21 +41,21 @@ return new class extends Migration
         $this->upsertChild($productsParentId, [
             'name'     => 'Product Categories',
             'language' => 'product_categories',
-            'url'      => 'settings/product-categories',
+            'url'      => 'product-categories',
             'icon'     => 'lab lab-line-item-categories',
         ]);
 
         $this->upsertChild($productsParentId, [
             'name'     => 'Product Attributes',
             'language' => 'product_attributes',
-            'url'      => 'settings/product-attributes',
+            'url'      => 'product-attributes',
             'icon'     => 'lab lab-line-item-attributes',
         ]);
 
         $this->upsertChild($productsParentId, [
             'name'     => 'Product Brands',
             'language' => 'product_brands',
-            'url'      => 'settings/product-brands',
+            'url'      => 'product-brands',
             'icon'     => 'lab lab-line-brand',
         ]);
 

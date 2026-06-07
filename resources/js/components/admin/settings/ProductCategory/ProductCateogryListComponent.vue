@@ -45,7 +45,7 @@
                         </td>
                         <td class="db-table-body-td hidden-print">
                             <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
-                                <SmViewComponent :link="'admin.settings.productCategory.show'"
+                                <SmViewComponent :link="'admin.productCategory.show'"
                                     :id="productCategory.id" />
                                 <SmModalEditComponent @click="edit(productCategory)" />
                                 <SmDeleteComponent @click="destroy(productCategory.id)" />

@@ -65,15 +65,15 @@
                 <i class="text-sm lab lab-line-currencies"></i>
                 {{ $t("menu.currencies") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.productCategory' }" class="settings-menu-link">
+            <router-link :to="{ name: 'admin.productCategory' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-item-categories"></i>
                 {{ $t("menu.product_categories") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.productAttribute' }" class="settings-menu-link">
+            <router-link :to="{ name: 'admin.productAttribute' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-item-attributes"></i>
                 {{ $t("menu.product_attributes") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.productBrand' }" class="settings-menu-link">
+            <router-link :to="{ name: 'admin.productBrand' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-brand"></i>
                 {{ $t("menu.product_brands") }}
             </router-link>

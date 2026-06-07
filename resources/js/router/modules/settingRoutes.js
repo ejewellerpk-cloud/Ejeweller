@@ -22,12 +22,6 @@ const SliderListComponent = () =>  import("../../components/admin/settings/Slide
 const SliderShowComponent = () =>  import("../../components/admin/settings/Slider/SliderShowComponent");
 const CurrencyComponent = () =>  import("../../components/admin/settings/Currency/CurrencyComponent");
 const CurrencyListComponent = () =>  import("../../components/admin/settings/Currency/CurrencyListComponent");
-const ProductCategoryListComponent = () =>  import("../../components/admin/settings/ProductCategory/ProductCateogryListComponent");
-const ProductCategoryComponent = () =>  import("../../components/admin/settings/ProductCategory/ProductCategoryComponent");
-const ProductCategoryShowComponent = () =>  import("../../components/admin/settings/ProductCategory/ProductCategoryShowComponent");
-const ProductAttributeComponent = () =>  import("../../components/admin/settings/ProductAttribute/ProductAttributeComponent");
-const ProductAttributeListComponent = () =>  import("../../components/admin/settings/ProductAttribute/ProductAttributeListComponent");
-const ProductAttributeShowComponent = () =>  import("../../components/admin/settings/ProductAttribute/ProductAttributeShowComponent");
 const TaxComponent = () =>  import("../../components/admin/settings/Tax/TaxComponent");
 const TaxListComponent = () =>  import("../../components/admin/settings/Tax/TaxListComponent");
 const PageComponent = () =>  import("../../components/admin/settings/Page/PageComponent");
@@ -41,9 +35,6 @@ const PaymentGatewayComponent = () =>  import("../../components/admin/settings/P
 const RoleComponent = () =>  import("../../components/admin/settings/Role/RoleComponent");
 const RoleListComponent = () =>  import("../../components/admin/settings/Role/RoleListComponent");
 const RoleShowComponent = () =>  import("../../components/admin/settings/Role/RoleShowComponent");
-const ProductBrandComponent = () =>  import("../../components/admin/settings/ProductBrand/ProductBrandComponent");
-const ProductBrandListComponent = () =>  import("../../components/admin/settings/ProductBrand/ProductBrandListComponent");
-const ProductBrandShowComponent = () =>  import("../../components/admin/settings/ProductBrand/ProductBrandShowComponent");
 const BenefitComponent = () =>  import("../../components/admin/settings/Benefit/BenefitComponent");
 const BenefitListComponent = () =>  import("../../components/admin/settings/Benefit/BenefitListComponent");
 const BenefitShowComponent = () =>  import("../../components/admin/settings/Benefit/BenefitShowComponent");
@@ -326,75 +317,45 @@ export default [
             },
             {
                 path: "product-categories",
-                component: ProductCategoryComponent,
                 name: "admin.settings.productCategory",
-                redirect: { name: "admin.settings.productCategory.list" },
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "product_categories",
-                },
-                children: [
-                    {
-                        path: "list",
-                        component: ProductCategoryListComponent,
-                        name: "admin.settings.productCategory.list",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "",
-                        },
-                    },
-                    {
-                        path: "show/:id",
-                        component: ProductCategoryShowComponent,
-                        name: "admin.settings.productCategory.show",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "view",
-                        },
-                    },
-                ],
+                redirect: { name: "admin.productCategory.list" },
+            },
+            {
+                path: "product-categories/list",
+                redirect: { name: "admin.productCategory.list" },
+            },
+            {
+                path: "product-categories/show/:id",
+                name: "admin.settings.productCategory.show",
+                redirect: (to) => ({ name: "admin.productCategory.show", params: { id: to.params.id } }),
             },
             {
                 path: "product-brands",
-                component: ProductBrandComponent,
                 name: "admin.settings.productBrand",
-                redirect: { name: "admin.settings.productBrand.list" },
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "product_brands",
-                },
-                children: [
-                    {
-                        path: "list",
-                        component: ProductBrandListComponent,
-                        name: "admin.settings.productBrand.list",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "",
-                        },
-                    },
-                    {
-                        path: "show/:id",
-                        component: ProductBrandShowComponent,
-                        name: "admin.settings.productBrand.show",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "view",
-                        },
-                    },
-                ],
+                redirect: { name: "admin.productBrand.list" },
+            },
+            {
+                path: "product-brands/list",
+                redirect: { name: "admin.productBrand.list" },
+            },
+            {
+                path: "product-brands/show/:id",
+                name: "admin.settings.productBrand.show",
+                redirect: (to) => ({ name: "admin.productBrand.show", params: { id: to.params.id } }),
+            },
+            {
+                path: "product-attributes",
+                name: "admin.settings.productAttribute",
+                redirect: { name: "admin.productAttribute.list" },
+            },
+            {
+                path: "product-attributes/list",
+                redirect: { name: "admin.productAttribute.list" },
+            },
+            {
+                path: "product-attributes/show/:id",
+                name: "admin.settings.productAttribute.show",
+                redirect: (to) => ({ name: "admin.productAttribute.show", params: { id: to.params.id } }),
             },
 
             {
@@ -434,42 +395,6 @@ export default [
                 ],
             },
 
-            {
-                path: "product-attributes",
-                component: ProductAttributeComponent,
-                name: "admin.settings.productAttribute",
-                redirect: { name: "admin.settings.productAttribute.list" },
-                meta: {
-                    isFrontend: false,
-                    auth: true,
-                    permissionUrl: "settings",
-                    breadcrumb: "product_attributes",
-                },
-                children: [
-                    {
-                        path: "list",
-                        component: ProductAttributeListComponent,
-                        name: "admin.settings.productAttribute.list",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "",
-                        },
-                    },
-                    {
-                        path: "show/:id",
-                        component: ProductAttributeShowComponent,
-                        name: "admin.settings.productAttribute.show",
-                        meta: {
-                            isFrontend: false,
-                            auth: true,
-                            permissionUrl: "settings",
-                            breadcrumb: "view",
-                        },
-                    },
-                ],
-            },
             {
                 path: "benefits",
                 component: BenefitComponent,

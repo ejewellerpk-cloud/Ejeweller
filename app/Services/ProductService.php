@@ -143,12 +143,6 @@ class ProductService
     {
         try {
             DB::transaction(function () use ($request) {
-                if ($request->barcode_id === BarcodeType::EAN_13) {
-                    $barcode_value = str_pad($request->sku, 12, '0', STR_PAD_LEFT);
-                }
-                if ($request->barcode_id === BarcodeType::UPC_A) {
-                    $barcode_value = str_pad($request->sku, 11, '0', STR_PAD_LEFT);
-                }
                 $this->product = Product::create($request->validated() + ['slug' => Str::slug($request->name), 'variation_price' => $request->selling_price]);
                 if ($request->tags) {
                     $tagItems = json_decode($request->tags, true);
@@ -169,20 +163,11 @@ class ProductService
                     }
                 }
 
-                $generator = new BarcodeGeneratorJPG();
-                if ($this->product->barcode_id == BarcodeType::EAN_13) {
-                    $barcode = $generator->getBarcode($barcode_value, $generator::TYPE_EAN_13);
-                }
-                if ($this->product->barcode_id == BarcodeType::UPC_A) {
-                    $barcode = $generator->getBarcode($barcode_value, $generator::TYPE_UPC_A);
-                }
-                $tempFilePath = storage_path('app/public/barcode.jpg');
-                file_put_contents($tempFilePath, $barcode);
-                $this->product->addMedia($tempFilePath)->toMediaCollection('product-barcode');
+                $this->attachProductBarcode($this->product);
             });
             app(ProductSectionService::class)->clearHomeSectionsCache();
             return $this->product;
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -197,25 +182,9 @@ class ProductService
         try {
             DB::transaction(function () use ($request, $product) {
                 if ($request->barcode_id != $product->barcode_id || $request->sku != $product->sku) {
-                    if ($request->barcode_id === BarcodeType::EAN_13) {
-                        $barcode_value = str_pad($request->sku, 12, '0', STR_PAD_LEFT);
-                    }
-                    if ($request->barcode_id === BarcodeType::UPC_A) {
-                        $barcode_value = str_pad($request->sku, 11, '0', STR_PAD_LEFT);
-                    }
                     $product->update($request->validated() + ['slug' => Str::slug($request->name)]);
-
-                    $generator = new BarcodeGeneratorJPG();
-                    if ($product->barcode_id === BarcodeType::EAN_13) {
-                        $barcode = $generator->getBarcode($barcode_value, $generator::TYPE_EAN_13);
-                    }
-                    if ($product->barcode_id === BarcodeType::UPC_A) {
-                        $barcode = $generator->getBarcode($barcode_value, $generator::TYPE_UPC_A);
-                    }
-                    $tempFilePath = storage_path('app/public/barcode.jpg');
-                    file_put_contents($tempFilePath, $barcode);
                     $product->clearMediaCollection('product-barcode');
-                    $product->addMedia($tempFilePath)->toMediaCollection('product-barcode');
+                    $this->attachProductBarcode($product);
                 } else {
                     $product->update($request->validated() + ['slug' => Str::slug($request->name)]);
                 }
@@ -256,7 +225,7 @@ class ProductService
             });
             app(ProductSectionService::class)->clearHomeSectionsCache();
             return $this->product;
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1121,5 +1090,47 @@ class ProductService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function barcodeValueForSku(string|int $sku, int $barcodeId): string
+    {
+        $length = $barcodeId === BarcodeType::EAN_13 ? 12 : 11;
+
+        return str_pad((string) $sku, $length, '0', STR_PAD_LEFT);
+    }
+
+    private function generateBarcodeImage(string|int $sku, int $barcodeId): ?string
+    {
+        try {
+            $generator = new BarcodeGeneratorJPG();
+            $barcodeValue = $this->barcodeValueForSku($sku, $barcodeId);
+
+            if ($barcodeId === BarcodeType::EAN_13) {
+                return $generator->getBarcode($barcodeValue, $generator::TYPE_EAN_13);
+            }
+
+            return $generator->getBarcode($barcodeValue, $generator::TYPE_UPC_A);
+        } catch (\Throwable $exception) {
+            Log::warning('Product barcode generation failed.', [
+                'sku' => $sku,
+                'barcode_id' => $barcodeId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function attachProductBarcode(Product $product): void
+    {
+        $barcode = $this->generateBarcodeImage($product->sku, (int) $product->barcode_id);
+
+        if ($barcode === null) {
+            return;
+        }
+
+        $tempFilePath = storage_path('app/public/barcode.jpg');
+        file_put_contents($tempFilePath, $barcode);
+        $product->addMedia($tempFilePath)->toMediaCollection('product-barcode');
     }
 }
