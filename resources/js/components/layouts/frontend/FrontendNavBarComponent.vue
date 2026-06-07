@@ -127,12 +127,13 @@
                             </router-link>
                         </li>
 
-                        <li class="header-nav-item">
+                        <li class="header-nav-item header-nav-item--categories">
                             <button type="button" class="header-nav-menu down-arrow">
                                 {{ $t('label.categories') }}
                             </button>
                             <div
-                                class="fixed top-[64px] left-0 z-10 w-full origin-top scale-y-0 transition-all duration-300">
+                                class="header-category-mega fixed left-0 z-50 w-full origin-top scale-y-0 transition-all duration-300"
+                                style="top: var(--frontend-header-bottom, 4rem);">
                                 <div class="container">
                                     <div class="w-full rounded-b-2xl shadow-paper bg-white">
                                         <nav class="w-full flex items-center justify-center">
@@ -457,8 +458,11 @@ export default {
             if (!header) {
                 return;
             }
-            const height = Math.ceil(header.getBoundingClientRect().height);
+            const rect = header.getBoundingClientRect();
+            const height = Math.ceil(rect.height);
+            const bottom = Math.ceil(rect.bottom);
             document.documentElement.style.setProperty('--frontend-header-height', `${height}px`);
+            document.documentElement.style.setProperty('--frontend-header-bottom', `${bottom}px`);
             document.documentElement.style.setProperty('--shop-sticky-top', `${height}px`);
         };
 
@@ -472,6 +476,7 @@ export default {
                 } else {
                     isSticky.value = false;
                 }
+                syncLayoutOffsets();
             });
 
             syncLayoutOffsets();
@@ -482,6 +487,11 @@ export default {
             if (header && typeof ResizeObserver !== 'undefined') {
                 headerResizeObserver = new ResizeObserver(syncLayoutOffsets);
                 headerResizeObserver.observe(header);
+            }
+
+            const topBar = document.getElementById('frontend-top-bar');
+            if (topBar && typeof ResizeObserver !== 'undefined') {
+                headerResizeObserver?.observe(topBar);
             }
         });
 

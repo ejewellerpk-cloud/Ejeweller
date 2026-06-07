@@ -38,12 +38,30 @@ export const media = {
         },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post("admin/media-library", payload, {
+                const formData = payload?.formData ?? payload;
+                const config = payload?.config ?? {};
+
+                axios.post("admin/media-library", formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
-                    }
+                    },
+                    onUploadProgress: config.onUploadProgress,
                 }).then((res) => {
                     context.dispatch("lists", { page: 1 }).then().catch();
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
+        uploadFile: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.post("admin/media-library", payload.formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: payload.onUploadProgress,
+                }).then((res) => {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

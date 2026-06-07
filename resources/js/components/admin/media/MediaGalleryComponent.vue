@@ -5,14 +5,111 @@
                 <h1 class="text-2xl font-black text-heading tracking-tight uppercase">Media Asset Manager</h1>
                 <p class="text-xs font-medium mt-1 uppercase tracking-widest opacity-60">Global CDN & Resource Hub</p>
             </div>
-            <div class="flex items-center gap-4">
-                <input type="file" ref="fileInput" class="hidden" multiple accept="image/*" @change="handleFileUpload" />
-                <button @click="$refs.fileInput.click()" :disabled="loading"
-                    class="db-btn py-2 px-6 text-white bg-primary flex items-center gap-2">
-                    <i v-if="loading" class="fa-solid fa-circle-notch animate-spin"></i>
+            <div class="flex flex-wrap items-center gap-3">
+                <input type="file" ref="fileInput" class="hidden" multiple accept="image/*" @change="handleQuickUpload" />
+                <input type="file" ref="bulkFileInput" class="hidden" multiple accept="image/*" @change="handleBulkFileSelect" />
+                <button @click="$refs.fileInput.click()" :disabled="isUploading"
+                    class="db-btn py-2 px-6 text-white bg-primary flex items-center gap-2 disabled:opacity-60">
+                    <i v-if="loading && !isUploading" class="fa-solid fa-circle-notch animate-spin"></i>
                     <i v-else class="fa-solid fa-plus"></i>
                     <span>Deploy Assets</span>
                 </button>
+                <button @click="openBulkUpload" :disabled="isUploading"
+                    class="db-btn py-2 px-6 bg-white border border-primary text-primary flex items-center gap-2 disabled:opacity-60">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Bulk Upload</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bulk Upload Panel -->
+        <div v-if="bulkUploadOpen || isUploading" class="mb-8 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
+            <div class="flex items-center justify-between gap-4 px-5 py-4 border-b border-slate-200 bg-white">
+                <div>
+                    <h2 class="text-sm font-black uppercase tracking-wide text-heading">Bulk Upload</h2>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Images are converted to WebP automatically (same as single upload)</p>
+                </div>
+                <button v-if="!isUploading" type="button" @click="closeBulkUpload"
+                    class="w-9 h-9 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-500 hover:border-rose-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-5">
+                <div
+                    class="relative rounded-2xl border-2 border-dashed transition-colors cursor-pointer"
+                    :class="isDragging ? 'border-primary bg-primary/5' : 'border-slate-300 bg-white hover:border-primary/60'"
+                    @click="!isUploading && $refs.bulkFileInput.click()"
+                    @dragover.prevent="onDragOver"
+                    @dragleave.prevent="onDragLeave"
+                    @drop.prevent="onDrop">
+                    <div class="py-10 px-6 text-center pointer-events-none">
+                        <i class="fa-solid fa-images text-4xl text-primary/70 mb-3"></i>
+                        <p class="text-sm font-bold text-heading">Drop images here or click to browse</p>
+                        <p class="text-xs text-slate-500 mt-1">JPG, PNG, GIF, WebP, SVG — multiple files supported</p>
+                    </div>
+                </div>
+
+                <div v-if="uploadQueue.length > 0" class="space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-xs font-bold uppercase tracking-wide text-slate-600">
+                            {{ uploadQueue.length }} file(s) queued
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <button v-if="!isUploading" type="button" @click="clearQueue"
+                                class="text-xs font-semibold text-slate-500 hover:text-rose-500 px-3 py-1.5 rounded-lg border border-slate-200 bg-white">
+                                Clear queue
+                            </button>
+                            <button type="button" @click="startBulkUpload" :disabled="isUploading || uploadQueue.length === 0"
+                                class="db-btn py-2 px-5 text-white bg-primary text-xs disabled:opacity-60 flex items-center gap-2">
+                                <i v-if="isUploading" class="fa-solid fa-circle-notch animate-spin"></i>
+                                <i v-else class="fa-solid fa-upload"></i>
+                                <span>{{ isUploading ? 'Uploading...' : 'Start Upload' }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="isUploading || overallProgress > 0" class="space-y-2">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                            <span>Overall progress</span>
+                            <span>{{ completedCount }}/{{ uploadQueue.length }} · {{ Math.round(overallProgress) }}%</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-slate-200 overflow-hidden">
+                            <div class="h-full bg-primary transition-all duration-300 rounded-full"
+                                :style="{ width: overallProgress + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <div class="max-h-72 overflow-y-auto thin-scrolling rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+                        <div v-for="(item, index) in uploadQueue" :key="item.id"
+                            class="px-4 py-3 flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                <img v-if="item.preview" :src="item.preview" :alt="item.name" class="w-full h-full object-cover" />
+                                <i v-else class="fa-solid fa-image text-slate-400"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                    <p class="text-xs font-bold text-heading truncate">{{ item.name }}</p>
+                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded"
+                                        :class="statusClass(item.status)">
+                                        {{ statusLabel(item.status) }}
+                                    </span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mb-2">{{ formatSize(item.size) }}</p>
+                                <div v-if="item.status === 'uploading'" class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                    <div class="h-full bg-primary transition-all duration-200 rounded-full"
+                                        :style="{ width: item.progress + '%' }"></div>
+                                </div>
+                                <p v-if="item.status === 'error' && item.error" class="text-[10px] text-rose-500 mt-1">{{ item.error }}</p>
+                            </div>
+                            <button v-if="!isUploading && item.status === 'pending'" type="button"
+                                @click="removeFromQueue(index)"
+                                class="text-slate-400 hover:text-rose-500 flex-shrink-0">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -130,7 +227,14 @@ export default {
             loading: false,
             search: "",
             viewMode: "grid",
-            filterTimer: null
+            filterTimer: null,
+            bulkUploadOpen: false,
+            isUploading: false,
+            isDragging: false,
+            uploadQueue: [],
+            overallProgress: 0,
+            completedCount: 0,
+            queueIdSeed: 0,
         }
     },
     computed: {
@@ -142,10 +246,14 @@ export default {
     mounted() {
         this.fetchMedia();
     },
+    beforeUnmount() {
+        this.revokeQueuePreviews();
+    },
     methods: {
         ...mapActions({
             lists: 'media/lists',
             save: 'media/save',
+            uploadFile: 'media/uploadFile',
             destroy: 'media/destroy'
         }),
         fetchMedia(page = 1) {
@@ -160,23 +268,198 @@ export default {
         changePage(page) {
             this.fetchMedia(page);
         },
-        async handleFileUpload(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-
-            const fd = new FormData();
-            files.forEach(file => fd.append('files[]', file)); // Laravel works better with files[] for arrays
-
-            this.loading = true;
-            try {
-                await this.save(fd);
-                alertService.success("Assets deployed successfully");
-                this.$refs.fileInput.value = null;
-            } catch (err) {
-                alertService.error("Deployment failed");
-            } finally {
-                this.loading = false;
+        openBulkUpload() {
+            this.bulkUploadOpen = true;
+        },
+        closeBulkUpload() {
+            if (this.isUploading) {
+                return;
             }
+            this.bulkUploadOpen = false;
+            this.clearQueue();
+        },
+        onDragOver() {
+            if (!this.isUploading) {
+                this.isDragging = true;
+            }
+        },
+        onDragLeave() {
+            this.isDragging = false;
+        },
+        onDrop(event) {
+            this.isDragging = false;
+            if (this.isUploading) {
+                return;
+            }
+            const files = Array.from(event.dataTransfer?.files || []);
+            this.addFilesToQueue(files);
+        },
+        handleBulkFileSelect(event) {
+            const files = Array.from(event.target.files || []);
+            this.addFilesToQueue(files);
+            event.target.value = null;
+        },
+        addFilesToQueue(files) {
+            const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+            if (imageFiles.length === 0) {
+                alertService.error('Please select image files only');
+                return;
+            }
+
+            if (imageFiles.length !== files.length) {
+                alertService.warning('Non-image files were skipped');
+            }
+
+            imageFiles.forEach((file) => {
+                this.uploadQueue.push({
+                    id: ++this.queueIdSeed,
+                    file,
+                    name: file.name,
+                    size: file.size,
+                    preview: URL.createObjectURL(file),
+                    progress: 0,
+                    status: 'pending',
+                    error: '',
+                });
+            });
+
+            this.bulkUploadOpen = true;
+        },
+        removeFromQueue(index) {
+            const item = this.uploadQueue[index];
+            if (item?.preview) {
+                URL.revokeObjectURL(item.preview);
+            }
+            this.uploadQueue.splice(index, 1);
+        },
+        clearQueue() {
+            this.revokeQueuePreviews();
+            this.uploadQueue = [];
+            this.overallProgress = 0;
+            this.completedCount = 0;
+        },
+        revokeQueuePreviews() {
+            this.uploadQueue.forEach((item) => {
+                if (item.preview) {
+                    URL.revokeObjectURL(item.preview);
+                }
+            });
+        },
+        async handleQuickUpload(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) {
+                return;
+            }
+
+            this.bulkUploadOpen = true;
+            this.addFilesToQueue(files);
+            event.target.value = null;
+            await this.startBulkUpload();
+        },
+        async startBulkUpload() {
+            const pendingItems = this.uploadQueue.filter((item) => item.status === 'pending' || item.status === 'error');
+            if (pendingItems.length === 0 || this.isUploading) {
+                return;
+            }
+
+            this.isUploading = true;
+            this.loading = true;
+            this.completedCount = this.uploadQueue.filter((item) => item.status === 'done').length;
+            const total = this.uploadQueue.length;
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const item of this.uploadQueue) {
+                if (item.status === 'done') {
+                    continue;
+                }
+
+                item.status = 'uploading';
+                item.progress = 0;
+                item.error = '';
+
+                const formData = new FormData();
+                formData.append('files[]', item.file);
+
+                try {
+                    await this.uploadFile({
+                        formData,
+                        onUploadProgress: (progressEvent) => {
+                            if (!progressEvent.total) {
+                                return;
+                            }
+                            item.progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            this.updateOverallProgress(total);
+                        },
+                    });
+
+                    item.status = 'done';
+                    item.progress = 100;
+                    successCount++;
+                } catch (err) {
+                    item.status = 'error';
+                    item.error = err?.response?.data?.error
+                        || err?.response?.data?.message
+                        || 'Upload failed';
+                    failCount++;
+                }
+
+                this.completedCount = this.uploadQueue.filter((queueItem) => queueItem.status === 'done' || queueItem.status === 'error').length;
+                this.updateOverallProgress(total);
+            }
+
+            this.isUploading = false;
+            this.loading = false;
+            this.overallProgress = 100;
+
+            await this.fetchMedia(1);
+
+            if (successCount > 0 && failCount === 0) {
+                alertService.success(`${successCount} image(s) uploaded successfully`);
+            } else if (successCount > 0) {
+                alertService.warning(`${successCount} uploaded, ${failCount} failed`);
+            } else {
+                alertService.error('Bulk upload failed');
+            }
+        },
+        updateOverallProgress(total) {
+            if (total === 0) {
+                this.overallProgress = 0;
+                return;
+            }
+
+            const accumulated = this.uploadQueue.reduce((sum, item) => {
+                if (item.status === 'done') {
+                    return sum + 100;
+                }
+                if (item.status === 'error') {
+                    return sum + 100;
+                }
+                if (item.status === 'uploading') {
+                    return sum + item.progress;
+                }
+                return sum;
+            }, 0);
+
+            this.overallProgress = Math.min(100, accumulated / total);
+        },
+        statusLabel(status) {
+            const labels = {
+                pending: 'Queued',
+                uploading: 'Uploading',
+                done: 'Done',
+                error: 'Failed',
+            };
+            return labels[status] || status;
+        },
+        statusClass(status) {
+            const classes = {
+                pending: 'bg-slate-100 text-slate-500',
+                uploading: 'bg-primary/10 text-primary',
+                done: 'bg-emerald-100 text-emerald-600',
+                error: 'bg-rose-100 text-rose-600',
+            };
+            return classes[status] || 'bg-slate-100 text-slate-500';
         },
         async deleteAsset(id) {
             appService.destroyConfirmation().then(async (res) => {

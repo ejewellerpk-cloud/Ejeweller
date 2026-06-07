@@ -77,7 +77,7 @@ class MediaController extends Controller
             $isWebp = $extension === 'webp';
 
             if ($isSvg || $isWebp) {
-                $filename = time() . '-' . Str::random(10) . '.' . $extension;
+                $filename = time() . '-' . uniqid('', true) . '.' . $extension;
                 $path = $file->storeAs('media', $filename, 'public');
                 $mimetype = $isSvg ? 'image/svg+xml' : 'image/webp';
             } else {
@@ -90,7 +90,7 @@ class MediaController extends Controller
                     ], 422);
                 }
 
-                $filename = time() . '-' . Str::random(10) . '.webp';
+                $filename = time() . '-' . uniqid('', true) . '.webp';
                 $path = 'media/' . $filename;
                 Storage::disk('public')->put($path, file_get_contents($webpPath));
 

@@ -555,8 +555,13 @@
         @apply relative
     }
 
-    .header-nav-item:hover > div {
-        @apply scale-y-100
+    .header-category-mega {
+        @apply pointer-events-none
+    }
+
+    .header-nav-item--categories:hover > .header-category-mega,
+    .header-category-mega:hover {
+        @apply scale-y-100 pointer-events-auto
     }
 
     .header-nav-menu {
@@ -637,8 +642,13 @@
         padding-top: var(--safe-top);
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
+    }
+
+    @media (max-width: 1023px) {
+        .frontend-main-header {
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
     }
 
     .header-account-dropdown {
