@@ -86,8 +86,9 @@ class ProductSectionProductService
         try {
             $perPage = $paginateRequest->get('per_page', 32);
             return $productSection->products()
-                ->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity')
+                ->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
+                ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->with('media', 'videos', 'variations', 'reviews', 'taxes')
                 ->active('products.status')
                 ->paginate($perPage);

@@ -17,7 +17,7 @@ export function isRandomSaleDisabled(product) {
     }
 
     const value = parseInt(product.use_random_sale, 10);
-    return DISABLED_RANDOM_SALE_VALUES.has(value);
+    return !Number.isFinite(value) || DISABLED_RANDOM_SALE_VALUES.has(value);
 }
 
 export function getRandomStartingPoint(product) {

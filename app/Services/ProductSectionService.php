@@ -129,6 +129,7 @@ class ProductSectionService
                     $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.created_at', 'products.use_random_sale')
                         ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                         ->withReviewRating()
+                        ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                         ->withCount('cartTrackers')
                         ->withSum(
                             ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
