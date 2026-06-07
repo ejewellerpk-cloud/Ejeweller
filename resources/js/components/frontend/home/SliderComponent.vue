@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent v-if="showSkeleton" :props="loading" :is-full-screen="false" skeleton="hero" />
-    <section v-else-if="sliders.length > 0" class="mb-10 sm:mb-20 w-full overflow-hidden hero-banner-section">
+    <section v-else-if="sliders.length > 0" class="relative z-0 mb-10 sm:mb-20 w-full overflow-hidden hero-banner-section">
         <Swiper
             dir="ltr"
             v-bind="heroTouch"

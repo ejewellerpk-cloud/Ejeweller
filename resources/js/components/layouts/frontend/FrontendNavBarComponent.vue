@@ -24,10 +24,10 @@
 
     <header
         id="frontend-main-header"
-        class="frontend-main-header max-lg:sticky max-lg:top-0 z-30 w-full mb-5 sm:mb-8 shadow-xs bg-white"
-        :class="isSticky === true ? 'lg:fixed lg:top-0 lg:left-0' : ''">
-        <div class="container py-3 px-3 sm:py-3.5 sm:px-4 lg:py-0">
-            <div class="flex items-center justify-between gap-3 sm:gap-5">
+        class="frontend-main-header relative z-40 overflow-visible max-lg:sticky max-lg:top-0 w-full mb-5 sm:mb-8 shadow-xs bg-white"
+        :class="isSticky === true ? 'lg:fixed lg:top-0 lg:left-0 lg:right-0' : ''">
+        <div class="container py-3 px-3 sm:py-3.5 sm:px-4 lg:py-0 overflow-visible">
+            <div class="flex items-center justify-between gap-3 sm:gap-5 overflow-visible">
                 <!--  Logo & Mobile Responsive Start -->
                 <div class="flex items-center flex-shrink-0 gap-2 sm:gap-5 min-w-0">
                     <button type="button" class="mobile-header-touch leading-none block lg:hidden flex-shrink-0"
@@ -132,7 +132,7 @@
                                 {{ $t('label.categories') }}
                             </button>
                             <div
-                                class="fixed top-[64px] left-0 z-10 w-full origin-top scale-y-0 transition-all duration-300">
+                                class="fixed top-[64px] left-0 z-50 w-full origin-top scale-y-0 transition-all duration-300">
                                 <div class="container">
                                     <div class="w-full rounded-b-2xl shadow-paper bg-white">
                                         <nav class="w-full flex items-center justify-center">
@@ -232,14 +232,14 @@
 
                 <!-- Language Start -->
                 <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
-                    class="relative group hidden lg:block">
+                    class="relative group hidden lg:block header-account-dropdown">
                     <button type="button" class="flex items-center gap-2 py-5 down-arrow">
                         <img :src="language.image" alt="language" class="w-4 h-4 rounded-full" />
                         <span class="font-semibold capitalize">{{ language.name }}</span>
                     </button>
 
                     <ul
-                        class="w-40 absolute top-16 ltr:right-0 rtl:left-0 shadow-paper rounded-lg z-10 p-2 bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
+                        class="header-account-dropdown-menu w-40 absolute top-16 ltr:right-0 rtl:left-0 shadow-paper rounded-lg p-2 bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
                         <li v-for="(LoopLanguage, index) in languages" :key="index"
                             @click.prevent="changeLanguage(LoopLanguage.id, LoopLanguage.code, LoopLanguage.display_mode)"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg relative w-full cursor-pointer transition-all duration-300 hover:bg-slate-100">
@@ -263,10 +263,10 @@
 
 
                 <!-- My Account Start -->
-                <div class="relative hidden lg:block group">
+                <div class="relative hidden lg:block group header-account-dropdown">
                     <button type="button" class="lab-line-user text-xl py-5"></button>
                     <div v-if="logged"
-                        class="w-60 absolute top-15 ltr:-right-10 rtl:-left-10  z-10 rounded-2xl overflow-hidden shadow-card bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
+                        class="header-account-dropdown-menu w-60 absolute top-15 ltr:-right-10 rtl:-left-10 rounded-2xl overflow-hidden shadow-card bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
                         <div class="flex items-center gap-3 p-4 border-b border-[#EFF0F6]">
                             <img :src="profile.image" alt="avatar" loading="lazy"
                                 class="w-11 h-11 rounded-full object-cover flex-shrink-0">
@@ -346,7 +346,7 @@
                     </div>
 
                     <div v-else
-                        class="w-64 absolute top-15 ltr:-right-10 rtl:-left-10 z-10 p-4 rounded-2xl overflow-hidden shadow-card bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
+                        class="header-account-dropdown-menu w-64 absolute top-15 ltr:-right-10 rtl:-left-10 p-4 rounded-2xl overflow-hidden shadow-card bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
                         <router-link
                             class="!text-primary !bg-[#FFF4F1] w-full text-center h-12 leading-12 font-semibold tracking-wide rounded-full whitespace-nowrap"
                             :to="{ name: 'auth.signup' }">

@@ -3,7 +3,7 @@
         <article
             v-for="product in products"
             :key="product.id"
-            class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative block"
+            class="product-card group p-1 sm:p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)] duration-300 transition-all ease-out cursor-pointer relative isolate z-0 block"
             @touchstart.passive="onCardTouchStart(product.id, $event)"
             @touchend="onCardActivate(product, $event)"
             @click="onCardActivate(product, $event)"
@@ -28,7 +28,7 @@
 
                 <button type="button" @click.stop="wishlist(product)"
                     :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse shadow-[0_4px_12px_rgba(255,92,0,0.45)]' : 'lab-line-heart text-secondary hover:text-primary hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)]'"
-                    class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-40 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
+                    class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
                 </button>
 
                 <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
@@ -114,8 +114,8 @@
                 </div>
             </div>
 
-            <div class="px-1.5 sm:px-2 pt-2 overflow-hidden text-ellipsis">
-            <div class="flex items-center justify-between">
+            <div class="px-1.5 sm:px-2 pt-2 overflow-hidden text-ellipsis product-card__body">
+            <div class="product-card__actions flex items-center justify-between relative z-0">
                 <div class="flex flex-col min-w-0">
                     <div class="flex flex-wrap items-baseline gap-1" v-if="hasActiveDiscount(product)">
                         <span class="text-lg sm:text-xl font-black text-primary leading-none">
@@ -137,7 +137,7 @@
                 <button v-if="!isOutOfStock(product)" type="button" @click.stop="addToCart(product)"
                     :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
                     :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
-                    class="relative z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
+                    class="product-card__cart-btn w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
                     <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
                 </button>
                 <span v-else-if="isOutOfStock(product)"
@@ -623,6 +623,15 @@ export default {
 .product-card {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    isolation: isolate;
+    z-index: 0;
+}
+
+.product-card__body,
+.product-card__actions,
+.product-card__cart-btn {
+    position: relative;
+    z-index: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {

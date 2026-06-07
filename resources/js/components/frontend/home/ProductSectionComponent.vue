@@ -202,4 +202,10 @@ export default {
     cursor: auto;
     pointer-events: none;
 }
+
+.product-section-swiper :deep(.swiper-slide) {
+    z-index: 0 !important;
+    height: auto;
+    overflow: hidden;
+}
 </style>
