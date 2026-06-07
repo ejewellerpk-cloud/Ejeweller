@@ -355,6 +355,28 @@ class ProductService
         }
     }
 
+    /**
+     * @throws Exception
+     */
+    public function reorderImages(Product $product, array $ids): Product
+    {
+        try {
+            $mediaItems = $product->getMedia('product');
+            $mediaIds = $mediaItems->pluck('id')->all();
+
+            if (count($ids) !== count($mediaIds) || count(array_diff($ids, $mediaIds)) > 0) {
+                throw new Exception('Invalid image order payload.', 422);
+            }
+
+            \Spatie\MediaLibrary\MediaCollections\Models\Media::setNewOrder($ids);
+
+            return Product::find($product->id);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
 
     /**
      * @throws Exception

@@ -149,14 +149,23 @@ class Product extends Model implements HasMedia
 
     public function getPreviewsAttribute(): array
     {
+        return array_column($this->image_items, 'url');
+    }
+
+    public function getImageItemsAttribute(): array
+    {
         $response = [];
         if (!empty($this->getFirstMediaUrl('product'))) {
             $images = $this->getMedia('product');
             foreach ($images as $image) {
-                $url = $image->getUrl('preview');
-                $response[] = $url ?: $image->getUrl();
+                $url = $image->getUrl('preview') ?: $image->getUrl();
+                $response[] = [
+                    'id' => $image->id,
+                    'url' => $url,
+                ];
             }
         }
+
         return $response;
     }
 

@@ -256,7 +256,7 @@
                             <p class="text-sm font-semibold text-gray-500">
                                 {{ $t('label.images') }} &mdash;
                                 <span class="text-primary font-black">{{ product.images ? product.images.length : 0 }}</span>
-                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag & drop to reorder. Image #1 = Cover photo. (Recommended Size: 1000x1000 px Square)</span>
+                                &nbsp;·&nbsp; <span class="text-xs text-gray-400">Drag to reorder — changes save instantly. Image #1 = Cover photo.</span>
                             </p>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <label for="addImage"
@@ -275,9 +275,9 @@
                             </div>
                         </div>
 
-                        <!-- Image Sequence Grid with numbered badges + arrows -->
+                        <!-- Image Sequence Grid -->
                         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                            <div v-for="(image, index) in localImageOrder" :key="index"
+                            <div v-for="(image, index) in localImageOrder" :key="image.id"
                                 draggable="true"
                                 @dragstart="dragStart($event, index)"
                                 @dragover.prevent
@@ -288,9 +288,9 @@
 
                                 <!-- Thumbnail -->
                                 <div class="relative w-full cursor-grab active:cursor-grabbing rounded-xl overflow-hidden border-2 transition-all duration-200"
-                                    :class="livePreview === image ? 'border-primary shadow-md' : 'border-gray-200 hover:border-primary/40'"
+                                    :class="livePreview === image.url ? 'border-primary shadow-md' : 'border-gray-200 hover:border-primary/40'"
                                     @click="switchImage(image, index)">
-                                    <img class="w-full aspect-square object-cover object-top" :src="image" alt="product" />
+                                    <img class="w-full aspect-square object-cover object-top" :src="image.url" alt="product" />
 
                                     <!-- Sequence Number Badge -->
                                     <span class="absolute top-1 left-1 w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shadow"
@@ -342,7 +342,7 @@
                                     class="lab-line-cross text-3xl absolute -top-3 -right-3 w-9 h-9 leading-9 text-center rounded-full shadow-md bg-white text-danger"
                                     type="button"></button>
                                 <span class="absolute bottom-2 left-2 text-[10px] font-black px-2 py-0.5 rounded-full bg-black/50 text-white">
-                                    Preview · Image #{{ localImageOrder.indexOf(livePreview) + 1 }}
+                                    Preview · Image #{{ previewImageIndex + 1 }}
                                 </span>
                             </div>
                         </div>
@@ -661,7 +661,6 @@ export default {
             offerError: {},
             showMediaPicker: false,
             localImageOrder: [],
-            originalImageOrder: [],
             dragIndex: null,
             dropIndex: null,
         };
@@ -669,6 +668,9 @@ export default {
     computed: {
         product: function () {
             return this.$store.getters["product/show"];
+        },
+        previewImageIndex: function () {
+            return this.localImageOrder.findIndex((image) => image.url === this.livePreview);
         },
     },
     mounted() {
@@ -683,9 +685,15 @@ export default {
         floatNumber(e) {
             return appService.floatNumber(e);
         },
-        switchImage: function (link, index) {
-            this.livePreview = link;
+        switchImage: function (image, index) {
+            this.livePreview = image.url;
             this.deleteIndex = index;
+        },
+        syncLocalImages: function (data) {
+            this.localImageOrder = (data.image_items || []).map((item) => ({
+                id: item.id,
+                url: item.url,
+            }));
         },
         show: function () {
             this.$store.dispatch("product/show", this.$route.params.id).then((res) => {
@@ -694,8 +702,7 @@ export default {
                 this.barcodeImage = res.data.data.barcode_image;
                 this.livePreview = res.data.data.image;
                 this.imageCount = res.data.data.images.length;
-                this.localImageOrder = [...(res.data.data.images || [])];
-                this.originalImageOrder = [...(res.data.data.images || [])];
+                this.syncLocalImages(res.data.data);
                 this.shippingAndReturnForm.shipping_and_return = res.data.data.shipping_and_return;
                 this.shippingAndReturnForm.shipping_type = res.data.data.shipping_type;
                 this.shippingAndReturnForm.shipping_cost = res.data.data.shipping_cost;
@@ -798,14 +805,14 @@ export default {
         moveImage: function (fromIndex, toIndex) {
             if (toIndex < 0 || toIndex >= this.localImageOrder.length) return;
             if (fromIndex === toIndex) return;
+
+            const previousOrder = this.localImageOrder.map((item) => ({ ...item }));
             const arr = [...this.localImageOrder];
             const [moved] = arr.splice(fromIndex, 1);
             arr.splice(toIndex, 0, moved);
             this.localImageOrder = arr;
-            // Keep deleteIndex in sync with moved image
-            this.deleteIndex = this.localImageOrder.indexOf(this.livePreview);
-            // Auto save
-            this.saveImageOrder();
+            this.deleteIndex = this.localImageOrder.findIndex((image) => image.url === this.livePreview);
+            this.persistImageOrder(previousOrder);
         },
         dragStart: function(event, index) {
             this.dragIndex = index;
@@ -824,45 +831,21 @@ export default {
             this.dragIndex = null;
             this.dropIndex = null;
         },
-        saveImageOrder: async function () {
-            try {
-                this.loading.isActive = true;
-                const productId = this.$route.params.id;
-                const orderedUrls = [...this.localImageOrder];
+        persistImageOrder: function (previousOrder) {
+            const ids = this.localImageOrder.map((item) => item.id);
 
-                // Step 1: Fetch all images as File blobs in new sequence order
-                const files = [];
-                for (const url of orderedUrls) {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    const filename = url.split('/').pop() || 'image.jpg';
-                    files.push(new File([blob], filename, { type: blob.type }));
-                }
-
-                // Step 2: Delete all images from last index to first (to keep indices stable)
-                for (let i = orderedUrls.length - 1; i >= 0; i--) {
-                    await this.$store.dispatch('product/deleteImage', {
-                        id: productId,
-                        index: i,
-                    });
-                }
-
-                // Step 3: Re-upload images in the new sequence order
-                for (const file of files) {
-                    const formData = new FormData();
-                    formData.append('image', file);
-                    await this.$store.dispatch('product/uploadImage', {
-                        id: productId,
-                        form: formData,
-                    });
-                }
-
-                alertService.success('Image sequence saved successfully!');
-                this.show();
-            } catch (err) {
-                this.loading.isActive = false;
-                alertService.error('Failed to save image order. Please try again.');
-            }
+            this.$store.dispatch('product/reorderImages', {
+                id: this.$route.params.id,
+                ids: ids,
+            }).then((res) => {
+                this.syncLocalImages(res.data.data);
+                this.livePreview = res.data.data.image;
+                this.imageCount = res.data.data.images.length;
+            }).catch((err) => {
+                this.localImageOrder = previousOrder;
+                this.deleteIndex = this.localImageOrder.findIndex((image) => image.url === this.livePreview);
+                alertService.error(err?.response?.data?.message || 'Failed to save image order');
+            });
         },
         saveShippingAndReturn: function () {
             try {

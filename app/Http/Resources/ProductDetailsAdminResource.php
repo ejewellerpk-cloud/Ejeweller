@@ -50,6 +50,7 @@ class ProductDetailsAdminResource extends JsonResource
             "preview"                      => $this->preview,
             "image"                        => $this->preview,
             "images"                       => $this->previews,
+            "image_items"                  => $this->image_items,
             "shipping_and_return"          => $this->shipping_and_return === null ? '' : $this->shipping_and_return,
             "add_to_flash_sale"            => $this->add_to_flash_sale,
             "offer_start_date"             => $this->offer_start_date,
