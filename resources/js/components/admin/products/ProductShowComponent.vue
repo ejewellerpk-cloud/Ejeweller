@@ -26,6 +26,12 @@
                     <i class="lab lab-fill-image lab-font-size-16"></i>
                     {{ $t("label.images") }}
                 </button>
+                <button type="button" @click.prevent="activeTab = 'video'"
+                    :class="{ 'active': activeTab === 'video' }"
+                    class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
+                    <i class="lab lab-fill-video lab-font-size-16"></i>
+                    {{ $t("label.video") }}
+                </button>
                 <button type="button" @click.prevent="activeTab = 'variations'"
                     :class="{ 'active': activeTab === 'variations' }"
                     class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
@@ -59,13 +65,6 @@
                             class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5">
                             <i class="lab lab-fill-offers lab-font-size-16"></i>
                             {{ $t("label.offer") }}
-                        </button>
-                        <button type="button"
-                            class="tab-action w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5"
-                            :class="{ 'active': activeTab === 'video' }"
-                            @click.prevent="activeTab = 'video'; tabMore = false">
-                            <i class="lab lab-fill-video lab-font-size-16"></i>
-                            {{ $t("label.video") }}
                         </button>
                         <button type="button"
                             @click.prevent="activeTab = 'shippingReturn'; tabMore = false"
@@ -282,7 +281,8 @@
                                 @dragstart="dragStart($event, index)"
                                 @dragover.prevent
                                 @dragenter.prevent="dragEnter($event, index)"
-                                @drop="drop($event, index)"
+                                @drop.prevent="drop($event, index)"
+                                @dragend="onDragEnd"
                                 :class="{ 'opacity-50 border-dashed border-2 border-primary': dragIndex === index, 'scale-105 border-dashed border-2 border-primary z-10': dropIndex === index && dragIndex !== index }"
                                 class="relative group/thumb flex flex-col items-center gap-1.5 p-1 rounded-xl transition-all duration-200">
 
@@ -290,7 +290,8 @@
                                 <div class="relative w-full cursor-grab active:cursor-grabbing rounded-xl overflow-hidden border-2 transition-all duration-200"
                                     :class="livePreview === image.url ? 'border-primary shadow-md' : 'border-gray-200 hover:border-primary/40'"
                                     @click="switchImage(image, index)">
-                                    <img class="w-full aspect-square object-cover object-top" :src="image.url" alt="product" />
+                                    <img draggable="false" @dragstart.stop.prevent
+                                        class="w-full aspect-square object-cover object-top" :src="image.url" alt="product" />
 
                                     <!-- Sequence Number Badge -->
                                     <span class="absolute top-1 left-1 w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shadow"
@@ -325,8 +326,8 @@
                                     </button>
                                     <button type="button"
                                         class="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center transition-all text-xs"
-                                        @click.prevent="deleteImage(index)"
-                                        title="Delete">
+                                        @click.stop.prevent="deleteImage(image.id)"
+                                        title="Remove from product">
                                         <i class="fa-solid fa-trash-can text-[9px]"></i>
                                     </button>
                                 </div>
@@ -338,7 +339,7 @@
                             <div class="relative w-full sm:max-w-xs">
                                 <img class="w-full h-64 sm:h-80 object-top object-cover rounded-2xl border border-gray-200" alt="products"
                                     :src="livePreview" />
-                                <button v-if="imageCount > 0" @click.prevent="deleteImage"
+                                <button v-if="previewMediaId" @click.stop.prevent="deleteImage(previewMediaId)"
                                     class="lab-line-cross text-3xl absolute -top-3 -right-3 w-9 h-9 leading-9 text-center rounded-full shadow-md bg-white text-danger"
                                     type="button"></button>
                                 <span class="absolute bottom-2 left-2 text-[10px] font-black px-2 py-0.5 rounded-full bg-black/50 text-white">
@@ -351,7 +352,12 @@
                 </div>
             </div>
 
-            <MediaPickerComponent :show="showMediaPicker" @close="showMediaPicker = false" @selected="handleMediaSelected" />
+            <MediaPickerComponent :show="showMediaPicker" :multiple="true"
+                @close="showMediaPicker = false" @selected="handleMediaSelected" />
+
+            <div class="db-card tab-content" :class="{ 'active': activeTab === 'video' }" id="video">
+                <ProductVideoListComponent />
+            </div>
 
             <div class="db-card tab-content" :class="{ 'active': activeTab === 'variations' }" id="variations">
                 <ProductVariationListComponent />
@@ -467,10 +473,6 @@
                         </div>
                     </form>
                 </div>
-            </div>
-
-            <div class="db-card tab-content" :class="{ 'active': activeTab === 'video' }" id="video">
-                <ProductVideoListComponent />
             </div>
 
             <div class="db-card tab-content" :class="{ 'active': activeTab === 'shippingReturn' }" id="shippingReturn">
@@ -640,6 +642,9 @@ export default {
                 }
             },
             deleteIndex: 0,
+            reorderTimer: null,
+            reorderRequestId: 0,
+            reorderBaseline: null,
             imageCount: 0,
             defaultImage: null,
             previewImage: null,
@@ -672,10 +677,19 @@ export default {
         previewImageIndex: function () {
             return this.localImageOrder.findIndex((image) => image.url === this.livePreview);
         },
+        previewMediaId: function () {
+            const current = this.localImageOrder.find((image) => image.url === this.livePreview);
+            return current ? current.id : null;
+        },
     },
     mounted() {
         this.loading.isActive = true;
         this.show();
+    },
+    beforeUnmount() {
+        if (this.reorderTimer) {
+            clearTimeout(this.reorderTimer);
+        }
     },
     methods: {
         permissionChecker(e) {
@@ -716,29 +730,32 @@ export default {
                 this.loading.isActive = false;
             });
         },
-        async handleMediaSelected(asset) {
+        async handleMediaSelected(assets) {
+            const items = Array.isArray(assets) ? assets : [assets];
+            if (!items.length) {
+                return;
+            }
+
             try {
                 this.loading.isActive = true;
-                const response = await fetch(asset.url);
-                const blob = await response.blob();
-                const file = new File([blob], asset.filename, { type: blob.type });
-                
-                const formData = new FormData();
-                formData.append("image", file);
-                
-                this.$store.dispatch("product/uploadImage", {
-                    id: this.$route.params.id,
-                    form: formData
-                }).then((res) => {
-                    alertService.success(this.$t("message.image_update"));
-                    this.show(); // Refresh product data
-                }).catch((err) => {
-                    this.loading.isActive = false;
-                    alertService.error("Upload failed");
-                });
+                this.showMediaPicker = false;
+
+                for (const asset of items) {
+                    await this.$store.dispatch("product/attachGalleryImage", {
+                        id: this.$route.params.id,
+                        path: asset.id,
+                    });
+                }
+
+                alertService.success(
+                    items.length === 1
+                        ? this.$t("message.image_update")
+                        : `${items.length} images added successfully`
+                );
+                this.show();
             } catch (error) {
-                alertService.error("Failed to load image from gallery");
                 this.loading.isActive = false;
+                alertService.error(error?.response?.data?.message || "Failed to attach gallery images");
             }
         },
         saveImage: function () {
@@ -777,28 +794,31 @@ export default {
                 }
             }
         },
-        deleteImage: function (index) {
-            const imageIndex = typeof index === 'number' ? index : this.deleteIndex;
-            appService.destroyConfirmation().then((res) => {
+        deleteImage: function (mediaId) {
+            const targetMediaId = mediaId || this.previewMediaId;
+            if (!targetMediaId) {
+                return;
+            }
+
+            appService.destroyConfirmation().then(() => {
                 try {
                     this.loading.isActive = true;
                     this.$store.dispatch("product/deleteImage", {
                         id: this.$route.params.id,
-                        index: imageIndex,
-                    }).then((res) => {
+                        mediaId: targetMediaId,
+                    }).then(() => {
                         this.show();
                         this.loading.isActive = false;
                         alertService.success(this.$t("message.image_delete"));
-                        this.deleteIndex = 0;
                     }).catch((err) => {
                         this.loading.isActive = false;
-                        alertService.error(err.response.data.message);
+                        alertService.error(err.response?.data?.message || 'Failed to remove image');
                     });
                 } catch (err) {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err.response?.data?.message || 'Failed to remove image');
                 }
-            }).catch((err) => {
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         },
@@ -806,18 +826,23 @@ export default {
             if (toIndex < 0 || toIndex >= this.localImageOrder.length) return;
             if (fromIndex === toIndex) return;
 
-            const previousOrder = this.localImageOrder.map((item) => ({ ...item }));
+            const previousOrder = this.reorderBaseline || this.localImageOrder.map((item) => ({ ...item }));
+            if (!this.reorderBaseline) {
+                this.reorderBaseline = previousOrder;
+            }
             const arr = [...this.localImageOrder];
             const [moved] = arr.splice(fromIndex, 1);
             arr.splice(toIndex, 0, moved);
             this.localImageOrder = arr;
-            this.deleteIndex = this.localImageOrder.findIndex((image) => image.url === this.livePreview);
-            this.persistImageOrder(previousOrder);
+            this.schedulePersistImageOrder();
         },
         dragStart: function(event, index) {
             this.dragIndex = index;
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.dropEffect = 'move';
+            if (event.dataTransfer) {
+                event.dataTransfer.setData('text/plain', String(index));
+            }
         },
         dragEnter: function(event, index) {
             if (this.dragIndex !== null) {
@@ -825,25 +850,50 @@ export default {
             }
         },
         drop: function(event, index) {
+            event.preventDefault();
             if (this.dragIndex !== null && this.dragIndex !== index) {
                 this.moveImage(this.dragIndex, index);
             }
+            this.onDragEnd();
+        },
+        onDragEnd: function () {
             this.dragIndex = null;
             this.dropIndex = null;
         },
+        schedulePersistImageOrder: function () {
+            if (this.reorderTimer) {
+                clearTimeout(this.reorderTimer);
+            }
+
+            this.reorderTimer = setTimeout(() => {
+                this.persistImageOrder(this.reorderBaseline);
+            }, 250);
+        },
         persistImageOrder: function (previousOrder) {
-            const ids = this.localImageOrder.map((item) => item.id);
+            const ids = this.localImageOrder.map((item) => Number(item.id)).filter(Boolean);
+            const requestId = ++this.reorderRequestId;
 
             this.$store.dispatch('product/reorderImages', {
                 id: this.$route.params.id,
                 ids: ids,
             }).then((res) => {
+                if (requestId !== this.reorderRequestId) {
+                    return;
+                }
+
+                this.reorderBaseline = null;
                 this.syncLocalImages(res.data.data);
                 this.livePreview = res.data.data.image;
                 this.imageCount = res.data.data.images.length;
             }).catch((err) => {
-                this.localImageOrder = previousOrder;
-                this.deleteIndex = this.localImageOrder.findIndex((image) => image.url === this.livePreview);
+                if (requestId !== this.reorderRequestId) {
+                    return;
+                }
+
+                if (previousOrder) {
+                    this.localImageOrder = previousOrder;
+                }
+                this.reorderBaseline = null;
                 alertService.error(err?.response?.data?.message || 'Failed to save image order');
             });
         },

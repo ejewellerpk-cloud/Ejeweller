@@ -35,6 +35,19 @@ export function getStarFillCount(product) {
     return Math.min(5, Math.max(0, Math.round(average)));
 }
 
+export function formatListProductRating(product) {
+    const average = getProductAverageRating(product);
+    if (average === null) {
+        return '0.0';
+    }
+
+    return average.toFixed(1);
+}
+
+export function getListReviewCount(product) {
+    return parseInt(product?.rating_star_count, 10) || 0;
+}
+
 export function formatProductRating(product) {
     const average = getProductAverageRating(product);
     return average === null ? null : average.toFixed(1);

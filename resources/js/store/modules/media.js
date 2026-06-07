@@ -5,12 +5,20 @@ export const media = {
     namespaced: true,
     state: {
         lists: [],
+        folders: [],
+        currentFolder: 'media/miscellaneous',
         page: {},
         pagination: [],
     },
     getters: {
         lists: function (state) {
             return state.lists;
+        },
+        folders: function (state) {
+            return state.folders;
+        },
+        currentFolder: function (state) {
+            return state.currentFolder;
         },
         pagination: function (state) {
             return state.pagination;
@@ -24,10 +32,21 @@ export const media = {
             return new Promise((resolve, reject) => {
                 let url = "admin/media-library";
                 if (payload) {
-                    url = url + appService.requestHandler(payload);
+                    const params = new URLSearchParams();
+                    Object.entries(payload).forEach(([key, value]) => {
+                        if (value !== '' && value !== null && typeof value !== 'undefined') {
+                            params.set(key, value);
+                        }
+                    });
+                    const query = params.toString();
+                    if (query) {
+                        url = `${url}?${query}`;
+                    }
                 }
                 axios.get(url).then((res) => {
                     context.commit("lists", res.data.items);
+                    context.commit("folders", res.data.folders || []);
+                    context.commit("currentFolder", res.data.currentFolder || 'media/miscellaneous');
                     context.commit("page", res.data.pagination);
                     context.commit("pagination", res.data);
                     resolve(res);
@@ -92,6 +111,12 @@ export const media = {
     mutations: {
         lists: function (state, payload) {
             state.lists = payload;
+        },
+        folders: function (state, payload) {
+            state.folders = payload;
+        },
+        currentFolder: function (state, payload) {
+            state.currentFolder = payload;
         },
         pagination: function (state, payload) {
             state.pagination = payload;

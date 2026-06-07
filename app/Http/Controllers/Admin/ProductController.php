@@ -15,6 +15,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ImportFileRequest;
 use Illuminate\Support\Facades\Response;
 use App\Http\Requests\ChangeImageRequest;
+use App\Http\Requests\ProductAttachGalleryImageRequest;
 use App\Http\Requests\ProductImageReorderRequest;
 use App\Http\Requests\ProductOfferRequest;
 use App\Http\Resources\ProductAdminResource;
@@ -48,9 +49,8 @@ class ProductController extends AdminController implements HasMiddleware
             new Middleware('permission:products_create', only: ['store']),
             new Middleware('permission:products_create', only: ['import']),
             new Middleware('permission:products_edit', only: ['update']),
-            new Middleware('permission:products_edit', only: ['reorderImages']),
+            new Middleware('permission:products_edit', only: ['reorderImages', 'deleteImage', 'attachGalleryImage']),
             new Middleware('permission:products_delete', only: ['destroy']),
-            new Middleware('permission:products_delete', only: ['deleteImage']),
         ];
     }
 
@@ -117,14 +117,29 @@ class ProductController extends AdminController implements HasMiddleware
         }
     }
 
-    public function deleteImage(Product $product, $index): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductDetailsAdminResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    public function deleteImage(Product $product, int $mediaId): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductDetailsAdminResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
             if (env('DEMO')) {
                 return response(['status' => false, 'message' => 'This action is not allowed in demo mode.'], 422);
             }  else {
-            return new ProductDetailsAdminResource($this->productService->deleteImage($product, $index));
+            return new ProductDetailsAdminResource($this->productService->deleteImage($product, $mediaId));
             }
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function attachGalleryImage(ProductAttachGalleryImageRequest $request, Product $product): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductDetailsAdminResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            if (env('DEMO')) {
+                return response(['status' => false, 'message' => 'This action is not allowed in demo mode.'], 422);
+            }
+
+            return new ProductDetailsAdminResource(
+                $this->productService->attachGalleryImage($product, $request->validated('path'))
+            );
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

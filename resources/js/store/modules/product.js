@@ -153,7 +153,19 @@ export const product = {
         },
         deleteImage: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.get(`/admin/product/delete-image/${payload.id}/${payload.index}`).then(res => {
+                axios.delete(`/admin/product/delete-image/${payload.id}/${payload.mediaId}`).then(res => {
+                    context.commit('show', res.data.data);
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
+        attachGalleryImage: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.post(`/admin/product/attach-gallery-image/${payload.id}`, {
+                    path: payload.path,
+                }).then(res => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

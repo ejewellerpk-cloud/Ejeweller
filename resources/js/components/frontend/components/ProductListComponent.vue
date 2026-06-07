@@ -168,23 +168,19 @@
                 </span>
             </div>
 
-            <div v-if="hasProductRating(product) || shouldShowSoldCount(product)"
-                class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
-                <div v-if="hasProductRating(product)" class="flex items-center gap-1">
-                    <div class="flex items-center gap-0.5" :aria-label="formatProductRating(product) + ' out of 5'">
+            <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 font-medium">
+                <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-0.5" :aria-label="formatListProductRating(product) + ' out of 5'">
                         <i v-for="star in 5" :key="star"
                             :class="star <= getStarFillCount(product) ? 'fa-solid text-primary' : 'fa-regular text-gray-300'"
                             class="fa-star text-[9px] sm:text-[10px]"></i>
                     </div>
-                    <span class="text-gray-900 font-bold">{{ formatProductRating(product) }}</span>
-                    <span>({{ product.rating_star_count }})</span>
+                    <span class="text-gray-900 font-bold">{{ formatListProductRating(product) }}</span>
+                    <span>({{ getListReviewCount(product) }})</span>
                 </div>
-                <span v-if="hasProductRating(product) && shouldShowSoldCount(product)" class="text-gray-200">|</span>
-                <span v-if="shouldShowSoldCount(product)">
+                <span class="text-gray-200">|</span>
+                <span>
                     <span class="text-gray-900 font-bold">{{ getProductSoldCount(product) }}</span> sold
-                    <span v-if="shouldShowActualSales(product)" class="text-gray-400 font-normal">
-                        · {{ getActualSales(product) }} actual
-                    </span>
                 </span>
             </div>
             </div>
@@ -208,9 +204,6 @@ import {
 } from "../../../utils/productOffer";
 import {
     getDisplaySoldCount as calcDisplaySoldCount,
-    getActualSales as calcActualSales,
-    shouldShowSoldCount as calcShouldShowSoldCount,
-    shouldShowActualSales as calcShouldShowActualSales,
 } from "../../../utils/productSoldCount";
 import {
     getVideoPoster as resolveVideoPoster,
@@ -218,10 +211,10 @@ import {
     getYouTubeId,
 } from "../../../utils/videoPoster";
 import {
-    hasProductRating,
     getProductAverageRating,
     getStarFillCount,
-    formatProductRating,
+    formatListProductRating,
+    getListReviewCount,
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
@@ -416,25 +409,16 @@ export default {
         getProductSoldCount(product) {
             return calcDisplaySoldCount(product);
         },
-        getActualSales(product) {
-            return calcActualSales(product);
-        },
-        shouldShowSoldCount(product) {
-            return calcShouldShowSoldCount(product);
-        },
-        shouldShowActualSales(product) {
-            return calcShouldShowActualSales(product);
-        },
         getVideoPosterForCard(video, product) {
             return resolveVideoPoster(video, product.previews?.[0] || product.cover || '');
         },
         shouldUseVideoPosterSlide(video) {
             return canUseVideoPosterSlide(video);
         },
-        hasProductRating,
         getProductAverageRating,
         getStarFillCount,
-        formatProductRating,
+        formatListProductRating,
+        getListReviewCount,
         hasActiveDiscount(product) {
             return calcHasActiveDiscount(product);
         },

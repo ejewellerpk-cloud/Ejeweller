@@ -74,7 +74,7 @@
                                                 <i class="fa-solid fa-images text-[10px]"></i>
                                                 Gallery
                                             </button>
-                                            <button v-if="canCaptureFromVideo" type="button" @click="captureFromVideo"
+                                            <button v-if="canCaptureFromVideo" type="button" @click="openFramePicker"
                                                 :disabled="isCapturingThumbnail"
                                                 class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-primary/40 disabled:opacity-50">
                                                 <i v-if="isCapturingThumbnail" class="fa-solid fa-circle-notch animate-spin text-[10px]"></i>
@@ -93,6 +93,36 @@
                                             </button>
                                         </div>
                                         <small class="db-field-alert" v-if="errors.thumbnail">{{ errors.thumbnail[0] }}</small>
+
+                                        <!-- Video frame picker -->
+                                        <div v-if="showFramePicker" class="mt-3 rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <p class="text-xs font-bold text-heading uppercase tracking-wide">Pick a frame</p>
+                                                <button type="button" @click="closeFramePicker"
+                                                    class="text-slate-400 hover:text-rose-500">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+
+                                            <div v-if="isCapturingThumbnail" class="py-8 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                                <i class="fa-solid fa-circle-notch animate-spin text-2xl text-primary"></i>
+                                                <span class="text-[10px] font-semibold uppercase tracking-wide">Extracting frames...</span>
+                                            </div>
+
+                                            <div v-else-if="videoFrames.length > 0" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                                                <button v-for="(frame, index) in videoFrames" :key="index" type="button"
+                                                    @click="selectVideoFrame(index)"
+                                                    class="relative aspect-square rounded-lg overflow-hidden border-2 transition-all"
+                                                    :class="selectedFrameIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-slate-200 hover:border-primary/50'">
+                                                    <img :src="frame.dataUrl" :alt="'Frame ' + (index + 1)" class="w-full h-full object-cover" />
+                                                    <span class="absolute bottom-1 right-1 text-[8px] font-black px-1 py-0.5 rounded bg-black/60 text-white">
+                                                        {{ formatFrameTime(frame.time) }}
+                                                    </span>
+                                                </button>
+                                            </div>
+
+                                            <p v-else class="text-[11px] text-slate-500">No frames available. Upload a video first.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -126,7 +156,7 @@ import MediaPickerComponent from "../../media/MediaPickerComponent";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
 import videoProviderEnum from "../../../../enums/modules/videoProviderEnum";
-import { captureVideoThumbnail } from "../../../../utils/videoThumbnail";
+import { captureVideoFrames } from "../../../../utils/videoThumbnail";
 
 export default {
     name: "ProductVideoCreateComponent",
@@ -140,6 +170,10 @@ export default {
             errors: {},
             showMediaPicker: false,
             isCapturingThumbnail: false,
+            showFramePicker: false,
+            videoFrames: [],
+            selectedFrameIndex: null,
+            frameVideoObjectUrl: "",
             thumbnailPreview: "",
             thumbnailFile: null,
             removeThumbnail: false,
@@ -182,6 +216,9 @@ export default {
             return Number(this.form.video_provider) === 5 && !!this.getYouTubeId(this.form.link);
         },
     },
+    beforeUnmount() {
+        this.closeFramePicker();
+    },
     methods: {
         createButtonClick: function () {
             appService.modalShow('#videoModal');
@@ -196,6 +233,7 @@ export default {
             this.thumbnailFile = null;
             this.removeThumbnail = false;
             this.isCapturingThumbnail = false;
+            this.closeFramePicker();
             this.form = {
                 video_provider: 20,
                 link: "",
@@ -208,6 +246,7 @@ export default {
         },
         onFileChange: function (e) {
             this.form.file = e.target.files[0] || null;
+            this.closeFramePicker();
         },
         onThumbnailFileChange: function (e) {
             const file = e.target.files[0];
@@ -266,32 +305,66 @@ export default {
                 this.loading.isActive = false;
             }
         },
-        async captureFromVideo() {
-            let videoUrl = "";
-            if (this.form.file) {
-                videoUrl = URL.createObjectURL(this.form.file);
-            } else if (this.form.link) {
-                videoUrl = this.form.link;
+        formatFrameTime(seconds) {
+            if (!seconds || !isFinite(seconds)) {
+                return '0:00';
             }
-
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        },
+        closeFramePicker() {
+            this.showFramePicker = false;
+            this.videoFrames = [];
+            this.selectedFrameIndex = null;
+            if (this.frameVideoObjectUrl) {
+                URL.revokeObjectURL(this.frameVideoObjectUrl);
+                this.frameVideoObjectUrl = "";
+            }
+        },
+        getVideoSourceUrl() {
+            if (this.form.file) {
+                if (!this.frameVideoObjectUrl) {
+                    this.frameVideoObjectUrl = URL.createObjectURL(this.form.file);
+                }
+                return this.frameVideoObjectUrl;
+            }
+            return this.form.link || "";
+        },
+        async openFramePicker() {
+            const videoUrl = this.getVideoSourceUrl();
             if (!videoUrl) {
                 alertService.error('Upload or select a video first');
                 return;
             }
 
+            this.showFramePicker = true;
             this.isCapturingThumbnail = true;
+            this.videoFrames = [];
+            this.selectedFrameIndex = null;
+
             try {
-                const dataUrl = await captureVideoThumbnail(videoUrl);
-                const response = await fetch(dataUrl);
-                const blob = await response.blob();
-                this.setThumbnailFile(new File([blob], 'video-frame.jpg', { type: 'image/jpeg' }));
+                this.videoFrames = await captureVideoFrames(videoUrl, 8);
             } catch (err) {
-                alertService.error('Could not capture frame from video');
+                this.showFramePicker = false;
+                alertService.error('Could not extract frames from video');
             } finally {
                 this.isCapturingThumbnail = false;
-                if (this.form.file && videoUrl.startsWith('blob:')) {
-                    URL.revokeObjectURL(videoUrl);
-                }
+            }
+        },
+        async selectVideoFrame(index) {
+            const frame = this.videoFrames[index];
+            if (!frame) {
+                return;
+            }
+
+            this.selectedFrameIndex = index;
+            try {
+                const response = await fetch(frame.dataUrl);
+                const blob = await response.blob();
+                this.setThumbnailFile(new File([blob], `video-frame-${index + 1}.jpg`, { type: 'image/jpeg' }));
+            } catch (err) {
+                alertService.error('Could not apply selected frame');
             }
         },
         save: function () {

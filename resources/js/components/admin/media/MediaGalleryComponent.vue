@@ -114,7 +114,22 @@
         </div>
 
         <!-- Filter & Search -->
-        <div class="flex flex-col xl:flex-row items-center justify-between gap-6 mb-8 bg-slate-50 p-4 rounded-xl">
+        <div class="flex flex-col xl:flex-row gap-6 mb-8">
+            <div class="xl:w-64 flex-shrink-0 bg-slate-50 border border-slate-200 rounded-2xl p-4 max-h-[420px] overflow-y-auto thin-scrolling">
+                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Folders</p>
+                <div class="space-y-1">
+                    <button v-for="folder in flatFolders" :key="folder.id" type="button"
+                        @click="selectFolder(folder.id)"
+                        class="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                        :class="selectedFolder === folder.id ? 'bg-primary text-white' : 'text-slate-600 hover:bg-white hover:text-primary'"
+                        :style="{ paddingLeft: (12 + folder.depth * 12) + 'px' }">
+                        <i class="fa-solid fa-folder mr-2 opacity-70"></i>{{ folder.name }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col gap-4">
+        <div class="flex flex-col xl:flex-row items-center justify-between gap-6 bg-slate-50 p-4 rounded-xl">
             <div class="relative w-full xl:max-w-md">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" v-model="search" @input="handleSearch" placeholder="Search assets..."
@@ -140,6 +155,8 @@
                     class="p-3 rounded-xl transition-all">
                     <i class="fa-solid fa-list"></i>
                 </button>
+            </div>
+        </div>
             </div>
         </div>
 
@@ -261,13 +278,28 @@ export default {
             completedCount: 0,
             queueIdSeed: 0,
             selectedIds: [],
+            selectedFolder: 'media/miscellaneous',
         }
     },
     computed: {
         ...mapGetters({
             mediaList: 'media/lists',
+            folders: 'media/folders',
+            currentFolder: 'media/currentFolder',
             pagination: 'media/page'
         }),
+        flatFolders() {
+            const items = [];
+
+            (this.folders || []).forEach((folder) => {
+                items.push({ id: folder.id, name: folder.name, depth: 0 });
+                (folder.children || []).forEach((child) => {
+                    items.push({ id: child.id, name: child.name, depth: 1 });
+                });
+            });
+
+            return items;
+        },
         allSelected() {
             return this.mediaList?.length > 0 && this.mediaList.every((asset) => this.selectedIds.includes(asset.id));
         },
@@ -276,6 +308,7 @@ export default {
         },
     },
     mounted() {
+        this.selectedFolder = this.currentFolder || 'media/miscellaneous';
         this.fetchMedia();
     },
     beforeUnmount() {
@@ -291,7 +324,15 @@ export default {
         }),
         fetchMedia(page = 1) {
             this.clearSelection();
-            this.lists({ page: page, search: this.search });
+            this.lists({
+                page: page,
+                search: this.search,
+                folder: this.selectedFolder,
+            });
+        },
+        selectFolder(folderId) {
+            this.selectedFolder = folderId;
+            this.fetchMedia(1);
         },
         handleSearch() {
             clearTimeout(this.filterTimer);
@@ -414,6 +455,7 @@ export default {
 
                 const formData = new FormData();
                 formData.append('files[]', item.file);
+                formData.append('folder', this.selectedFolder);
 
                 try {
                     await this.uploadFile({

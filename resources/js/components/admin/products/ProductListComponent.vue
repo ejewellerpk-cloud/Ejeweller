@@ -228,16 +228,8 @@
                             <td class="db-table-body-td">{{ product.flat_buying_price }}</td>
                             <td class="db-table-body-td">{{ product.flat_selling_price }}</td>
                             <td class="db-table-body-td">
-                                <div class="flex flex-col gap-0.5 text-[11px] leading-tight min-w-[5.5rem]">
-                                    <span>
-                                        <span class="font-bold text-emerald-700">{{ getDisplaySoldCount(product) }}</span>
-                                        <span class="text-slate-400"> display</span>
-                                    </span>
-                                    <span>
-                                        <span class="font-semibold text-slate-700">{{ getActualSales(product) }}</span>
-                                        <span class="text-slate-400"> actual</span>
-                                    </span>
-                                </div>
+                                <span class="font-bold text-emerald-700">{{ getDisplaySoldCount(product) }}</span>
+                                <span class="text-slate-400 text-[11px]"> sold</span>
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(product.status)">
@@ -308,7 +300,6 @@ import UploadFileComponent from "../components/buttons/import/UploadFileComponen
 import ENV from "../../../config/env";
 import {
     getDisplaySoldCount as calcDisplaySoldCount,
-    getActualSales as calcActualSales,
 } from "../../../utils/productSoldCount";
 
 export default {
@@ -424,9 +415,6 @@ export default {
         },
         getDisplaySoldCount(product) {
             return calcDisplaySoldCount(product, { useLocalStorage: false });
-        },
-        getActualSales(product) {
-            return calcActualSales(product);
         },
         statusClass: function (status) {
             return appService.statusClass(status);

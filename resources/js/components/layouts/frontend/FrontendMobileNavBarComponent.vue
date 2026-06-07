@@ -36,12 +36,12 @@
 
         <button
             type="button"
-            class="mobile-bottom-nav__cart relative isolate -mt-8 sm:-mt-11 flex-shrink-0"
+            class="mobile-bottom-nav__cart relative isolate -mt-10 sm:-mt-12 flex-shrink-0"
             @touchend="onActionTap($event, openCart)"
             @click="onActionTap($event, openCart)"
         >
             <i class="lab-line-bag text-lg w-11 h-11 sm:w-12 sm:h-12 !leading-[2.75rem] sm:!leading-[3rem] text-center rounded-full shadow-cart bg-primary text-white pointer-events-none"></i>
-            <span v-if="carts.length > 0" class="absolute top-4 sm:top-5 ltr:right-0 rtl:left-0 text-[10px] font-medium h-4 min-w-[16px] px-1 leading-[14px] text-center rounded-full border border-primary bg-[#FFBC1F] pointer-events-none">
+            <span v-if="carts.length > 0" class="absolute top-3.5 sm:top-4 ltr:right-0 rtl:left-0 text-[10px] font-medium h-4 min-w-[16px] px-1 leading-[14px] text-center rounded-full border border-primary bg-[#FFBC1F] pointer-events-none">
                 {{ carts.length }}
             </span>
         </button>

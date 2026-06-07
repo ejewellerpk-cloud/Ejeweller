@@ -5,7 +5,9 @@
             <div class="p-6 border-b flex items-center justify-between bg-slate-50">
                 <div>
                     <h3 class="text-xl font-black text-heading uppercase tracking-tight">Select Media Asset</h3>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pick an image or upload new assets</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {{ multiple ? 'Select one or more images, then confirm' : 'Pick an image or upload new assets' }}
+                    </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="file" ref="bulkFileInput" class="hidden" multiple accept="image/*" @change="handleBulkFileSelect" />
@@ -93,12 +95,18 @@
             </div>
 
             <!-- Search & Filter -->
-            <div class="p-4 border-b bg-white">
-                <div class="relative max-w-md">
+            <div class="p-4 border-b bg-white flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1 max-w-md">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
                     <input type="text" v-model="search" @input="handleSearch" placeholder="Search images..."
                         class="w-full pl-11 pr-4 h-11 bg-slate-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all" />
                 </div>
+                <select v-model="selectedFolder" @change="fetchMedia(1)"
+                    class="h-11 px-4 bg-slate-100 border-transparent rounded-xl text-xs font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-primary/20">
+                    <option v-for="folder in flatFolders" :key="folder.id" :value="folder.id">
+                        {{ folder.depth ? '— ' : '' }}{{ folder.name }}
+                    </option>
+                </select>
             </div>
 
             <!-- Content -->
@@ -107,12 +115,16 @@
                     <i class="fa-solid fa-circle-notch animate-spin text-3xl text-primary"></i>
                 </div>
                 <div v-else-if="mediaList && mediaList.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    <div v-for="asset in mediaList" :key="asset.id" @click="selectImage(asset)"
-                        class="group relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer transition-all">
+                    <div v-for="asset in mediaList" :key="asset.id"
+                        @click="multiple ? toggleAsset(asset) : selectImage(asset)"
+                        class="group relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all"
+                        :class="isAssetSelected(asset.id) ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-primary'">
                         <img :src="asset.url" class="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500" />
-                        <div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div class="absolute bottom-2 right-2 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
-                            <i class="fa-solid fa-check text-[10px]"></i>
+                        <div class="absolute inset-0 bg-primary/10 transition-opacity"
+                            :class="isAssetSelected(asset.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"></div>
+                        <div class="absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+                            :class="isAssetSelected(asset.id) ? 'bg-primary border-primary text-white' : 'bg-white/90 border-slate-300 text-transparent group-hover:border-primary'">
+                            <i class="fa-solid fa-check text-[9px]"></i>
                         </div>
                     </div>
                 </div>
@@ -139,6 +151,15 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-3 ml-auto">
+                    <span v-if="multiple && selectedAssets.length > 0"
+                        class="text-xs font-bold text-primary uppercase tracking-wide">
+                        {{ selectedAssets.length }} selected
+                    </span>
+                    <button v-if="multiple" type="button" @click="confirmSelection"
+                        :disabled="selectedAssets.length === 0 || isUploading"
+                        class="db-btn py-2 px-5 text-white bg-primary text-xs disabled:opacity-50">
+                        Add Selected
+                    </button>
                     <button type="button" @click="openBulkUpload" :disabled="isUploading"
                         class="sm:hidden px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary border border-primary rounded-lg disabled:opacity-60">
                         Bulk Upload
@@ -160,7 +181,8 @@ import alertService from '../../../services/alertService';
 export default {
     name: "MediaPickerComponent",
     props: {
-        show: { type: Boolean, default: false }
+        show: { type: Boolean, default: false },
+        multiple: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -174,20 +196,35 @@ export default {
             overallProgress: 0,
             completedCount: 0,
             queueIdSeed: 0,
+            selectedFolder: 'media/miscellaneous',
+            selectedAssets: [],
         }
     },
     computed: {
         ...mapGetters({
             mediaList: 'media/lists',
+            folders: 'media/folders',
             pagination: 'media/page'
-        })
+        }),
+        flatFolders() {
+            const items = [];
+            (this.folders || []).forEach((folder) => {
+                items.push({ id: folder.id, name: folder.name, depth: 0 });
+                (folder.children || []).forEach((child) => {
+                    items.push({ id: child.id, name: child.name, depth: 1 });
+                });
+            });
+            return items;
+        },
     },
     watch: {
         show(newVal) {
             if (newVal) {
+                this.selectedAssets = [];
                 this.fetchMedia();
             } else {
                 this.resetBulkUpload();
+                this.selectedAssets = [];
             }
         }
     },
@@ -202,7 +239,7 @@ export default {
         async fetchMedia(page = 1) {
             this.loading = true;
             try {
-                await this.lists({ page: page, search: this.search });
+                await this.lists({ page: page, search: this.search, folder: this.selectedFolder });
             } finally {
                 this.loading = false;
             }
@@ -218,6 +255,24 @@ export default {
         },
         selectImage(asset) {
             this.$emit('selected', asset);
+            this.$emit('close');
+        },
+        toggleAsset(asset) {
+            const index = this.selectedAssets.findIndex((item) => item.id === asset.id);
+            if (index >= 0) {
+                this.selectedAssets.splice(index, 1);
+            } else {
+                this.selectedAssets.push(asset);
+            }
+        },
+        isAssetSelected(id) {
+            return this.selectedAssets.some((item) => item.id === id);
+        },
+        confirmSelection() {
+            if (this.selectedAssets.length === 0) {
+                return;
+            }
+            this.$emit('selected', [...this.selectedAssets]);
             this.$emit('close');
         },
         closePicker() {
@@ -324,6 +379,7 @@ export default {
 
                 const formData = new FormData();
                 formData.append('files[]', item.file);
+                formData.append('folder', this.selectedFolder);
 
                 try {
                     await this.uploadFile({

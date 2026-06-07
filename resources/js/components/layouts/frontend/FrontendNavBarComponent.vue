@@ -73,7 +73,7 @@
                         >
                             <i class="lab-line-heart text-xl text-heading pointer-events-none"></i>
                             <span v-if="wishlists.length > 0"
-                                class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
+                                class="mobile-header-badge absolute top-0 -right-1 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
                                 {{ wishlists.length }}
                             </span>
                         </a>
@@ -109,7 +109,7 @@
                         @click="onActionTap($event, openMobileCart)">
                         <i class="lab-line-bag text-xl text-heading pointer-events-none"></i>
                         <span v-if="carts.length > 0"
-                            class="absolute -top-2 -right-2 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
+                            class="mobile-header-badge absolute top-0 -right-1 text-[10px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border border-white text-white bg-primary pointer-events-none">
                             {{ carts.length }}
                         </span>
                     </button>
@@ -852,5 +852,9 @@ export default {
 .mobile-header-touch:active {
     transform: scale(0.9);
     opacity: 0.75;
+}
+
+.mobile-header-badge {
+    transform: translateY(1px);
 }
 </style>
