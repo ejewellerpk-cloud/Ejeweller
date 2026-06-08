@@ -87,6 +87,19 @@ export const media = {
                 });
             });
         },
+        importFromUrl: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.post("admin/media-library/from-url", {
+                    url: payload.url,
+                    folder: payload.folder || 'uploads',
+                }).then((res) => {
+                    context.dispatch("lists", { page: 1 }).then().catch();
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.delete(`admin/media-library/${payload.id}`).then((res) => {

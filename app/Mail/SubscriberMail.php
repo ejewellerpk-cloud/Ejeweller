@@ -2,19 +2,14 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesProfessionalMailHeaders;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
 class SubscriberMail extends Mailable
 {
-    use Queueable, SerializesModels;
-
-    /**
-     * Create a new message instance.
-     *
-     * @return void
-     */
+    use Queueable, SerializesModels, UsesProfessionalMailHeaders;
 
     public string $title;
     public mixed $message;
@@ -27,6 +22,17 @@ class SubscriberMail extends Mailable
 
     public function build()
     {
-        return $this->subject("Subscriber Notification")->markdown('emails.subscriber');
+        $appName = config('app.name');
+        $subject = trim($this->title) !== '' ? $this->title : "Update from {$appName}";
+
+        return $this
+            ->subject("{$subject} | {$appName}")
+            ->view('emails.subscriber')
+            ->text('emails.text.subscriber')
+            ->with([
+                'title' => $this->title,
+                'message' => $this->message,
+            ])
+            ->applyProfessionalHeaders();
     }
 }

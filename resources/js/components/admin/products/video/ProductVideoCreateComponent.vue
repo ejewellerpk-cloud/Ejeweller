@@ -90,6 +90,7 @@
                                                 <i class="fa-solid fa-images text-[10px]"></i>
                                                 Gallery
                                             </button>
+                                            <ImageLinkButton compact @selected="handleMediaSelected" @loading="loading.isActive = $event" />
                                             <button v-if="canCaptureFromVideo" type="button" @click="openFramePicker"
                                                 :disabled="isCapturingThumbnail"
                                                 class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-primary/40 disabled:opacity-50">
@@ -169,14 +170,16 @@
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../../components/LoadingComponent";
 import MediaPickerComponent from "../../media/MediaPickerComponent";
+import ImageLinkButton from "../../media/ImageLinkButton";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
 import videoProviderEnum from "../../../../enums/modules/videoProviderEnum";
 import { captureVideoFrames } from "../../../../utils/videoThumbnail";
+import { assetToFile } from "../../../../services/imageUploadService";
 
 export default {
     name: "ProductVideoCreateComponent",
-    components: { SmModalCreateComponent, LoadingComponent, MediaPickerComponent },
+    components: { SmModalCreateComponent, LoadingComponent, MediaPickerComponent, ImageLinkButton },
     props: ["productData"],
     data() {
         return {
@@ -316,13 +319,17 @@ export default {
             this.removeThumbnail = true;
         },
         async handleMediaSelected(asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
             try {
                 this.loading.isActive = true;
-                const response = await fetch(asset.url);
-                const blob = await response.blob();
-                const extension = asset.filename?.split('.').pop() || 'jpg';
-                const file = new File([blob], `video-thumb.${extension}`, { type: blob.type || 'image/jpeg' });
-                this.setThumbnailFile(file);
+                const file = await assetToFile(items[0]);
+                const extension = items[0].filename?.split('.').pop() || 'jpg';
+                const thumbFile = new File([file], `video-thumb.${extension}`, { type: file.type || 'image/jpeg' });
+                this.setThumbnailFile(thumbFile);
                 this.showMediaPicker = false;
             } catch (err) {
                 alertService.error('Failed to load image from gallery');

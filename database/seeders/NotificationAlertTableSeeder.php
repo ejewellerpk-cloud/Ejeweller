@@ -24,13 +24,13 @@ class NotificationAlertTableSeeder extends Seeder
             'Admin And Manager New Order Message',
         ],
         'message' => [
-            'Your order is successfully placed.',
-            'Your order is confirmed.',
-            'Your order is on the way.',
-            'Your order is successfully delivered.',
-            'Your order is canceled.',
-            'Your order is rejected.',
-            'You have a new order.',
+            'Thank you for your purchase. Your order has been received and is currently being reviewed by our team.',
+            'Good news — your order has been confirmed and is now being prepared for dispatch.',
+            'Your order is on its way. We will notify you once it has been delivered.',
+            'Your order has been delivered successfully. We hope you enjoy your purchase.',
+            'Your order has been canceled as requested. If you need further assistance, please contact our support team.',
+            'We are unable to process this order at the moment. Please contact support if you would like more information.',
+            'A customer has placed a new order on the store. Please review and process it from the admin panel.',
         ]
 
     ];

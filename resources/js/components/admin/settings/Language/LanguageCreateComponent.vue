@@ -40,6 +40,9 @@
                             </label>
                             <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                                 class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" />
+                            <div class="mt-2">
+                                <ImageUploadSourceButtons @selected="handleMediaSelected" @loading="loading.isActive = $event" />
+                            </div>
                             <small class="db-field-alert" v-if="errors.image">
                                 {{ errors.image[0] }}
                             </small>
@@ -111,14 +114,16 @@
 <script>
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../../components/LoadingComponent";
+import ImageUploadSourceButtons from "../../media/ImageUploadSourceButtons";
 import statusEnum from "../../../../enums/modules/statusEnum";
 import displayModeEnum from "../../../../enums/modules/displayModeEnum";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
+import { assetToFile } from "../../../../services/imageUploadService";
 
 export default {
     name: "LanguageCreateComponent",
-    components: { SmModalCreateComponent, LoadingComponent },
+    components: { SmModalCreateComponent, LoadingComponent, ImageUploadSourceButtons },
     props: ["props"],
     data() {
         return {
@@ -149,6 +154,25 @@ export default {
     methods: {
         changeImage: function (e) {
             this.image = e.target.files[0];
+        },
+        async handleMediaSelected(asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(items[0]);
+                this.image = file;
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         reset: function () {
             appService.modalHide();

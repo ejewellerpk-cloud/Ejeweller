@@ -1,12 +1,12 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <button type="button" @click="add" data-modal="#addonModal" class="db-btn h-[37px] text-white bg-primary">
+    <button type="button" @click="add" data-modal="#productSectionAddonModal" class="db-btn h-[37px] text-white bg-primary">
         <i class="lab lab-line-add-circle"></i>
         <span>{{ addButton.title }}</span>
     </button>
 
-    <div id="addonModal" class="modal">
+    <div id="productSectionAddonModal" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.products") }}</h3>
@@ -100,13 +100,13 @@ export default {
     },
     methods: {
         add: function () {
-            appService.modalShow('#addonModal');
+            appService.modalShow('#productSectionAddonModal');
         },
         numberOnly: function (e) {
             return appService.floatNumber(e);
         },
         reset: function () {
-            appService.modalHide('#addonModal');
+            appService.modalHide('#productSectionAddonModal');
             this.$store.dispatch("productSectionProduct/reset").then().catch();
             this.errors = {};
             this.$props.props.form = {
@@ -119,7 +119,7 @@ export default {
                 const tempId = this.$store.getters["productSectionProduct/temp"].temp_id;
                 this.loading.isActive = true;
                 this.$store.dispatch("productSectionProduct/save", this.props).then((res) => {
-                    appService.modalHide('#addonModal');
+                    appService.modalHide('#productSectionAddonModal');
                     this.loading.isActive = false;
                     alertService.successFlip(
                         tempId === null ? 0 : 1,

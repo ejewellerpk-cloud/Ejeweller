@@ -35,13 +35,14 @@
                     </button>
 
                     <Swiper dir="ltr"
+                        :key="'gallery-main-' + props.search.slug"
                         v-bind="gallerySwiperProps"
                         :spaceBetween="10"
                         :navigation="true"
-                        :pagination="getPaginationConfig()"
-                        :thumbs="{ swiper: thumbsSwiper }"
+                        :pagination="galleryPaginationConfig"
+                        :thumbs="galleryThumbsConfig"
                         :modules="modules"
-                        :loop="combinedMedia.length > 1"
+                        :loop="combinedMedia.length > 2"
                         class="gallery-swiper mb-4"
                         @swiper="setMainSwiper"
                         @slideChange="onMainGallerySlideChange"
@@ -84,7 +85,13 @@
                         </SwiperSlide>
                     </Swiper>
 
-                    <Swiper v-if="combinedMedia.length > 1" dir="ltr" @swiper="setThumbsSwiper" :spaceBetween="12" :slidesPerView="4" :freeMode="true"
+                    <Swiper v-if="combinedMedia.length > 1"
+                        :key="'gallery-thumbs-' + props.search.slug"
+                        dir="ltr"
+                        @swiper="setThumbsSwiper"
+                        :spaceBetween="12"
+                        :slidesPerView="4"
+                        :freeMode="true"
                         :watchSlidesProgress="true" :modules="modules" class="thumb-swiper hidden sm:block">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'thumb-media-' + index"
                             @mouseover="thumbsSwiper ? thumbsSwiper.slideTo(index) : null"
@@ -495,7 +502,11 @@
     </section>
 
     <!-- Product Gallery Fullscreen Lightbox -->
-    <div v-if="showMediaLightbox" class="fixed inset-0 z-[9998] bg-black flex flex-col" @click.self="closeMediaLightbox">
+    <div v-if="showMediaLightbox" class="fixed inset-0 z-[9998] bg-black flex flex-col product-media-lightbox"
+        @click.self="closeMediaLightbox"
+        @gesturestart.prevent
+        @gesturechange.prevent
+        @gestureend.prevent>
         <div v-if="animatingWishlist" class="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
             <div class="w-24 h-24 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
                 <i class="lab-fill-heart text-primary text-5xl animate-heart-pulse"></i>
@@ -517,18 +528,21 @@
                 :loop="combinedMedia.length > 1"
                 :navigation="true"
                 :modules="modules"
+                :allowTouchMove="!isLightboxImageZoomed"
                 @slideChange="handleMediaLightboxSlideChange"
                 class="w-full h-full product-gallery-lightbox">
                 <SwiperSlide v-for="(media, index) in combinedMedia" :key="'lightbox-' + index" class="flex items-center justify-center">
                     <div v-if="media.type === 'image'"
-                        class="w-full h-full flex items-center justify-center p-4 overflow-hidden"
+                        class="w-full h-full flex items-center justify-center p-4 overflow-hidden lightbox-image-zoom-wrap"
                         @click="onLightboxImageTap($event)"
-                        @touchstart.passive="onLightboxPinchStart($event, index)"
-                        @touchmove.passive="onLightboxPinchMove($event, index)"
-                        @touchend="onLightboxPinchEnd">
+                        @touchstart="onLightboxPinchStart($event, index)"
+                        @touchmove="onLightboxPinchMove($event, index)"
+                        @touchend="onLightboxPinchEnd"
+                        @touchcancel="onLightboxPinchEnd"
+                        @wheel="onLightboxWheel($event, index)">
                         <img :src="media.url" alt="product"
                             :style="getLightboxImageStyle(index)"
-                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center select-none" />
+                            class="max-w-full max-h-[78vh] object-contain transition-transform duration-150 ease-out origin-center select-none pointer-events-none" />
                     </div>
                     <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center bg-black max-h-[85vh]">
                         <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
@@ -592,7 +606,11 @@
     </div>
 
      <!-- Full Screen Review Image Viewer Modal (Temu Style) -->
-     <div id="imagePreviewModal" class="modal fixed !inset-0 z-[9999] bg-black !left-0 !translate-x-0 flex items-center justify-center" @click.self="hidePreviewImage">
+     <div id="imagePreviewModal" class="modal fixed !inset-0 z-[9999] bg-black !left-0 !translate-x-0 flex items-center justify-center product-image-preview-modal"
+        @click.self="hidePreviewImage"
+        @gesturestart.prevent
+        @gesturechange.prevent
+        @gestureend.prevent>
         <div v-if="animatingWishlist" class="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
             <div class="w-24 h-24 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
                 <i class="lab-fill-heart text-primary text-5xl animate-heart-pulse"></i>
@@ -614,10 +632,24 @@
 
         <!-- Swiper Container (Full Screen) -->
         <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
-            <Swiper :initialSlide="previewIndex" @slideChange="(swiper) => { previewIndex = swiper.activeIndex }" :modules="modules" class="w-full h-full">
+            <Swiper :initialSlide="previewIndex"
+                :allowTouchMove="!isPreviewImageZoomed"
+                @slideChange="handlePreviewSlideChange"
+                :modules="modules"
+                class="w-full h-full product-image-preview-swiper">
                 <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full" @click.self="hidePreviewImage">
-                    <div class="w-full h-full flex items-center justify-center p-4" @click="onPreviewImageTap($event)" @click.self="hidePreviewImage">
-                        <img :src="img" alt="review" class="max-w-full max-h-[85vh] object-contain pointer-events-none" loading="lazy" />
+                    <div class="w-full h-full flex items-center justify-center p-4 overflow-hidden lightbox-image-zoom-wrap"
+                        @click="onPreviewImageTap($event)"
+                        @click.self="hidePreviewImage"
+                        @touchstart="onPreviewPinchStart($event, idx)"
+                        @touchmove="onPreviewPinchMove($event, idx)"
+                        @touchend="onPreviewPinchEnd"
+                        @touchcancel="onPreviewPinchEnd"
+                        @wheel="onPreviewWheel($event, idx)">
+                        <img :src="img" alt="review"
+                            :style="getPreviewImageStyle(idx)"
+                            class="max-w-full max-h-[85vh] object-contain transition-transform duration-150 ease-out origin-center select-none pointer-events-none"
+                            loading="lazy" />
                     </div>
                 </SwiperSlide>
             </Swiper>
@@ -754,7 +786,7 @@
 </template>
 
 <script>
-import { ref, defineAsyncComponent, nextTick } from "vue";
+import { ref, computed, defineAsyncComponent } from "vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -786,7 +818,6 @@ import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../util
 import {
     productGalleryMainSwiperProps,
     productGalleryLightboxSwiperProps,
-    connectGalleryThumbs,
     getGalleryClickedIndex,
 } from "../../../utils/productGallerySwiper";
 
@@ -807,19 +838,43 @@ export default {
     setup() {
         const thumbsSwiper = ref(null);
         const mainSwiper = ref(null);
+
+        const resetGallerySwipers = () => {
+            if (mainSwiper.value && !mainSwiper.value.destroyed) {
+                try {
+                    mainSwiper.value.destroy(true, true);
+                } catch (e) {}
+            }
+            if (thumbsSwiper.value && !thumbsSwiper.value.destroyed) {
+                try {
+                    thumbsSwiper.value.destroy(true, true);
+                } catch (e) {}
+            }
+            mainSwiper.value = null;
+            thumbsSwiper.value = null;
+        };
+
         const setThumbsSwiper = (swiper) => {
             thumbsSwiper.value = swiper;
-            nextTick(() => connectGalleryThumbs(mainSwiper.value, swiper));
         };
         const setMainSwiper = (swiper) => {
             mainSwiper.value = swiper;
-            nextTick(() => connectGalleryThumbs(swiper, thumbsSwiper.value));
         };
+
+        const galleryThumbsConfig = computed(() => {
+            if (!thumbsSwiper.value || thumbsSwiper.value.destroyed) {
+                return undefined;
+            }
+            return { swiper: thumbsSwiper.value };
+        });
+
         return {
             thumbsSwiper,
             mainSwiper,
             setThumbsSwiper,
             setMainSwiper,
+            resetGallerySwipers,
+            galleryThumbsConfig,
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
             gallerySwiperProps: productGalleryMainSwiperProps,
             galleryLightboxSwiperProps: productGalleryLightboxSwiperProps,
@@ -889,6 +944,7 @@ export default {
             mediaLightboxIndex: 0,
             lightboxHistoryActive: false,
             lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
+            previewPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
             _onLightboxPopState: null,
             animatingWishlist: false,
             tickerIndex: 0,
@@ -1040,6 +1096,15 @@ export default {
         detailPrices: function () {
             return getDetailPrices(this.variationPriceProduct);
         },
+        isLightboxImageZoomed: function () {
+            return this.lightboxPinch.active || this.lightboxPinch.scale > 1.05;
+        },
+        isPreviewImageZoomed: function () {
+            return this.previewPinch.active || this.previewPinch.scale > 1.05;
+        },
+        galleryPaginationConfig: function () {
+            return this.getPaginationConfig();
+        },
     },
     mounted() {
         this.show();
@@ -1068,6 +1133,7 @@ export default {
         document.body.style.overflow = '';
         document.body.classList.remove('media-lightbox-open');
         document.body.classList.remove('image-preview-open');
+        this.resetGallerySwipers();
     },
     methods: {
         scheduleEngagementWidgets: function () {
@@ -1348,27 +1414,41 @@ export default {
         resetLightboxPinch: function () {
             this.lightboxPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false };
         },
-        getLightboxImageStyle: function (index) {
-            if (this.mediaLightboxIndex !== index) {
+        resetPreviewPinch: function () {
+            this.previewPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false };
+        },
+        getPinchImageStyle: function (pinchState, isActiveSlide) {
+            if (!isActiveSlide) {
                 return {};
             }
-            const tapZoom = this.mediaLightboxZoomedIndex === index;
-            const scale = this.lightboxPinch.active || this.lightboxPinch.scale > 1
-                ? this.lightboxPinch.scale
-                : (tapZoom ? 2.2 : 1);
+            const scale = pinchState.scale;
             return {
-                transform: `scale(${scale}) translate(${this.lightboxPinch.x}px, ${this.lightboxPinch.y}px)`,
+                transform: `scale(${scale}) translate(${pinchState.x}px, ${pinchState.y}px)`,
                 cursor: scale > 1 ? 'zoom-out' : 'zoom-in',
             };
+        },
+        getLightboxImageStyle: function (index) {
+            return this.getPinchImageStyle(this.lightboxPinch, this.mediaLightboxIndex === index);
+        },
+        getPreviewImageStyle: function (index) {
+            return this.getPinchImageStyle(this.previewPinch, this.previewIndex === index);
+        },
+        getTouchPinchDistance: function (touches) {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        },
+        applyPinchZoom: function (pinchState, dist) {
+            const next = (dist / pinchState.startDist) * pinchState.startScale;
+            pinchState.scale = Math.min(4, Math.max(1, next));
         },
         onLightboxPinchStart: function (e, index) {
             if (this.mediaLightboxIndex !== index || e.touches.length !== 2) {
                 return;
             }
-            const dist = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
+            e.preventDefault();
+            const dist = this.getTouchPinchDistance(e.touches);
             this.lightboxPinch.active = true;
             this.lightboxPinch.startDist = dist;
             this.lightboxPinch.startScale = this.lightboxPinch.scale > 1 ? this.lightboxPinch.scale : 1;
@@ -1377,12 +1457,8 @@ export default {
             if (!this.lightboxPinch.active || this.mediaLightboxIndex !== index || e.touches.length !== 2) {
                 return;
             }
-            const dist = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-            const next = (dist / this.lightboxPinch.startDist) * this.lightboxPinch.startScale;
-            this.lightboxPinch.scale = Math.min(4, Math.max(1, next));
+            e.preventDefault();
+            this.applyPinchZoom(this.lightboxPinch, this.getTouchPinchDistance(e.touches));
         },
         onLightboxPinchEnd: function () {
             if (this.lightboxPinch.scale <= 1.05) {
@@ -1390,6 +1466,58 @@ export default {
             } else {
                 this.lightboxPinch.active = false;
             }
+        },
+        onLightboxWheel: function (e, index) {
+            if (this.mediaLightboxIndex !== index || !e.ctrlKey) {
+                return;
+            }
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.12 : -0.12;
+            const next = Math.min(4, Math.max(1, this.lightboxPinch.scale + delta));
+            this.lightboxPinch.scale = next;
+            if (next <= 1.05) {
+                this.resetLightboxPinch();
+            }
+        },
+        onPreviewPinchStart: function (e, index) {
+            if (this.previewIndex !== index || e.touches.length !== 2) {
+                return;
+            }
+            e.preventDefault();
+            const dist = this.getTouchPinchDistance(e.touches);
+            this.previewPinch.active = true;
+            this.previewPinch.startDist = dist;
+            this.previewPinch.startScale = this.previewPinch.scale > 1 ? this.previewPinch.scale : 1;
+        },
+        onPreviewPinchMove: function (e, index) {
+            if (!this.previewPinch.active || this.previewIndex !== index || e.touches.length !== 2) {
+                return;
+            }
+            e.preventDefault();
+            this.applyPinchZoom(this.previewPinch, this.getTouchPinchDistance(e.touches));
+        },
+        onPreviewPinchEnd: function () {
+            if (this.previewPinch.scale <= 1.05) {
+                this.resetPreviewPinch();
+            } else {
+                this.previewPinch.active = false;
+            }
+        },
+        onPreviewWheel: function (e, index) {
+            if (this.previewIndex !== index || !e.ctrlKey) {
+                return;
+            }
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.12 : -0.12;
+            const next = Math.min(4, Math.max(1, this.previewPinch.scale + delta));
+            this.previewPinch.scale = next;
+            if (next <= 1.05) {
+                this.resetPreviewPinch();
+            }
+        },
+        handlePreviewSlideChange: function (swiper) {
+            this.previewIndex = swiper.activeIndex;
+            this.resetPreviewPinch();
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
@@ -1579,6 +1707,7 @@ export default {
         hidePreviewImage: function (fromPopState = false) {
             appService.modalHide('#imagePreviewModal');
             document.body.classList.remove('image-preview-open');
+            this.resetPreviewPinch();
             this.previewImages = [];
             this.previewReview = null;
             if (fromPopState) {
@@ -1869,6 +1998,7 @@ export default {
             }
 
             const token = ++this.loadToken;
+            this.resetGallerySwipers();
             this.loading.isActive = true;
             this.selectedVariation = null;
             this.showVariationComponent = false;
@@ -2369,14 +2499,25 @@ export default {
 }
 
 .gallery-swiper,
-.gallery-swiper :deep(.swiper-wrapper),
-.product-gallery-lightbox,
-.product-gallery-lightbox :deep(.swiper-wrapper) {
-    touch-action: pan-y pinch-zoom;
+.gallery-swiper :deep(.swiper-wrapper) {
+    touch-action: pan-x pan-y;
 }
 
 .product-gallery-slide {
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y;
+}
+
+.product-gallery-lightbox,
+.product-gallery-lightbox :deep(.swiper-wrapper),
+.product-gallery-lightbox :deep(.swiper-slide),
+.product-image-preview-swiper,
+.product-image-preview-swiper :deep(.swiper-wrapper),
+.product-image-preview-swiper :deep(.swiper-slide) {
+    touch-action: pan-x pan-y;
+}
+
+.lightbox-image-zoom-wrap {
+    touch-action: manipulation;
 }
 
 .related-products-swiper--continuous :deep(.swiper-wrapper) {
@@ -2611,6 +2752,18 @@ export default {
 </style>
 
 <style>
+body.media-lightbox-open,
+body.image-preview-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+}
+
+body.media-lightbox-open .product-media-lightbox,
+body.image-preview-open .product-image-preview-modal {
+    touch-action: manipulation;
+}
+
 @media (max-width: 640px) {
     .whatsapp-btn {
         bottom: 168px !important;

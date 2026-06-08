@@ -41,6 +41,9 @@
                         <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                             class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg">
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="handleMediaSelected" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                     </div>
 
@@ -79,12 +82,15 @@ import roleEnum from "../../../enums/modules/roleEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import { useCanvas } from "../../../composables/canvas";
+import ImageUploadSourceButtons from "../media/ImageUploadSourceButtons";
+import { assetToFile } from "../../../services/imageUploadService";
 
 export default {
     name: "PushNotificationCreateComponent",
     components: {
         SmSidebarModalCreateComponent,
-        LoadingComponent
+        LoadingComponent,
+        ImageUploadSourceButtons,
     },
     props: ['props'],
     data() {
@@ -139,6 +145,25 @@ export default {
     methods: {
         changeImage: function (e) {
             this.image = e.target.files[0];
+        },
+        async handleMediaSelected(asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(items[0]);
+                this.image = file;
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         reset: function () {
             useCanvas().closeCanvas('sidebar');

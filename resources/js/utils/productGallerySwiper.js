@@ -26,11 +26,14 @@ export const productGalleryLightboxSwiperProps = {
 };
 
 export function connectGalleryThumbs(mainSwiper, thumbsSwiper) {
-    if (!mainSwiper?.thumbs || !thumbsSwiper) {
+    if (!mainSwiper?.thumbs || !thumbsSwiper || thumbsSwiper.destroyed || !thumbsSwiper.el) {
         return;
     }
-    mainSwiper.thumbs.init();
-    mainSwiper.thumbs.update();
+    try {
+        mainSwiper.thumbs.swiper = thumbsSwiper;
+        mainSwiper.thumbs.init();
+        mainSwiper.thumbs.update();
+    } catch (e) {}
 }
 
 export function getGalleryClickedIndex(swiper) {

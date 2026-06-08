@@ -24,6 +24,7 @@
                                     accept="image/png, image/jpeg, image/jpg" type="file" id="photo"
                                     class="absolute top-0 left-0 w-full h-full -z-10 opacity-0" />
                             </label>
+                            <ImageLinkButton compact @selected="handleProfileImageFromLink" @loading="loading.isActive = $event" />
                             <button v-if="saveButton" type="submit"
                                 class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(26,_183,_89,_0.24)] text-white bg-[#1AB759]">
                                 <i class="lab lab-line-circle-check"></i>
@@ -253,7 +254,9 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import UserSessionsComponent from "../components/UserSessionsComponent";
 import UserFcmTokensComponent from "../components/UserFcmTokensComponent";
+import ImageLinkButton from "../media/ImageLinkButton";
 import ENV from "../../../config/env";
+import { assetToFile } from "../../../services/imageUploadService";
 
 export default {
     name: "AdministratorShowComponent",
@@ -268,6 +271,7 @@ export default {
         PaginationTextComponent,
         UserSessionsComponent,
         UserFcmTokensComponent,
+        ImageLinkButton,
     },
     data() {
         return {
@@ -293,6 +297,7 @@ export default {
             },
             defaultImage: null,
             previewImage: null,
+            pendingImageFile: null,
             uploadButton: true,
             resetButton: false,
             saveButton: false,
@@ -343,13 +348,32 @@ export default {
         },
         changePreviewImage: function (e) {
             if (e.target.files[0]) {
+                this.pendingImageFile = e.target.files[0];
                 this.previewImage = URL.createObjectURL(e.target.files[0]);
                 this.saveButton = true;
                 this.resetButton = true;
             }
         },
+        async handleProfileImageFromLink(asset) {
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(asset);
+                this.pendingImageFile = file;
+                this.previewImage = asset.url;
+                this.saveButton = true;
+                this.resetButton = true;
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
         resetPreviewImage: function () {
             this.$refs.imageProperty.value = null;
+            this.pendingImageFile = null;
             this.previewImage = this.defaultImage;
             this.saveButton = false;
             this.resetButton = false;
@@ -367,11 +391,12 @@ export default {
             });
         },
         saveImage: function () {
-            if (this.$refs.imageProperty.files[0]) {
+            const imageFile = this.pendingImageFile || this.$refs.imageProperty?.files?.[0];
+            if (imageFile) {
                 try {
                     this.loading.isActive = true;
                     const formData = new FormData();
-                    formData.append("image", this.$refs.imageProperty.files[0]);
+                    formData.append("image", imageFile);
                     this.$store
                         .dispatch("administrator/changeImage", {
                             id: this.$route.params.id,
@@ -381,6 +406,7 @@ export default {
                             alertService.success(this.$t("message.photo_update"));
                             this.defaultImage = res.data.data.image;
                             this.previewImage = res.data.data.image;
+                            this.pendingImageFile = null;
                             this.$refs.imageProperty.value = null;
                             this.saveButton = false;
                             this.resetButton = false;

@@ -15,6 +15,9 @@
                         <input @change="changeLogo" v-bind:class="errors.theme_logo ? 'invalid' : ''" id="theme_logo"
                             type="file" class="db-field-control" ref="themeLogoProperty"
                             accept="image/png, image/jpeg, image/jpg" />
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="(asset) => handleThemeImageSelected('logo', asset)" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.theme_logo">{{
                             errors.theme_logo[0]
                         }}</small>
@@ -29,6 +32,9 @@
                         <input @change="changeFavIcon" v-bind:class="errors.theme_favicon_logo ? 'invalid' : ''"
                             id="fav_icon" type="file" class="db-field-control" ref="themeFaviconLogoProperty"
                             accept="image/png, image/jpeg, image/jpg" />
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="(asset) => handleThemeImageSelected('favicon', asset)" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.theme_favicon_logo">{{
                             errors.theme_favicon_logo[0]
                         }}</small>
@@ -43,6 +49,9 @@
                         <input @change="changeFooterLogo" v-bind:class="errors.theme_footer_logo ? 'invalid' : ''"
                             id="fav_icon" type="file" class="db-field-control" ref="themeFooterLogoProperty"
                             accept="image/png, image/jpeg, image/jpg" />
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="(asset) => handleThemeImageSelected('footer', asset)" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.theme_footer_logo">{{
                             errors.theme_footer_logo[0]
                         }}</small>
@@ -65,11 +74,13 @@
 
 <script>
 import LoadingComponent from "../../components/LoadingComponent";
+import ImageUploadSourceButtons from "../../media/ImageUploadSourceButtons";
 import alertService from "../../../../services/alertService";
+import { assetToFile } from "../../../../services/imageUploadService";
 
 export default {
     name: "ThemeComponent",
-    components: { LoadingComponent },
+    components: { LoadingComponent, ImageUploadSourceButtons },
     data() {
         return {
             loading: {
@@ -96,6 +107,41 @@ export default {
         },
         changeFooterLogo: function (e) {
             this.theme_footer_logo = e.target.files[0];
+        },
+        async handleThemeImageSelected(field, asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(items[0]);
+
+                if (field === 'logo') {
+                    this.theme_logo = file;
+                    this.theme_logo_reader = items[0].url;
+                    if (this.$refs.themeLogoProperty) {
+                        this.$refs.themeLogoProperty.value = null;
+                    }
+                } else if (field === 'favicon') {
+                    this.theme_favicon_logo = file;
+                    this.theme_favicon_logo_reader = items[0].url;
+                    if (this.$refs.themeFaviconLogoProperty) {
+                        this.$refs.themeFaviconLogoProperty.value = null;
+                    }
+                } else if (field === 'footer') {
+                    this.theme_footer_logo = file;
+                    this.theme_footer_logo_reader = items[0].url;
+                    if (this.$refs.themeFooterLogoProperty) {
+                        this.$refs.themeFooterLogoProperty.value = null;
+                    }
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         list: function () {
             this.loading.isActive = true;

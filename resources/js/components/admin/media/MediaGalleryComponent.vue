@@ -17,6 +17,7 @@
                     <i class="fa-solid fa-layer-group"></i>
                     <span>Bulk upload</span>
                 </button>
+                <ImageLinkButton :disabled="isUploading" :folder="selectedFolder" @selected="onUrlImported" @loading="onUrlImportLoading" />
             </div>
         </header>
 
@@ -219,9 +220,11 @@
 import { mapGetters, mapActions } from 'vuex';
 import alertService from '../../../services/alertService';
 import appService from '../../../services/appService';
+import ImageLinkButton from './ImageLinkButton';
 
 export default {
     name: "MediaGalleryComponent",
+    components: { ImageLinkButton },
     data() {
         return {
             loading: false,
@@ -552,6 +555,12 @@ export default {
         copyUrl(url) {
             navigator.clipboard.writeText(url);
             alertService.success("URL copied");
+        },
+        onUrlImportLoading(isLoading) {
+            this.loading = isLoading;
+        },
+        async onUrlImported() {
+            await this.fetchMedia(1);
         },
         formatSize(bytes) {
             if (bytes === 0) return '0 B';

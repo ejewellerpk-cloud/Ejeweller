@@ -43,6 +43,9 @@
                     </label>
                     <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                         class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" />
+                    <div class="mt-2">
+                        <ImageUploadSourceButtons @selected="handleMediaSelected" @loading="loading.isActive = $event" />
+                    </div>
                     <small class="db-field-alert" v-if="errors.image">{{
                         errors.image[0]
                     }}</small>
@@ -64,16 +67,19 @@
 <script>
 import alertService from "../../../../services/alertService";
 import LoadingComponent from "../../components/LoadingComponent";
+import ImageUploadSourceButtons from "../../media/ImageUploadSourceButtons";
 import VueTagsInput from "@sipec/vue3-tags-input";
 import { quillEditor } from 'vue3-quill'
 import _ from "lodash";
+import { assetToFile } from "../../../../services/imageUploadService";
 
 export default {
     name: "ProductSeoComponent",
     components: {
         VueTagsInput,
         LoadingComponent,
-        quillEditor
+        quillEditor,
+        ImageUploadSourceButtons,
     },
     data() {
         return {
@@ -102,6 +108,29 @@ export default {
     methods: {
         changeImage: function (e) {
             this.image = e.target.files[0];
+            if (this.image) {
+                this.preview = URL.createObjectURL(this.image);
+            }
+        },
+        async handleMediaSelected(asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(items[0]);
+                this.image = file;
+                this.preview = items[0].url;
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         list: function () {
             this.$store.dispatch('productSeo/lists', this.productId).then(res => {

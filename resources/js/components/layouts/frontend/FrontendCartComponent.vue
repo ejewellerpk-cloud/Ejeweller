@@ -101,9 +101,21 @@
                                 </template>
                             </div>
                             <h5 class="text-[11px] font-medium text-gray-700 leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">{{ product.name }}</h5>
-                            <div class="flex items-center gap-1 mt-0.5">
-                                <span class="text-[11px] font-bold text-primary font-sans">{{ currencyFormat(product.price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
-                                <del v-if="product.is_offer" class="text-[9px] text-gray-400 font-sans">{{ currencyFormat(product.old_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</del>
+                            <div class="flex items-center justify-between gap-1 mt-0.5">
+                                <div class="flex items-center gap-1 min-w-0 flex-1">
+                                    <span class="text-[11px] font-bold text-primary font-sans">{{ currencyFormat(product.price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</span>
+                                    <del v-if="product.is_offer" class="text-[9px] text-gray-400 font-sans">{{ currencyFormat(product.old_price, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }}</del>
+                                </div>
+                                <button v-if="!isOutOfStock(product)" type="button" @click.stop="addToCart(product)"
+                                    :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
+                                    :class="animatingCartIds[product.id] ? 'cart-related-cart-bounce' : ''"
+                                    class="cart-related-cart-btn w-7 h-7 rounded-lg bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_2px_6px_rgba(255,92,0,0.2)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
+                                    <i class="fa-solid fa-cart-plus text-[10px]"></i>
+                                </button>
+                                <span v-else-if="isOutOfStock(product)"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 text-gray-500 text-[8px] font-bold uppercase shrink-0 pointer-events-none leading-none text-center">
+                                    {{ $t('label.sold_out') || 'Sold' }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -149,6 +161,9 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import router from "../../../router";
 import CartTrustBadgesComponent from "../../frontend/checkout/CartTrustBadgesComponent.vue";
 import { shouldShowSocialProof, socialProofTextForItem } from "../../../utils/socialProof";
+import { withCartLinePricing } from "../../../utils/productOffer";
+import { getDisplaySoldCount } from "../../../utils/productSoldCount";
+import activityEnum from "../../../enums/modules/activityEnum";
 
 export default {
     name: "FrontendCartComponent",
@@ -157,7 +172,8 @@ export default {
     },
     data() {
         return {
-            loadedImages: {}
+            loadedImages: {},
+            animatingCartIds: {},
         }
     },
     setup() {
@@ -275,6 +291,65 @@ export default {
         cartSocialProofText(cart) {
             return socialProofTextForItem(cart);
         },
+        isOutOfStock(product) {
+            if (!product) return false;
+            const siteShow = this.setting?.site_show_stock_out;
+            if (siteShow !== undefined && siteShow !== null && parseInt(siteShow, 10) !== activityEnum.ENABLE) {
+                return false;
+            }
+            return parseInt(product.stock, 10) <= 0;
+        },
+        getProductSoldCount(product) {
+            return getDisplaySoldCount(product);
+        },
+        addToCart(product) {
+            if (this.isOutOfStock(product)) {
+                alertService.error(this.$t('message.out_of_stock') || 'This item is out of stock!');
+                return;
+            }
+            if (product.variation_count > 0) {
+                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
+                this.closeCanvas('cart-canvas');
+                router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
+                return;
+            }
+
+            if (product.id) {
+                const storageKey = 'sold_count_' + product.id;
+                const count = this.getProductSoldCount(product) + 1;
+                localStorage.setItem(storageKey, count);
+            }
+
+            const productPayload = withCartLinePricing({
+                name: product.name,
+                product_id: product.id,
+                image: product.cover,
+                variation_names: '',
+                variation_id: null,
+                sku: product.sku || '',
+                stock: product.stock,
+                taxes: product.taxes,
+                shipping: product.shipping,
+                quantity: 1,
+                maximum_purchase_quantity: product.maximum_purchase_quantity,
+                in_baskets: product.in_baskets || 0,
+                bought_last_24_hours: product.bought_last_24_hours || 0,
+                actual_sales: product.actual_sales || 0,
+            }, product);
+
+            this.animatingCartIds[product.id] = true;
+            setTimeout(() => {
+                this.animatingCartIds[product.id] = false;
+            }, 600);
+
+            this.$store.dispatch("frontendCart/lists", productPayload).catch((err) => {
+                if (err && err.message === "stockOut") {
+                    alertService.error(this.$t('message.out_of_stock') || "This product is out of stock!");
+                } else {
+                    alertService.error(this.$t('message.maximum_quantity') || "Maximum purchase quantity reached!");
+                }
+            });
+        },
     }
 }
 </script>
@@ -296,5 +371,20 @@ export default {
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.cart-related-cart-btn {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cart-related-cart-bounce {
+    animation: cartRelatedBounce 0.55s ease-out;
+}
+
+@keyframes cartRelatedBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.2) rotate(-8deg); }
+    55% { transform: scale(0.92) rotate(4deg); }
+    100% { transform: scale(1) rotate(0deg); }
 }
 </style>

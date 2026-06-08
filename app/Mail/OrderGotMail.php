@@ -2,19 +2,14 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesProfessionalMailHeaders;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
 class OrderGotMail extends Mailable
 {
-    use Queueable, SerializesModels;
-
-    /**
-     * Create a new message instance.
-     *
-     * @return void
-     */
+    use Queueable, SerializesModels, UsesProfessionalMailHeaders;
 
     public object $order;
     public mixed $message;
@@ -27,6 +22,16 @@ class OrderGotMail extends Mailable
 
     public function build()
     {
-        return $this->subject("You got a new order")->markdown('emails.orderGot');
+        $appName = config('app.name');
+
+        return $this
+            ->subject("New order #{$this->order->order_serial_no} received | {$appName}")
+            ->view('emails.orderGot')
+            ->text('emails.text.orderGot')
+            ->with([
+                'order' => $this->order,
+                'message' => $this->message,
+            ])
+            ->applyProfessionalHeaders();
     }
 }

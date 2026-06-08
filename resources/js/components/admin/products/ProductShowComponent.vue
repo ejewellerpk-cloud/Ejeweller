@@ -272,6 +272,7 @@
                                     <i class="fa-solid fa-images text-xs"></i>
                                     Gallery
                                 </button>
+                                <ImageLinkButton compact @selected="handleMediaSelected" @loading="loading.isActive = $event" />
                             </div>
                         </div>
 
@@ -584,6 +585,7 @@
 <script>
 import LoadingComponent from "../components/LoadingComponent";
 import MediaPickerComponent from "../media/MediaPickerComponent";
+import ImageLinkButton from "../media/ImageLinkButton";
 import statusEnum from "../../../enums/modules/statusEnum";
 import shippingTypeEnum from "../../../enums/modules/shippingTypeEnum";
 import askEnum from "../../../enums/modules/askEnum";
@@ -603,6 +605,7 @@ export default {
     components: {
         LoadingComponent,
         MediaPickerComponent,
+        ImageLinkButton,
         ProductVariationListComponent,
         ProductVideoListComponent,
         quillEditor,

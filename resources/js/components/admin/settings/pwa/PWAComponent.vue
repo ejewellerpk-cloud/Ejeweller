@@ -19,6 +19,9 @@
                         <input @change="changeSplash" v-bind:class="errors.pwa_splash ? 'invalid' : ''" id="splash"
                             type="file" class="db-field-control" ref="splashProperty"
                             accept="image/png, image/jpeg, image/jpg" />
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="(asset) => handlePwaImageSelected('splash', asset)" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.pwa_splash">{{
                             errors.pwa_splash[0]
                         }}</small>
@@ -29,6 +32,9 @@
                         </label>
                         <input @change="changeIcon" v-bind:class="errors.pwa_icon ? 'invalid' : ''" id="icon" type="file"
                             class="db-field-control" ref="iconProperty" accept="image/png, image/jpeg, image/jpg" />
+                        <div class="mt-2">
+                            <ImageUploadSourceButtons @selected="(asset) => handlePwaImageSelected('icon', asset)" @loading="loading.isActive = $event" />
+                        </div>
                         <small class="db-field-alert" v-if="errors.pwa_icon">{{
                             errors.pwa_icon[0]
                         }}</small>
@@ -63,10 +69,12 @@
 </template>
 <script lang="js">
 import LoadingComponent from "../../components/LoadingComponent";
+import ImageUploadSourceButtons from "../../media/ImageUploadSourceButtons";
 import alertService from "../../../../services/alertService";
+import { assetToFile } from "../../../../services/imageUploadService";
 export default {
     name: 'PWAComponent',
-    components: { LoadingComponent },
+    components: { LoadingComponent, ImageUploadSourceButtons },
     data() {
         return {
             loading: {
@@ -91,6 +99,33 @@ export default {
         },
         changeIcon: function (e) {
             this.icon = e.target.files[0];
+        },
+        async handlePwaImageSelected(field, asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
+            try {
+                this.loading.isActive = true;
+                const file = await assetToFile(items[0]);
+
+                if (field === 'splash') {
+                    this.splash = file;
+                    if (this.$refs.splashProperty) {
+                        this.$refs.splashProperty.value = null;
+                    }
+                } else {
+                    this.icon = file;
+                    if (this.$refs.iconProperty) {
+                        this.$refs.iconProperty.value = null;
+                    }
+                }
+            } catch (error) {
+                alertService.error("Failed to load image");
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         save: function () {
             try {

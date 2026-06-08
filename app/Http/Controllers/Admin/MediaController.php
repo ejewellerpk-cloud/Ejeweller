@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\MediaAssetService;
 use App\Services\WebpImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 class MediaController extends Controller
@@ -141,6 +142,90 @@ class MediaController extends Controller
         }
 
         return response()->json($uploadedFiles, 201);
+    }
+
+    public function storeFromUrl(Request $request)
+    {
+        $request->validate([
+            'url' => ['required', 'url', 'max:2048'],
+            'folder' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $url = $request->input('url');
+        $folder = $this->mediaAssetService->normalizeFolder($request->get('folder'));
+
+        try {
+            $response = Http::timeout(30)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Shopperzz/1.0)'])
+                ->get($url);
+
+            if (!$response->successful()) {
+                return response()->json(['error' => 'Could not download image from URL'], 422);
+            }
+
+            $body = $response->body();
+            if ($body === '' || strlen($body) > 2 * 1024 * 1024) {
+                return response()->json(['error' => 'Image exceeds 2MB limit or is empty'], 422);
+            }
+
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->buffer($body) ?: '';
+            if (!str_starts_with($mime, 'image/')) {
+                return response()->json(['error' => 'URL must point to an image file'], 422);
+            }
+
+            $extension = match ($mime) {
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+                'image/svg+xml' => 'svg',
+                default => 'jpg',
+            };
+
+            if ($extension === 'svg' || $extension === 'webp') {
+                $filename = time() . '-' . uniqid('', true) . '.' . $extension;
+                $path = $folder . '/' . $filename;
+                Storage::disk('public')->put($path, $body);
+                $mimetype = $extension === 'svg' ? 'image/svg+xml' : 'image/webp';
+            } else {
+                $tempFile = tempnam(sys_get_temp_dir(), 'img_url_');
+                file_put_contents($tempFile, $body);
+                $webpPath = $this->webpImageService->prepareUploadFile($tempFile);
+                @unlink($tempFile);
+
+                if (!$webpPath) {
+                    return response()->json([
+                        'error' => 'Image exceeds safe size. Maximum 2048×2048 pixels and 2 MB.',
+                    ], 422);
+                }
+
+                $filename = time() . '-' . uniqid('', true) . '.webp';
+                $path = $folder . '/' . $filename;
+                Storage::disk('public')->put($path, file_get_contents($webpPath));
+
+                if (is_file($webpPath)) {
+                    @unlink($webpPath);
+                }
+
+                $mimetype = 'image/webp';
+                $extension = 'webp';
+            }
+
+            $uploadedFile = [
+                'id' => $path,
+                'url' => Storage::disk('public')->url($path),
+                'filename' => basename($path),
+                'folder' => $folder,
+                'originalName' => pathinfo(parse_url($url, PHP_URL_PATH) ?: 'image', PATHINFO_FILENAME) . '.' . $extension,
+                'mimetype' => $mimetype,
+                'size' => Storage::disk('public')->size($path),
+            ];
+
+            return response()->json($uploadedFile, 201);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Failed to import image from URL'], 422);
+        }
     }
 
     public function destroy($id)

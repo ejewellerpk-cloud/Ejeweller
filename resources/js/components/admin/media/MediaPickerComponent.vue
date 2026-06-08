@@ -11,6 +11,8 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="file" ref="bulkFileInput" class="hidden" multiple accept="image/*" @change="handleBulkFileSelect" />
+                    <ImageLinkButton compact :disabled="isUploading" :folder="selectedFolder"
+                        @selected="onUrlImported" @loading="onUrlImportLoading" />
                     <button type="button" @click="toggleBulkUpload" :disabled="isUploading"
                         class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-primary text-primary text-xs font-bold uppercase tracking-wide disabled:opacity-60">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -177,9 +179,11 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 import alertService from '../../../services/alertService';
+import ImageLinkButton from './ImageLinkButton';
 
 export default {
     name: "MediaPickerComponent",
+    components: { ImageLinkButton },
     props: {
         show: { type: Boolean, default: false },
         multiple: { type: Boolean, default: false },
@@ -280,6 +284,12 @@ export default {
                 return;
             }
             this.$emit('close');
+        },
+        onUrlImportLoading(isLoading) {
+            this.loading = isLoading;
+        },
+        async onUrlImported() {
+            await this.fetchMedia(1);
         },
         toggleBulkUpload() {
             this.bulkUploadOpen = !this.bulkUploadOpen;

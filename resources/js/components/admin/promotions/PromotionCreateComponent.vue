@@ -83,17 +83,11 @@
                                     type="file" class="db-field-control flex-1" ref="imageProperty"
                                     accept="image/png, image/jpeg, image/jpg">
                                 
-                                <button type="button" @click="showMediaPicker = true" 
-                                    class="px-4 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all border border-slate-200 flex items-center gap-2 whitespace-nowrap">
-                                    <i class="fa-solid fa-images text-primary"></i>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
-                                </button>
+                                <ImageUploadSourceButtons @selected="handleMediaSelected" @loading="loading.isActive = $event" />
                             </div>
                         </div>
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                     </div>
-
-                    <MediaPickerComponent :show="showMediaPicker" @close="showMediaPicker = false" @selected="handleMediaSelected" />
 
                     <div class="form-col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
@@ -119,16 +113,17 @@ import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalC
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
 import LoadingComponent from "../components/LoadingComponent";
-import MediaPickerComponent from "../media/MediaPickerComponent";
+import ImageUploadSourceButtons from "../media/ImageUploadSourceButtons";
 import statusEnum from "../../../enums/modules/statusEnum";
 import promotionTypeEnum from "../../../enums/modules/promotionTypeEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import { useCanvas } from "../../../composables/canvas";
+import { assetToFile } from "../../../services/imageUploadService";
 
 export default {
     name: "PromotionCreateComponent",
-    components: { SmSidebarModalCreateComponent, LoadingComponent, Datepicker, MediaPickerComponent },
+    components: { SmSidebarModalCreateComponent, LoadingComponent, Datepicker, ImageUploadSourceButtons },
     props: ["props"],
     data() {
         return {
@@ -150,7 +145,6 @@ export default {
             image: "",
             imagePreview: "",
             errors: {},
-            showMediaPicker: false,
         };
     },
     computed: {
@@ -169,16 +163,21 @@ export default {
             }
         },
         async handleMediaSelected(asset) {
+            const items = Array.isArray(asset) ? asset : [asset];
+            if (!items.length) {
+                return;
+            }
+
             try {
                 this.loading.isActive = true;
-                const response = await fetch(asset.url);
-                const blob = await response.blob();
-                const file = new File([blob], asset.filename, { type: blob.type });
+                const file = await assetToFile(items[0]);
                 this.image = file;
-                this.imagePreview = asset.url;
-                this.$refs.imageProperty.value = null;
+                this.imagePreview = items[0].url;
+                if (this.$refs.imageProperty) {
+                    this.$refs.imageProperty.value = null;
+                }
             } catch (error) {
-                alertService.error("Failed to load image from gallery");
+                alertService.error("Failed to load image");
             } finally {
                 this.loading.isActive = false;
             }
