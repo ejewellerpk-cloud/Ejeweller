@@ -5,6 +5,11 @@
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.reviews') }}</h3>
                 <div class="db-card-filter">
+                    <router-link v-if="permissionChecker('reviews')" :to="{ name: 'admin.review.create' }"
+                        class="db-btn h-[37px] text-white bg-primary">
+                        <i class="lab lab-line-add-circle"></i>
+                        <span>{{ $t('button.add_review') }}</span>
+                    </router-link>
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
                     <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
                         <i class="lab lab-line-filter lab-font-size-14"></i>

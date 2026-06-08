@@ -77,6 +77,50 @@ export const review = {
                     });
             });
         },
+        save: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post("admin/reviews", payload.form, {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
+        uploadImage: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post(`admin/reviews/upload-image/${payload.id}`, payload.form, {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
+        deleteImage: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .get(`admin/reviews/delete-image/${payload.id}/${payload.index}`)
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         reset: function (context) {
             context.commit("reset");
         },

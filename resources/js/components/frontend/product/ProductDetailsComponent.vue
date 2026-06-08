@@ -427,27 +427,10 @@
             
             <RelatedProductsSliderSkeleton v-if="relatedProductsLoading" />
 
-            <div v-else class="related-products-slider">
-                <div class="related-products-slider__fade related-products-slider__fade--left" aria-hidden="true"></div>
-                <div class="related-products-slider__fade related-products-slider__fade--right" aria-hidden="true"></div>
-
-                <Swiper v-if="relatedProducts.length > 0"
-                    dir="ltr"
-                    :slides-per-view="2"
-                    :space-between="16"
-                    :speed="relatedRowSpeed"
-                    :navigation="relatedProducts.length > 2"
-                    :loop="relatedProducts.length > 4"
-                    :modules="relatedSliderModules"
-                    v-bind="relatedTouchProps"
-                    :breakpoints="relatedBreakpoints"
-                    class="related-products-swiper !pb-10"
-                >
-                    <SwiperSlide v-for="product in relatedProducts" :key="product.id">
-                        <RelatedProductCard :product="product" />
-                    </SwiperSlide>
-                </Swiper>
-            </div>
+            <RelatedProductsCarousel
+                v-else-if="relatedProducts.length > 0"
+                :products="relatedProducts"
+            />
         </div>
     </section>
 
@@ -799,7 +782,7 @@ import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import RelatedProductsSliderSkeleton from "../components/skeleton/RelatedProductsSliderSkeleton.vue";
-import RelatedProductCard from "../components/RelatedProductCard.vue";
+import RelatedProductsCarousel from "../components/RelatedProductsCarousel.vue";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -813,8 +796,6 @@ import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount, withCartLinePricing } from "../../../utils/productOffer";
 import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
-import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
-
 import {
     productGalleryMainSwiperProps,
     productGalleryLightboxSwiperProps,
@@ -826,7 +807,7 @@ export default {
     components: {
         VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
         RelatedProductsSliderSkeleton,
-        RelatedProductCard,
+        RelatedProductsCarousel,
         RecentlyViewedStripSkeleton,
         CategoryBreadcrumbComponent,
         starRating,
@@ -878,14 +859,6 @@ export default {
             modules: [FreeMode, Navigation, Thumbs, Pagination, Autoplay],
             gallerySwiperProps: productGalleryMainSwiperProps,
             galleryLightboxSwiperProps: productGalleryLightboxSwiperProps,
-            relatedSliderModules: [Navigation],
-            relatedTouchProps: homepageRowSwiperProps,
-            relatedRowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
-            relatedBreakpoints: {
-                640: { slidesPerView: 2, spaceBetween: 20 },
-                768: { slidesPerView: 3, spaceBetween: 24 },
-                1024: { slidesPerView: 4, spaceBetween: 24 },
-            },
         }
     },
     data() {
@@ -2470,34 +2443,6 @@ export default {
 </script>
 
 <style scoped>
-.related-products-slider {
-    position: relative;
-}
-
-.related-products-slider__fade {
-    position: absolute;
-    top: 0;
-    bottom: 2.5rem;
-    width: 2.5rem;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.related-products-slider__fade--left {
-    left: 0;
-    background: linear-gradient(to right, #ffffff 15%, rgba(255, 255, 255, 0));
-}
-
-.related-products-slider__fade--right {
-    right: 0;
-    background: linear-gradient(to left, #ffffff 15%, rgba(255, 255, 255, 0));
-}
-
-.related-products-swiper {
-    touch-action: pan-x pan-y pinch-zoom;
-    -webkit-overflow-scrolling: touch;
-}
-
 .gallery-swiper,
 .gallery-swiper :deep(.swiper-wrapper) {
     touch-action: pan-x pan-y;
@@ -2518,20 +2463,6 @@ export default {
 
 .lightbox-image-zoom-wrap {
     touch-action: manipulation;
-}
-
-.related-products-swiper--continuous :deep(.swiper-wrapper) {
-    transition-timing-function: linear !important;
-}
-
-.related-products-swiper :deep(.swiper-slide) {
-    height: auto;
-}
-
-@media (max-width: 639px) {
-    .related-products-slider__fade {
-        width: 1.25rem;
-    }
 }
 
 .gallery-swiper :deep(.swiper-pagination) {

@@ -102,8 +102,10 @@
         "whatsapp_order_setup": "إعداد طلب واتساب",
         "location_setup": "إعداد الموقع",
         "reviews": "المراجعات",
+        "add": "إضافة",
         "online-orders": "الطلبات عبر الإنترنت",
-        "pos-orders": "طلبات نقاط البيع"
+        "pos-orders": "طلبات نقاط البيع",
+        "related_products_carousel": "شريط المنتجات ذات الصلة"
     },
     "label": {
         "version": "الإصدار",
@@ -423,6 +425,8 @@
         "videos": "مقاطع الفيديو",
         "product_videos": "مقاطع فيديو المنتج",
         "related_products": "منتجات ذات صلة",
+        "carousel_status": "تشغيل الشريط التلقائي",
+        "carousel_autoplay_speed": "سرعة التمرير التلقائي (ثوانٍ بين الشرائح)",
         "share_this_product": "مشاركة هذا المنتج",
         "available": "متاح",
         "stock_out": "إنتهاء المخزون",
@@ -772,6 +776,7 @@
         "add_role": "إضافة دور",
         "permissions": "الصلاحيات",
         "add_product": "إضافة منتج",
+        "add_review": "إضافة مراجعة",
         "add_tax": "إضافة ضريبة",
         "add_coupon": "إضافة كوبون",
         "register_your_account": "سجل حسابك",
@@ -864,6 +869,8 @@
         "image_upload": ".تم تحميل الصورة بنجاح",
         "image_delete": ".تم حذف الصورة بنجاح",
         "image_update": ".تم تحديث الصورة بنجاح",
+        "review_customer_hint": "اختر اسم العميل الذي سيظهر في هذه المراجعة.",
+        "review_images_hint": "يمكنك رفع حتى 5 صور مع هذه المراجعة.",
         "photo_update": ".تم تحديث الصورة بنجاح",
         "profile_update": ".تم تحديث الملف الشخصي بنجاح",
         "password_update": ".تم تحديث كلمة المرور بنجاح",
@@ -923,6 +930,8 @@
         "product_name_is_required_to_generate_tags": "اسم المنتج مطلوب لتوليد علامات AI",
         "ask_me_anything": "اسألني أي شيء",
         "something_wrong": "حدث خطأ ما! يرجى المحاولة مرة أخرى لاحقاً.",
-        "warranty": "الضمان"
+        "warranty": "الضمان",
+        "related_products_carousel_hint": "تحكم في التمرير التلقائي للمنتجات ذات الصلة في صفحة تفاصيل المنتج. عند التعطيل، تظهر المنتجات في شبكة ثابتة.",
+        "carousel_speed_hint": "من 2 إلى 10 ثوانٍ. القيمة الأقل أسرع. اللمس والأسهم تعمل أثناء التشغيل التلقائي."
     }
 }

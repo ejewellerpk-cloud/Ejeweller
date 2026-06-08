@@ -1,5 +1,6 @@
 const AiAgentComponent = () => import("../../components/admin/settings/AiAgent/AiAgentComponent.vue");
 const TopBarComponent = () =>  import("../../components/admin/settings/TopBar/TopBarComponent");
+const RelatedProductsCarouselComponent = () => import("../../components/admin/settings/RelatedProductsCarousel/RelatedProductsCarouselComponent.vue");
 
 const SettingsComponent = () =>  import("../../components/admin/settings/SettingsComponent");
 const CompanyComponent = () =>  import("../../components/admin/settings/Company/CompanyComponent");
@@ -248,6 +249,17 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "top_bar",
+                },
+            },
+            {
+                path: "related-products-carousel",
+                component: RelatedProductsCarouselComponent,
+                name: "admin.settings.relatedProductsCarousel",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "related_products_carousel",
                 },
             },
             {

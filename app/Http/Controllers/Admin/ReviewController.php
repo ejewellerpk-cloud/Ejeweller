@@ -8,8 +8,11 @@ use App\Models\ProductReview;
 use App\Services\ReviewService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
+use App\Http\Requests\ChangeImageRequest;
+use App\Http\Requests\AdminProductReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\ReviewDetailsResource;
+use App\Http\Resources\ProductReviewResource;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
 
@@ -29,6 +32,9 @@ class ReviewController extends AdminController implements HasMiddleware
             new Middleware('permission:reviews', only: ['index']),
             new Middleware('permission:reviews', only: ['show']),
             new Middleware('permission:reviews', only: ['export']),
+            new Middleware('permission:reviews', only: ['store']),
+            new Middleware('permission:reviews', only: ['uploadImage']),
+            new Middleware('permission:reviews', only: ['deleteImage']),
         ];
     }
 
@@ -55,6 +61,33 @@ class ReviewController extends AdminController implements HasMiddleware
     {
         try {
             return Excel::download(new ReviewExport($this->reviewService, $request), 'Reviews.xlsx');
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function store(AdminProductReviewRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductReviewResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            return new ProductReviewResource($this->reviewService->store($request));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function uploadImage(ChangeImageRequest $request, ProductReview $productReview): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductReviewResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            return new ProductReviewResource($this->reviewService->uploadImage($request, $productReview));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function deleteImage(ProductReview $productReview, $index): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductReviewResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            return new ProductReviewResource($this->reviewService->deleteImage($productReview, $index));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

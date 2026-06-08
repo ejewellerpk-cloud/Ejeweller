@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\StateController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TopBarController;
+use App\Http\Controllers\Admin\RelatedProductsCarouselController;
 use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DamageController;
@@ -315,6 +316,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::prefix('top-bar')->name('topBar.')->group(function () {
             Route::get('/', [TopBarController::class, 'index']);
             Route::post('/', [TopBarController::class, 'update']);
+        });
+
+        Route::prefix('related-products-carousel')->name('relatedProductsCarousel.')->group(function () {
+            Route::get('/', [RelatedProductsCarouselController::class, 'index']);
+            Route::post('/', [RelatedProductsCarouselController::class, 'update']);
         });
 
         Route::prefix('pwa')->name('pwa')->group(function () {
@@ -850,7 +856,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
 
     Route::prefix('reviews')->name('reviews.')->group(function () {
         Route::get('/', [ReviewController::class, 'index']);
+        Route::post('/', [ReviewController::class, 'store']);
         Route::get('/show/{productReview}', [ReviewController::class, 'show']);
+        Route::post('/upload-image/{productReview}', [ReviewController::class, 'uploadImage']);
+        Route::get('/delete-image/{productReview}/{index}', [ReviewController::class, 'deleteImage']);
         Route::get('/export', [ReviewController::class, 'export']);
     });
 

@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use Exception;
+use App\Http\Requests\AdminProductReviewRequest;
+use App\Http\Requests\ChangeImageRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Models\ProductReview;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
@@ -88,6 +91,69 @@ class ReviewService
     {
         try {
             return $productReview->load('product');
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function store(AdminProductReviewRequest $request): ProductReview
+    {
+        try {
+            DB::transaction(function () use ($request) {
+                $this->review = ProductReview::create($request->only([
+                    'user_id',
+                    'product_id',
+                    'star',
+                    'review',
+                ]));
+
+                $images = $request->file('images', []);
+                foreach ($images as $image) {
+                    if ($image) {
+                        $this->review->addMedia($image)->toMediaCollection('product-review');
+                    }
+                }
+            });
+
+            return $this->review->load(['product', 'user']);
+        } catch (Exception $exception) {
+            DB::rollBack();
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function uploadImage(ChangeImageRequest $request, ProductReview $productReview): ProductReview
+    {
+        try {
+            $productReview->addMedia($request->image)->toMediaCollection('product-review');
+
+            return $productReview->load(['product', 'user']);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function deleteImage(ProductReview $productReview, $index): ProductReview
+    {
+        try {
+            $images = $productReview->getMedia('product-review');
+            if (isset($images[$index])) {
+                $images[$index]->delete();
+            }
+
+            return ProductReview::with(['product', 'user'])->find($productReview->id);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

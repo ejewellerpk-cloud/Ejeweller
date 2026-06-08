@@ -102,9 +102,11 @@
         "whatsapp_order_setup": "হোয়াটসঅ্যাপ অর্ডার সেটআপ",
         "location_setup": "অবস্থান সেটআপ",
         "reviews": "রিভিউ",
+        "add": "যোগ করুন",
         "online-orders": "অনলাইন অর্ডার",
         "pos-orders": "পস অর্ডার",
-        "ai_agent": "AI এজেন্ট"
+        "ai_agent": "AI এজেন্ট",
+        "related_products_carousel": "সংশ্লিষ্ট পণ্য ক্যারোসেল"
     },
     "label": {
         "version": "সংস্করণ",
@@ -424,6 +426,8 @@
         "videos": "ভিডিও",
         "product_videos": "পণ্য ভিডিও",
         "related_products": "সংশ্লিষ্ট পণ্য",
+        "carousel_status": "ক্যারোসেল অটোপ্লে",
+        "carousel_autoplay_speed": "অটোপ্লে গতি (স্লাইডের মধ্যে সেকেন্ড)",
         "share_this_product": "এই পণ্যটি শেয়ার করুন",
         "available": "উপলব্ধ",
         "stock_out": "স্টক শেষ",
@@ -770,6 +774,7 @@
         "add_role": "ভূমিকা যোগ করুন",
         "permissions": "অনুমতিসমূহ",
         "add_product": "পণ্য যোগ করুন",
+        "add_review": "রিভিউ যোগ করুন",
         "add_tax": "কর যোগ করুন",
         "add_coupon": "কুপন যোগ করুন",
         "register_your_account": "আপনার অ্যাকাউন্ট নিবন্ধন করুন",
@@ -860,6 +865,8 @@
         "image_upload": "ছবি সফলভাবে আপলোড হয়েছে।",
         "image_delete": "ছবি সফলভাবে মুছে ফেলা হয়েছে।",
         "image_update": "ছবি সফলভাবে আপডেট হয়েছে।",
+        "review_customer_hint": "এই রিভিউতে যে গ্রাহকের নাম দেখাবে তা নির্বাচন করুন।",
+        "review_images_hint": "এই রিভিউতে সর্বোচ্চ ৫টি ছবি আপলোড করতে পারবেন।",
         "photo_update": "ফটো সফলভাবে আপডেট হয়েছে।",
         "profile_update": "প্রোফাইল সফলভাবে আপডেট হয়েছে",
         "password_update": "পাসওয়ার্ড সফলভাবে আপডেট হয়েছে",
@@ -918,6 +925,8 @@
         "product_name_is_required_to_generate_name": "AI নাম তৈরি করতে পণ্যের নাম প্রয়োজন",
         "product_name_is_required_to_generate_tags": "AI ট্যাগ তৈরি করতে পণ্যের নাম প্রয়োজন",
         "ask_me_anything": "আমাকে যেকোনো কিছু জিজ্ঞাসা করুন",
-        "something_wrong": "কিছু ভুল হয়েছে! অনুগ্রহ করে পরে আবার চেষ্টা করুন।"
+        "something_wrong": "কিছু ভুল হয়েছে! অনুগ্রহ করে পরে আবার চেষ্টা করুন।",
+        "related_products_carousel_hint": "পণ্যের বিস্তারিত পৃষ্ঠায় সংশ্লিষ্ট পণ্যের স্বয়ংক্রিয় স্লাইডিং নিয়ন্ত্রণ করুন। নিষ্ক্রিয় থাকলে পণ্যগুলি স্থির গ্রিডে দেখাবে।",
+        "carousel_speed_hint": "২–১০ সেকেন্ড। কম মান = দ্রুত গতি। অটোপ্লে চালু থাকলে টাচ সোয়াইপ ও তীর কাজ করে।"
     }
 }

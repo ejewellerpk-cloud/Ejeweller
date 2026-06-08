@@ -57,6 +57,10 @@
                 <i class="text-sm lab lab-line-promotion"></i>
                 {{ $t("menu.top_bar") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.relatedProductsCarousel' }" class="settings-menu-link">
+                <i class="text-sm lab lab-line-product"></i>
+                {{ $t("menu.related_products_carousel") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.slider' }" class="settings-menu-link">
                 <i class="text-sm lab lab-line-sliders"></i>
                 {{ $t("menu.sliders") }}

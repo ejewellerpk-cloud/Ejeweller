@@ -88,6 +88,8 @@ class SettingResource extends JsonResource
             'site_homepage_theme'                   => $this->info['site_homepage_theme'] ?? 'default',
             'site_show_stock_out'                   => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,
             'site_abandoned_cart_reminder'          => isset($this->info['site_abandoned_cart_reminder']) ? (int) $this->info['site_abandoned_cart_reminder'] : \App\Enums\Activity::ENABLE,
+            'related_products_carousel_status'      => isset($this->info['related_products_carousel_status']) ? (int) $this->info['related_products_carousel_status'] : \App\Enums\Activity::ENABLE,
+            'related_products_carousel_speed'       => isset($this->info['related_products_carousel_speed']) ? (int) $this->info['related_products_carousel_speed'] : \App\Services\RelatedProductsCarouselService::DEFAULT_AUTOPLAY_DELAY,
         ];
     }
 
