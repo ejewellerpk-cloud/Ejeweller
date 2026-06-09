@@ -1,10 +1,11 @@
 /** Product detail page — main gallery + lightbox swipers (mobile swipe friendly). */
 
 export const productGalleryMainSwiperProps = {
+    nested: true,
     followFinger: true,
     touchRatio: 1,
-    touchAngle: 40,
-    threshold: 5,
+    touchAngle: 30,
+    threshold: 6,
     touchStartPreventDefault: false,
     passiveListeners: true,
     touchReleaseOnEdges: true,

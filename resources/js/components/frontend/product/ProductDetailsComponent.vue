@@ -46,6 +46,8 @@
                         class="gallery-swiper mb-4"
                         @swiper="setMainSwiper"
                         @slideChange="onMainGallerySlideChange"
+                        @sliderFirstMove="onGallerySliderDrag"
+                        @touchEnd="onGallerySliderTouchEnd"
                         @click="onGallerySwiperClick">
                         <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
                             <template v-if="media.type === 'image'">
@@ -54,8 +56,9 @@
                                         :loading="index === 0 ? 'eager' : 'lazy'"
                                         :fetchpriority="index === 0 ? 'high' : 'auto'"
                                         decoding="async"
+                                        draggable="false"
                                         @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                                        class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center" />
+                                        class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center pointer-events-none" />
                                 </div>
                             </template>
                             <template v-else-if="media.type === 'video'">
@@ -78,7 +81,7 @@
                                         playsinline
                                         webkit-playsinline
                                         preload="auto"
-                                        class="w-full h-full object-cover relative z-[1]"
+                                        class="w-full h-full object-cover relative z-[1] pointer-events-none"
                                     ></video>
                                 </div>
                             </template>
@@ -941,6 +944,7 @@ export default {
             recentlyViewedLoadedImages: {},
             videoPosterMap: {},
             mainSwiperActiveIndex: 0,
+            gallerySliderDragged: false,
             loadToken: 0,
             relatedObserver: null,
         }
@@ -1557,7 +1561,20 @@ export default {
             }
             this.wishlist();
         },
+        onGallerySliderDrag: function () {
+            this.gallerySliderDragged = true;
+        },
+        onGallerySliderTouchEnd: function () {
+            if (this.gallerySliderDragged) {
+                window.setTimeout(() => {
+                    this.gallerySliderDragged = false;
+                }, 320);
+            }
+        },
         onGallerySwiperClick: function (swiper, event) {
+            if (this.gallerySliderDragged || swiper?.allowClick === false) {
+                return;
+            }
             const index = getGalleryClickedIndex(swiper);
             if (index < 0) {
                 return;
@@ -2464,13 +2481,19 @@ export default {
 </script>
 
 <style scoped>
+.gallery-swiper-container,
 .gallery-swiper,
-.gallery-swiper :deep(.swiper-wrapper) {
-    touch-action: pan-x pan-y;
+.gallery-swiper :deep(.swiper-wrapper),
+.gallery-swiper :deep(.swiper-slide) {
+    touch-action: pan-y pinch-zoom;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.product-gallery-slide {
-    touch-action: pan-x pan-y;
+.product-gallery-slide,
+.product-gallery-slide img {
+    touch-action: pan-y pinch-zoom;
+    -webkit-user-drag: none;
+    user-select: none;
 }
 
 .product-gallery-lightbox,
