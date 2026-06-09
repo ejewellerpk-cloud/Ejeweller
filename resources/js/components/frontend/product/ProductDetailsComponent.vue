@@ -616,6 +616,7 @@
         <!-- Swiper Container (Full Screen) -->
         <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
             <Swiper :initialSlide="previewIndex"
+                v-bind="galleryLightboxSwiperProps"
                 :allowTouchMove="!isPreviewImageZoomed"
                 @slideChange="handlePreviewSlideChange"
                 :modules="modules"
@@ -769,7 +770,7 @@
 </template>
 
 <script>
-import { ref, computed, defineAsyncComponent } from "vue";
+import { ref, computed, defineAsyncComponent, nextTick } from "vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -799,6 +800,7 @@ import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoTh
 import {
     productGalleryMainSwiperProps,
     productGalleryLightboxSwiperProps,
+    connectGalleryThumbs,
     getGalleryClickedIndex,
 } from "../../../utils/productGallerySwiper";
 
@@ -837,9 +839,11 @@ export default {
 
         const setThumbsSwiper = (swiper) => {
             thumbsSwiper.value = swiper;
+            nextTick(() => connectGalleryThumbs(mainSwiper.value, swiper));
         };
         const setMainSwiper = (swiper) => {
             mainSwiper.value = swiper;
+            nextTick(() => connectGalleryThumbs(swiper, thumbsSwiper.value));
         };
 
         const galleryThumbsConfig = computed(() => {
@@ -916,8 +920,8 @@ export default {
             showMediaLightbox: false,
             mediaLightboxIndex: 0,
             lightboxHistoryActive: false,
-            lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
-            previewPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false },
+            lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 },
+            previewPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 },
             _onLightboxPopState: null,
             animatingWishlist: false,
             tickerIndex: 0,
@@ -1070,10 +1074,10 @@ export default {
             return getDetailPrices(this.variationPriceProduct);
         },
         isLightboxImageZoomed: function () {
-            return this.lightboxPinch.active || this.lightboxPinch.scale > 1.05;
+            return this.lightboxPinch.active || this.lightboxPinch.panning || this.lightboxPinch.scale > 1.05;
         },
         isPreviewImageZoomed: function () {
-            return this.previewPinch.active || this.previewPinch.scale > 1.05;
+            return this.previewPinch.active || this.previewPinch.panning || this.previewPinch.scale > 1.05;
         },
         galleryPaginationConfig: function () {
             return this.getPaginationConfig();
@@ -1385,10 +1389,10 @@ export default {
             }
         },
         resetLightboxPinch: function () {
-            this.lightboxPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false };
+            this.lightboxPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 };
         },
         resetPreviewPinch: function () {
-            this.previewPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false };
+            this.previewPinch = { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 };
         },
         getPinchImageStyle: function (pinchState, isActiveSlide) {
             if (!isActiveSlide) {
@@ -1396,9 +1400,56 @@ export default {
             }
             const scale = pinchState.scale;
             return {
-                transform: `scale(${scale}) translate(${pinchState.x}px, ${pinchState.y}px)`,
-                cursor: scale > 1 ? 'zoom-out' : 'zoom-in',
+                transform: `translate(${pinchState.x}px, ${pinchState.y}px) scale(${scale})`,
+                cursor: pinchState.panning ? 'grabbing' : (scale > 1 ? 'grab' : 'zoom-in'),
+                transition: pinchState.panning || pinchState.active ? 'none' : undefined,
             };
+        },
+        onPinchTouchStart: function (e, index, activeIndex, pinchState) {
+            if (activeIndex !== index) {
+                return;
+            }
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                pinchState.panning = false;
+                pinchState.active = true;
+                pinchState.startDist = this.getTouchPinchDistance(e.touches);
+                pinchState.startScale = pinchState.scale > 1 ? pinchState.scale : 1;
+                return;
+            }
+            if (e.touches.length === 1 && pinchState.scale > 1.05) {
+                e.preventDefault();
+                pinchState.active = false;
+                pinchState.panning = true;
+                pinchState.panStartX = e.touches[0].clientX;
+                pinchState.panStartY = e.touches[0].clientY;
+                pinchState.panOriginX = pinchState.x;
+                pinchState.panOriginY = pinchState.y;
+            }
+        },
+        onPinchTouchMove: function (e, index, activeIndex, pinchState) {
+            if (activeIndex !== index) {
+                return;
+            }
+            if (pinchState.panning && e.touches.length === 1) {
+                e.preventDefault();
+                pinchState.x = pinchState.panOriginX + (e.touches[0].clientX - pinchState.panStartX);
+                pinchState.y = pinchState.panOriginY + (e.touches[0].clientY - pinchState.panStartY);
+                return;
+            }
+            if (!pinchState.active || e.touches.length !== 2) {
+                return;
+            }
+            e.preventDefault();
+            this.applyPinchZoom(pinchState, this.getTouchPinchDistance(e.touches));
+        },
+        onPinchTouchEnd: function (pinchState, resetFn) {
+            pinchState.panning = false;
+            if (pinchState.scale <= 1.05) {
+                resetFn.call(this);
+            } else {
+                pinchState.active = false;
+            }
         },
         getLightboxImageStyle: function (index) {
             return this.getPinchImageStyle(this.lightboxPinch, this.mediaLightboxIndex === index);
@@ -1417,28 +1468,13 @@ export default {
             pinchState.scale = Math.min(4, Math.max(1, next));
         },
         onLightboxPinchStart: function (e, index) {
-            if (this.mediaLightboxIndex !== index || e.touches.length !== 2) {
-                return;
-            }
-            e.preventDefault();
-            const dist = this.getTouchPinchDistance(e.touches);
-            this.lightboxPinch.active = true;
-            this.lightboxPinch.startDist = dist;
-            this.lightboxPinch.startScale = this.lightboxPinch.scale > 1 ? this.lightboxPinch.scale : 1;
+            this.onPinchTouchStart(e, index, this.mediaLightboxIndex, this.lightboxPinch);
         },
         onLightboxPinchMove: function (e, index) {
-            if (!this.lightboxPinch.active || this.mediaLightboxIndex !== index || e.touches.length !== 2) {
-                return;
-            }
-            e.preventDefault();
-            this.applyPinchZoom(this.lightboxPinch, this.getTouchPinchDistance(e.touches));
+            this.onPinchTouchMove(e, index, this.mediaLightboxIndex, this.lightboxPinch);
         },
         onLightboxPinchEnd: function () {
-            if (this.lightboxPinch.scale <= 1.05) {
-                this.resetLightboxPinch();
-            } else {
-                this.lightboxPinch.active = false;
-            }
+            this.onPinchTouchEnd(this.lightboxPinch, this.resetLightboxPinch);
         },
         onLightboxWheel: function (e, index) {
             if (this.mediaLightboxIndex !== index || !e.ctrlKey) {
@@ -1453,28 +1489,13 @@ export default {
             }
         },
         onPreviewPinchStart: function (e, index) {
-            if (this.previewIndex !== index || e.touches.length !== 2) {
-                return;
-            }
-            e.preventDefault();
-            const dist = this.getTouchPinchDistance(e.touches);
-            this.previewPinch.active = true;
-            this.previewPinch.startDist = dist;
-            this.previewPinch.startScale = this.previewPinch.scale > 1 ? this.previewPinch.scale : 1;
+            this.onPinchTouchStart(e, index, this.previewIndex, this.previewPinch);
         },
         onPreviewPinchMove: function (e, index) {
-            if (!this.previewPinch.active || this.previewIndex !== index || e.touches.length !== 2) {
-                return;
-            }
-            e.preventDefault();
-            this.applyPinchZoom(this.previewPinch, this.getTouchPinchDistance(e.touches));
+            this.onPinchTouchMove(e, index, this.previewIndex, this.previewPinch);
         },
         onPreviewPinchEnd: function () {
-            if (this.previewPinch.scale <= 1.05) {
-                this.resetPreviewPinch();
-            } else {
-                this.previewPinch.active = false;
-            }
+            this.onPinchTouchEnd(this.previewPinch, this.resetPreviewPinch);
         },
         onPreviewWheel: function (e, index) {
             if (this.previewIndex !== index || !e.ctrlKey) {
@@ -2462,7 +2483,7 @@ export default {
 }
 
 .lightbox-image-zoom-wrap {
-    touch-action: manipulation;
+    touch-action: none;
 }
 
 .gallery-swiper :deep(.swiper-pagination) {
