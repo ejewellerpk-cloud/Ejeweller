@@ -32,6 +32,16 @@
                     class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
                 </button>
 
+                <button
+                    type="button"
+                    class="product-card__quick-view"
+                    :aria-label="$t('label.quick_view')"
+                    @click.stop="openQuickView(product)"
+                >
+                    <i class="fa-regular fa-eye"></i>
+                    <span class="hidden sm:inline">{{ $t('label.quick_view') }}</span>
+                </button>
+
                 <div class="overflow-hidden rounded-xl w-full block relative aspect-[4/5] product-card-slider">
                     <Swiper v-if="hasMediaSlider(product)"
                         v-bind="cardSwiperProps"
@@ -195,6 +205,12 @@
             </div>
             </div>
         </article>
+
+        <ProductQuickViewModal
+            :open="!!quickViewProduct"
+            :list-product="quickViewProduct"
+            @close="closeQuickView"
+        />
     </div>
 </template>
 
@@ -229,6 +245,7 @@ import {
 } from "../../../utils/productRating";
 import activityEnum from "../../../enums/modules/activityEnum";
 import { trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
+import ProductQuickViewModal from "./ProductQuickViewModal.vue";
 import {
     productCardSwiperProps,
     isFinePointerDevice,
@@ -247,7 +264,8 @@ export default {
     components: {
         starRating,
         Swiper,
-        SwiperSlide
+        SwiperSlide,
+        ProductQuickViewModal,
     },
     setup() {
         return {
@@ -268,6 +286,7 @@ export default {
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
             loadedImages: {},
             cardVideoActiveIds: {},
+            quickViewProduct: null,
         }
     },
     computed: {
@@ -554,8 +573,7 @@ export default {
         },
         buyNow: function (product) {
             if (product.variation_count > 0) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
-                this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
+                this.openQuickView(product);
             } else {
                 // Increment social proof sold count
                 if (product.id) {
@@ -634,15 +652,22 @@ export default {
             };
             return map[type] || 'bg-gray-600 text-white';
         },
+        openQuickView: function (product) {
+            if (!product?.slug) {
+                return;
+            }
+            this.quickViewProduct = product;
+        },
+        closeQuickView: function () {
+            this.quickViewProduct = null;
+        },
         addToCart: function (product) {
             if (this.isOutOfStock(product)) {
                 alertService.error(this.$t('message.out_of_stock') || 'This item is out of stock!');
                 return;
             }
-            // If product has variations, redirect to detail page (same as ProductDetailsComponent)
             if (product.variation_count > 0) {
-                alertService.error(this.$t('message.please_select_a_variation') || 'Please select a variation first!');
-                this.$router.push({ name: 'frontend.product.details', params: { slug: product.slug } });
+                this.openQuickView(product);
                 return;
             }
 
@@ -911,6 +936,47 @@ export default {
     }
     100% {
         transform: scale(1);
+    }
+}
+
+.product-card__quick-view {
+    position: absolute;
+    left: 50%;
+    bottom: 0.5rem;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    color: #111827;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    opacity: 0.95;
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card__quick-view:active {
+    transform: translateX(-50%) scale(0.97);
+}
+
+@media (min-width: 640px) {
+    .product-card__quick-view {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(4px);
+    }
+
+    .product-card.group:hover .product-card__quick-view {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0);
     }
 }
 
