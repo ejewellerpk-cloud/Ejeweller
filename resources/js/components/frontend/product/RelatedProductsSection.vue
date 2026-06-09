@@ -16,6 +16,39 @@
                 {{ $t("message.no_related_products") }}
             </p>
 
+            <div
+                v-else-if="useCssMarquee"
+                ref="sliderViewport"
+                class="related-marquee-viewport"
+                :aria-label="$t('label.related_products')"
+                @touchstart.passive="onMarqueeTouchStart"
+                @touchend="onMarqueeTouchEnd"
+                @touchcancel="onMarqueeTouchEnd"
+                @mouseenter="onMarqueeHoverEnter"
+                @mouseleave="onMarqueeHoverLeave"
+            >
+                <div
+                    class="related-marquee-track"
+                    :class="marqueeTrackClasses"
+                    :style="marqueeTrackStyle"
+                >
+                    <div
+                        v-for="copy in 2"
+                        :key="'marquee-set-' + copy"
+                        class="related-marquee-set"
+                        aria-hidden="copy > 1"
+                    >
+                        <div
+                            v-for="(product, index) in products"
+                            :key="copy + '-' + product.id + '-' + index"
+                            class="related-marquee-item"
+                        >
+                            <ProductListComponent :products="[product]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div v-else ref="sliderViewport" class="product-section-slider-container relative">
                 <Swiper
                     :key="swiperKey"
@@ -24,30 +57,17 @@
                     :modules="swiperModules"
                     :slides-per-view="2"
                     :space-between="6"
-                    :speed="scrollSpeed"
-                    :loop="loopEnabled"
-                    :loop-additional-slides="loopAdditionalSlides"
-                    :looped-slides="loopedSlidesCount"
-                    :watch-slides-progress="autoScrollEnabled"
-                    :autoplay="autoplayConfig"
-                    :navigation="!autoScrollEnabled"
+                    :speed="550"
+                    :loop="products.length > 1"
+                    :navigation="true"
                     :allow-touch-move="touchEnabled"
                     :simulate-touch="touchEnabled"
                     :grab-cursor="touchEnabled"
                     :breakpoints="breakpoints"
                     class="related-products-swiper homepage-touch-swiper"
-                    :class="{ 'related-products-swiper--marquee': autoScrollEnabled }"
                     :aria-label="$t('label.related_products')"
-                    @swiper="onSwiper"
-                    @sliderFirstMove="onManualStart"
-                    @touchEnd="onManualEnd"
-                    @touchCancel="onManualEnd"
-                    @transitionEnd="onTransitionEnd"
-                    @loopFix="onLoopFix"
-                    @mouseenter="onHoverEnter"
-                    @mouseleave="onHoverLeave"
                 >
-                    <SwiperSlide v-for="(product, index) in carouselProducts" :key="product.id + '-' + index">
+                    <SwiperSlide v-for="product in products" :key="product.id">
                         <ProductListComponent :products="[product]" />
                     </SwiperSlide>
                 </Swiper>
@@ -57,7 +77,7 @@
 </template>
 
 <script>
-import { Autoplay, Navigation } from "swiper/modules";
+import { Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -65,26 +85,7 @@ import activityEnum from "../../../enums/modules/activityEnum";
 import ProductListComponent from "../components/ProductListComponent.vue";
 import RelatedProductsSliderSkeleton from "./RelatedProductsSliderSkeleton.vue";
 import { homepageProductRowSwiperProps } from "../../../utils/homepageSwiper";
-import {
-    applyMarqueeLinearMotion,
-    configureRelatedMarqueeSwiper,
-    continuousAutoplayConfig,
-    destroyRelatedMarqueeSwiper,
-    detectMarqueeDirectionFromTouch,
-    duplicateMarqueeSlides,
-    ensureMarqueeAutoplayRunning,
-    MARQUEE_MAX_VISIBLE_SLIDES,
-    MARQUEE_RESUME_DELAY_MS,
-    marqueeMinSlideCount,
-    pauseRelatedMarqueeHover,
-    pauseRelatedMarqueeTouch,
-    pauseRelatedMarqueeVisibility,
-    resumeRelatedMarqueeHover,
-    resumeRelatedMarqueeTouch,
-    resumeRelatedMarqueeVisibility,
-    supportsHoverPause,
-    touchFriendlySwiperProps,
-} from "../../../utils/continuousSwiper";
+import { MARQUEE_RESUME_DELAY_MS, supportsHoverPause } from "../../../utils/continuousSwiper";
 
 export default {
     name: "RelatedProductsSection",
@@ -105,10 +106,14 @@ export default {
             loading: false,
             loaded: false,
             products: [],
-            swiperInstance: null,
             observer: null,
             visibilityObserver: null,
+            resumeTimer: null,
+            touchStartX: 0,
             marqueeDirection: "forward",
+            marqueeTouchPaused: false,
+            marqueeHoverPaused: false,
+            marqueeVisibilityPaused: false,
             hoverPauseSupported: false,
             breakpoints: {
                 640: { slidesPerView: 2, spaceBetween: 20 },
@@ -138,8 +143,11 @@ export default {
         configuredDirection() {
             return this.settings.product_page_related_direction === "ltr" ? "reverse" : "forward";
         },
+        useCssMarquee() {
+            return this.autoScrollEnabled && this.products.length > 1;
+        },
         swiperModules() {
-            return this.autoScrollEnabled ? [Autoplay] : [Navigation];
+            return [Navigation];
         },
         swiperTouch() {
             if (!this.touchEnabled) {
@@ -148,69 +156,41 @@ export default {
                     simulateTouch: false,
                 };
             }
-            return this.autoScrollEnabled
-                ? { ...touchFriendlySwiperProps, grabCursor: true }
-                : homepageProductRowSwiperProps;
+            return homepageProductRowSwiperProps;
         },
-        autoplayConfig() {
-            if (!this.autoScrollEnabled) {
-                return false;
-            }
-            return { ...continuousAutoplayConfig };
-        },
-        loopEnabled() {
-            return this.autoScrollEnabled
-                ? this.carouselProducts.length > 1
-                : this.products.length > 1;
-        },
-        loopAdditionalSlides() {
-            return this.carouselProducts.length;
-        },
-        loopedSlidesCount() {
-            return Math.max(this.products.length, MARQUEE_MAX_VISIBLE_SLIDES);
-        },
-        carouselProducts() {
-            if (!this.products.length) {
-                return [];
-            }
-            if (!this.autoScrollEnabled) {
-                return this.products;
-            }
-            return duplicateMarqueeSlides(
-                this.products,
-                marqueeMinSlideCount(this.products.length)
+        isMarqueeAnimating() {
+            return (
+                this.useCssMarquee
+                && !this.marqueeTouchPaused
+                && !this.marqueeHoverPaused
+                && !this.marqueeVisibilityPaused
             );
         },
-        marqueeCanRun() {
-            return this.autoScrollEnabled && this.products.length > 1;
+        marqueeTrackClasses() {
+            return {
+                "related-marquee-track--reverse": this.marqueeDirection === "reverse",
+                "related-marquee-track--paused": !this.isMarqueeAnimating,
+            };
+        },
+        marqueeTrackStyle() {
+            const count = Math.max(this.products.length, 1);
+            return {
+                "--marquee-duration": `${(count * this.scrollSpeed) / 1000}s`,
+            };
         },
         skeletonCount() {
             return 4;
         },
         swiperKey() {
-            return [
-                this.productSlug,
-                this.autoScrollEnabled ? 1 : 0,
-                this.touchEnabled ? 1 : 0,
-                this.scrollSpeed,
-                this.configuredDirection,
-                this.carouselProducts.length,
-            ].join("-");
+            return [this.productSlug, this.touchEnabled ? 1 : 0, this.products.length].join("-");
         },
     },
     watch: {
         productSlug() {
             this.resetAndObserve();
         },
-        scrollSpeed() {
-            this.applyMarqueeSettings();
-        },
         configuredDirection() {
             this.marqueeDirection = this.configuredDirection;
-            this.applyMarqueeSettings();
-        },
-        autoScrollEnabled() {
-            this.applyMarqueeSettings();
         },
     },
     mounted() {
@@ -224,13 +204,7 @@ export default {
     beforeUnmount() {
         this.teardownObserver();
         this.teardownVisibilityObserver();
-        destroyRelatedMarqueeSwiper(this.swiperInstance);
-        if (this.swiperInstance && !this.swiperInstance.destroyed) {
-            try {
-                this.swiperInstance.destroy(true, true);
-            } catch (e) {}
-        }
-        this.swiperInstance = null;
+        this.clearResumeTimer();
     },
     methods: {
         setupObserver() {
@@ -265,9 +239,11 @@ export default {
         resetAndObserve() {
             this.loaded = false;
             this.products = [];
+            this.clearResumeTimer();
+            this.marqueeTouchPaused = false;
+            this.marqueeHoverPaused = false;
+            this.marqueeVisibilityPaused = false;
             this.teardownVisibilityObserver();
-            destroyRelatedMarqueeSwiper(this.swiperInstance);
-            this.swiperInstance = null;
             if (this.sectionEnabled) {
                 this.setupObserver();
             }
@@ -280,16 +256,13 @@ export default {
             this.$store
                 .dispatch("frontendProduct/relatedProducts", {
                     slug: this.productSlug,
-                    limit: 20,
+                    limit: 32,
                 })
                 .then((res) => {
                     this.products = res.data.data || [];
                     this.loaded = true;
                     this.loading = false;
-                    this.$nextTick(() => {
-                        this.bootstrapMarquee();
-                        this.setupVisibilityObserver();
-                    });
+                    this.$nextTick(() => this.setupVisibilityObserver());
                 })
                 .catch(() => {
                     this.products = [];
@@ -299,26 +272,16 @@ export default {
         },
         setupVisibilityObserver() {
             this.teardownVisibilityObserver();
-            if (!this.marqueeCanRun || typeof IntersectionObserver === "undefined") {
+            if (!this.useCssMarquee || typeof IntersectionObserver === "undefined") {
                 return;
             }
             this.visibilityObserver = new IntersectionObserver(
                 (entries) => {
                     entries.forEach((entry) => {
-                        if (!this.swiperInstance || this.swiperInstance.destroyed) {
-                            return;
-                        }
-                        if (entry.isIntersecting) {
-                            resumeRelatedMarqueeVisibility(this.swiperInstance, {
-                                speed: this.scrollSpeed,
-                                direction: this.marqueeDirection,
-                            });
-                        } else {
-                            pauseRelatedMarqueeVisibility(this.swiperInstance);
-                        }
+                        this.marqueeVisibilityPaused = !entry.isIntersecting;
                     });
                 },
-                { threshold: 0.15 }
+                { threshold: 0.1 }
             );
             this.$nextTick(() => {
                 if (this.$refs.sliderViewport) {
@@ -332,85 +295,125 @@ export default {
                 this.visibilityObserver = null;
             }
         },
-        onSwiper(swiper) {
-            this.swiperInstance = swiper;
-            this.bootstrapMarquee();
-        },
-        bootstrapMarquee() {
-            if (!this.swiperInstance || this.swiperInstance.destroyed) {
-                return;
-            }
-            applyMarqueeLinearMotion(this.swiperInstance);
-            if (this.marqueeCanRun) {
-                configureRelatedMarqueeSwiper(this.swiperInstance, {
-                    speed: this.scrollSpeed,
-                    direction: this.marqueeDirection,
-                });
-                ensureMarqueeAutoplayRunning(this.swiperInstance);
+        clearResumeTimer() {
+            if (this.resumeTimer) {
+                clearTimeout(this.resumeTimer);
+                this.resumeTimer = null;
             }
         },
-        applyMarqueeSettings() {
-            if (!this.marqueeCanRun || !this.swiperInstance || this.swiperInstance.destroyed) {
+        onMarqueeTouchStart(event) {
+            if (!this.useCssMarquee || !this.touchEnabled) {
                 return;
             }
-            configureRelatedMarqueeSwiper(this.swiperInstance, {
-                speed: this.scrollSpeed,
-                direction: this.marqueeDirection,
-            });
+            this.touchStartX = event.touches?.[0]?.clientX ?? 0;
+            this.clearResumeTimer();
+            this.marqueeTouchPaused = true;
         },
-        onManualStart() {
-            if (!this.marqueeCanRun || !this.touchEnabled) {
+        onMarqueeTouchEnd(event) {
+            if (!this.useCssMarquee || !this.touchEnabled || !this.marqueeTouchPaused) {
                 return;
             }
-            pauseRelatedMarqueeTouch(this.swiperInstance);
+            const endX = event.changedTouches?.[0]?.clientX ?? 0;
+            const diff = endX - this.touchStartX;
+            if (Math.abs(diff) >= 20) {
+                this.marqueeDirection = diff > 0 ? "reverse" : "forward";
+            }
+            this.clearResumeTimer();
+            this.resumeTimer = setTimeout(() => {
+                this.marqueeTouchPaused = false;
+                this.resumeTimer = null;
+            }, MARQUEE_RESUME_DELAY_MS);
         },
-        onManualEnd() {
-            if (!this.marqueeCanRun || !this.touchEnabled || !this.swiperInstance?._marqueeTouchActive) {
+        onMarqueeHoverEnter() {
+            if (!this.useCssMarquee || !this.hoverPauseSupported) {
                 return;
             }
-            const swipeDirection = detectMarqueeDirectionFromTouch(this.swiperInstance);
-            if (swipeDirection) {
-                this.marqueeDirection = swipeDirection;
-            }
-            resumeRelatedMarqueeTouch(this.swiperInstance, {
-                speed: this.scrollSpeed,
-                direction: this.marqueeDirection,
-                delayMs: MARQUEE_RESUME_DELAY_MS,
-            });
+            this.marqueeHoverPaused = true;
         },
-        onHoverEnter() {
-            if (!this.marqueeCanRun || !this.hoverPauseSupported) {
+        onMarqueeHoverLeave() {
+            if (!this.useCssMarquee || !this.hoverPauseSupported) {
                 return;
             }
-            pauseRelatedMarqueeHover(this.swiperInstance);
-        },
-        onHoverLeave() {
-            if (!this.marqueeCanRun || !this.hoverPauseSupported) {
-                return;
-            }
-            resumeRelatedMarqueeHover(this.swiperInstance);
-        },
-        onLoopFix() {
-            if (!this.marqueeCanRun || !this.swiperInstance) {
-                return;
-            }
-            applyMarqueeLinearMotion(this.swiperInstance);
-            ensureMarqueeAutoplayRunning(this.swiperInstance);
-        },
-        onTransitionEnd() {
-            if (!this.marqueeCanRun || !this.swiperInstance) {
-                return;
-            }
-            applyMarqueeLinearMotion(this.swiperInstance);
-            ensureMarqueeAutoplayRunning(this.swiperInstance);
+            this.marqueeHoverPaused = false;
         },
     },
 };
 </script>
 
 <style scoped>
-.related-products-swiper--marquee :deep(.swiper-wrapper) {
-    transition-timing-function: linear !important;
+.related-marquee-viewport {
+    overflow: hidden;
+    width: 100%;
+    container-type: inline-size;
+}
+
+.related-marquee-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: related-marquee-forward var(--marquee-duration, 40s) linear infinite;
+}
+
+.related-marquee-track--reverse {
+    animation-name: related-marquee-reverse;
+}
+
+.related-marquee-track--paused {
+    animation-play-state: paused;
+}
+
+.related-marquee-set {
+    display: flex;
+    gap: 6px;
+}
+
+.related-marquee-item {
+    flex: 0 0 calc((100cqw - 6px) / 2);
+    min-width: 0;
+}
+
+@container (min-width: 640px) {
+    .related-marquee-set {
+        gap: 20px;
+    }
+
+    .related-marquee-item {
+        flex: 0 0 calc((100cqw - 20px) / 2);
+    }
+}
+
+@container (min-width: 768px) {
+    .related-marquee-set {
+        gap: 24px;
+    }
+
+    .related-marquee-item {
+        flex: 0 0 calc((100cqw - 48px) / 3);
+    }
+}
+
+@container (min-width: 1024px) {
+    .related-marquee-item {
+        flex: 0 0 calc((100cqw - 72px) / 4);
+    }
+}
+
+@keyframes related-marquee-forward {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        transform: translate3d(-50%, 0, 0);
+    }
+}
+
+@keyframes related-marquee-reverse {
+    from {
+        transform: translate3d(-50%, 0, 0);
+    }
+    to {
+        transform: translate3d(0, 0, 0);
+    }
 }
 
 .related-products-swiper :deep(.swiper-slide) {
