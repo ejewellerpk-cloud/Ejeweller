@@ -4,10 +4,12 @@
  */
 
 export const MANUAL_SWIPER_SPEED = 380;
+export const MARQUEE_RESUME_DELAY_MS = 3000;
+export const MARQUEE_MAX_VISIBLE_SLIDES = 4;
 
 export const continuousAutoplayConfig = {
     delay: 0,
-    disableOnInteraction: false,
+    disableOnInteraction: true,
     pauseOnMouseEnter: false,
     stopOnLastSlide: false,
     waitForTransition: false,
@@ -31,19 +33,41 @@ export const touchFriendlySwiperProps = {
     allowTouchMove: true,
 };
 
+/** Minimum slide count for a seamless Swiper loop at the widest breakpoint. */
+export function marqueeMinSlideCount(itemCount, maxVisible = MARQUEE_MAX_VISIBLE_SLIDES) {
+    const safeCount = Math.max(Number(itemCount) || 0, 1);
+    return Math.max(safeCount * 4, maxVisible * 5);
+}
+
 /** Repeat items until the carousel has enough slides for a seamless marquee loop. */
-export function duplicateMarqueeSlides(items, minSlides = 8) {
+export function duplicateMarqueeSlides(items, minSlides = 16) {
     if (!Array.isArray(items) || !items.length) {
         return [];
     }
-    if (items.length >= minSlides) {
-        return items;
-    }
-    let out = [];
+    let out = [...items];
     while (out.length < minSlides) {
         out = out.concat(items);
     }
     return out;
+}
+
+export function canRunMarqueeAutoplay(swiper) {
+    return !!swiper
+        && !swiper.destroyed
+        && !swiper._marqueeTouchActive
+        && !swiper._marqueeHoverPaused
+        && !swiper._marqueeVisibilityPaused;
+}
+
+/** Keep marquee moving when Swiper loop fixes or transitions briefly stop autoplay. */
+export function ensureMarqueeAutoplayRunning(swiper) {
+    if (!canRunMarqueeAutoplay(swiper) || !swiper.autoplay) {
+        return;
+    }
+    applyMarqueeLinearMotion(swiper);
+    if (!swiper.autoplay.running) {
+        swiper.autoplay.start();
+    }
 }
 
 export function applyMarqueeLinearMotion(swiper) {
@@ -98,7 +122,7 @@ export function configureRelatedMarqueeSwiper(swiper, { speed, direction = 'forw
     applyMarqueeDirection(swiper, direction);
 }
 
-/** Brief slowdown while the finger is on screen — keeps tracking smooth. */
+/** Pause marquee while the user is interacting — stays stopped until resume timer fires. */
 export function pauseRelatedMarqueeTouch(swiper) {
     if (!swiper) {
         return;
@@ -110,8 +134,8 @@ export function pauseRelatedMarqueeTouch(swiper) {
     swiper.autoplay?.stop();
 }
 
-/** Resume continuous motion quickly after touch with preserved / updated direction. */
-export function resumeRelatedMarqueeTouch(swiper, { speed, direction, delayMs = 420 } = {}) {
+/** Resume continuous motion after user inactivity with preserved / updated direction. */
+export function resumeRelatedMarqueeTouch(swiper, { speed, direction, delayMs = MARQUEE_RESUME_DELAY_MS } = {}) {
     if (!swiper?.autoplay) {
         return;
     }
@@ -128,11 +152,35 @@ export function resumeRelatedMarqueeTouch(swiper, { speed, direction, delayMs = 
         if (direction) {
             applyMarqueeDirection(swiper, direction);
         }
-        if (!swiper._marqueeHoverPaused) {
-            swiper.autoplay.start();
-        }
+        ensureMarqueeAutoplayRunning(swiper);
         swiper._marqueeResumeTimer = null;
     }, delayMs);
+}
+
+/** Pause when the section leaves the viewport. */
+export function pauseRelatedMarqueeVisibility(swiper) {
+    if (!swiper) {
+        return;
+    }
+    swiper._marqueeVisibilityPaused = true;
+    clearRelatedMarqueeTimers(swiper);
+    swiper.autoplay?.stop();
+}
+
+/** Resume after the section re-enters the viewport. */
+export function resumeRelatedMarqueeVisibility(swiper, { speed, direction } = {}) {
+    if (!swiper || swiper.destroyed) {
+        return;
+    }
+    swiper._marqueeVisibilityPaused = false;
+    if (speed) {
+        swiper.params.speed = speed;
+    }
+    applyMarqueeLinearMotion(swiper);
+    if (direction) {
+        applyMarqueeDirection(swiper, direction);
+    }
+    ensureMarqueeAutoplayRunning(swiper);
 }
 
 /** Desktop hover — pause at exact position. */
@@ -150,9 +198,7 @@ export function resumeRelatedMarqueeHover(swiper) {
         return;
     }
     swiper._marqueeHoverPaused = false;
-    if (swiper.autoplay && !swiper.autoplay.running) {
-        swiper.autoplay.start();
-    }
+    ensureMarqueeAutoplayRunning(swiper);
 }
 
 export function destroyRelatedMarqueeSwiper(swiper) {
@@ -160,6 +206,7 @@ export function destroyRelatedMarqueeSwiper(swiper) {
     if (swiper) {
         swiper._marqueeHoverPaused = false;
         swiper._marqueeTouchActive = false;
+        swiper._marqueeVisibilityPaused = false;
     }
 }
 

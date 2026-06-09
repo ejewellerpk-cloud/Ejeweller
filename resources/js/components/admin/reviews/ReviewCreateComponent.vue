@@ -3,7 +3,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header border-none">
-                <h3 class="db-card-title">{{ isEditing ? $t('label.edit_review') : $t('button.add_review') }}</h3>
+                <h3 class="db-card-title">{{ isEditing ? $t('button.edit_review') : $t('button.add_review') }}</h3>
                 <router-link :to="{ name: 'admin.review.list' }" class="db-btn py-2 text-white bg-gray-600">
                     <i class="lab lab-line-undo lab-font-size-16"></i>
                     <span>{{ $t('button.cancel') }}</span>

@@ -103,7 +103,7 @@
                 class="db-btn py-2 text-white bg-primary"
             >
                 <i class="lab lab-line-edit"></i>
-                <span>{{ $t('label.edit_review') }}</span>
+                <span>{{ $t('button.edit_review') }}</span>
             </router-link>
             <button type="button" class="db-btn py-2 text-white bg-danger" @click="destroy">
                 <i class="lab lab-line-trash"></i>

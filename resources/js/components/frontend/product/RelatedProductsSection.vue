@@ -16,7 +16,7 @@
                 {{ $t("message.no_related_products") }}
             </p>
 
-            <div v-else class="product-section-slider-container relative">
+            <div v-else ref="sliderViewport" class="product-section-slider-container relative">
                 <Swiper
                     :key="swiperKey"
                     dir="ltr"
@@ -27,6 +27,8 @@
                     :speed="scrollSpeed"
                     :loop="loopEnabled"
                     :loop-additional-slides="loopAdditionalSlides"
+                    :looped-slides="loopedSlidesCount"
+                    :watch-slides-progress="autoScrollEnabled"
                     :autoplay="autoplayConfig"
                     :navigation="!autoScrollEnabled"
                     :allow-touch-move="touchEnabled"
@@ -37,11 +39,13 @@
                     :class="{ 'related-products-swiper--marquee': autoScrollEnabled }"
                     :aria-label="$t('label.related_products')"
                     @swiper="onSwiper"
-                    @touchStart="onManualStart"
                     @sliderFirstMove="onManualStart"
                     @touchEnd="onManualEnd"
                     @touchCancel="onManualEnd"
                     @transitionEnd="onTransitionEnd"
+                    @loopFix="onLoopFix"
+                    @mouseenter="onHoverEnter"
+                    @mouseleave="onHoverLeave"
                 >
                     <SwiperSlide v-for="(product, index) in carouselProducts" :key="product.id + '-' + index">
                         <ProductListComponent :products="[product]" />
@@ -68,8 +72,17 @@ import {
     destroyRelatedMarqueeSwiper,
     detectMarqueeDirectionFromTouch,
     duplicateMarqueeSlides,
+    ensureMarqueeAutoplayRunning,
+    MARQUEE_MAX_VISIBLE_SLIDES,
+    MARQUEE_RESUME_DELAY_MS,
+    marqueeMinSlideCount,
+    pauseRelatedMarqueeHover,
     pauseRelatedMarqueeTouch,
+    pauseRelatedMarqueeVisibility,
+    resumeRelatedMarqueeHover,
     resumeRelatedMarqueeTouch,
+    resumeRelatedMarqueeVisibility,
+    supportsHoverPause,
     touchFriendlySwiperProps,
 } from "../../../utils/continuousSwiper";
 
@@ -94,7 +107,9 @@ export default {
             products: [],
             swiperInstance: null,
             observer: null,
+            visibilityObserver: null,
             marqueeDirection: "forward",
+            hoverPauseSupported: false,
             breakpoints: {
                 640: { slidesPerView: 2, spaceBetween: 20 },
                 768: { slidesPerView: 3, spaceBetween: 24 },
@@ -144,10 +159,15 @@ export default {
             return { ...continuousAutoplayConfig };
         },
         loopEnabled() {
-            return this.carouselProducts.length > 1;
+            return this.autoScrollEnabled
+                ? this.carouselProducts.length > 1
+                : this.products.length > 1;
         },
         loopAdditionalSlides() {
-            return Math.min(Math.max(this.carouselProducts.length, 4), 12);
+            return this.carouselProducts.length;
+        },
+        loopedSlidesCount() {
+            return Math.max(this.products.length, MARQUEE_MAX_VISIBLE_SLIDES);
         },
         carouselProducts() {
             if (!this.products.length) {
@@ -156,7 +176,13 @@ export default {
             if (!this.autoScrollEnabled) {
                 return this.products;
             }
-            return duplicateMarqueeSlides(this.products, 8);
+            return duplicateMarqueeSlides(
+                this.products,
+                marqueeMinSlideCount(this.products.length)
+            );
+        },
+        marqueeCanRun() {
+            return this.autoScrollEnabled && this.products.length > 1;
         },
         skeletonCount() {
             return 4;
@@ -168,7 +194,7 @@ export default {
                 this.touchEnabled ? 1 : 0,
                 this.scrollSpeed,
                 this.configuredDirection,
-                this.products.length,
+                this.carouselProducts.length,
             ].join("-");
         },
     },
@@ -192,10 +218,12 @@ export default {
             return;
         }
         this.marqueeDirection = this.configuredDirection;
+        this.hoverPauseSupported = supportsHoverPause();
         this.setupObserver();
     },
     beforeUnmount() {
         this.teardownObserver();
+        this.teardownVisibilityObserver();
         destroyRelatedMarqueeSwiper(this.swiperInstance);
         if (this.swiperInstance && !this.swiperInstance.destroyed) {
             try {
@@ -237,6 +265,7 @@ export default {
         resetAndObserve() {
             this.loaded = false;
             this.products = [];
+            this.teardownVisibilityObserver();
             destroyRelatedMarqueeSwiper(this.swiperInstance);
             this.swiperInstance = null;
             if (this.sectionEnabled) {
@@ -257,13 +286,51 @@ export default {
                     this.products = res.data.data || [];
                     this.loaded = true;
                     this.loading = false;
-                    this.$nextTick(() => this.bootstrapMarquee());
+                    this.$nextTick(() => {
+                        this.bootstrapMarquee();
+                        this.setupVisibilityObserver();
+                    });
                 })
                 .catch(() => {
                     this.products = [];
                     this.loaded = true;
                     this.loading = false;
                 });
+        },
+        setupVisibilityObserver() {
+            this.teardownVisibilityObserver();
+            if (!this.marqueeCanRun || typeof IntersectionObserver === "undefined") {
+                return;
+            }
+            this.visibilityObserver = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (!this.swiperInstance || this.swiperInstance.destroyed) {
+                            return;
+                        }
+                        if (entry.isIntersecting) {
+                            resumeRelatedMarqueeVisibility(this.swiperInstance, {
+                                speed: this.scrollSpeed,
+                                direction: this.marqueeDirection,
+                            });
+                        } else {
+                            pauseRelatedMarqueeVisibility(this.swiperInstance);
+                        }
+                    });
+                },
+                { threshold: 0.15 }
+            );
+            this.$nextTick(() => {
+                if (this.$refs.sliderViewport) {
+                    this.visibilityObserver.observe(this.$refs.sliderViewport);
+                }
+            });
+        },
+        teardownVisibilityObserver() {
+            if (this.visibilityObserver) {
+                this.visibilityObserver.disconnect();
+                this.visibilityObserver = null;
+            }
         },
         onSwiper(swiper) {
             this.swiperInstance = swiper;
@@ -274,18 +341,16 @@ export default {
                 return;
             }
             applyMarqueeLinearMotion(this.swiperInstance);
-            if (this.autoScrollEnabled) {
+            if (this.marqueeCanRun) {
                 configureRelatedMarqueeSwiper(this.swiperInstance, {
                     speed: this.scrollSpeed,
                     direction: this.marqueeDirection,
                 });
-                if (!this.swiperInstance.autoplay?.running) {
-                    this.swiperInstance.autoplay?.start();
-                }
+                ensureMarqueeAutoplayRunning(this.swiperInstance);
             }
         },
         applyMarqueeSettings() {
-            if (!this.autoScrollEnabled || !this.swiperInstance || this.swiperInstance.destroyed) {
+            if (!this.marqueeCanRun || !this.swiperInstance || this.swiperInstance.destroyed) {
                 return;
             }
             configureRelatedMarqueeSwiper(this.swiperInstance, {
@@ -294,13 +359,13 @@ export default {
             });
         },
         onManualStart() {
-            if (!this.autoScrollEnabled || !this.touchEnabled) {
+            if (!this.marqueeCanRun || !this.touchEnabled) {
                 return;
             }
             pauseRelatedMarqueeTouch(this.swiperInstance);
         },
         onManualEnd() {
-            if (!this.autoScrollEnabled || !this.touchEnabled || !this.swiperInstance) {
+            if (!this.marqueeCanRun || !this.touchEnabled || !this.swiperInstance?._marqueeTouchActive) {
                 return;
             }
             const swipeDirection = detectMarqueeDirectionFromTouch(this.swiperInstance);
@@ -310,13 +375,34 @@ export default {
             resumeRelatedMarqueeTouch(this.swiperInstance, {
                 speed: this.scrollSpeed,
                 direction: this.marqueeDirection,
+                delayMs: MARQUEE_RESUME_DELAY_MS,
             });
         },
-        onTransitionEnd() {
-            if (!this.autoScrollEnabled || !this.swiperInstance) {
+        onHoverEnter() {
+            if (!this.marqueeCanRun || !this.hoverPauseSupported) {
+                return;
+            }
+            pauseRelatedMarqueeHover(this.swiperInstance);
+        },
+        onHoverLeave() {
+            if (!this.marqueeCanRun || !this.hoverPauseSupported) {
+                return;
+            }
+            resumeRelatedMarqueeHover(this.swiperInstance);
+        },
+        onLoopFix() {
+            if (!this.marqueeCanRun || !this.swiperInstance) {
                 return;
             }
             applyMarqueeLinearMotion(this.swiperInstance);
+            ensureMarqueeAutoplayRunning(this.swiperInstance);
+        },
+        onTransitionEnd() {
+            if (!this.marqueeCanRun || !this.swiperInstance) {
+                return;
+            }
+            applyMarqueeLinearMotion(this.swiperInstance);
+            ensureMarqueeAutoplayRunning(this.swiperInstance);
         },
     },
 };
