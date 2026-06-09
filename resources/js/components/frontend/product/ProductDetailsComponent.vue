@@ -314,24 +314,27 @@
                         </dd>
                     </dl>
 
-                    <div class="flex flex-row items-center gap-2 mb-2">
+                    <div class="flex flex-row flex-wrap items-center justify-center gap-2 mb-3">
                         <button @click.prevent="addToCart" type="button"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-btn-primary !bg-primary">
+                            class="flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-btn-primary !bg-primary">
                             <i class="lab-line-bag text-lg"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.add_to_cart") }}</span>
                         </button>
                         <button @click.prevent="buyNow" type="button"
-                            class="flex-1 sm:flex-none h-12 px-5 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]">
+                            class="flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]">
                             <i class="fa-solid fa-bolt text-lg text-yellow-300 animate-pulse"></i>
                             <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
+                        <button
+                            v-if="showWhatsAppOrder"
+                            @click.prevent="orderOnWhatsApp"
+                            type="button"
+                            class="whatsapp-sparkle-btn flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-6 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] relative overflow-hidden"
+                        >
+                            <i class="fa-brands fa-whatsapp text-xl relative z-10"></i>
+                            <span class="whitespace-nowrap text-xs sm:text-sm relative z-10">WhatsApp</span>
+                        </button>
                     </div>
-
-                    <button v-if="setting.whatsapp_status === activityEnum.ENABLE && setting.whatsapp_product_status === activityEnum.ENABLE" @click.prevent="orderOnWhatsApp" type="button"
-                        class="whatsapp-sparkle-btn w-full h-12 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] mb-3 relative overflow-hidden">
-                        <i class="fa-brands fa-whatsapp text-xl relative z-10"></i>
-                        <span class="whitespace-nowrap text-sm sm:text-base relative z-10">Order on WhatsApp</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -686,31 +689,35 @@
         </div>
     </div>
 
-    <div class="pdp-mobile-sticky-bar fixed left-4 right-4 z-20 p-3 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex items-center justify-between gap-3">
-        <div class="flex flex-col text-left flex-shrink-0">
+    <div class="pdp-mobile-sticky-bar fixed left-3 right-3 z-20 p-2.5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex flex-col gap-2">
+        <div class="text-center">
             <span class="text-[9px] font-bold text-text uppercase tracking-widest">{{ $t('label.total_price') }}</span>
-            <span class="text-base font-extrabold text-heading">
+            <span class="ml-1.5 text-sm font-extrabold text-heading">
                 {{
                     currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point,
                         setting.site_default_currency_symbol, setting.site_currency_position)
                 }}
             </span>
         </div>
-        <div class="flex items-center gap-2 flex-grow justify-end max-w-[65%] sm:max-w-[70%]">
+        <div class="flex items-center justify-center gap-1.5 w-full">
             <button @click.prevent="addToCart" type="button"
-                class="flex-1 h-11 px-1.5 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
+                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
                 <i class="lab-line-bag text-sm font-bold"></i>
                 <span>{{ $t("button.add_to_cart") }}</span>
             </button>
             <button @click.prevent="buyNow" type="button"
-                class="flex-1 h-11 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
+                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
                 <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
-                <div class="flex flex-col items-center justify-center leading-none">
-                    <span class="text-[10px] min-[375px]:text-[12px] font-black uppercase tracking-wider block">{{ $t("button.buy_now") || 'Buy Now' }}</span>
-                    <span class="text-[8px] min-[375px]:text-[9px] font-medium opacity-90 block animate-buy-text-fade mt-0.5" :key="currentBuyNowText" v-if="discountPercentageDetail() > 0">
-                        {{ currentBuyNowText }}
-                    </span>
-                </div>
+                <span class="text-[10px] min-[375px]:text-xs font-black uppercase tracking-wide">{{ $t("button.buy_now") || 'Buy Now' }}</span>
+            </button>
+            <button
+                v-if="showWhatsAppOrder"
+                @click.prevent="orderOnWhatsApp"
+                type="button"
+                class="h-10 w-10 shrink-0 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white flex items-center justify-center active:scale-[0.98] transition-all duration-300 shadow-[0_4px_12px_rgba(37,211,102,0.35)]"
+                :aria-label="$t('label.whatsapp')"
+            >
+                <i class="fa-brands fa-whatsapp text-lg"></i>
             </button>
         </div>
     </div>
@@ -934,6 +941,12 @@ export default {
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        showWhatsAppOrder: function () {
+            return (
+                Number(this.setting?.whatsapp_status) === activityEnum.ENABLE
+                && Number(this.setting?.whatsapp_product_status) === activityEnum.ENABLE
+            );
         },
         categories: function () {
             return this.$store.getters["frontendProductCategory/ancestorsAndSelf"];

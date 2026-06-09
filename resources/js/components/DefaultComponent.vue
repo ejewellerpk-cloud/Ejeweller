@@ -147,6 +147,9 @@ export default {
                 return false;
             }
             const routeName = this.$route.name;
+            if (routeName === 'frontend.product.details') {
+                return false;
+            }
             if (routeName && routeName.startsWith('frontend.checkout')) {
                 return false;
             }
@@ -158,13 +161,8 @@ export default {
             let baseClasses = "right-4 sm:right-6 w-14 h-14 sm:w-16 sm:h-16";
             const routeName = this.$route.name;
             
-            // On Product Details page on mobile
-            if (routeName === 'frontend.product.details') {
-                return `${baseClasses} pdp-whatsapp-btn sm:bottom-6`;
-            }
-            
             // On Checkout / Cart pages on mobile
-            else if (routeName && routeName.startsWith('frontend.checkout')) {
+            if (routeName && routeName.startsWith('frontend.checkout')) {
                 // Keep it above sticky mobile checkout buttons/bars
                 return `${baseClasses} bottom-[96px] sm:bottom-6`;
             }
@@ -324,11 +322,7 @@ body.image-preview-open .whatsapp-btn {
 }
 
 .pdp-mobile-sticky-bar {
-    bottom: var(--mobile-cart-fab-clearance, calc(var(--mobile-bottom-nav-height, 5rem) + 2.75rem));
-}
-
-.pdp-whatsapp-btn {
-    bottom: calc(var(--mobile-cart-fab-clearance, calc(var(--mobile-bottom-nav-height, 5rem) + 2.75rem)) + 5rem);
+    bottom: var(--mobile-cart-fab-clearance, calc(var(--mobile-bottom-nav-height, 5rem) + 1rem));
 }
 </style>
 

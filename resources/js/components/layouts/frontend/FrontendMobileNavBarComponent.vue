@@ -197,7 +197,7 @@ export default {
                 document.documentElement.style.setProperty('--mobile-bottom-nav-height', `${height}px`);
                 document.documentElement.style.setProperty(
                     '--mobile-cart-fab-clearance',
-                    `calc(${height}px + 2.75rem)`
+                    `calc(${height}px + 1rem)`
                 );
             });
         },
