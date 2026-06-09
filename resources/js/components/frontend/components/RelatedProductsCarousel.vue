@@ -1,18 +1,22 @@
 <template>
-    <div class="related-products-slider">
+    <div
+        class="related-products-slider"
+        @mouseenter="onHoverEnter"
+        @mouseleave="onHoverLeave"
+    >
         <div
-            v-if="carouselEnabled && slideCount > 2"
+            v-if="showMarqueeFades"
             class="related-products-slider__fade related-products-slider__fade--left"
             aria-hidden="true"
         ></div>
         <div
-            v-if="carouselEnabled && slideCount > 2"
+            v-if="showMarqueeFades"
             class="related-products-slider__fade related-products-slider__fade--right"
             aria-hidden="true"
         ></div>
 
         <div
-            v-if="!carouselEnabled"
+            v-if="showStaticGrid"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"
         >
             <RelatedProductCard
@@ -24,31 +28,29 @@
 
         <Swiper
             v-else-if="slideCount > 0"
-            :key="swiperKey"
+            :key="marqueeKey"
             dir="ltr"
             v-bind="touchProps"
             :modules="modules"
             :slides-per-view="2"
             :space-between="12"
-            :speed="transitionSpeed"
-            :autoplay="autoplayConfig"
-            :loop="canLoop"
-            :loop-additional-slides="4"
-            :navigation="slideCount > 2"
+            :speed="marqueeSpeed"
+            :autoplay="marqueeAutoplay"
+            :loop="true"
+            :loop-additional-slides="8"
             :breakpoints="breakpoints"
             :grab-cursor="true"
             :watch-overflow="true"
-            class="related-products-swiper homepage-touch-swiper !pb-10"
+            :resistance-ratio="0.82"
+            class="related-products-swiper continuous-marquee homepage-touch-swiper"
             @swiper="onSwiperReady"
-            @touchStart="onManualInteraction"
-            @sliderFirstMove="onManualInteraction"
-            @touchEnd="onManualInteractionEnd"
-            @touchCancel="onManualInteractionEnd"
-            @navigationNext="onNavInteraction"
-            @navigationPrev="onNavInteraction"
+            @touchStart="onTouchStart"
+            @sliderFirstMove="onTouchStart"
+            @touchEnd="onTouchEnd"
+            @touchCancel="onTouchEnd"
         >
             <SwiperSlide
-                v-for="(product, index) in carouselSlides"
+                v-for="(product, index) in marqueeSlides"
                 :key="product.id + '-' + index"
             >
                 <RelatedProductCard :product="product" />
@@ -58,19 +60,26 @@
 </template>
 
 <script>
-import { Navigation, Autoplay } from 'swiper/modules';
+import { Autoplay } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
-import 'swiper/css/navigation';
 import RelatedProductCard from './RelatedProductCard.vue';
 import activityEnum from '../../../enums/modules/activityEnum';
-import { homepageProductRowSwiperProps } from '../../../utils/homepageSwiper';
+import { homepageReviewsSwiperProps } from '../../../utils/homepageSwiper';
 import {
-    RELATED_PRODUCTS_SWIPER_SPEED,
-    RELATED_PRODUCTS_AUTOPLAY_DELAY,
-    relatedProductsAutoplayConfig,
-    pauseRelatedProductsSwiper,
-    resumeRelatedProductsSwiper,
+    MIN_RELATED_MARQUEE_PRODUCTS,
+    RELATED_PRODUCTS_DEFAULT_VELOCITY,
+    relatedMarqueeAutoplayConfig,
+    buildRelatedMarqueeSlides,
+    resolveRelatedMarqueeSpeed,
+    configureRelatedMarqueeSwiper,
+    detectMarqueeDirectionFromTouch,
+    pauseRelatedMarqueeTouch,
+    resumeRelatedMarqueeTouch,
+    pauseRelatedMarqueeHover,
+    resumeRelatedMarqueeHover,
+    destroyRelatedMarqueeSwiper,
+    supportsHoverPause,
 } from '../../../utils/continuousSwiper';
 
 export default {
@@ -88,9 +97,8 @@ export default {
     },
     setup() {
         return {
-            modules: [Navigation, Autoplay],
-            touchProps: homepageProductRowSwiperProps,
-            transitionSpeed: RELATED_PRODUCTS_SWIPER_SPEED,
+            modules: [Autoplay],
+            touchProps: homepageReviewsSwiperProps,
             breakpoints: {
                 0: { slidesPerView: 2, spaceBetween: 12 },
                 640: { slidesPerView: 2, spaceBetween: 16 },
@@ -102,6 +110,9 @@ export default {
     data() {
         return {
             relatedSwiper: null,
+            marqueeDirection: 'forward',
+            viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
+            hoverPauseEnabled: false,
         };
     },
     computed: {
@@ -115,73 +126,99 @@ export default {
             }
             return Number(status) === activityEnum.ENABLE;
         },
-        autoplayDelay() {
+        adminVelocity() {
             const speed = Number(this.setting.related_products_carousel_speed);
             if (!speed || Number.isNaN(speed)) {
-                return RELATED_PRODUCTS_AUTOPLAY_DELAY;
+                return RELATED_PRODUCTS_DEFAULT_VELOCITY;
             }
-            return Math.min(10000, Math.max(2000, speed));
-        },
-        autoplayConfig() {
-            if (!this.carouselEnabled || this.slideCount < 3) {
-                return false;
-            }
-            return {
-                ...relatedProductsAutoplayConfig,
-                delay: this.autoplayDelay,
-            };
+            return speed;
         },
         slideCount() {
             return (this.products || []).length;
         },
-        carouselSlides() {
-            const items = this.products || [];
-            if (!items.length) {
-                return [];
-            }
-            if (items.length >= 8) {
-                return items;
-            }
-            let out = [];
-            const target = Math.max(8, items.length * 2);
-            while (out.length < target) {
-                out = out.concat(items);
-            }
-            return out;
+        showStaticGrid() {
+            return !this.carouselEnabled || this.slideCount < MIN_RELATED_MARQUEE_PRODUCTS;
         },
-        canLoop() {
-            return this.carouselEnabled && this.carouselSlides.length > 4;
+        showMarquee() {
+            return this.carouselEnabled && this.slideCount >= MIN_RELATED_MARQUEE_PRODUCTS;
         },
-        swiperKey() {
-            return `related-${this.slideCount}-${this.autoplayDelay}-${this.carouselEnabled ? 1 : 0}`;
+        showMarqueeFades() {
+            return this.showMarquee && this.slideCount > 2;
+        },
+        marqueeSlides() {
+            return buildRelatedMarqueeSlides(this.products);
+        },
+        marqueeSpeed() {
+            return resolveRelatedMarqueeSpeed(this.adminVelocity, this.viewportWidth);
+        },
+        marqueeAutoplay() {
+            if (!this.showMarquee) {
+                return false;
+            }
+            return { ...relatedMarqueeAutoplayConfig };
+        },
+        marqueeKey() {
+            const ids = (this.products || []).map((p) => p.id).join('-');
+            return `marquee-${ids}`;
         },
     },
+    mounted() {
+        this.hoverPauseEnabled = supportsHoverPause();
+        this.onResize = () => {
+            this.viewportWidth = window.innerWidth;
+            if (this.relatedSwiper && !this.relatedSwiper.destroyed) {
+                this.relatedSwiper.params.speed = this.marqueeSpeed;
+                configureRelatedMarqueeSwiper(this.relatedSwiper, {
+                    speed: this.marqueeSpeed,
+                    direction: this.marqueeDirection,
+                });
+            }
+        };
+        window.addEventListener('resize', this.onResize, { passive: true });
+    },
     beforeUnmount() {
-        if (this.relatedSwiper?._relatedResumeTimer) {
-            clearTimeout(this.relatedSwiper._relatedResumeTimer);
-            this.relatedSwiper._relatedResumeTimer = null;
-        }
+        window.removeEventListener('resize', this.onResize);
+        destroyRelatedMarqueeSwiper(this.relatedSwiper);
         this.relatedSwiper = null;
     },
     methods: {
         onSwiperReady(swiper) {
             this.relatedSwiper = swiper;
-            if (this.autoplayConfig) {
-                this.$nextTick(() => resumeRelatedProductsSwiper(swiper, 400));
+            configureRelatedMarqueeSwiper(swiper, {
+                speed: this.marqueeSpeed,
+                direction: this.marqueeDirection,
+            });
+            this.$nextTick(() => {
+                if (swiper.autoplay && !swiper.destroyed) {
+                    swiper.autoplay.start();
+                }
+            });
+        },
+        onTouchStart() {
+            pauseRelatedMarqueeTouch(this.relatedSwiper);
+        },
+        onTouchEnd() {
+            const detected = detectMarqueeDirectionFromTouch(this.relatedSwiper);
+            if (detected) {
+                this.marqueeDirection = detected;
             }
+            resumeRelatedMarqueeTouch(this.relatedSwiper, {
+                speed: this.marqueeSpeed,
+                direction: this.marqueeDirection,
+                delayMs: 420,
+            });
         },
-        onManualInteraction() {
-            pauseRelatedProductsSwiper(this.relatedSwiper);
-        },
-        onManualInteractionEnd() {
-            if (!this.autoplayConfig) {
+        onHoverEnter() {
+            if (!this.hoverPauseEnabled || !this.showMarquee) {
                 return;
             }
-            resumeRelatedProductsSwiper(this.relatedSwiper, 2200);
+            pauseRelatedMarqueeHover(this.relatedSwiper);
         },
-        onNavInteraction() {
-            pauseRelatedProductsSwiper(this.relatedSwiper);
-            this.onManualInteractionEnd();
+        onHoverLeave() {
+            if (!this.hoverPauseEnabled || !this.showMarquee) {
+                return;
+            }
+            resumeRelatedMarqueeHover(this.relatedSwiper);
         },
     },
 };
@@ -190,25 +227,36 @@ export default {
 <style scoped>
 .related-products-slider {
     position: relative;
+    overflow: hidden;
 }
 
 .related-products-slider__fade {
     position: absolute;
     top: 0;
-    bottom: 2.5rem;
-    width: 2.75rem;
+    bottom: 0;
+    width: 3.5rem;
     z-index: 2;
     pointer-events: none;
 }
 
 .related-products-slider__fade--left {
     left: 0;
-    background: linear-gradient(to right, #ffffff 20%, rgba(255, 255, 255, 0));
+    background: linear-gradient(
+        to right,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.92) 35%,
+        rgba(255, 255, 255, 0) 100%
+    );
 }
 
 .related-products-slider__fade--right {
     right: 0;
-    background: linear-gradient(to left, #ffffff 20%, rgba(255, 255, 255, 0));
+    background: linear-gradient(
+        to left,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.92) 35%,
+        rgba(255, 255, 255, 0) 100%
+    );
 }
 
 .related-products-swiper {
@@ -217,46 +265,25 @@ export default {
     overflow: hidden;
 }
 
-.related-products-swiper :deep(.swiper-button-next),
-.related-products-swiper :deep(.swiper-button-prev) {
-    color: #ff5c00 !important;
-    background: #ffffff;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-    top: 38% !important;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+.continuous-marquee :deep(.swiper-wrapper) {
+    transition-timing-function: linear !important;
+    will-change: transform;
 }
 
-.related-products-swiper :deep(.swiper-button-next):hover,
-.related-products-swiper :deep(.swiper-button-prev):hover {
-    transform: scale(1.05);
-}
-
-.related-products-swiper :deep(.swiper-button-next):after,
-.related-products-swiper :deep(.swiper-button-prev):after {
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.related-products-swiper :deep(.swiper-button-disabled) {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.related-products-swiper :deep(.swiper-slide) {
+.continuous-marquee :deep(.swiper-slide) {
     height: auto;
+    contain: layout style;
 }
 
 @media (max-width: 639px) {
     .related-products-slider__fade {
-        width: 1.25rem;
+        width: 1.75rem;
     }
+}
 
-    .related-products-swiper :deep(.swiper-button-next),
-    .related-products-swiper :deep(.swiper-button-prev) {
-        display: none;
+@media (min-width: 1024px) {
+    .related-products-slider__fade {
+        width: 4.5rem;
     }
 }
 </style>
