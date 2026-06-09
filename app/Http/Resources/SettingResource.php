@@ -88,8 +88,11 @@ class SettingResource extends JsonResource
             'site_homepage_theme'                   => $this->info['site_homepage_theme'] ?? 'default',
             'site_show_stock_out'                   => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,
             'site_abandoned_cart_reminder'          => isset($this->info['site_abandoned_cart_reminder']) ? (int) $this->info['site_abandoned_cart_reminder'] : \App\Enums\Activity::ENABLE,
-            'related_products_carousel_status'      => isset($this->info['related_products_carousel_status']) ? (int) $this->info['related_products_carousel_status'] : \App\Enums\Activity::ENABLE,
-            'related_products_carousel_speed'       => isset($this->info['related_products_carousel_speed']) ? (int) $this->info['related_products_carousel_speed'] : \App\Services\RelatedProductsCarouselService::DEFAULT_AUTOPLAY_DELAY,
+            'product_page_related_status'           => isset($this->info['product_page_related_status']) ? (int) $this->info['product_page_related_status'] : \App\Enums\Activity::ENABLE,
+            'product_page_related_autoscroll'       => isset($this->info['product_page_related_autoscroll']) ? (int) $this->info['product_page_related_autoscroll'] : \App\Enums\Activity::ENABLE,
+            'product_page_related_speed'            => isset($this->info['product_page_related_speed']) ? (int) $this->info['product_page_related_speed'] : \App\Services\ProductPageService::DEFAULT_SCROLL_SPEED,
+            'product_page_related_touch'            => isset($this->info['product_page_related_touch']) ? (int) $this->info['product_page_related_touch'] : \App\Enums\Activity::ENABLE,
+            'product_page_related_direction'        => $this->info['product_page_related_direction'] ?? 'rtl',
         ];
     }
 

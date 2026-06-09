@@ -3,7 +3,6 @@ import CategoryCarouselSkeleton from './CategoryCarouselSkeleton.vue';
 import ProductGridSkeleton from './ProductGridSkeleton.vue';
 import PromotionBannerSkeleton from './PromotionBannerSkeleton.vue';
 import BrandStripSkeleton from './BrandStripSkeleton.vue';
-import ReviewsSectionSkeleton from './ReviewsSectionSkeleton.vue';
 import BenefitsStripSkeleton from './BenefitsStripSkeleton.vue';
 import StripSkeleton from './StripSkeleton.vue';
 import ProductDetailSkeleton from './ProductDetailSkeleton.vue';
@@ -23,7 +22,6 @@ export const SKELETON_REGISTRY = {
     'product-grid': ProductGridSkeleton,
     promotions: PromotionBannerSkeleton,
     brands: BrandStripSkeleton,
-    reviews: ReviewsSectionSkeleton,
     benefits: BenefitsStripSkeleton,
     strip: StripSkeleton,
     'product-detail': ProductDetailSkeleton,

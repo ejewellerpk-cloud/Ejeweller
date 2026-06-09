@@ -337,7 +337,7 @@
         </div>
     </section>
 
-    <section :class="relatedProducts.length > 0 ? 'mb-12' : 'mb-24'">
+    <section class="mb-24">
         <div class="container">
             <div class="row">
                 <div class="col-12 flex flex-col gap-3">
@@ -418,24 +418,7 @@
         </div>
     </section>
 
-    <div id="related-products-trigger" class="w-full h-1"></div>
-
-    <section v-if="relatedProductsLoading || relatedProducts.length > 0" class="mb-24 sm:mb-20">
-        <div class="container">
-            <div class="flex items-center justify-between gap-4 mb-3">
-                <h2 class="text-2xl sm:text-4xl font-bold capitalize">
-                    {{ $t('label.related_products') }}
-                </h2>
-            </div>
-            
-            <RelatedProductsSliderSkeleton v-if="relatedProductsLoading" />
-
-            <RelatedProductsCarousel
-                v-else-if="relatedProducts.length > 0"
-                :products="relatedProducts"
-            />
-        </div>
-    </section>
+    <RelatedProductsSection v-if="product.slug" :product-slug="product.slug" />
 
     <section v-if="recentlyViewedLoading || recentlyViewedProducts.length > 0" class="mb-12 sm:mb-16">
         <div class="container">
@@ -511,11 +494,13 @@
             <Swiper
                 :initialSlide="mediaLightboxIndex"
                 v-bind="galleryLightboxSwiperProps"
-                :loop="combinedMedia.length > 1"
+                :loop="lightboxLoopEnabled"
                 :navigation="true"
                 :modules="modules"
                 :allowTouchMove="!isLightboxImageZoomed"
                 @slideChange="handleMediaLightboxSlideChange"
+                @sliderFirstMove="onLightboxSlideDragStart"
+                @slideChangeTransitionEnd="onLightboxSlideTransitionEnd"
                 class="w-full h-full product-gallery-lightbox">
                 <SwiperSlide v-for="(media, index) in combinedMedia" :key="'lightbox-' + index" class="flex items-center justify-center">
                     <div v-if="media.type === 'image'"
@@ -532,7 +517,7 @@
                     </div>
                     <div v-else-if="media.type === 'video'" class="w-full h-full flex items-center justify-center bg-black max-h-[85vh]">
                         <iframe v-if="media.data.video_provider === 5 || media.data.video_provider === 10 || media.data.video_provider === 15"
-                            :src="mediaLightboxIndex === index ? formatVideoLink(media.data) : ''"
+                            :src="mediaLightboxPlaybackIndex === index && !lightboxSwiperDragging ? formatVideoLink(media.data) : ''"
                             class="w-full h-full max-h-[85vh] pointer-events-none"
                             frameborder="0"
                             allow="autoplay; encrypted-media; playsinline"></iframe>
@@ -540,11 +525,11 @@
                             <img
                                 :src="getVideoPoster(media)"
                                 alt="video preview"
-                                class="w-full h-full max-h-[85vh] object-cover absolute inset-0"
-                                :class="mediaLightboxIndex === index ? 'opacity-0' : 'opacity-100'"
+                                class="w-full h-full max-h-[85vh] object-cover absolute inset-0 pointer-events-none"
+                                :class="mediaLightboxPlaybackIndex === index && !lightboxSwiperDragging ? 'opacity-0' : 'opacity-100'"
                             />
                             <video
-                                v-if="mediaLightboxIndex === index"
+                                v-if="mediaLightboxPlaybackIndex === index && !lightboxSwiperDragging"
                                 :src="media.data.link"
                                 :poster="getVideoPoster(media)"
                                 autoplay
@@ -554,6 +539,7 @@
                                 webkit-playsinline
                                 preload="auto"
                                 class="w-full h-full max-h-[85vh] object-cover relative z-[1] pointer-events-none"
+                                @canplay="onLightboxVideoCanPlay($event, index)"
                             ></video>
                         </div>
                     </div>
@@ -785,8 +771,6 @@ import starRating from "vue-star-rating";
 import targetService from "../../../services/targetService";
 import router from "../../../router";
 import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
-import RelatedProductsSliderSkeleton from "../components/skeleton/RelatedProductsSliderSkeleton.vue";
-import RelatedProductsCarousel from "../components/RelatedProductsCarousel.vue";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -811,9 +795,8 @@ export default {
     name: "ProductDetailsComponent",
     components: {
         VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
-        RelatedProductsSliderSkeleton,
-        RelatedProductsCarousel,
         RecentlyViewedStripSkeleton,
+        RelatedProductsSection: defineAsyncComponent(() => import("./RelatedProductsSection.vue")),
         CategoryBreadcrumbComponent,
         starRating,
         Swiper,
@@ -922,6 +905,8 @@ export default {
             copyText: "Copy",
             showMediaLightbox: false,
             mediaLightboxIndex: 0,
+            mediaLightboxPlaybackIndex: 0,
+            lightboxSwiperDragging: false,
             lightboxHistoryActive: false,
             lightboxPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 },
             previewPinch: { scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, active: false, panning: false, panStartX: 0, panStartY: 0, panOriginX: 0, panOriginY: 0 },
@@ -935,8 +920,6 @@ export default {
             badgeIndex: 0,
             badgeInterval: null,
             localWishlist: JSON.parse(localStorage.getItem('local_wishlist') || '[]'),
-            isRelatedProductsLoaded: false,
-            relatedProductsLoading: false,
             activeViewers: 0,
             viewersInterval: null,
             recentlyViewedProducts: [],
@@ -946,7 +929,6 @@ export default {
             mainSwiperActiveIndex: 0,
             gallerySliderDragged: false,
             loadToken: 0,
-            relatedObserver: null,
         }
     },
     computed: {
@@ -996,9 +978,6 @@ export default {
         },
         reviews: function () {
             return this.$store.getters["frontendProduct/showReviews"];
-        },
-        relatedProducts: function () {
-            return this.$store.getters["frontendProduct/relatedProducts"];
         },
         animatedBuyNowTexts: function () {
             const texts = [];
@@ -1086,6 +1065,13 @@ export default {
         galleryPaginationConfig: function () {
             return this.getPaginationConfig();
         },
+        lightboxLoopEnabled: function () {
+            const media = this.combinedMedia || [];
+            if (media.some((item) => item.type === 'video')) {
+                return false;
+            }
+            return media.length > 2;
+        },
     },
     mounted() {
         this.show();
@@ -1100,10 +1086,6 @@ export default {
         }
         if (this.viewersInterval) {
             clearInterval(this.viewersInterval);
-        }
-        if (this.relatedObserver) {
-            this.relatedObserver.disconnect();
-            this.relatedObserver = null;
         }
         if (this._onLightboxPopState) {
             window.removeEventListener('popstate', this._onLightboxPopState);
@@ -1354,6 +1336,8 @@ export default {
         },
         openMediaLightbox: function (index) {
             this.mediaLightboxIndex = index;
+            this.mediaLightboxPlaybackIndex = index;
+            this.lightboxSwiperDragging = false;
             this.resetLightboxPinch();
             this.showMediaLightbox = true;
             document.body.style.overflow = 'hidden';
@@ -1374,6 +1358,8 @@ export default {
                 return;
             }
             this.showMediaLightbox = false;
+            this.lightboxSwiperDragging = false;
+            this.pauseLightboxVideos();
             this.resetLightboxPinch();
             document.body.style.overflow = '';
             document.body.classList.remove('media-lightbox-open');
@@ -1519,7 +1505,55 @@ export default {
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
+        },
+        onLightboxSlideDragStart: function () {
+            this.lightboxSwiperDragging = true;
+            this.pauseLightboxVideos();
+        },
+        onLightboxSlideTransitionEnd: function (swiper) {
+            this.lightboxSwiperDragging = false;
+            this.mediaLightboxPlaybackIndex = swiper.realIndex;
+            this.mediaLightboxIndex = swiper.realIndex;
             this.resetLightboxPinch();
+            this.$nextTick(() => this.playActiveLightboxVideo());
+        },
+        pauseLightboxVideos: function () {
+            document.querySelectorAll('.product-gallery-lightbox video').forEach((video) => {
+                try {
+                    video.pause();
+                } catch (e) {}
+            });
+        },
+        playActiveLightboxVideo: function () {
+            const media = this.combinedMedia[this.mediaLightboxPlaybackIndex];
+            if (!media || media.type !== 'video' || this.isEmbedVideo(media) || this.lightboxSwiperDragging) {
+                return;
+            }
+            const root = document.querySelector('.product-gallery-lightbox');
+            if (!root) {
+                return;
+            }
+            root.querySelectorAll('video').forEach((video) => {
+                video.muted = true;
+                const playPromise = video.play();
+                if (playPromise?.catch) {
+                    playPromise.catch(() => {});
+                }
+            });
+        },
+        onLightboxVideoCanPlay: function (event, index) {
+            if (this.mediaLightboxPlaybackIndex !== index || this.lightboxSwiperDragging) {
+                return;
+            }
+            const video = event.target;
+            if (!video || !video.paused) {
+                return;
+            }
+            video.muted = true;
+            const playPromise = video.play();
+            if (playPromise?.catch) {
+                playPromise.catch(() => {});
+            }
         },
         handleImageClick: function (index) {
             this.openMediaLightbox(index === 999 ? 0 : index);
@@ -1778,30 +1812,6 @@ export default {
             const text = `Hi, I want to order : ${this.product.name} | ${companyName} URL: ${url}`;
             window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
         },
-        setupRelatedProductsObserver: function () {
-            if (this.relatedObserver) {
-                this.relatedObserver.disconnect();
-            }
-            this.relatedObserver = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting && !this.isRelatedProductsLoaded) {
-                        this.isRelatedProductsLoaded = true;
-                        const fetchRelated = () => this.showRelatedProduct();
-                        if (typeof requestIdleCallback === 'function') {
-                            requestIdleCallback(fetchRelated, { timeout: 1200 });
-                        } else {
-                            setTimeout(fetchRelated, 150);
-                        }
-                    }
-                });
-            }, { rootMargin: '200px 0px' });
-            this.$nextTick(() => {
-                const target = document.getElementById('related-products-trigger');
-                if (target) {
-                    this.relatedObserver.observe(target);
-                }
-            });
-        },
         scheduleDeferredDetailWork: function (productData) {
             const run = () => {
                 pixelService.trackViewContent(productData);
@@ -1966,10 +1976,6 @@ export default {
             this.applyProductSeo(data);
             this.loading.isActive = false;
 
-            this.$nextTick(() => {
-                this.setupRelatedProductsObserver();
-            });
-
             this.scheduleDeferredDetailWork(data);
             this.loadSecondaryProductData(data, token);
         },
@@ -2016,26 +2022,11 @@ export default {
             this.enableAddToCardButton = false;
             this.videoPosterMap = {};
             this.mainSwiperActiveIndex = 0;
-            this.isRelatedProductsLoaded = false;
             this.$store.commit('frontendProductVariation/initialVariation', []);
             this.$store.commit('frontendProductVariation/allVariation', []);
             this.props.search.slug = this.$route.params.slug;
 
             this.requestProductShow(token, false);
-        },
-        showRelatedProduct: function () {
-            if (typeof this.$route.params.slug !== "undefined") {
-                this.relatedProductsLoading = true;
-                this.props.search.slug = this.$route.params.slug;
-                this.$store.dispatch("frontendProduct/relatedProducts", {
-                    slug: this.$route.params.slug,
-                    rand: 8
-                }).then((res) => {
-                    this.relatedProductsLoading = false;
-                }).catch((err) => {
-                    this.relatedProductsLoading = false;
-                });
-            }
         },
         fetchRecentlyViewed: function () {
             let localViewed = JSON.parse(localStorage.getItem('recently_viewed_products') || '[]');
@@ -2498,11 +2489,16 @@ export default {
 
 .product-gallery-lightbox,
 .product-gallery-lightbox :deep(.swiper-wrapper),
-.product-gallery-lightbox :deep(.swiper-slide),
+.product-gallery-lightbox :deep(.swiper-slide) {
+    touch-action: pan-y pinch-zoom;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .product-image-preview-swiper,
 .product-image-preview-swiper :deep(.swiper-wrapper),
 .product-image-preview-swiper :deep(.swiper-slide) {
-    touch-action: pan-x pan-y;
+    touch-action: pan-y pinch-zoom;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .lightbox-image-zoom-wrap {

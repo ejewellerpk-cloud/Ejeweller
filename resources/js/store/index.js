@@ -106,7 +106,7 @@ import { supplier } from "./modules/supplier";
 import { tax } from "./modules/tax";
 import { theme } from "./modules/theme";
 import { topBar } from "./modules/topBar";
-import { relatedProductsCarousel } from "./modules/relatedProductsCarousel";
+import { productPage } from "./modules/productPage";
 import { timezone } from "./modules/timezone";
 import { transaction } from "./modules/transaction";
 import { unit } from "./modules/unit";
@@ -210,7 +210,7 @@ export default new createStore({
         notificationAlert,
         theme,
         topBar,
-        relatedProductsCarousel,
+        productPage,
         frontendPaymentGateway,
         frontendOrder,
         frontendOrderArea,

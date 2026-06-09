@@ -21,7 +21,7 @@ use App\Http\Controllers\Admin\StateController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TopBarController;
-use App\Http\Controllers\Admin\RelatedProductsCarouselController;
+use App\Http\Controllers\Admin\ProductPageController;
 use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DamageController;
@@ -318,9 +318,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
             Route::post('/', [TopBarController::class, 'update']);
         });
 
-        Route::prefix('related-products-carousel')->name('relatedProductsCarousel.')->group(function () {
-            Route::get('/', [RelatedProductsCarouselController::class, 'index']);
-            Route::post('/', [RelatedProductsCarouselController::class, 'update']);
+        Route::prefix('product-page')->name('productPage.')->group(function () {
+            Route::get('/', [ProductPageController::class, 'index']);
+            Route::post('/', [ProductPageController::class, 'update']);
         });
 
         Route::prefix('pwa')->name('pwa')->group(function () {
@@ -1032,7 +1032,6 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendBenefitController::class, 'index']);
     });
 
-    Route::get('/featured-reviews', [\App\Http\Controllers\Frontend\FeaturedReviewController::class, 'index']);
 
     Route::prefix('wishlist')->middleware(['auth:sanctum'])->name('wishlist.')->group(function () {
         Route::get('/', [FrontendWishlistController::class, 'index']);

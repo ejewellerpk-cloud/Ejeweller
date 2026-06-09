@@ -21,7 +21,7 @@ class SettingService
             $array = array_merge($array, Settings::group('notification')->all());
             $array = array_merge($array, Settings::group('whatsapp')->all());
             $array = array_merge($array, Settings::group('top_bar')->all());
-            $array = array_merge($array, Settings::group('related_products_carousel')->all());
+            $array = array_merge($array, Settings::group('product_page')->all());
             return array_merge($array, Settings::group('cookies')->all());
         });
     }

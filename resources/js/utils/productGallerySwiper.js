@@ -23,7 +23,9 @@ export const productGalleryMainSwiperProps = {
 
 export const productGalleryLightboxSwiperProps = {
     ...productGalleryMainSwiperProps,
-    nested: true,
+    nested: false,
+    preventInteractionOnTransition: true,
+    resistanceRatio: 0.72,
 };
 
 export function connectGalleryThumbs(mainSwiper, thumbsSwiper) {

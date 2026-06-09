@@ -3,12 +3,7 @@
  * touch momentum, and desktop hover pause.
  */
 
-export const CONTINUOUS_SWIPER_SPEED = 4500;
 export const MANUAL_SWIPER_SPEED = 380;
-export const RELATED_PRODUCTS_DEFAULT_VELOCITY = 3800;
-
-export const MIN_RELATED_MARQUEE_PRODUCTS = 3;
-export const MIN_RELATED_MARQUEE_SLIDES = 12;
 
 export const continuousAutoplayConfig = {
     delay: 0,
@@ -17,25 +12,6 @@ export const continuousAutoplayConfig = {
     stopOnLastSlide: false,
     waitForTransition: false,
 };
-
-/** Related products premium marquee autoplay (delay: 0 = never stops between slides). */
-export const relatedMarqueeAutoplayConfig = {
-    delay: 0,
-    disableOnInteraction: false,
-    pauseOnMouseEnter: false,
-    stopOnLastSlide: false,
-    waitForTransition: false,
-    reverseDirection: false,
-};
-
-/** @deprecated Use relatedMarqueeAutoplayConfig */
-export const relatedProductsAutoplayConfig = relatedMarqueeAutoplayConfig;
-
-/** @deprecated Use CONTINUOUS_SWIPER_SPEED */
-export const RELATED_PRODUCTS_SWIPER_SPEED = CONTINUOUS_SWIPER_SPEED;
-
-/** @deprecated Use RELATED_PRODUCTS_DEFAULT_VELOCITY */
-export const RELATED_PRODUCTS_AUTOPLAY_DELAY = RELATED_PRODUCTS_DEFAULT_VELOCITY;
 
 /** Lets the page scroll vertically; only clearly horizontal swipes move the slider. */
 export const touchFriendlySwiperProps = {
@@ -55,44 +31,16 @@ export const touchFriendlySwiperProps = {
     allowTouchMove: true,
 };
 
-export function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
-}
-
-/**
- * Maps admin velocity (2000–10000 ms) to Swiper transition duration.
- * Higher admin value = slower movement. Responsive per breakpoint.
- */
-export function resolveRelatedMarqueeSpeed(adminVelocityMs, viewportWidth = 1024) {
-    const base = clamp(
-        Number(adminVelocityMs) || RELATED_PRODUCTS_DEFAULT_VELOCITY,
-        2000,
-        10000,
-    );
-
-    if (viewportWidth >= 1024) {
-        return Math.round(base * 1.35);
-    }
-    if (viewportWidth >= 768) {
-        return Math.round(base * 1.05);
-    }
-    return Math.round(base * 0.92);
-}
-
-/**
- * Duplicate slides for a seamless infinite loop without visible resets.
- */
-export function buildRelatedMarqueeSlides(products, minSlides = MIN_RELATED_MARQUEE_SLIDES) {
-    const items = products || [];
-    if (!items.length) {
+/** Repeat items until the carousel has enough slides for a seamless marquee loop. */
+export function duplicateMarqueeSlides(items, minSlides = 8) {
+    if (!Array.isArray(items) || !items.length) {
         return [];
     }
     if (items.length >= minSlides) {
         return items;
     }
-    const target = Math.max(minSlides, items.length * 3);
     let out = [];
-    while (out.length < target) {
+    while (out.length < minSlides) {
         out = out.concat(items);
     }
     return out;
@@ -213,25 +161,6 @@ export function destroyRelatedMarqueeSwiper(swiper) {
         swiper._marqueeHoverPaused = false;
         swiper._marqueeTouchActive = false;
     }
-}
-
-/** Home reviews marquee helpers */
-export function pauseContinuousSwiper(swiper) {
-    pauseRelatedMarqueeTouch(swiper);
-}
-
-export function resumeContinuousSwiper(swiper) {
-    resumeRelatedMarqueeTouch(swiper, { speed: CONTINUOUS_SWIPER_SPEED, delayMs: 450 });
-}
-
-/** @deprecated */
-export function pauseRelatedProductsSwiper(swiper) {
-    pauseRelatedMarqueeTouch(swiper);
-}
-
-/** @deprecated */
-export function resumeRelatedProductsSwiper(swiper, delayMs = 420) {
-    resumeRelatedMarqueeTouch(swiper, { delayMs });
 }
 
 export function supportsHoverPause() {

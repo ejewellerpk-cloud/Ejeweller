@@ -42,12 +42,10 @@ export const frontendProduct = {
         offerProducts: [],
         offerProductPage: {},
         offerProductPagination: [],
-        relatedProducts: [],
-        relatedProductPage: {},
-        relatedProductPagination: [],
         wishlistProducts: [],
         wishlistProductPage: {},
         wishlistProductPagination: [],
+        relatedProducts: [],
     },
     getters: {
         show: function (state) {
@@ -107,15 +105,6 @@ export const frontendProduct = {
         offerProductPagination: function (state) {
             return state.offerProductPagination;
         },
-        relatedProducts: function (state) {
-            return state.relatedProducts;
-        },
-        relatedProductPage: function (state) {
-            return state.relatedProductPage;
-        },
-        relatedProductPagination: function (state) {
-            return state.relatedProductPagination;
-        },
         wishlistProducts: function (state) {
             return state.wishlistProducts;
         },
@@ -124,6 +113,9 @@ export const frontendProduct = {
         },
         wishlistProductPagination: function (state) {
             return state.wishlistProductPagination;
+        },
+        relatedProducts: function (state) {
+            return state.relatedProducts;
         },
     },
     actions: {
@@ -233,22 +225,6 @@ export const frontendProduct = {
                 });
             });
         },
-        relatedProducts: function (context, payload) {
-            return new Promise((resolve, reject) => {
-                let url = `frontend/product/related-products/${payload.slug}`;
-                if (payload) {
-                    url = url + appService.requestHandler(payload);
-                }
-                axios.get(url, payload).then((res) => {
-                    context.commit("relatedProducts", res.data.data);
-                    context.commit("relatedProductPage", res.data.meta);
-                    context.commit("relatedProductPagination", res.data);
-                    resolve(res);
-                }).catch((err) => {
-                    reject(err);
-                });
-            });
-        },
         lists: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = `frontend/product`;
@@ -280,7 +256,21 @@ export const frontendProduct = {
                     reject(err);
                 });
             });
-        }
+        },
+        relatedProducts: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                let url = `frontend/product/related-products/${payload.slug}`;
+                const query = { ...payload };
+                delete query.slug;
+                url = url + appService.requestHandler(query);
+                axios.get(url).then((res) => {
+                    context.commit("relatedProducts", res.data.data);
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
     },
     mutations: {
         show: function (state, payload) {
@@ -399,21 +389,6 @@ export const frontendProduct = {
         offerProductPagination: function (state, payload) {
             state.offerProductPagination = payload;
         },
-        relatedProducts: function (state, payload) {
-            state.relatedProducts = payload;
-        },
-        relatedProductPage: function (state, payload) {
-            if (typeof payload !== "undefined" && payload !== null) {
-                state.relatedProductPage = {
-                    from: payload.from,
-                    to: payload.to,
-                    total: payload.total,
-                };
-            }
-        },
-        relatedProductPagination: function (state, payload) {
-            state.relatedProductPagination = payload;
-        },
         wishlistProducts: function (state, payload) {
             state.wishlistProducts = payload;
         },
@@ -428,6 +403,9 @@ export const frontendProduct = {
         },
         wishlistProductPagination: function (state, payload) {
             state.wishlistProductPagination = payload;
+        },
+        relatedProducts: function (state, payload) {
+            state.relatedProducts = payload;
         },
     },
 };

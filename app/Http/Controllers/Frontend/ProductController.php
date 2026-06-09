@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Frontend;
 
 
 use App\Http\Resources\ProductRelationResource;
-use App\Http\Resources\RelatedProductCardResource;
 use App\Http\Resources\SimpleProductDetailsResource;
 use App\Http\Resources\SimpleProductResource;
 use App\Models\Product;
@@ -99,9 +98,10 @@ class ProductController extends Controller
     public function relatedProducts(Product $product, PaginateRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return RelatedProductCardResource::collection($this->productService->relatedProducts($product, $request));
+            return SimpleProductResource::collection($this->productService->relatedProducts($product, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
+
 }

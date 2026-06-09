@@ -963,14 +963,18 @@ class ProductService
     public function relatedProducts(Product $product, PaginateRequest $request)
     {
         try {
-            $productTags = $product->tags()->pluck('name')->filter()->unique()->values();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
-            $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 32) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType   = $request->get('order_type') ?? 'desc';
-            $rand        = $request->get('rand', 0) > 0 ? $request->get('rand') : 0;
+            $limit       = min((int) $request->get('limit', 20), 32);
+            $excludeIds  = [$product->id];
+            $categoryIds = collect();
 
-            $baseQuery = fn () => Product::select(
+            if ($product->product_category_id) {
+                $category = ProductCategory::find($product->product_category_id);
+                if ($category) {
+                    $categoryIds = $category->descendantsAndSelf->pluck('id');
+                }
+            }
+
+            $select = [
                 'products.id',
                 'products.name',
                 'products.sku',
@@ -985,42 +989,48 @@ class ProductService
                 'products.show_stock_out',
                 'products.can_purchasable',
                 'products.maximum_purchase_quantity',
-                'products.use_random_sale'
-            )
+                'products.use_random_sale',
+            ];
+
+            $baseQuery = fn () => Product::select($select)
                 ->withReviewRating()
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
-                ->with('media')
-                ->withCount('variations')
-                ->active('products.status')
-                ->whereNot('products.id', $product->id);
+                ->with(['wishlist' => fn ($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
+                ->with('media', 'videos', 'variations', 'taxes')
+                ->withCount('orderCountable')
+                ->where(['status' => Status::ACTIVE]);
 
-            if ($productTags->isNotEmpty()) {
-                $products = $baseQuery()
-                    ->whereHas('tags', function ($query) use ($productTags) {
-                        $query->whereIn('name', $productTags);
-                    })
-                    ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
-                    ->$method($methodValue);
+            $related = collect();
 
-                if ($products->count() > 0) {
-                    return $products;
-                }
+            if ($categoryIds->isNotEmpty()) {
+                $related = $baseQuery()
+                    ->whereIn('product_category_id', $categoryIds)
+                    ->whereNotIn('id', $excludeIds)
+                    ->inRandomOrder()
+                    ->limit($limit)
+                    ->get();
+
+                $excludeIds = array_merge($excludeIds, $related->pluck('id')->all());
             }
 
-            if ($product->product_category_id) {
-                return $baseQuery()
-                    ->where('product_category_id', $product->product_category_id)
-                    ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
-                    ->$method($methodValue);
+            if ($related->count() < $limit) {
+                $remaining = $limit - $related->count();
+                $fallback  = $baseQuery()
+                    ->whereNotIn('id', $excludeIds)
+                    ->orderByDesc('order_countable_count')
+                    ->inRandomOrder()
+                    ->limit($remaining)
+                    ->get();
+
+                $related = $related->merge($fallback);
             }
 
-            return collect([]);
+            return $related->unique('id')->values();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
-
 
     /**
      * @throws Exception

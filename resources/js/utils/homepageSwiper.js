@@ -42,9 +42,3 @@ export const homepageHeroSwiperProps = {
     threshold: 10,
 };
 
-/** Reviews continuous marquee slider */
-export const homepageReviewsSwiperProps = {
-    ...scrollFriendlyTouch,
-    grabCursor: true,
-    threshold: 10,
-};

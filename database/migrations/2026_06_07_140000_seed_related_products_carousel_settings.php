@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\Activity;
-use App\Services\RelatedProductsCarouselService;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +12,7 @@ return new class extends Migration
         $now = now();
         $defaults = [
             'related_products_carousel_status' => Activity::ENABLE,
-            'related_products_carousel_speed'  => RelatedProductsCarouselService::DEFAULT_AUTOPLAY_DELAY,
+            'related_products_carousel_speed'  => 3800,
         ];
 
         foreach ($defaults as $key => $value) {
