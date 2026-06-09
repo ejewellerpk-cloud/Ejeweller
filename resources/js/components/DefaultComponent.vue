@@ -160,8 +160,7 @@ export default {
             
             // On Product Details page on mobile
             if (routeName === 'frontend.product.details') {
-                // Keep it well above the sticky mobile Add to Cart / Buy Now bar (bottom-[78px])
-                return `${baseClasses} bottom-[158px] sm:bottom-6`;
+                return `${baseClasses} pdp-whatsapp-btn sm:bottom-6`;
             }
             
             // On Checkout / Cart pages on mobile
@@ -322,6 +321,14 @@ body.image-preview-open .whatsapp-btn {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
+}
+
+.pdp-mobile-sticky-bar {
+    bottom: var(--mobile-cart-fab-clearance, calc(var(--mobile-bottom-nav-height, 5rem) + 2.75rem));
+}
+
+.pdp-whatsapp-btn {
+    bottom: calc(var(--mobile-cart-fab-clearance, calc(var(--mobile-bottom-nav-height, 5rem) + 2.75rem)) + 5rem);
 }
 </style>
 

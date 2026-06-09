@@ -195,6 +195,10 @@ export default {
                 }
                 const height = Math.ceil(nav.getBoundingClientRect().height);
                 document.documentElement.style.setProperty('--mobile-bottom-nav-height', `${height}px`);
+                document.documentElement.style.setProperty(
+                    '--mobile-cart-fab-clearance',
+                    `calc(${height}px + 2.75rem)`
+                );
             });
         },
         checkIsPathAndRoutePathSame(path) {

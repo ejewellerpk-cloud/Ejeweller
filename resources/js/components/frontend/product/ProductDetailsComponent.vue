@@ -686,7 +686,7 @@
         </div>
     </div>
 
-    <div class="fixed bottom-[78px] left-4 right-4 z-20 p-3 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex items-center justify-between gap-3">
+    <div class="pdp-mobile-sticky-bar fixed left-4 right-4 z-20 p-3 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex items-center justify-between gap-3">
         <div class="flex flex-col text-left flex-shrink-0">
             <span class="text-[9px] font-bold text-text uppercase tracking-widest">{{ $t('label.total_price') }}</span>
             <span class="text-base font-extrabold text-heading">
