@@ -3,7 +3,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header border-none">
-                <h3 class="db-card-title">{{ $t('button.add_review') }}</h3>
+                <h3 class="db-card-title">{{ isEditing ? $t('label.edit_review') : $t('button.add_review') }}</h3>
                 <router-link :to="{ name: 'admin.review.list' }" class="db-btn py-2 text-white bg-gray-600">
                     <i class="lab lab-line-undo lab-font-size-16"></i>
                     <span>{{ $t('button.cancel') }}</span>
@@ -127,6 +127,7 @@ export default {
                 review: '',
             },
             errors: {},
+            reviewId: null,
             productSearch: {
                 paginate: 0,
                 page: 1,
@@ -136,18 +137,41 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
-        Promise.all([
+        const tasks = [
             this.$store.dispatch('product/getSimpleProduct', this.productSearch),
             this.$store.dispatch('user/lists', {
                 order_column: 'id',
                 order_type: 'asc',
                 status: statusEnum.ACTIVE,
             }),
-        ]).finally(() => {
+        ];
+
+        if (this.isEditing) {
+            this.reviewId = this.$route.params.id;
+            tasks.push(this.$store.dispatch('review/show', this.reviewId));
+        }
+
+        Promise.all(tasks).then((results) => {
+            if (this.isEditing) {
+                const review = results[results.length - 1]?.data?.data || this.$store.getters['review/show'];
+                this.form.product_id = review.product_id;
+                this.form.user_id = review.user_id;
+                this.form.review = review.review;
+                this.activeRate = Number(review.star) || 5;
+                (review.images || []).forEach((image, index) => {
+                    if (index < 5) {
+                        this.imageUrl[index] = image;
+                    }
+                });
+            }
+        }).finally(() => {
             this.loading.isActive = false;
         });
     },
     computed: {
+        isEditing() {
+            return this.$route.name === 'admin.review.edit';
+        },
         products() {
             return this.$store.getters['product/simpleList'];
         },
@@ -186,9 +210,13 @@ export default {
             });
 
             this.loading.isActive = true;
-            this.$store.dispatch('review/save', { form: fd }).then((res) => {
+            const action = this.isEditing
+                ? this.$store.dispatch('review/update', { id: this.reviewId, form: fd })
+                : this.$store.dispatch('review/save', { form: fd });
+
+            action.then((res) => {
                 this.loading.isActive = false;
-                alertService.successFlip(0, this.$t('menu.reviews'));
+                alertService.successFlip(this.isEditing ? 1 : 0, this.$t('menu.reviews'));
                 this.$router.push({
                     name: 'admin.review.show',
                     params: { id: res.data.data.id },

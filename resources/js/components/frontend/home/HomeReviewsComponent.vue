@@ -111,9 +111,12 @@ export default {
             }
             this.loading.isActive = true;
             axios
-                .get('frontend/featured-reviews', { params: { limit: 12 } })
+                .get('frontend/featured-reviews')
                 .then((res) => {
-                    this.reviews = (res.data.data || []).filter((review) => Number(review.star) >= 4);
+                    this.reviews = (res.data.data || []).filter((review) => {
+                        const star = Number(review.star);
+                        return star === 4 || star === 5;
+                    });
                     this.loading.isActive = false;
                 })
                 .catch(() => {

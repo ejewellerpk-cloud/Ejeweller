@@ -121,6 +121,41 @@ export const review = {
                     });
             });
         },
+        update: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post(`admin/reviews/${payload.id}`, payload.form, {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
+        destroy: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .delete(`admin/reviews/${payload.id}`)
+                    .then((res) => {
+                        if (
+                            typeof payload.search !== "undefined" &&
+                            (typeof payload.search.vuex === "undefined" ||
+                                payload.search.vuex === true)
+                        ) {
+                            context.dispatch("lists", payload.search);
+                        }
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         reset: function (context) {
             context.commit("reset");
         },

@@ -86,8 +86,11 @@
                             <td class="db-table-body-td">{{ review.product_name }}</td>
                             <td class="db-table-body-td">{{ review.user_name }}</td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('reviews')">
-                                <SmIconViewComponent :link="'admin.review.show'" :id="review.id"
-                                    v-if="permissionChecker('reviews')" />
+                                <div class="flex justify-start items-center gap-1.5">
+                                    <SmIconViewComponent :link="'admin.review.show'" :id="review.id" />
+                                    <SmIconSidebarModalEditComponent @click="edit(review)" />
+                                    <SmIconDeleteComponent @click="destroy(review.id)" />
+                                </div>
                             </td>
                         </tr>
 
@@ -130,6 +133,7 @@ import appService from "../../../services/appService";
 import LoadingComponent from "../components/LoadingComponent";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
+import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import ListFilterPanel from "../components/ListFilterPanel";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
@@ -153,6 +157,7 @@ export default {
         SmIconViewComponent,
         LoadingComponent,
         SmIconSidebarModalEditComponent,
+        SmIconDeleteComponent,
         starRating
     },
     data() {
@@ -267,7 +272,28 @@ export default {
         },
         reset: function () {
             this.$store.dispatch('review/reset').then().catch();
-        }
+        },
+        edit: function (review) {
+            this.$router.push({
+                name: 'admin.review.edit',
+                params: { id: review.id },
+            });
+        },
+        destroy: function (id) {
+            appService.destroyConfirmation().then(() => {
+                this.loading.isActive = true;
+                this.$store.dispatch('review/destroy', {
+                    id: id,
+                    search: this.props.search,
+                }).then(() => {
+                    this.loading.isActive = false;
+                    alertService.successFlip(null, this.$t('menu.reviews'));
+                }).catch((err) => {
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message);
+                });
+            }).catch(() => {});
+        },
     }
 }
 </script>

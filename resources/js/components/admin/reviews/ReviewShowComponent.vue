@@ -96,7 +96,19 @@
         </div>
     </div>
     <div class="col-12 hidden-print">
-        <div class="flex items-center justify-end gap-6">
+        <div class="flex items-center justify-end gap-3">
+            <router-link
+                v-if="review.id"
+                :to="{ name: 'admin.review.edit', params: { id: review.id } }"
+                class="db-btn py-2 text-white bg-primary"
+            >
+                <i class="lab lab-line-edit"></i>
+                <span>{{ $t('label.edit_review') }}</span>
+            </router-link>
+            <button type="button" class="db-btn py-2 text-white bg-danger" @click="destroy">
+                <i class="lab lab-line-trash"></i>
+                <span>{{ $t('button.delete') }}</span>
+            </button>
             <PrintButtonComponent :props="printObj"
                 :buttonClass="'flex items-center justify-center gap-1.5 h-10 px-6 rounded-3xl text-white bg-success'" />
         </div>
@@ -107,6 +119,8 @@
 import starRating from "vue-star-rating";
 import PrintButtonComponent from "../components/buttons/PrintButtonComponent";
 import LoadingComponent from "../components/LoadingComponent";
+import alertService from "../../../services/alertService";
+import appService from "../../../services/appService";
 
 export default {
     name: "ReviewShowComponent",
@@ -150,6 +164,22 @@ export default {
                         this.loading.isActive = false;
                     });
             }
+        },
+        destroy: function () {
+            if (!this.review?.id) {
+                return;
+            }
+            appService.destroyConfirmation().then(() => {
+                this.loading.isActive = true;
+                this.$store.dispatch('review/destroy', { id: this.review.id }).then(() => {
+                    this.loading.isActive = false;
+                    alertService.successFlip(null, this.$t('menu.reviews'));
+                    this.$router.push({ name: 'admin.review.list' });
+                }).catch((err) => {
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message);
+                });
+            }).catch(() => {});
         },
     },
 };

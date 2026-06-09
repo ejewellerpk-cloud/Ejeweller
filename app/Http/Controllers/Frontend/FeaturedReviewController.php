@@ -15,11 +15,11 @@ class FeaturedReviewController extends Controller
 
     public function index(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\JsonResponse
     {
-        $limit = min((int) $request->get('limit', 12), 20);
+        $limit = $request->filled('limit') ? (int) $request->get('limit') : null;
 
         try {
             return ProductReviewResource::collection(
-                $this->reviewService->featuredForHomepage($limit)
+                $this->reviewService->featuredForHomepage($limit > 0 ? $limit : null)
             );
         } catch (\Throwable $e) {
             report($e);

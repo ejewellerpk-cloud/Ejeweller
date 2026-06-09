@@ -857,10 +857,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
     Route::prefix('reviews')->name('reviews.')->group(function () {
         Route::get('/', [ReviewController::class, 'index']);
         Route::post('/', [ReviewController::class, 'store']);
+        Route::get('/export', [ReviewController::class, 'export']);
         Route::get('/show/{productReview}', [ReviewController::class, 'show']);
         Route::post('/upload-image/{productReview}', [ReviewController::class, 'uploadImage']);
         Route::get('/delete-image/{productReview}/{index}', [ReviewController::class, 'deleteImage']);
-        Route::get('/export', [ReviewController::class, 'export']);
+        Route::match(['post', 'put', 'patch'], '/{productReview}', [ReviewController::class, 'update']);
+        Route::delete('/{productReview}', [ReviewController::class, 'destroy']);
     });
 
     Route::prefix('return-order')->name('return-order.')->group(function () {

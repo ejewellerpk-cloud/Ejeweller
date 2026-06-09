@@ -43,6 +43,17 @@ export default [
                 },
             },
             {
+                path: "edit/:id",
+                component: ReviewCreateComponent,
+                name: "admin.review.edit",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "reviews",
+                    breadcrumb: "edit",
+                },
+            },
+            {
                 path: "show/:id",
                 component: ReviewShowComponent,
                 name: "admin.review.show",

@@ -68,16 +68,20 @@ class ReviewService
     /**
      * @throws Exception
      */
-    public function featuredForHomepage(int $limit = 6)
+    public function featuredForHomepage(?int $limit = null)
     {
         try {
-            return ProductReview::with(['user.addresses', 'product:id,name,slug'])
-                ->where('star', '>=', 4)
+            $query = ProductReview::with(['user.addresses', 'product:id,name,slug'])
+                ->whereIn('star', [4, 5])
                 ->whereHas('product', fn ($query) => $query->where('status', \App\Enums\Status::ACTIVE))
                 ->orderBy('star', 'desc')
-                ->orderBy('id', 'desc')
-                ->limit($limit)
-                ->get();
+                ->orderBy('id', 'desc');
+
+            if ($limit) {
+                $query->limit($limit);
+            }
+
+            return $query->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -155,6 +159,55 @@ class ReviewService
 
             return ProductReview::with(['product', 'user'])->find($productReview->id);
         } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function update(AdminProductReviewRequest $request, ProductReview $productReview): ProductReview
+    {
+        try {
+            DB::transaction(function () use ($request, $productReview) {
+                $productReview->update($request->only([
+                    'user_id',
+                    'product_id',
+                    'star',
+                    'review',
+                ]));
+
+                $images = $request->file('images', []);
+                foreach ($images as $image) {
+                    if ($image) {
+                        $productReview->addMedia($image)->toMediaCollection('product-review');
+                    }
+                }
+
+                $this->review = $productReview;
+            });
+
+            return $this->review->load(['product', 'user']);
+        } catch (Exception $exception) {
+            DB::rollBack();
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function destroy(ProductReview $productReview): void
+    {
+        try {
+            DB::transaction(function () use ($productReview) {
+                $productReview->clearMediaCollection('product-review');
+                $productReview->delete();
+            });
+        } catch (Exception $exception) {
+            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
