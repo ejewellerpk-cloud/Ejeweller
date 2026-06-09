@@ -71,9 +71,9 @@ class ReviewService
     public function featuredForHomepage(int $limit = 6)
     {
         try {
-            return ProductReview::with(['user', 'product:id,name,slug'])
-                ->where('star', '>=', 3)
-                ->whereHas('product', fn($query) => $query->where('status', \App\Enums\Status::ACTIVE))
+            return ProductReview::with(['user.addresses', 'product:id,name,slug'])
+                ->where('star', '>=', 4)
+                ->whereHas('product', fn ($query) => $query->where('status', \App\Enums\Status::ACTIVE))
                 ->orderBy('star', 'desc')
                 ->orderBy('id', 'desc')
                 ->limit($limit)

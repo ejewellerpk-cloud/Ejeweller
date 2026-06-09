@@ -8,6 +8,7 @@
         <FlashSaleComponent />
         <ProductBrandComponent />
         <OutletComponent />
+        <HomeReviewsComponent />
         <BenefitComponent />
     </div>
 </template>
@@ -22,6 +23,7 @@ import FlashSaleComponent from './FlashSaleComponent.vue';
 import ProductBrandComponent from './ProductBrandComponent.vue';
 import OutletComponent from './OutletComponent.vue';
 import BenefitComponent from './BenefitComponent.vue';
+import HomeReviewsComponent from './HomeReviewsComponent.vue';
 
 export default {
     name: 'HomeComponent',
@@ -35,6 +37,7 @@ export default {
         ProductBrandComponent,
         OutletComponent,
         BenefitComponent,
+        HomeReviewsComponent,
     },
     computed: {
         setting() {

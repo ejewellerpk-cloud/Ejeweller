@@ -1032,6 +1032,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendBenefitController::class, 'index']);
     });
 
+    Route::get('/featured-reviews', [\App\Http\Controllers\Frontend\FeaturedReviewController::class, 'index']);
+
 
     Route::prefix('wishlist')->middleware(['auth:sanctum'])->name('wishlist.')->group(function () {
         Route::get('/', [FrontendWishlistController::class, 'index']);
