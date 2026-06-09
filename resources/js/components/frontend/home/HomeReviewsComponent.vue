@@ -42,7 +42,7 @@
                                         :class="starIndex <= review.star ? 'opacity-100' : 'opacity-35'"
                                     ></i>
                                 </div>
-                                <p class="home-reviews-handle">{{ displayHandle(review) }}</p>
+                                <p class="home-reviews-name">{{ displayName(review) }}</p>
                                 <p v-if="displayCity(review)" class="home-reviews-city">{{ displayCity(review) }}</p>
                             </div>
                         </SwiperSlide>
@@ -142,17 +142,12 @@ export default {
         goNext() {
             this.swiper?.slideNext();
         },
-        displayHandle(review) {
-            const username = (review.username || '').trim();
-            if (username) {
-                return username.startsWith('@') ? username : `@${username}`;
-            }
+        displayName(review) {
             const name = (review.name || '').trim();
             if (name) {
-                const handle = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-                return handle ? `@${handle}` : '@customer';
+                return name;
             }
-            return '@customer';
+            return this.$t('label.customer');
         },
         displayCity(review) {
             return (review.city || '').trim();
@@ -231,7 +226,7 @@ export default {
     font-size: 1rem;
 }
 
-.home-reviews-handle {
+.home-reviews-name {
     font-size: 1.05rem;
     font-weight: 700;
     margin-bottom: 0.2rem;

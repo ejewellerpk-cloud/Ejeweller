@@ -36,12 +36,14 @@
 
         <button
             type="button"
-            class="mobile-bottom-nav__cart relative isolate -mt-10 sm:-mt-12 flex-shrink-0"
+            class="mobile-bottom-nav__cart relative isolate flex-shrink-0"
             @touchend="onActionTap($event, openCart)"
             @click="onActionTap($event, openCart)"
         >
-            <i class="lab-line-bag text-lg w-11 h-11 sm:w-12 sm:h-12 !leading-[2.75rem] sm:!leading-[3rem] text-center rounded-full shadow-cart bg-primary text-white pointer-events-none"></i>
-            <span v-if="carts.length > 0" class="absolute top-3.5 sm:top-4 ltr:right-0 rtl:left-0 text-[10px] font-medium h-4 min-w-[16px] px-1 leading-[14px] text-center rounded-full border border-primary bg-[#FFBC1F] pointer-events-none">
+            <span class="mobile-bottom-nav__cart-btn pointer-events-none">
+                <i class="lab-line-bag text-xl leading-none"></i>
+            </span>
+            <span v-if="carts.length > 0" class="mobile-bottom-nav__cart-badge pointer-events-none">
                 {{ carts.length }}
             </span>
         </button>
@@ -274,12 +276,55 @@ export default {
 .mobile-bottom-nav__cart {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: 3.5rem;
+    min-height: 3.5rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    align-self: flex-end;
+    transform: translateY(-1.35rem);
+    margin-bottom: 0.15rem;
+}
+
+.mobile-bottom-nav__cart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 9999px;
+    background-color: rgb(var(--primary) / 1);
+    color: #fff;
+    box-shadow: 0 8px 20px rgb(var(--primary) / 0.38);
+}
+
+.mobile-bottom-nav__cart-badge {
+    position: absolute;
+    top: 0.2rem;
+    inset-inline-end: 0;
+    min-width: 1rem;
+    height: 1rem;
+    padding-inline: 0.2rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(var(--primary) / 1);
+    background-color: #ffbc1f;
+    color: #111;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 0.875rem;
+    text-align: center;
+}
+
+@media (min-width: 390px) {
+    .mobile-bottom-nav__cart {
+        transform: translateY(-1.55rem);
+    }
+
+    .mobile-bottom-nav__cart-btn {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
 }
 
 .mobile-bottom-nav__pwa-btn {
