@@ -38,22 +38,23 @@
                     <div class="form-row">
                         <input type="hidden" :value="paymentGateway.slug" name="payment_type">
 
-                        <div class="form-col-12 sm:form-col-6" v-for="paymentGatewayOption in paymentGateway.options"
-                            :key="paymentGatewayOption">
-                            <label :for="paymentGatewayOption.option" class="db-field-title">
+                        <div class="form-col-12 sm:form-col-6" v-for="paymentGatewayOption in uniqueOptions(paymentGateway.options)"
+                            :key="paymentGateway.id + '-' + paymentGatewayOption.option">
+                            <label :for="paymentGateway.slug + '_' + paymentGatewayOption.option" class="db-field-title">
                                 {{ $t("label." + paymentGatewayOption.option) }}
                             </label>
-                            <input v-if="paymentGatewayOption.type === enums.inputTypeEnum.TEXT" type="text"
+                            <input v-if="Number(paymentGatewayOption.type) === enums.inputTypeEnum.TEXT" type="text"
                                 :value="paymentGatewayOption.value"
                                 v-bind:class="errors[paymentGatewayOption.option] ? 'invalid' : ''"
-                                :name="paymentGatewayOption.option" :id="paymentGatewayOption.option"
+                                :name="paymentGatewayOption.option" :id="paymentGateway.slug + '_' + paymentGatewayOption.option"
                                 class="db-field-control" />
 
-                            <select v-else class="db-field-control" :id="paymentGatewayOption.option"
+                            <select v-else class="db-field-control" :id="paymentGateway.slug + '_' + paymentGatewayOption.option"
                                 :name="paymentGatewayOption.option"
                                 v-bind:class="errors[paymentGatewayOption.option] ? 'invalid' : ''">
-                                <option :value="index" :selected="index === paymentGatewayOption.value"
-                                    v-for="(activity, index) in paymentGatewayOption.activities">
+                                <option :value="activityKey" :selected="String(activityKey) === String(paymentGatewayOption.value)"
+                                    v-for="(activity, activityKey) in paymentGatewayOption.activities"
+                                    :key="paymentGatewayOption.option + '-' + activityKey">
                                     {{ $t("label." + activity) }}
                                 </option>
                             </select>
@@ -147,6 +148,30 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err);
             }
+        },
+        uniqueOptions: function (options) {
+            const list = Array.isArray(options) ? options : [];
+            const byName = {};
+            list.forEach((option) => {
+                if (!option || !option.option) {
+                    return;
+                }
+                const current = byName[option.option];
+                if (!current) {
+                    byName[option.option] = option;
+                    return;
+                }
+                const currentFilled = Boolean(current.value);
+                const optionFilled = Boolean(option.value);
+                if (optionFilled && !currentFilled) {
+                    byName[option.option] = option;
+                    return;
+                }
+                if (optionFilled === currentFilled && Number(option.id) > Number(current.id)) {
+                    byName[option.option] = option;
+                }
+            });
+            return Object.values(byName);
         },
         selectActive: function (index) {
             this.selectIndex = index;

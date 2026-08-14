@@ -73,23 +73,43 @@ class PaymentGatewayService
     /**
      * @throws Exception
      */
-    public function update($validationRequests): object
+    public function update($validationRequests, ?string $slug = null): object
     {
         try {
+            if ($slug) {
+                $this->gateway = PaymentGateway::where('slug', $slug)->first();
+            }
+
             if (!blank($validationRequests)) {
                 foreach ($validationRequests as $key => $value) {
-                    $option = GatewayOption::where('option', $key)->first();
-                    if (!blank($option)) {
+                    $options = $this->gateway
+                        ? $this->gateway->gatewayOptions()->where('option', $key)->get()
+                        : GatewayOption::where('option', $key)->get();
+
+                    if ($options->isEmpty()) {
+                        continue;
+                    }
+
+                    foreach ($options as $option) {
                         $option->value = $value;
                         $option->save();
+                    }
+
+                    $option = $options->last();
+                    if (blank($this->gateway)) {
                         $this->gateway = PaymentGateway::find($option->model_id);
-                        if (!blank($this->gateway) && $key === $this->gateway->slug . '_status') {
-                            $this->gateway->status = $value;
-                            $this->gateway->save();
-                        }
+                    }
+                    if (!blank($this->gateway) && $key === $this->gateway->slug . '_status') {
+                        $this->gateway->status = $value;
+                        $this->gateway->save();
                     }
                 }
             }
+
+            if (!blank($this->gateway)) {
+                $this->gateway->load('gatewayOptions');
+            }
+
             return $this->gateway;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

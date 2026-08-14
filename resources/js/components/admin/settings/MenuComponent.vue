@@ -58,7 +58,7 @@
                 {{ $t("menu.top_bar") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.productPage' }" class="settings-menu-link">
-                <i class="text-sm lab lab-line-product"></i>
+                <i class="text-sm lab lab-line-product-section"></i>
                 {{ $t("menu.product_page") }}
             </router-link>
             <router-link :to="{ name: 'admin.settings.slider' }" class="settings-menu-link">

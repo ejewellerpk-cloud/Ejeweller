@@ -44,7 +44,7 @@ class PaymentGatewayController extends AdminController implements HasMiddleware
         $validationRequests = $request->validate($gateway->rules());
 
         try {
-            return new PaymentGatewayResource($this->paymentGatewayService->update($validationRequests));
+            return new PaymentGatewayResource($this->paymentGatewayService->update($validationRequests, $request->payment_type));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
