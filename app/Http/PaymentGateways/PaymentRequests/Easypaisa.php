@@ -13,8 +13,6 @@ class Easypaisa extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'msisdn' => ['required', 'string', 'regex:/^(03\d{9}|92\d{10}|\+92\d{10}|3\d{9})$/'],
-        ];
+        return [];
     }
 }

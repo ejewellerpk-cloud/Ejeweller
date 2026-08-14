@@ -829,21 +829,26 @@ class PaymentGatewayTableSeeder extends Seeder
         [
             "name"    => "EasyPaisa",
             "slug"    => "easypaisa",
-            "misc"    => [
-                'input'   => ['swich.msisdnInput.blade.php'],
-                'js'      => [],
-                'onClick' => false,
-                'submit'  => false,
-            ],
+            "misc"    => null,
             "status"  => Activity::DISABLE,
             "options" => [
                 [
-                    "option"     => 'easypaisa_client_id',
+                    "option"     => 'easypaisa_store_id',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'easypaisa_client_secret',
+                    "option"     => 'easypaisa_hash_key',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'easypaisa_username',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'easypaisa_password',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
@@ -867,8 +872,8 @@ class PaymentGatewayTableSeeder extends Seeder
             ]
         ],
         [
-            "name"    => "JazzCash",
-            "slug"    => "jazzcash",
+            "name"    => "Swich",
+            "slug"    => "swich",
             "misc"    => [
                 'input'   => ['swich.msisdnInput.blade.php'],
                 'js'      => [],
@@ -878,25 +883,27 @@ class PaymentGatewayTableSeeder extends Seeder
             "status"  => Activity::DISABLE,
             "options" => [
                 [
-                    "option"     => 'jazzcash_client_id',
+                    "option"     => 'swich_client_id',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'jazzcash_client_secret',
+                    "option"     => 'swich_client_secret',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'jazzcash_mode',
-                    "type"       => InputType::SELECT,
-                    "activities" => [
-                        GatewayMode::SANDBOX => 'sandbox',
-                        GatewayMode::LIVE    => 'live'
-                    ]
+                    "option"     => 'swich_secret_key',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
                 ],
                 [
-                    "option"     => 'jazzcash_status',
+                    "option"     => 'swich_whitelisted_ip',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'swich_ewallet_status',
                     "value"      => Activity::DISABLE,
                     "type"       => InputType::SELECT,
                     "activities" => [
@@ -904,31 +911,17 @@ class PaymentGatewayTableSeeder extends Seeder
                         Activity::DISABLE => "disable",
                     ]
                 ],
-            ]
-        ],
-        [
-            "name"    => "1Bill / Biller",
-            "slug"    => "biller",
-            "misc"    => [
-                'input'   => ['swich.msisdnInput.blade.php'],
-                'js'      => [],
-                'onClick' => false,
-                'submit'  => false,
-            ],
-            "status"  => Activity::DISABLE,
-            "options" => [
                 [
-                    "option"     => 'biller_client_id',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
+                    "option"     => 'swich_biller_status',
+                    "value"      => Activity::DISABLE,
+                    "type"       => InputType::SELECT,
+                    "activities" => [
+                        Activity::ENABLE  => "enable",
+                        Activity::DISABLE => "disable",
+                    ]
                 ],
                 [
-                    "option"     => 'biller_client_secret',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'biller_mode',
+                    "option"     => 'swich_mode',
                     "type"       => InputType::SELECT,
                     "activities" => [
                         GatewayMode::SANDBOX => 'sandbox',
@@ -936,7 +929,7 @@ class PaymentGatewayTableSeeder extends Seeder
                     ]
                 ],
                 [
-                    "option"     => 'biller_status',
+                    "option"     => 'swich_status',
                     "value"      => Activity::DISABLE,
                     "type"       => InputType::SELECT,
                     "activities" => [

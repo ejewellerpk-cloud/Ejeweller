@@ -59,6 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'payment/swich/callback',
+            'payin/callback',
         ]);
         $middleware->append(\App\Http\Middleware\ActiveUserTracker::class);
         $middleware->alias([

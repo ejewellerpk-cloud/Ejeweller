@@ -12,6 +12,7 @@ class SwichPayinTransaction extends Model
     protected $fillable = [
         'order_id',
         'gateway_slug',
+        'method',
         'customer_transaction_id',
         'swich_order_id',
         'swich_transaction_id',

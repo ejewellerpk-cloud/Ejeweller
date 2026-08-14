@@ -15,7 +15,7 @@
     </a>
 
     <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-        <h1 class="text-xl font-extrabold text-gray-900">Complete {{ $paymentGateway->name }} payment</h1>
+        <h1 class="text-xl font-extrabold text-gray-900">Complete Swich payment</h1>
         <p class="text-sm text-gray-600">Order {{ $order->order_serial_no }} &middot; PKR {{ number_format((float) $order->total, 2) }}</p>
 
         @if ($record->consumer_number)
@@ -23,7 +23,7 @@
                 <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">1Bill consumer number</p>
                 <p class="text-2xl font-black tracking-wide text-gray-900 select-all">{{ $record->consumer_number }}</p>
                 <p class="mt-2 text-sm text-gray-600">
-                    Pay this bill from JazzCash, Easypaisa, or any 1Bill partner. This page updates automatically after payment.
+                Pay this 1Bill / PSID from JazzCash, EasyPaisa, or any 1Bill partner. Payment is confirmed only after Swich callback or inquire — not when the PSID is created.
                 </p>
             </div>
         @else

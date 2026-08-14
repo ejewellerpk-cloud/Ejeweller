@@ -14,13 +14,24 @@ class Easypaisa extends FormRequest
 
     public function rules(): array
     {
-        $required = request()->easypaisa_status == Activity::ENABLE ? 'required' : 'nullable';
+        if (request()->easypaisa_status == Activity::ENABLE) {
+            return [
+                'easypaisa_store_id'   => ['required', 'string'],
+                'easypaisa_hash_key'   => ['required', 'string'],
+                'easypaisa_username'   => ['required', 'string'],
+                'easypaisa_password'   => ['required', 'string'],
+                'easypaisa_mode'       => ['required', 'string'],
+                'easypaisa_status'     => ['nullable', 'numeric'],
+            ];
+        }
 
         return [
-            'easypaisa_client_id' => [$required, 'string'],
-            'easypaisa_client_secret' => [$required, 'string'],
-            'easypaisa_mode' => [$required, 'string'],
-            'easypaisa_status' => ['nullable', 'numeric'],
+            'easypaisa_store_id'   => ['nullable', 'string'],
+            'easypaisa_hash_key'   => ['nullable', 'string'],
+            'easypaisa_username'   => ['nullable', 'string'],
+            'easypaisa_password'   => ['nullable', 'string'],
+            'easypaisa_mode'       => ['nullable', 'string'],
+            'easypaisa_status'     => ['nullable', 'numeric'],
         ];
     }
 }

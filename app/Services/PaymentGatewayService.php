@@ -82,11 +82,8 @@ class PaymentGatewayService
                     if (!blank($option)) {
                         $option->value = $value;
                         $option->save();
-                    }
-
-                    if (str_contains($key, 'status')) {
                         $this->gateway = PaymentGateway::find($option->model_id);
-                        if (!blank($this->gateway)) {
+                        if (!blank($this->gateway) && $key === $this->gateway->slug . '_status') {
                             $this->gateway->status = $value;
                             $this->gateway->save();
                         }
