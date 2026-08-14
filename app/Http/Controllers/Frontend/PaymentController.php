@@ -72,6 +72,20 @@ class PaymentController extends Controller
         if ($this->paymentManagerService->gateway($request->paymentMethod)->status()) {
             $className = 'App\\Http\\PaymentGateways\\PaymentRequests\\' . ucfirst($request->paymentMethod);
             $gateway   = new $className;
+            if ($request->paymentMethod === \App\Http\PaymentGateways\Gateways\Swich::SLUG) {
+                $address = $order->shippingAddress;
+                $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
+                    (string) $request->input('msisdn', ''),
+                    (string) ($address?->country_code ?? '')
+                );
+                if ($msisdn === '') {
+                    $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
+                        (string) ($address?->phone ?? ''),
+                        (string) ($address?->country_code ?? '')
+                    );
+                }
+                $request->merge(['msisdn' => $msisdn]);
+            }
             $request->validate($gateway->rules());
             return $this->paymentManagerService->gateway($request->paymentMethod)->payment($order, $request);
         } else {

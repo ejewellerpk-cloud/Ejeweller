@@ -57,7 +57,16 @@ class Swich extends PaymentAbstract
                 return $this->backToPayment($order, trans('all.message.swich_method_required'));
             }
 
-            $msisdn = self::normalizeMsisdn((string) ($request->msisdn ?? $order->shippingAddress?->phone ?? ''));
+            $msisdn = self::normalizeMsisdn(
+                (string) ($request->msisdn ?? ''),
+                (string) ($order->shippingAddress?->country_code ?? '')
+            );
+            if ($msisdn === '') {
+                $msisdn = self::normalizeMsisdn(
+                    (string) ($order->shippingAddress?->phone ?? ''),
+                    (string) ($order->shippingAddress?->country_code ?? '')
+                );
+            }
             if ($msisdn === '') {
                 return $this->backToPayment($order, trans('all.message.swich_msisdn_required'));
             }
@@ -322,22 +331,24 @@ class Swich extends PaymentAbstract
 
     /**
      * Swich PayIn preferred format is 03xxxxxxxxx (11 digits).
+     * Accepts +92, 92, 9203…, 3XXXXXXXXX, country_code + local, and Arabic-Indic digits.
      */
-    public static function normalizeMsisdn(string $phone): string
+    public static function normalizeMsisdn(string $phone, string $countryCode = ''): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        if (str_starts_with($digits, '0092')) {
-            $digits = substr($digits, 2);
-        }
-        if (str_starts_with($digits, '92') && strlen($digits) >= 12) {
-            $digits = '0' . substr($digits, 2, 10);
-        }
-        if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
-            $digits = '0' . $digits;
-        }
-        $digits = substr($digits, 0, 11);
+        $map = [
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+            '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ];
+        $raw = strtr($countryCode . $phone, $map);
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
 
-        return preg_match('/^03\d{9}$/', $digits) ? $digits : '';
+        if (preg_match('/(?:92)?0?(3\d{9})$/', $digits, $matches)) {
+            return '0' . $matches[1];
+        }
+
+        return '';
     }
 
     protected function opt(string $key): mixed

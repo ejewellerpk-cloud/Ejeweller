@@ -4,11 +4,14 @@
     $billerOn = (int) ($swichOptions['swich_biller_status'] ?? \App\Enums\Activity::DISABLE) === \App\Enums\Activity::ENABLE;
     $defaultEmail = old('email', $order->shippingAddress->email ?? $order->user->email ?? '');
     $rawPhone = old('msisdn', $order->shippingAddress->phone ?? '');
-    $defaultPhone = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn((string) $rawPhone) ?: $rawPhone;
+    $defaultPhone = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
+        (string) $rawPhone,
+        (string) ($order->shippingAddress->country_code ?? '')
+    ) ?: $rawPhone;
     $defaultMethod = old('swich_method', $ewalletOn ? 'jazzcash' : 'biller');
     $amountLabel = number_format((float) $order->total, 2);
 @endphp
-<fieldset id="{{ $paymentGateway->slug }}_div" class="hidden mb-6">
+<div id="{{ $paymentGateway->slug }}_div" class="hidden mb-6">
     <div class="rounded-3xl bg-white border border-[#E8E4DC] shadow-[0_18px_50px_rgba(31,31,57,0.08)] overflow-hidden">
         <div class="bg-heading text-white px-6 py-5 flex items-center justify-between gap-4">
             <div>
@@ -70,15 +73,13 @@
             </div>
         </div>
     </div>
-</fieldset>
+</div>
 <script>
     (function () {
         function toSwichMsisdn(value) {
             let digits = String(value || '').replace(/\D+/g, '');
-            if (digits.indexOf('0092') === 0) digits = digits.slice(2);
-            if (digits.indexOf('92') === 0 && digits.length >= 12) digits = '0' + digits.slice(2, 12);
-            if (digits.length === 10 && digits.indexOf('3') === 0) digits = '0' + digits;
-            return digits.slice(0, 11);
+            const match = digits.match(/(?:92)?0?(3\d{9})$/);
+            return match ? ('0' + match[1]) : digits;
         }
         const input = document.getElementById('swich_msisdn');
         const form = document.getElementById('paymentForm');

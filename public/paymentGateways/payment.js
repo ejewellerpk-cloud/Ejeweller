@@ -37,6 +37,7 @@ if (showStatus) {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        $('#swich_div').find('input,select,textarea').prop('disabled', false);
         let submit = false;
         for (let item in submitGateway) {
             if (item === paymentMethod) {
