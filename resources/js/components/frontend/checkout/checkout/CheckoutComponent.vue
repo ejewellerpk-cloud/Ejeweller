@@ -91,9 +91,19 @@
                         <div v-for="paymentGateway in paymentGateways" :key="paymentGateway.id"
                             @click.prevent="selectPaymentMethod(paymentGateway)"
                             :class="Object.keys(paymentMethod).length > 0 && paymentGateway.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
-                            class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
-                            <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
-                            <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
+                            class="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-lg shadow-xs cursor-pointer border min-h-[108px]">
+                            <template v-if="paymentGateway.slug === 'swich'">
+                                <div class="flex items-center justify-center gap-2">
+                                    <img class="h-8 w-auto max-w-[72px] object-contain" :src="'/images/payment/jazzcash.png'" alt="JazzCash" loading="lazy" decoding="async" />
+                                    <img class="h-8 w-8 object-contain rounded-[6px] shadow-sm" :src="'/images/payment/easypaisa.png'" alt="EasyPaisa" loading="lazy" decoding="async" />
+                                </div>
+                                <span class="text-xs font-semibold text-heading text-center leading-tight">JazzCash / EasyPaisa</span>
+                                <span class="text-[10px] text-paragraph leading-none">1Bill via Swich</span>
+                            </template>
+                            <template v-else>
+                                <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
+                                <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
+                            </template>
                         </div>
                     </template>
                 </div>
