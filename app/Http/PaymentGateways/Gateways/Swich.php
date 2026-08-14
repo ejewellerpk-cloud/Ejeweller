@@ -107,7 +107,7 @@ class Swich extends PaymentAbstract
                 ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
                 : $client->purchaseEwallet($payload);
 
-            if (!$isBiller && $this->isInvalidWalletAccount($response)) {
+            if (!$isBiller && (string) ($response['code'] ?? '') === '0008') {
                 $payload['msisdn'] = '92' . substr($msisdn, 1);
                 $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
                 $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
@@ -147,6 +147,7 @@ class Swich extends PaymentAbstract
                     'code' => $response['code'] ?? null,
                     'message' => $response['message'] ?? null,
                     'msisdn' => $msisdn,
+                    'posted_swich_mobile' => $request->input('swich_mobile'),
                 ]);
                 $message = $this->isInvalidWalletAccount($response)
                     ? trans('all.message.swich_wallet_invalid')
@@ -358,33 +359,12 @@ class Swich extends PaymentAbstract
 
     public static function msisdnFromRequest(mixed $request, Order $order): string
     {
-        $candidates = [];
-        foreach (['swich_mobile', 'msisdn', 'swich_msisdn', 'mobile', 'phone'] as $key) {
-            $value = $request->input($key);
-            if (is_array($value)) {
-                foreach ($value as $item) {
-                    $candidates[] = (string) $item;
-                }
-            } elseif ($value !== null && $value !== '') {
-                $candidates[] = (string) $value;
-            }
+        $posted = $request->input('swich_mobile');
+        if (is_array($posted)) {
+            $posted = (string) (end($posted) ?: '');
         }
 
-        $address = $order->shippingAddress;
-        $candidates[] = (string) ($address?->phone ?? '');
-        $candidates[] = (string) ($order->user?->phone ?? '');
-
-        foreach ($candidates as $candidate) {
-            $normalized = self::normalizeMsisdn(
-                $candidate,
-                (string) ($address?->country_code ?? '')
-            );
-            if ($normalized !== '') {
-                return $normalized;
-            }
-        }
-
-        return '';
+        return self::normalizeMsisdn((string) ($posted ?? ''));
     }
 
     /**

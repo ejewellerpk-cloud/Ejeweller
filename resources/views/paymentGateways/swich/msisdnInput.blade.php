@@ -3,11 +3,7 @@
     $ewalletOn = (int) ($swichOptions['swich_ewallet_status'] ?? \App\Enums\Activity::DISABLE) === \App\Enums\Activity::ENABLE;
     $billerOn = (int) ($swichOptions['swich_biller_status'] ?? \App\Enums\Activity::DISABLE) === \App\Enums\Activity::ENABLE;
     $defaultEmail = old('swich_email', old('email', $order->shippingAddress->email ?? $order->user->email ?? ''));
-    $rawPhone = old('swich_mobile', old('msisdn', $order->shippingAddress->phone ?? ''));
-    $defaultPhone = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
-        (string) $rawPhone,
-        (string) ($order->shippingAddress->country_code ?? '')
-    ) ?: preg_replace('/\D+/', '', (string) $rawPhone);
+    $defaultPhone = old('swich_mobile', '');
     $defaultMethod = old('swich_method', $ewalletOn ? 'jazzcash' : 'biller');
     $amountLabel = number_format((float) $order->total, 2);
     $swichOpen = ($paymentMethod->slug ?? '') === 'swich';
@@ -64,8 +60,8 @@
 
             <div>
                 <label for="swich_mobile" class="block mb-2 text-sm font-bold text-heading">JazzCash / EasyPaisa wallet number</label>
-                <input type="tel" inputmode="numeric" autocomplete="tel" name="swich_mobile" id="swich_mobile" value="{{ $defaultPhone }}" placeholder="03072753841" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
-                <p class="mt-2 text-xs text-paragraph">JazzCash ke liye JazzCash wallet number, EasyPaisa ke liye EasyPaisa wallet number. Jo SIM registered nahi, us par OTP nahi jata — us case mein 1Bill use karein.</p>
+                <input type="tel" inputmode="numeric" autocomplete="off" name="swich_mobile" id="swich_mobile" value="{{ $defaultPhone }}" placeholder="03072753841" required class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
+                <p class="mt-2 text-xs text-paragraph">Yahan <strong>wallet number</strong> likhein — order ka shipping contact auto use nahi hoga. Example: 03072753841</p>
             </div>
 
             <div>
