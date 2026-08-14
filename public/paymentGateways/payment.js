@@ -11,8 +11,16 @@ for (let item in gateway) {
         }
     } else {
         $('#' + item + '_div').hide();
-        $('#' + item + '_div').find('input,select,textarea').prop('disabled', true);
+        if (item !== 'swich') {
+            $('#' + item + '_div').find('input,select,textarea').prop('disabled', true);
+        }
     }
+}
+
+$('#swich_div').find('input,select,textarea').prop('disabled', false);
+if (paymentMethod === 'swich') {
+    showStatus = true;
+    $('#swich_div').show();
 }
 
 let clickGateway = false;
@@ -38,6 +46,10 @@ if (showStatus) {
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         $('#swich_div').find('input,select,textarea').prop('disabled', false);
+        ['swich_msisdn_posted', 'swich_email_posted', 'swich_method_posted'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
         let submit = false;
         for (let item in submitGateway) {
             if (item === paymentMethod) {

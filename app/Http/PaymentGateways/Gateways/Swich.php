@@ -335,14 +335,23 @@ class Swich extends PaymentAbstract
      */
     public static function normalizeMsisdn(string $phone, string $countryCode = ''): string
     {
+        $fromPhone = self::extractMsisdnDigits($phone);
+        if ($fromPhone !== '') {
+            return $fromPhone;
+        }
+
+        return self::extractMsisdnDigits($countryCode . $phone);
+    }
+
+    protected static function extractMsisdnDigits(string $value): string
+    {
         $map = [
             '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
             '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
             '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
             '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
         ];
-        $raw = strtr($countryCode . $phone, $map);
-        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+        $digits = preg_replace('/\D+/', '', strtr($value, $map)) ?? '';
 
         if (preg_match('/(?:92)?0?(3\d{9})$/', $digits, $matches)) {
             return '0' . $matches[1];

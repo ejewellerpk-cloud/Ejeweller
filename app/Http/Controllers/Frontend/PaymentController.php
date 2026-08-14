@@ -74,19 +74,22 @@ class PaymentController extends Controller
             $gateway   = new $className;
             if ($request->paymentMethod === \App\Http\PaymentGateways\Gateways\Swich::SLUG) {
                 $address = $order->shippingAddress;
-                $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
-                    (string) $request->input('msisdn', ''),
-                    (string) ($address?->country_code ?? '')
-                );
+                $posted = $request->input('msisdn', $request->input('swich_msisdn', ''));
+                if (is_array($posted)) {
+                    $posted = implode('', $posted);
+                }
+                $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn((string) $posted);
                 if ($msisdn === '') {
                     $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
                         (string) ($address?->phone ?? ''),
                         (string) ($address?->country_code ?? '')
                     );
                 }
-                $request->merge(['msisdn' => $msisdn]);
+                if ($msisdn !== '') {
+                    $request->merge(['msisdn' => $msisdn]);
+                }
             }
-            $request->validate($gateway->rules());
+            $request->validate($gateway->rules(), method_exists($gateway, 'messages') ? $gateway->messages() : []);
             return $this->paymentManagerService->gateway($request->paymentMethod)->payment($order, $request);
         } else {
             return redirect()->route('payment.index', ['paymentGateway' => $request->paymentMethod, 'order' => $order])->with(
