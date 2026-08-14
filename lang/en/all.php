@@ -104,6 +104,7 @@ return [
         'invalid_api_key'                  => 'Invalid Api Key.',
         'user_match'                       => 'User not match.',
         'something_wrong'                  => 'Something wrong.',
+        'swich_msisdn_required'            => 'Enter a valid JazzCash / Easypaisa mobile number (03XXXXXXXXX).',
         'permission_denied'                => 'The permission is denied.',
         'product_match'                    => 'Product not match.',
         'offer_product_exist'              => 'The product already added in another offer. When the offer is end then you can add this item again.',

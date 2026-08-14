@@ -17,6 +17,7 @@ class VerifyCsrfToken extends Middleware
         '/payment/cashfree/*',
         '/payment/phonepe/*',
         '/payment/iyzico/*',
-        '/payment/pesapal/*'
+        '/payment/pesapal/*',
+        '/payment/swich/callback',
     ];
 }

@@ -49,4 +49,13 @@ class PaymentManagerService
         return $this->gateway->cancel($order, $request);
     }
 
+    public function handleCallback($request)
+    {
+        if (!method_exists($this->gateway, 'handleCallback')) {
+            return ['ok' => false, 'message' => 'Unsupported gateway'];
+        }
+
+        return $this->gateway->handleCallback($request);
+    }
+
 }

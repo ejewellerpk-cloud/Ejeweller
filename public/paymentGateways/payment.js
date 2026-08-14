@@ -7,9 +7,11 @@ for (let item in gateway) {
         if (gateway[item]) {
             showStatus = true;
             $('#' + item + '_div').show();
+            $('#' + item + '_div').find('input,select,textarea').prop('disabled', false);
         }
     } else {
         $('#' + item + '_div').hide();
+        $('#' + item + '_div').find('input,select,textarea').prop('disabled', true);
     }
 }
 

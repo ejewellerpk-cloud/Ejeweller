@@ -829,26 +829,21 @@ class PaymentGatewayTableSeeder extends Seeder
         [
             "name"    => "EasyPaisa",
             "slug"    => "easypaisa",
-            "misc"    => null,
+            "misc"    => [
+                'input'   => ['swich.msisdnInput.blade.php'],
+                'js'      => [],
+                'onClick' => false,
+                'submit'  => false,
+            ],
             "status"  => Activity::DISABLE,
             "options" => [
                 [
-                    "option"     => 'easypaisa_store_id',
+                    "option"     => 'easypaisa_client_id',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'easypaisa_hash_key',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_username',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_password',
+                    "option"     => 'easypaisa_client_secret',
                     "type"       => InputType::TEXT,
                     "activities" => ''
                 ],
@@ -862,6 +857,86 @@ class PaymentGatewayTableSeeder extends Seeder
                 ],
                 [
                     "option"     => 'easypaisa_status',
+                    "value"      => Activity::DISABLE,
+                    "type"       => InputType::SELECT,
+                    "activities" => [
+                        Activity::ENABLE  => "enable",
+                        Activity::DISABLE => "disable",
+                    ]
+                ],
+            ]
+        ],
+        [
+            "name"    => "JazzCash",
+            "slug"    => "jazzcash",
+            "misc"    => [
+                'input'   => ['swich.msisdnInput.blade.php'],
+                'js'      => [],
+                'onClick' => false,
+                'submit'  => false,
+            ],
+            "status"  => Activity::DISABLE,
+            "options" => [
+                [
+                    "option"     => 'jazzcash_client_id',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'jazzcash_client_secret',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'jazzcash_mode',
+                    "type"       => InputType::SELECT,
+                    "activities" => [
+                        GatewayMode::SANDBOX => 'sandbox',
+                        GatewayMode::LIVE    => 'live'
+                    ]
+                ],
+                [
+                    "option"     => 'jazzcash_status',
+                    "value"      => Activity::DISABLE,
+                    "type"       => InputType::SELECT,
+                    "activities" => [
+                        Activity::ENABLE  => "enable",
+                        Activity::DISABLE => "disable",
+                    ]
+                ],
+            ]
+        ],
+        [
+            "name"    => "1Bill / Biller",
+            "slug"    => "biller",
+            "misc"    => [
+                'input'   => ['swich.msisdnInput.blade.php'],
+                'js'      => [],
+                'onClick' => false,
+                'submit'  => false,
+            ],
+            "status"  => Activity::DISABLE,
+            "options" => [
+                [
+                    "option"     => 'biller_client_id',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'biller_client_secret',
+                    "type"       => InputType::TEXT,
+                    "activities" => ''
+                ],
+                [
+                    "option"     => 'biller_mode',
+                    "type"       => InputType::SELECT,
+                    "activities" => [
+                        GatewayMode::SANDBOX => 'sandbox',
+                        GatewayMode::LIVE    => 'live'
+                    ]
+                ],
+                [
+                    "option"     => 'biller_status',
                     "value"      => Activity::DISABLE,
                     "type"       => InputType::SELECT,
                     "activities" => [
