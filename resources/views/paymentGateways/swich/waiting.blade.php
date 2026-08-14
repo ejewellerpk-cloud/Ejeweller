@@ -64,7 +64,7 @@
     </div>
 </div>
 <script>
-    const statusUrl = @json(route('payment.swich.status', ['paymentGateway' => $paymentGateway->slug, 'order' => $order]));
+    const statusUrl = @json(route('payment.swich.status', ['order' => $order]));
     async function poll() {
         try {
             const res = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\RootController;
 use App\Http\Controllers\Frontend\PaymentController;
+use App\Http\Controllers\Frontend\SwichPayinController;
 use App\Http\Controllers\Frontend\ManifestController;
 use App\Http\Controllers\Installer\InstallerController;
 
@@ -32,7 +33,13 @@ Route::prefix('install')->name('installer.')->middleware(['web'])->group(functio
 });
 
 Route::get('/', [RootController::class, 'index'])->middleware(['installed'])->name('home');
+Route::match(['get', 'post'], '/payin/callback', [SwichPayinController::class, 'callback'])->middleware(['installed'])->name('payin.callback');
 Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(function () {
+    Route::match(['get', 'post'], '/swich/callback', [SwichPayinController::class, 'callback'])->name('swich.callback');
+    Route::get('/swich/{order}/waiting', [SwichPayinController::class, 'waiting'])->name('swich.waiting');
+    Route::get('/swich/{order}/status', [SwichPayinController::class, 'status'])->name('swich.status');
+    Route::get('/swich/{paymentGateway}/{order}/waiting', [SwichPayinController::class, 'waiting']);
+    Route::get('/swich/{paymentGateway}/{order}/status', [SwichPayinController::class, 'status']);
     Route::get('/{paymentGateway:slug}/pay/{order}', [PaymentController::class, 'index'])->name('index');
     Route::post('/{order}/pay', [PaymentController::class, 'payment'])->name('store');
     Route::match(['get', 'post'], '/{paymentGateway:slug}/{order}/success', [PaymentController::class, 'success'])->name('success');

@@ -128,7 +128,6 @@ class Swich extends PaymentAbstract
 
             if ($isBiller) {
                 return redirect()->route('payment.swich.waiting', [
-                    'paymentGateway' => self::SLUG,
                     'order' => $order,
                 ]);
             }
@@ -140,7 +139,6 @@ class Swich extends PaymentAbstract
             }
 
             return redirect()->route('payment.swich.waiting', [
-                'paymentGateway' => self::SLUG,
                 'order' => $order,
             ]);
         } catch (\Throwable $e) {
@@ -157,7 +155,6 @@ class Swich extends PaymentAbstract
     {
         return $this->settleFromInquire($order)
             ?: redirect()->route('payment.swich.waiting', [
-                'paymentGateway' => self::SLUG,
                 'order' => $order,
             ]);
     }

@@ -31,8 +31,9 @@ class SwichPayinController extends Controller
         return response()->json(['status' => 'success'], 200);
     }
 
-    public function waiting(PaymentGateway $paymentGateway, Order $order)
+    public function waiting(Order $order)
     {
+        $paymentGateway = PaymentGateway::where('slug', Swich::SLUG)->firstOrFail();
         if ((int) $order->payment_status === PaymentStatus::PAID) {
             return redirect()->route('payment.successful', ['order' => $order]);
         }
@@ -60,7 +61,7 @@ class SwichPayinController extends Controller
         ]);
     }
 
-    public function status(PaymentGateway $paymentGateway, Order $order): JsonResponse
+    public function status(Order $order): JsonResponse
     {
         $order->refresh();
         if ((int) $order->payment_status === PaymentStatus::PAID) {
