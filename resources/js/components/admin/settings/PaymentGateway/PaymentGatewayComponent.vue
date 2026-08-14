@@ -5,7 +5,7 @@
             <button @click="selectActive(index)"
                 class="db-tab-sub-btn w-full flex items-center gap-3 h-10 px-4 rounded-lg transition bg-white hover:text-primary hover:bg-primary/5"
                 :data-tab="'#' + paymentGateway.slug" v-for="(paymentGateway, index) in paymentGateways.slice(0, 3)"
-                :key="paymentGateway" :class="index === selectIndex ? 'active' : ''">
+                :key="'tab-' + paymentGateway.id" :class="index === selectIndex ? 'active' : ''">
                 <span class="capitalize whitespace-nowrap text-[15px]">
                     {{ paymentGateway.name }}
                 </span>
@@ -22,39 +22,40 @@
                         class="db-tab-sub-btn w-full flex items-center whitespace-nowrap justify-start my-0.5 gap-2.5 pl-3 pr-6 py-1.5 text-sm rounded-md capitalize transition text-gray-500 hover:text-primary hover:bg-primary/5"
                         :data-tab="'#' + paymentGateway.slug"
                         v-for="(paymentGateway, index) in paymentGateways.slice(3, paymentGateways.length)"
-                        :key="paymentGateway" :class="index + 3 === selectIndex ? 'active' : ''">
+                        :key="'more-' + paymentGateway.id" :class="index + 3 === selectIndex ? 'active' : ''">
                         {{ paymentGateway.name }}
                     </button>
                 </div>
             </div>
         </div>
-        <div :id="paymentGateway.slug" class="db-card db-tab-sub-div" v-for="(paymentGateway, index) in paymentGateways"
-            :key="paymentGateway" :class="index === selectIndex ? 'active' : ''">
+        <div :id="'gateway-card-' + paymentGateway.slug" class="db-card db-tab-sub-div"
+            v-for="(paymentGateway, index) in paymentGateways" :key="'card-' + paymentGateway.id"
+            :class="index === selectIndex ? 'active' : ''">
             <div class="db-card-header">
                 <h3 class="db-card-title">{{ paymentGateway.name }}</h3>
             </div>
             <div class="db-card-body">
-                <form @submit.prevent="save(index)" :id="'formElem' + index" class="w-full d-block">
+                <form v-if="forms[paymentGateway.slug]" @submit.prevent="save(index)" class="w-full d-block">
                     <div class="form-row">
-                        <input type="hidden" :value="paymentGateway.slug" name="payment_type">
-
-                        <div class="form-col-12 sm:form-col-6" v-for="paymentGatewayOption in uniqueOptions(paymentGateway.options)"
+                        <div class="form-col-12 sm:form-col-6"
+                            v-for="paymentGatewayOption in uniqueOptions(paymentGateway.options)"
                             :key="paymentGateway.id + '-' + paymentGatewayOption.option">
-                            <label :for="paymentGateway.slug + '_' + paymentGatewayOption.option" class="db-field-title">
+                            <label :for="'opt-' + paymentGateway.slug + '-' + paymentGatewayOption.option"
+                                class="db-field-title">
                                 {{ $t("label." + paymentGatewayOption.option) }}
                             </label>
-                            <input v-if="Number(paymentGatewayOption.type) === enums.inputTypeEnum.TEXT" type="text"
-                                :value="paymentGatewayOption.value"
+                            <input v-if="isTextOption(paymentGatewayOption)" type="text"
+                                v-model="forms[paymentGateway.slug][paymentGatewayOption.option]"
                                 v-bind:class="errors[paymentGatewayOption.option] ? 'invalid' : ''"
-                                :name="paymentGatewayOption.option" :id="paymentGateway.slug + '_' + paymentGatewayOption.option"
+                                :id="'opt-' + paymentGateway.slug + '-' + paymentGatewayOption.option"
                                 class="db-field-control" />
 
-                            <select v-else class="db-field-control" :id="paymentGateway.slug + '_' + paymentGatewayOption.option"
-                                :name="paymentGatewayOption.option"
+                            <select v-else class="db-field-control"
+                                v-model="forms[paymentGateway.slug][paymentGatewayOption.option]"
+                                :id="'opt-' + paymentGateway.slug + '-' + paymentGatewayOption.option"
                                 v-bind:class="errors[paymentGatewayOption.option] ? 'invalid' : ''">
-                                <option :value="activityKey" :selected="String(activityKey) === String(paymentGatewayOption.value)"
-                                    v-for="(activity, activityKey) in paymentGatewayOption.activities"
-                                    :key="paymentGatewayOption.option + '-' + activityKey">
+                                <option v-for="(activity, activityKey) in activitiesMap(paymentGatewayOption)"
+                                    :key="paymentGatewayOption.option + '-' + activityKey" :value="String(activityKey)">
                                     {{ $t("label." + activity) }}
                                 </option>
                             </select>
@@ -64,7 +65,7 @@
                             }}</small>
                         </div>
                         <div class="form-col-12">
-                            <button type="submit" :id="'formButton' + index" class="db-btn text-white bg-primary">
+                            <button type="submit" class="db-btn text-white bg-primary">
                                 <i class="lab lab-fill-save"></i>
                                 <span>{{ $t("button.save") }}</span>
                             </button>
@@ -78,7 +79,6 @@
 
 <script>
 import LoadingComponent from "../../components/LoadingComponent";
-import appService from "../../../../services/appService";
 import alertService from "../../../../services/alertService";
 import inputTypeEnum from "../../../../enums/modules/inputTypeEnum";
 
@@ -101,7 +101,7 @@ export default {
                 inputTypeEnum: inputTypeEnum
             },
             errors: {},
-
+            forms: {},
         };
     },
     computed: {
@@ -113,12 +113,21 @@ export default {
             return [...swich, ...rest, ...paypal];
         },
     },
+    watch: {
+        paymentGateways: {
+            immediate: true,
+            handler() {
+                this.syncForms(true);
+            },
+        },
+    },
     mounted() {
         try {
             this.loading.isActive = true;
-            this.$store.dispatch("paymentGateway/lists", this.search).then((res) => {
+            this.$store.dispatch("paymentGateway/lists", this.search).then(() => {
+                this.syncForms(true);
                 this.loading.isActive = false;
-            }).catch((err) => {
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         } catch (err) {
@@ -127,29 +136,27 @@ export default {
         }
     },
     methods: {
-        save: function (index) {
-            try {
-                let form = document.getElementById("formElem" + index);
-                let formDataObj = {};
-                [...form.elements].filter((el) => el.tagName !== 'BUTTON').forEach((item) => {
-                    formDataObj[item.name] = item.value;
-                });
-
-                this.loading.isActive = true;
-                this.$store.dispatch("paymentGateway/save", { form: formDataObj, search: this.search }).then((res) => {
-                    this.loading.isActive = false;
-                    alertService.successFlip(res.config.method === "put" ?? 0, this.$t("menu.payment_gateway"));
-                    this.errors = {};
-                }).catch((err) => {
-                    this.loading.isActive = false;
-                    this.errors = err.response.data.errors;
-                });
-            } catch (err) {
-                this.loading.isActive = false;
-                alertService.error(err);
-            }
+        isTextOption(option) {
+            return Number(option.type) === this.enums.inputTypeEnum.TEXT;
         },
-        uniqueOptions: function (options) {
+        activitiesMap(option) {
+            let activities = option?.activities;
+            if (typeof activities === "string" && activities) {
+                try {
+                    activities = JSON.parse(activities);
+                } catch (e) {
+                    activities = null;
+                }
+            }
+            if (activities && typeof activities === "object" && !Array.isArray(activities) && Object.keys(activities).length) {
+                return activities;
+            }
+            if (String(option?.option || "").endsWith("_mode")) {
+                return { 5: "sandbox", 10: "live" };
+            }
+            return { 5: "enable", 10: "disable" };
+        },
+        uniqueOptions(options) {
             const list = Array.isArray(options) ? options : [];
             const byName = {};
             list.forEach((option) => {
@@ -172,6 +179,43 @@ export default {
                 }
             });
             return Object.values(byName);
+        },
+        syncForms(force = false) {
+            this.paymentGateways.forEach((gateway) => {
+                if (!this.forms[gateway.slug]) {
+                    this.forms[gateway.slug] = {};
+                }
+                this.uniqueOptions(gateway.options).forEach((option) => {
+                    if (force || this.forms[gateway.slug][option.option] === undefined) {
+                        this.forms[gateway.slug][option.option] = option.value == null ? "" : String(option.value);
+                    }
+                });
+            });
+        },
+        save: function (index) {
+            try {
+                const gateway = this.paymentGateways[index];
+                if (!gateway) {
+                    return;
+                }
+                const form = {
+                    payment_type: gateway.slug,
+                    ...(this.forms[gateway.slug] || {}),
+                };
+
+                this.loading.isActive = true;
+                this.$store.dispatch("paymentGateway/save", { form: form, search: this.search }).then((res) => {
+                    this.loading.isActive = false;
+                    alertService.successFlip(res.config.method === "put" ?? 0, this.$t("menu.payment_gateway"));
+                    this.errors = {};
+                }).catch((err) => {
+                    this.loading.isActive = false;
+                    this.errors = err.response?.data?.errors || {};
+                });
+            } catch (err) {
+                this.loading.isActive = false;
+                alertService.error(err);
+            }
         },
         selectActive: function (index) {
             this.selectIndex = index;

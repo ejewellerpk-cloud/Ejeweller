@@ -2,16 +2,16 @@
 
 namespace App\Services;
 
-use App\Enums\GatewayMode;
 use Exception;
+use App\Enums\Activity;
+use App\Enums\GatewayMode;
+use App\Enums\InputType;
 use App\Models\GatewayOption;
 use App\Models\PaymentGateway;
 use Illuminate\Support\Facades\Log;
 use Dipokhalder\EnvEditor\EnvEditor;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
-use Illuminate\Support\Facades\Artisan;
-
 
 class PaymentGatewayService
 {
@@ -22,12 +22,10 @@ class PaymentGatewayService
         $this->envService = $envEditor;
     }
 
-
-    public object $gateway;
+    public ?object $gateway = null;
     protected array $paymentGatewayFilter = [
         'name',
         'slug',
-        'status'
     ];
 
     protected array $exceptFilter = [
@@ -73,47 +71,99 @@ class PaymentGatewayService
     /**
      * @throws Exception
      */
-    public function update($validationRequests, ?string $slug = null): object
+    public function update(array $validationRequests, ?string $slug = null): object
     {
         try {
-            if ($slug) {
-                $this->gateway = PaymentGateway::where('slug', $slug)->first();
+            $this->gateway = PaymentGateway::where('slug', $slug)->first();
+            if (blank($this->gateway)) {
+                throw new Exception('Payment gateway not found.');
             }
 
-            if (!blank($validationRequests)) {
-                foreach ($validationRequests as $key => $value) {
-                    $options = $this->gateway
-                        ? $this->gateway->gatewayOptions()->where('option', $key)->get()
-                        : GatewayOption::where('option', $key)->get();
+            $morphType = $this->gateway->getMorphClass();
 
-                    if ($options->isEmpty()) {
-                        continue;
-                    }
+            foreach ($validationRequests as $key => $value) {
+                if ($key === 'payment_type' || !is_string($key) || $key === '') {
+                    continue;
+                }
 
-                    foreach ($options as $option) {
-                        $option->value = $value;
-                        $option->save();
-                    }
+                if ($value === null) {
+                    continue;
+                }
 
-                    $option = $options->last();
-                    if (blank($this->gateway)) {
-                        $this->gateway = PaymentGateway::find($option->model_id);
+                $value = is_scalar($value) ? (string) $value : json_encode($value);
+
+                $options = GatewayOption::where('option', $key)
+                    ->where('model_id', $this->gateway->id)
+                    ->get();
+
+                if ($options->isEmpty()) {
+                    $options = GatewayOption::where('option', $key)->get()->filter(function ($row) {
+                        return (int) $row->model_id === (int) $this->gateway->id;
+                    });
+                }
+
+                if ($options->isEmpty()) {
+                    GatewayOption::create([
+                        'model_id' => $this->gateway->id,
+                        'model_type' => $morphType,
+                        'option' => $key,
+                        'value' => $value,
+                        'type' => $this->guessType($key),
+                        'activities' => $this->defaultActivities($key),
+                    ]);
+                    continue;
+                }
+
+                foreach ($options as $option) {
+                    $option->model_id = $this->gateway->id;
+                    $option->model_type = $morphType;
+                    $option->value = $value;
+                    $option->type = $this->guessType($key, $option->type);
+                    if (blank($option->activities) || $option->activities === '""' || $option->activities === '[]') {
+                        $option->activities = $this->defaultActivities($key);
                     }
-                    if (!blank($this->gateway) && $key === $this->gateway->slug . '_status') {
-                        $this->gateway->status = $value;
-                        $this->gateway->save();
-                    }
+                    $option->save();
                 }
             }
 
-            if (!blank($this->gateway)) {
-                $this->gateway->load('gatewayOptions');
+            $statusKey = $this->gateway->slug . '_status';
+            if (array_key_exists($statusKey, $validationRequests) && $validationRequests[$statusKey] !== null && $validationRequests[$statusKey] !== '') {
+                $this->gateway->status = (int) $validationRequests[$statusKey];
+                $this->gateway->save();
             }
 
-            return $this->gateway;
+            return $this->gateway->fresh(['gatewayOptions', 'media']);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    protected function guessType(string $key, mixed $current = null): int
+    {
+        if (str_ends_with($key, '_status') || str_ends_with($key, '_mode')) {
+            return InputType::SELECT;
+        }
+
+        return $current ? (int) $current : InputType::TEXT;
+    }
+
+    protected function defaultActivities(string $key): string
+    {
+        if (str_ends_with($key, '_mode')) {
+            return json_encode([
+                GatewayMode::SANDBOX => 'sandbox',
+                GatewayMode::LIVE => 'live',
+            ]);
+        }
+
+        if (str_ends_with($key, '_status')) {
+            return json_encode([
+                Activity::ENABLE => 'enable',
+                Activity::DISABLE => 'disable',
+            ]);
+        }
+
+        return '';
     }
 }

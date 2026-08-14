@@ -54,8 +54,11 @@ export const paymentGateway = {
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.put(`/admin/setting/payment-gateway`, payload.form).then((res) => {
-                    context.dispatch("lists", payload.search).then().catch();
-                    resolve(res);
+                    context.dispatch("lists", payload.search).then(() => {
+                        resolve(res);
+                    }).catch((err) => {
+                        resolve(res);
+                    });
                 }).catch((err) => {
                     reject(err);
                 });

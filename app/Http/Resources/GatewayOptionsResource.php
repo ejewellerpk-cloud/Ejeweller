@@ -20,10 +20,27 @@ class GatewayOptionsResource extends JsonResource
         return [
             'id' => $this->id,
             'option' => $this->option,
-            'value' => $this->value,
-            'type' => $this->type,
-            'activities' => json_decode($this->activities)
+            'value' => $this->value === null ? '' : (string) $this->value,
+            'type' => (int) $this->type,
+            'activities' => $this->decodedActivities(),
         ];
     }
 
+    protected function decodedActivities()
+    {
+        $activities = $this->activities;
+        if (is_array($activities)) {
+            return $activities;
+        }
+        if (!is_string($activities) || $activities === '') {
+            return (object) [];
+        }
+
+        $decoded = json_decode($activities, true);
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+
+        return is_array($decoded) ? $decoded : (object) [];
+    }
 }

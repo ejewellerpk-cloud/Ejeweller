@@ -39,12 +39,21 @@ class PaymentGatewayController extends AdminController implements HasMiddleware
 
     public function update(Request $request): PaymentGatewayResource|\Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
-        $className          = 'App\\Http\\PaymentGateways\\Requests\\' . ucfirst($request->payment_type);
+        $slug = (string) $request->input('payment_type');
+        if ($slug === '') {
+            return response(['status' => false, 'message' => 'Payment type is required.'], 422);
+        }
+
+        $className = 'App\\Http\\PaymentGateways\\Requests\\' . ucfirst($slug);
+        if (!class_exists($className)) {
+            return response(['status' => false, 'message' => 'Invalid payment gateway.'], 422);
+        }
+
         $gateway            = new $className;
         $validationRequests = $request->validate($gateway->rules());
 
         try {
-            return new PaymentGatewayResource($this->paymentGatewayService->update($validationRequests, $request->payment_type));
+            return new PaymentGatewayResource($this->paymentGatewayService->update($validationRequests, $slug));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

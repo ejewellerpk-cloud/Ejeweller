@@ -14,15 +14,17 @@ class Swich extends FormRequest
 
     public function rules(): array
     {
-        $required = request()->swich_status == Activity::ENABLE ? 'required' : 'nullable';
+        $status = request()->input('swich_status');
+        $enabled = in_array((string) $status, [(string) Activity::ENABLE, '5'], true);
+        $required = $enabled ? 'required' : 'nullable';
 
         return [
-            'swich_client_id' => [$required, 'string'],
-            'swich_client_secret' => [$required, 'string'],
-            'swich_ewallet_status' => ['nullable', 'numeric'],
-            'swich_biller_status' => ['nullable', 'numeric'],
-            'swich_mode' => [$required, 'string'],
-            'swich_status' => ['nullable', 'numeric'],
+            'swich_client_id' => [$required],
+            'swich_client_secret' => [$required],
+            'swich_ewallet_status' => ['nullable'],
+            'swich_biller_status' => ['nullable'],
+            'swich_mode' => [$required],
+            'swich_status' => ['required'],
         ];
     }
 }
