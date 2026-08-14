@@ -108,7 +108,7 @@ return [
         'swich_email_required'             => 'A valid email is required for Swich PayIn.',
         'swich_method_required'            => 'Select JazzCash, EasyPaisa, or 1Bill.',
         'swich_wallet_invalid'             => 'JazzCash / EasyPaisa rejected this number (invalid wallet account). Use the number registered on that wallet, or pay with 1Bill.',
-        'swich_ip_not_whitelisted'         => 'Swich blocked JazzCash / EasyPaisa (code 0027: IP not whitelisted). Ask Swich to whitelist this server IP for E-Wallet. 1Bill can still work.',
+        'swich_payment_cancelled'          => 'Payment cancelled. The JazzCash / EasyPaisa request was declined or cancelled.',
         'permission_denied'                => 'The permission is denied.',
         'product_match'                    => 'Product not match.',
         'offer_product_exist'              => 'The product already added in another offer. When the offer is end then you can add this item again.',

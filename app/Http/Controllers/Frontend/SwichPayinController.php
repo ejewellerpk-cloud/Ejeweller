@@ -88,6 +88,27 @@ class SwichPayinController extends Controller
         return response()->json([
             'status' => $record?->status ?: 'pending',
             'consumerNumber' => $record?->consumer_number,
+            'message' => $this->statusMessage($record?->status),
         ]);
+    }
+
+    public function initiate(Order $order): JsonResponse
+    {
+        $gateway = $this->paymentManagerService->gateway(Swich::SLUG)->gateway;
+        if (!method_exists($gateway, 'initiatePurchase')) {
+            return response()->json(['ok' => false, 'status' => 'error'], 500);
+        }
+
+        return response()->json($gateway->initiatePurchase($order));
+    }
+
+    protected function statusMessage(?string $status): ?string
+    {
+        $status = strtolower((string) $status);
+        if (in_array($status, ['cancelled', 'canceled'], true)) {
+            return trans('all.message.swich_payment_cancelled');
+        }
+
+        return null;
     }
 }

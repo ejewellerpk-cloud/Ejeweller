@@ -37,6 +37,7 @@ Route::match(['get', 'post'], '/payin/callback', [SwichPayinController::class, '
 Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(function () {
     Route::match(['get', 'post'], '/swich/callback', [SwichPayinController::class, 'callback'])->name('swich.callback');
     Route::get('/swich/{order}/waiting', [SwichPayinController::class, 'waiting'])->name('swich.waiting');
+    Route::post('/swich/{order}/initiate', [SwichPayinController::class, 'initiate'])->name('swich.initiate');
     Route::get('/swich/{order}/status', [SwichPayinController::class, 'status'])->name('swich.status');
     Route::get('/swich/{paymentGateway}/{order}/waiting', [SwichPayinController::class, 'waiting']);
     Route::get('/swich/{paymentGateway}/{order}/status', [SwichPayinController::class, 'status']);

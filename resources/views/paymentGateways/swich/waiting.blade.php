@@ -46,35 +46,79 @@
                 </div>
             @endif
 
-            @if ($isBiller && $record->consumer_number)
-                <div class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center">
-                    <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">1Bill consumer number (PSID)</p>
-                    <p class="text-2xl font-black tracking-wide text-heading select-all break-all">{{ $record->consumer_number }}</p>
-                    <p class="mt-3 text-sm text-paragraph">
-                        Pay this PSID from JazzCash, EasyPaisa, or any 1Bill partner. This page waits until Swich confirms payment.
-                    </p>
-                </div>
-            @else
-                <div class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5 space-y-3">
-                    <div class="flex justify-center">
-                        <span class="inline-block h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></span>
-                    </div>
-                    <p class="text-sm font-bold text-heading text-center">{{ $walletName }} par payment request chali gayi hai.</p>
-                    <p class="text-sm text-paragraph text-center">
-                        Apne {{ $walletName }} app mein OTP / payment request <strong>Approve</strong> karein.
-                        Yeh page band na karein — confirmation ke baad order automatically paid ho jayega.
-                    </p>
-                </div>
-            @endif
+            <div id="swich-biller" class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center {{ $isBiller && $record->consumer_number ? '' : 'hidden' }}">
+                <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">1Bill consumer number (PSID)</p>
+                <p id="swich-psid" class="text-2xl font-black tracking-wide text-heading select-all break-all">{{ $record->consumer_number }}</p>
+                <p class="mt-3 text-sm text-paragraph">
+                    Pay this PSID from JazzCash, EasyPaisa, or any 1Bill partner. This page waits until Swich confirms payment.
+                </p>
+            </div>
 
-            <p id="swich-status" class="text-sm font-bold text-primary text-center">Waiting for Swich confirmation…</p>
+            <div id="swich-wallet" class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5 space-y-3 {{ $isBiller && $record->consumer_number ? 'hidden' : '' }}">
+                <div class="flex justify-center">
+                    <span class="inline-block h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></span>
+                </div>
+                <p class="text-sm font-bold text-heading text-center">{{ $walletName }} par payment request bheji ja rahi hai.</p>
+                <p class="text-sm text-paragraph text-center">
+                    Request aate hi apne {{ $walletName }} app mein <strong>Approve</strong> karein.
+                    Yeh page band na karein.
+                </p>
+            </div>
+
+            <p id="swich-status" class="text-sm font-bold text-primary text-center">Sending request to {{ $walletName }}…</p>
             <a class="block text-center text-sm font-bold text-primary" href="{{ url('/checkout/payment') }}">Back to checkout</a>
         </div>
     </div>
 </div>
 <script>
     const statusUrl = @json(route('payment.swich.status', ['order' => $order]));
+    const initiateUrl = @json(route('payment.swich.initiate', ['order' => $order]));
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const cancelledText = @json(trans('all.message.swich_payment_cancelled'));
+    let stopped = false;
+
+    function setStatus(text, isError) {
+        const el = document.getElementById('swich-status');
+        el.textContent = text;
+        el.classList.toggle('text-danger', !!isError);
+        el.classList.toggle('text-primary', !isError);
+    }
+
+    async function initiate() {
+        try {
+            const res = await fetch(initiateUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (data.consumerNumber) {
+                document.getElementById('swich-psid').textContent = data.consumerNumber;
+                document.getElementById('swich-biller').classList.remove('hidden');
+                document.getElementById('swich-wallet').classList.add('hidden');
+            }
+            if (data.status === 'cancelled' || data.status === 'canceled') {
+                setStatus(data.message || cancelledText, true);
+                stopped = true;
+                return;
+            }
+            if (data.status === 'failed' || data.ok === false) {
+                setStatus(data.message || 'Payment failed. Please go back and try again.', true);
+                stopped = true;
+                return;
+            }
+            setStatus('Request sent. Approve it in your {{ $walletName }} app.', false);
+        } catch (e) {
+            setStatus('Still connecting to {{ $walletName }}…', false);
+        }
+        poll();
+    }
+
     async function poll() {
+        if (stopped) return;
         try {
             const res = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });
             const data = await res.json();
@@ -82,15 +126,23 @@
                 window.location.href = data.redirect;
                 return;
             }
-            if (data.status === 'failed' || data.status === 'terminated' || data.status === 'block') {
-                document.getElementById('swich-status').textContent = 'Payment failed. Please go back and try again.';
+            if (data.status === 'cancelled' || data.status === 'canceled') {
+                setStatus(data.message || cancelledText, true);
                 return;
             }
-            document.getElementById('swich-status').textContent = 'Still waiting — approve the request in your wallet app.';
+            if (data.status === 'failed' || data.status === 'terminated' || data.status === 'block') {
+                setStatus('Payment failed. Please go back and try again.', true);
+                return;
+            }
+            if (data.consumerNumber) {
+                document.getElementById('swich-psid').textContent = data.consumerNumber;
+                document.getElementById('swich-biller').classList.remove('hidden');
+            }
         } catch (e) {}
         setTimeout(poll, 3000);
     }
-    setTimeout(poll, 2500);
+
+    initiate();
 </script>
 </body>
 </html>

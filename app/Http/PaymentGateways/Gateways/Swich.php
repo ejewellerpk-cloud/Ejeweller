@@ -75,7 +75,6 @@ class Swich extends PaymentAbstract
                 return $this->backToPayment($order, trans('all.message.swich_email_required'));
             }
 
-            $client = $this->client();
             $customerTransactionId = $this->makeCustomerTransactionId($order);
             $isBiller = $method === self::METHOD_BILLER;
             $categoryId = $isBiller ? SwichPayinClient::CATEGORY_BILLER : SwichPayinClient::CATEGORY_EWALLET;
@@ -104,7 +103,7 @@ class Swich extends PaymentAbstract
             }
 
             session(['swich_payin_' . $order->id => $customerTransactionId]);
-            $record = SwichPayinTransaction::create([
+            SwichPayinTransaction::create([
                 'order_id' => $order->id,
                 'gateway_slug' => self::SLUG,
                 'method' => $method,
@@ -116,58 +115,6 @@ class Swich extends PaymentAbstract
                 'category_id' => $categoryId,
                 'payload' => ['request' => $payload],
             ]);
-
-            try {
-                $response = $isBiller
-                    ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
-                    : $client->purchaseEwallet($payload);
-            } catch (\Throwable $e) {
-                Log::error('Swich PayIn purchase request error', [
-                    'order_id' => $order->id,
-                    'message' => $e->getMessage(),
-                ]);
-
-                return redirect()->route('payment.swich.waiting', ['order' => $order]);
-            }
-
-            if (!$isBiller && (string) ($response['code'] ?? '') === '0008') {
-                $payload['msisdn'] = '92' . substr($msisdn, 1);
-                $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
-                $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
-                $customerTransactionId = $payload['customerTransactionId'];
-                $record->update(['customer_transaction_id' => $customerTransactionId]);
-                session(['swich_payin_' . $order->id => $customerTransactionId]);
-                $response = $client->purchaseEwallet($payload);
-            }
-
-            $hardFail = $this->isHardPurchaseFailure($response);
-            $record->update([
-                'swich_order_id' => (string) ($response['orderId'] ?? ''),
-                'swich_transaction_id' => (string) ($response['transactionId'] ?? ''),
-                'consumer_number' => (string) ($response['consumerNumber'] ?? ''),
-                'status' => $hardFail ? 'failed' : strtolower((string) ($response['status'] ?? 'pending')),
-                'payload' => $response,
-            ]);
-
-            if ($hardFail) {
-                Log::warning('Swich PayIn purchase failed', [
-                    'order_id' => $order->id,
-                    'method' => $method,
-                    'channel_id' => $channelId,
-                    'category_id' => $categoryId,
-                    'code' => $response['code'] ?? null,
-                    'message' => $response['message'] ?? null,
-                    'msisdn' => $msisdn,
-                    'posted_swich_mobile' => $request->input('swich_mobile'),
-                ]);
-                $message = $this->isInvalidWalletAccount($response)
-                    ? trans('all.message.swich_wallet_invalid')
-                    : ((string) ($response['code'] ?? '') === '0027'
-                        ? trans('all.message.swich_ip_not_whitelisted')
-                        : (string) ($response['message'] ?? trans('all.message.something_wrong')));
-
-                return $this->backToPayment($order, $message);
-            }
 
             return redirect()->route('payment.swich.waiting', [
                 'order' => $order,
@@ -187,6 +134,108 @@ class Swich extends PaymentAbstract
 
             return $this->backToPayment($order, trans('all.message.something_wrong'));
         }
+    }
+
+    public function initiatePurchase(Order $order): array
+    {
+        $record = $this->latestRecord($order);
+        if (!$record) {
+            return ['ok' => false, 'status' => 'error', 'message' => trans('all.message.something_wrong')];
+        }
+
+        $current = strtolower((string) $record->status);
+        if (in_array($current, ['success', 'paid'], true)) {
+            return ['ok' => true, 'status' => 'paid'];
+        }
+        if ($this->isCancelledStatus($current)) {
+            return ['ok' => true, 'status' => 'cancelled', 'message' => trans('all.message.swich_payment_cancelled')];
+        }
+        if ($record->swich_order_id || $record->swich_transaction_id || $record->consumer_number) {
+            return [
+                'ok' => true,
+                'status' => 'pending',
+                'consumerNumber' => $record->consumer_number,
+            ];
+        }
+        if ($current === 'initiating') {
+            return ['ok' => true, 'status' => 'pending'];
+        }
+
+        $payload = $record->payload['request'] ?? [];
+        if ($payload === []) {
+            return ['ok' => false, 'status' => 'error', 'message' => trans('all.message.something_wrong')];
+        }
+
+        $record->update(['status' => 'initiating']);
+        $client = $this->client();
+        $isBiller = $record->method === self::METHOD_BILLER;
+
+        try {
+            $response = $isBiller
+                ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
+                : $client->purchaseEwallet($payload);
+
+            if (!$isBiller && (string) ($response['code'] ?? '') === '0008') {
+                $msisdn = (string) ($payload['msisdn'] ?? $record->msisdn);
+                $payload['msisdn'] = str_starts_with($msisdn, '0') ? ('92' . substr($msisdn, 1)) : $msisdn;
+                $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
+                $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
+                $record->update(['customer_transaction_id' => $payload['customerTransactionId']]);
+                session(['swich_payin_' . $order->id => $payload['customerTransactionId']]);
+                $response = $client->purchaseEwallet($payload);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Swich PayIn initiate error', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return ['ok' => true, 'status' => 'pending'];
+        }
+
+        $hardFail = $this->isHardPurchaseFailure($response);
+        $message = (string) ($response['message'] ?? '');
+        $status = $hardFail ? 'failed' : strtolower((string) ($response['status'] ?? 'pending'));
+        if ($this->isCancelledStatus($status, $message)) {
+            $status = 'cancelled';
+        }
+
+        $record->update([
+            'swich_order_id' => (string) ($response['orderId'] ?? ''),
+            'swich_transaction_id' => (string) ($response['transactionId'] ?? ''),
+            'consumer_number' => (string) ($response['consumerNumber'] ?? ''),
+            'status' => $status === 'success' ? 'pending' : $status,
+            'payload' => array_merge($record->payload ?? [], ['response' => $response]),
+        ]);
+
+        if ($status === 'cancelled') {
+            return ['ok' => true, 'status' => 'cancelled', 'message' => trans('all.message.swich_payment_cancelled')];
+        }
+        if ($hardFail) {
+            Log::warning('Swich PayIn purchase failed', [
+                'order_id' => $order->id,
+                'method' => $record->method,
+                'code' => $response['code'] ?? null,
+                'message' => $message,
+                'msisdn' => $record->msisdn,
+            ]);
+
+            return [
+                'ok' => false,
+                'status' => 'failed',
+                'message' => $this->isInvalidWalletAccount($response)
+                    ? trans('all.message.swich_wallet_invalid')
+                    : ((string) ($response['code'] ?? '') === '0027'
+                        ? trans('all.message.swich_ip_not_whitelisted')
+                        : ($message !== '' ? $message : trans('all.message.something_wrong'))),
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'status' => 'pending',
+            'consumerNumber' => $record->consumer_number,
+        ];
     }
 
     public function success($order, $request): \Illuminate\Http\RedirectResponse
@@ -221,9 +270,13 @@ class Swich extends PaymentAbstract
         try {
             $response = $this->client()->inquire($record->customer_transaction_id);
             $txnStatus = strtolower((string) data_get($response, 'transaction.transactionStatus', $response['status'] ?? ''));
+            $inquireMessage = (string) ($response['message'] ?? data_get($response, 'transaction.message', ''));
+            if ($this->isCancelledStatus($txnStatus, $inquireMessage)) {
+                $txnStatus = 'cancelled';
+            }
             $record->update([
                 'status' => $txnStatus,
-                'payload' => $response,
+                'payload' => array_merge($record->payload ?? [], ['inquire' => $response]),
                 'swich_order_id' => data_get($response, 'transaction.orderId', $record->swich_order_id),
                 'consumer_number' => data_get($response, 'transaction.consumerNumber', $record->consumer_number),
             ]);
@@ -234,8 +287,12 @@ class Swich extends PaymentAbstract
                 return redirect()->route('payment.successful', ['order' => $order]);
             }
 
-            if ($redirectOnFailure && in_array($txnStatus, ['failed', 'block', 'terminated', 'expired'], true)) {
-                return $this->backToPayment($order, trans('all.message.something_wrong'));
+            if ($redirectOnFailure && in_array($txnStatus, ['failed', 'block', 'terminated', 'expired', 'cancelled', 'canceled'], true)) {
+                $msg = $txnStatus === 'cancelled' || $txnStatus === 'canceled'
+                    ? trans('all.message.swich_payment_cancelled')
+                    : trans('all.message.something_wrong');
+
+                return $this->backToPayment($order, $msg);
             }
         } catch (\Throwable $e) {
             Log::warning('Swich PayIn inquire failed', [
@@ -282,6 +339,10 @@ class Swich extends PaymentAbstract
         ]);
 
         if ($status !== 'success') {
+            if ($this->isCancelledStatus($status, (string) ($payload['Message'] ?? $payload['message'] ?? ''))) {
+                $record->update(['status' => 'cancelled']);
+            }
+
             return ['ok' => true, 'credited' => false];
         }
 
@@ -412,6 +473,15 @@ class Swich extends PaymentAbstract
         }
 
         return '';
+    }
+
+    protected function isCancelledStatus(string $status, string $message = ''): bool
+    {
+        $status = strtolower(trim($status));
+        $message = strtolower($message);
+
+        return in_array($status, ['cancelled', 'canceled', 'declined', 'rejected', 'expired', 'terminated'], true)
+            || str_contains($message, 'cancel');
     }
 
     protected function isHardPurchaseFailure(array $response): bool
