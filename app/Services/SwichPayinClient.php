@@ -126,7 +126,7 @@ class SwichPayinClient
 
     protected function http(): PendingRequest
     {
-        return Http::timeout(45)
+        return Http::timeout(90)
             ->acceptJson()
             ->asJson()
             ->withToken($this->accessToken());

@@ -103,42 +103,53 @@ class Swich extends PaymentAbstract
                 $payload['cnic'] = $cnic;
             }
 
-            $response = $isBiller
-                ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
-                : $client->purchaseEwallet($payload);
-
-            if (!$isBiller && (string) ($response['code'] ?? '') === '0008') {
-                $payload['msisdn'] = '92' . substr($msisdn, 1);
-                $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
-                $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
-                Log::info('Swich E-Wallet retrying with 92 MSISDN', [
-                    'order_id' => $order->id,
-                    'method' => $method,
-                    'code' => $response['code'] ?? null,
-                ]);
-                $response = $client->purchaseEwallet($payload);
-                $customerTransactionId = $payload['customerTransactionId'];
-            }
-
+            session(['swich_payin_' . $order->id => $customerTransactionId]);
             $record = SwichPayinTransaction::create([
                 'order_id' => $order->id,
                 'gateway_slug' => self::SLUG,
                 'method' => $method,
                 'customer_transaction_id' => $customerTransactionId,
+                'msisdn' => $msisdn,
+                'amount' => $amount,
+                'status' => 'pending',
+                'channel_id' => $channelId,
+                'category_id' => $categoryId,
+                'payload' => ['request' => $payload],
+            ]);
+
+            try {
+                $response = $isBiller
+                    ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
+                    : $client->purchaseEwallet($payload);
+            } catch (\Throwable $e) {
+                Log::error('Swich PayIn purchase request error', [
+                    'order_id' => $order->id,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return redirect()->route('payment.swich.waiting', ['order' => $order]);
+            }
+
+            if (!$isBiller && (string) ($response['code'] ?? '') === '0008') {
+                $payload['msisdn'] = '92' . substr($msisdn, 1);
+                $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
+                $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
+                $customerTransactionId = $payload['customerTransactionId'];
+                $record->update(['customer_transaction_id' => $customerTransactionId]);
+                session(['swich_payin_' . $order->id => $customerTransactionId]);
+                $response = $client->purchaseEwallet($payload);
+            }
+
+            $hardFail = $this->isHardPurchaseFailure($response);
+            $record->update([
                 'swich_order_id' => (string) ($response['orderId'] ?? ''),
                 'swich_transaction_id' => (string) ($response['transactionId'] ?? ''),
                 'consumer_number' => (string) ($response['consumerNumber'] ?? ''),
-                'msisdn' => $msisdn,
-                'amount' => $amount,
-                'status' => strtolower((string) ($response['status'] ?? 'pending')),
-                'channel_id' => $channelId,
-                'category_id' => $categoryId,
+                'status' => $hardFail ? 'failed' : strtolower((string) ($response['status'] ?? 'pending')),
                 'payload' => $response,
             ]);
 
-            session(['swich_payin_' . $order->id => $customerTransactionId]);
-
-            if (($response['status'] ?? '') === 'failed') {
+            if ($hardFail) {
                 Log::warning('Swich PayIn purchase failed', [
                     'order_id' => $order->id,
                     'method' => $method,
@@ -158,18 +169,6 @@ class Swich extends PaymentAbstract
                 return $this->backToPayment($order, $message);
             }
 
-            if ($isBiller) {
-                return redirect()->route('payment.swich.waiting', [
-                    'order' => $order,
-                ]);
-            }
-
-            if ($client->isSuccessful($response) && !$client->isPending($response)) {
-                $this->creditOrder($order, $record);
-
-                return redirect()->route('payment.successful', ['order' => $order]);
-            }
-
             return redirect()->route('payment.swich.waiting', [
                 'order' => $order,
             ]);
@@ -178,6 +177,13 @@ class Swich extends PaymentAbstract
                 'order_id' => $order->id,
                 'message' => $e->getMessage(),
             ]);
+
+            $record = $this->latestRecord($order);
+            if ($record) {
+                return redirect()->route('payment.swich.waiting', [
+                    'order' => $order,
+                ]);
+            }
 
             return $this->backToPayment($order, trans('all.message.something_wrong'));
         }
@@ -201,7 +207,7 @@ class Swich extends PaymentAbstract
         return redirect('/checkout/payment')->with('error', trans('all.message.payment_canceled'));
     }
 
-    public function settleFromInquire(Order $order): ?\Illuminate\Http\RedirectResponse
+    public function settleFromInquire(Order $order, bool $redirectOnFailure = true): ?\Illuminate\Http\RedirectResponse
     {
         if ((int) $order->payment_status === PaymentStatus::PAID) {
             return redirect()->route('payment.successful', ['order' => $order]);
@@ -228,7 +234,7 @@ class Swich extends PaymentAbstract
                 return redirect()->route('payment.successful', ['order' => $order]);
             }
 
-            if (in_array($txnStatus, ['failed', 'block', 'terminated', 'expired'], true)) {
+            if ($redirectOnFailure && in_array($txnStatus, ['failed', 'block', 'terminated', 'expired'], true)) {
                 return $this->backToPayment($order, trans('all.message.something_wrong'));
             }
         } catch (\Throwable $e) {
@@ -406,6 +412,19 @@ class Swich extends PaymentAbstract
         }
 
         return '';
+    }
+
+    protected function isHardPurchaseFailure(array $response): bool
+    {
+        $status = strtolower((string) ($response['status'] ?? ''));
+        $code = (string) ($response['code'] ?? '');
+        $message = strtolower((string) ($response['message'] ?? ''));
+
+        if (str_contains($message, 'otp')) {
+            return false;
+        }
+
+        return $status === 'failed' || in_array($code, ['0001', '0008', '0018', '0027', '0036', '9900', '00012'], true);
     }
 
     protected function isInvalidWalletAccount(array $response): bool

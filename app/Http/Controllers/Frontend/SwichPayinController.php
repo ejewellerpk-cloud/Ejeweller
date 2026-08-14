@@ -73,7 +73,7 @@ class SwichPayinController extends Controller
 
         $gateway = $this->paymentManagerService->gateway(Swich::SLUG)->gateway;
         if (method_exists($gateway, 'settleFromInquire')) {
-            $gateway->settleFromInquire($order);
+            $gateway->settleFromInquire($order, false);
             $order->refresh();
             if ((int) $order->payment_status === PaymentStatus::PAID) {
                 return response()->json([
