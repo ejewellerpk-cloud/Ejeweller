@@ -12,13 +12,13 @@
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
 </head>
 
-<body>
+<body class="{{ ($paymentMethod->slug ?? '') === 'swich' ? 'bg-[#F5F4F1]' : '' }}">
 <div class="py-14 px-4 w-full max-w-3xl mx-auto">
     <a href="{{ route('home') }}" class="block mx-auto w-36 mb-8">
         <img class="w-full" src="{{ $logo->logo }}" alt="logo">
     </a>
 
-    <div id="loading-show" class="mx-auto w-80 {{ session()->has('error') ? 'hidden' : '' }}">
+    <div id="loading-show" class="mx-auto w-80 {{ session()->has('error') || $errors->any() || ($paymentMethod->slug ?? '') === 'swich' ? 'hidden' : '' }}">
         <img class="w-full" src="{{ asset('images/required/payment-loading.gif') }}">
     </div>
 
@@ -85,9 +85,9 @@
 
         @if (!blank($paymentGateways))
             <button type="submit"
-                    class="py-3 w-full rounded-3xl text-center text-base font-medium bg-primary text-white hidden"
+                    class="py-3 w-full rounded-3xl text-center text-base font-medium bg-primary text-white {{ ($paymentMethod->slug ?? '') === 'swich' ? '' : 'hidden' }}"
                     id="confirmBtn">
-                {{ __('all.label.confirm') }}
+                {{ ($paymentMethod->slug ?? '') === 'swich' ? 'Pay with Swich' : __('all.label.confirm') }}
             </button>
         @endif
 
@@ -145,7 +145,7 @@
     const onClickGateway = <?= $onClickGateway ?>;
     const submitGateway  = <?= $submitGateway ?>;
 </script>
-@if(!session()->has('error'))
+@if(!session()->has('error') || ($paymentMethod->slug ?? '') === 'swich')
     <script src="{{ asset('paymentGateways/payment.js') }}"></script>
 @endif
 </body>

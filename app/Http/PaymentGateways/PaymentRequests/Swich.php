@@ -2,6 +2,7 @@
 
 namespace App\Http\PaymentGateways\PaymentRequests;
 
+use App\Http\PaymentGateways\Gateways\Swich as SwichGateway;
 use Illuminate\Foundation\Http\FormRequest;
 
 class Swich extends FormRequest
@@ -15,8 +16,27 @@ class Swich extends FormRequest
     {
         return [
             'swich_method' => ['required', 'in:jazzcash,easypaisa,biller'],
-            'msisdn' => ['required', 'string', 'regex:/^(03\d{9}|92\d{10}|\+92\d{10}|3\d{9})$/'],
+            'msisdn' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (SwichGateway::normalizeMsisdn((string) $value) === '') {
+                        $fail(trans('all.message.swich_msisdn_required'));
+                    }
+                },
+            ],
             'email' => ['required', 'email'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'msisdn.required' => trans('all.message.swich_msisdn_required'),
+            'swich_method.required' => trans('all.message.swich_method_required'),
+            'swich_method.in' => trans('all.message.swich_method_required'),
+            'email.required' => trans('all.message.swich_email_required'),
+            'email.email' => trans('all.message.swich_email_required'),
         ];
     }
 }

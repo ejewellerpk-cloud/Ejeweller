@@ -57,7 +57,7 @@ class Swich extends PaymentAbstract
                 return $this->backToPayment($order, trans('all.message.swich_method_required'));
             }
 
-            $msisdn = $this->normalizeMsisdn((string) ($request->msisdn ?? $order->shippingAddress?->phone ?? ''));
+            $msisdn = self::normalizeMsisdn((string) ($request->msisdn ?? $order->shippingAddress?->phone ?? ''));
             if ($msisdn === '') {
                 return $this->backToPayment($order, trans('all.message.swich_msisdn_required'));
             }
@@ -320,15 +320,22 @@ class Swich extends PaymentAbstract
         return substr('EJ' . $order->id . Str::upper(Str::random(10)), 0, 50);
     }
 
-    protected function normalizeMsisdn(string $phone): string
+    /**
+     * Swich PayIn preferred format is 03xxxxxxxxx (11 digits).
+     */
+    public static function normalizeMsisdn(string $phone): string
     {
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        if (str_starts_with($digits, '92') && strlen($digits) === 12) {
-            $digits = '0' . substr($digits, 2);
+        if (str_starts_with($digits, '0092')) {
+            $digits = substr($digits, 2);
+        }
+        if (str_starts_with($digits, '92') && strlen($digits) >= 12) {
+            $digits = '0' . substr($digits, 2, 10);
         }
         if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
             $digits = '0' . $digits;
         }
+        $digits = substr($digits, 0, 11);
 
         return preg_match('/^03\d{9}$/', $digits) ? $digits : '';
     }

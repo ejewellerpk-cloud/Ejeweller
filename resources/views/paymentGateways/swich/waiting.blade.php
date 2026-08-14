@@ -8,33 +8,59 @@
     <link rel="icon" href="{{ $faviconLogo->faviconLogo ?? '' }}">
     @vite('resources/css/app.css')
 </head>
-<body class="bg-[#F7F7FC]">
-<div class="py-14 px-4 w-full max-w-lg mx-auto">
+<body class="bg-[#F5F4F1] min-h-screen">
+<div class="py-12 px-4 w-full max-w-lg mx-auto">
     <a href="{{ route('home') }}" class="block mx-auto w-36 mb-8">
         <img class="w-full" src="{{ $logo->logo ?? '' }}" alt="logo">
     </a>
 
-    <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-        <h1 class="text-xl font-extrabold text-gray-900">Complete Swich payment</h1>
-        <p class="text-sm text-gray-600">Order {{ $order->order_serial_no }} &middot; PKR {{ number_format((float) $order->total, 2) }}</p>
+    <div class="rounded-3xl bg-white border border-[#E8E4DC] shadow-[0_18px_50px_rgba(31,31,57,0.08)] overflow-hidden">
+        <div class="bg-heading text-white px-6 py-5">
+            <p class="text-xs uppercase tracking-[0.18em] text-white/70 mb-1">Swich PayIn</p>
+            <h1 class="text-xl font-extrabold">
+                @if ($record->consumer_number)
+                    Pay your 1Bill voucher
+                @else
+                    Confirm wallet OTP
+                @endif
+            </h1>
+        </div>
 
-        @if ($record->consumer_number)
-            <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
-                <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">1Bill consumer number</p>
-                <p class="text-2xl font-black tracking-wide text-gray-900 select-all">{{ $record->consumer_number }}</p>
-                <p class="mt-2 text-sm text-gray-600">
-                Pay this 1Bill / PSID from JazzCash, EasyPaisa, or any 1Bill partner. Payment is confirmed only after Swich callback or inquire — not when the PSID is created.
-                </p>
+        <div class="p-6 space-y-5">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-paragraph">Order</span>
+                <span class="font-bold text-heading">{{ $order->order_serial_no }}</span>
             </div>
-        @else
-            <p class="text-sm text-gray-600">
-                Confirm the payment on your {{ $paymentGateway->name }} app if you received an OTP or payment request.
-                This page updates automatically.
-            </p>
-        @endif
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-paragraph">Amount</span>
+                <span class="text-xl font-black text-heading">PKR {{ number_format((float) $order->total, 2) }}</span>
+            </div>
+            @if ($record->msisdn)
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-paragraph">Mobile</span>
+                    <span class="font-bold text-heading">{{ $record->msisdn }}</span>
+                </div>
+            @endif
 
-        <p id="swich-status" class="text-sm font-semibold text-primary">Waiting for payment confirmation…</p>
-        <a class="block text-center text-sm font-bold text-primary" href="{{ url('/checkout/payment') }}">Back to checkout</a>
+            @if ($record->consumer_number)
+                <div class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">1Bill consumer number (PSID)</p>
+                    <p class="text-2xl font-black tracking-wide text-heading select-all break-all">{{ $record->consumer_number }}</p>
+                    <p class="mt-3 text-sm text-paragraph">
+                        Pay this PSID from JazzCash, EasyPaisa, or any 1Bill partner. Creating the voucher is not payment — this page waits until Swich reports success.
+                    </p>
+                </div>
+            @else
+                <div class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5">
+                    <p class="text-sm text-paragraph">
+                        Approve the payment in your JazzCash or EasyPaisa app if you received an OTP or request. Do not close this page.
+                    </p>
+                </div>
+            @endif
+
+            <p id="swich-status" class="text-sm font-bold text-primary">Waiting for Swich confirmation…</p>
+            <a class="block text-center text-sm font-bold text-primary" href="{{ url('/checkout/payment') }}">Back to checkout</a>
+        </div>
     </div>
 </div>
 <script>
