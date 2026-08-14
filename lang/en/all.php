@@ -107,6 +107,7 @@ return [
         'swich_msisdn_required'            => 'Enter a valid JazzCash / Easypaisa mobile number (03XXXXXXXXX).',
         'swich_email_required'             => 'A valid email is required for Swich PayIn.',
         'swich_method_required'            => 'Select JazzCash, EasyPaisa, or 1Bill.',
+        'swich_wallet_invalid'             => 'JazzCash / EasyPaisa rejected this number (invalid wallet account). Use the number registered on that wallet, or pay with 1Bill.',
         'permission_denied'                => 'The permission is denied.',
         'product_match'                    => 'Product not match.',
         'offer_product_exist'              => 'The product already added in another offer. When the offer is end then you can add this item again.',

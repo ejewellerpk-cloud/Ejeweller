@@ -88,21 +88,37 @@ class Swich extends PaymentAbstract
             $item = $this->sanitizeItem('Order' . preg_replace('/\W+/', '', (string) $order->order_serial_no) . $order->id);
             $ucid = substr(preg_replace('/[^A-Za-z0-9]/', '', $customerTransactionId) ?: '000000', -6);
 
+            $cnic = preg_replace('/\D+/', '', (string) ($request->swich_cnic ?? '')) ?? '';
             $payload = [
                 'customerTransactionId' => $customerTransactionId,
-                'categoryId' => $categoryId,
-                'channelId' => $channelId,
+                'categoryId' => (int) $categoryId,
+                'channelId' => (int) $channelId,
                 'ucid' => $ucid,
                 'item' => $item,
                 'amount' => (float) $amount,
                 'msisdn' => $msisdn,
-                'cnic' => '',
                 'email' => $email,
             ];
+            if (preg_match('/^\d{13}$/', $cnic)) {
+                $payload['cnic'] = $cnic;
+            }
 
             $response = $isBiller
-                ? $client->purchaseBiller($payload)
+                ? $client->purchaseBiller($payload + ['cnic' => $payload['cnic'] ?? ''])
                 : $client->purchaseEwallet($payload);
+
+            if (!$isBiller && $this->isInvalidWalletAccount($response)) {
+                $payload['msisdn'] = '92' . substr($msisdn, 1);
+                $payload['customerTransactionId'] = $this->makeCustomerTransactionId($order);
+                $payload['ucid'] = substr(preg_replace('/[^A-Za-z0-9]/', '', $payload['customerTransactionId']) ?: '000000', -6);
+                Log::info('Swich E-Wallet retrying with 92 MSISDN', [
+                    'order_id' => $order->id,
+                    'method' => $method,
+                    'code' => $response['code'] ?? null,
+                ]);
+                $response = $client->purchaseEwallet($payload);
+                $customerTransactionId = $payload['customerTransactionId'];
+            }
 
             $record = SwichPayinTransaction::create([
                 'order_id' => $order->id,
@@ -123,7 +139,20 @@ class Swich extends PaymentAbstract
             session(['swich_payin_' . $order->id => $customerTransactionId]);
 
             if (($response['status'] ?? '') === 'failed') {
-                return $this->backToPayment($order, (string) ($response['message'] ?? trans('all.message.something_wrong')));
+                Log::warning('Swich PayIn purchase failed', [
+                    'order_id' => $order->id,
+                    'method' => $method,
+                    'channel_id' => $channelId,
+                    'category_id' => $categoryId,
+                    'code' => $response['code'] ?? null,
+                    'message' => $response['message'] ?? null,
+                    'msisdn' => $msisdn,
+                ]);
+                $message = $this->isInvalidWalletAccount($response)
+                    ? trans('all.message.swich_wallet_invalid')
+                    : (string) ($response['message'] ?? trans('all.message.something_wrong'));
+
+                return $this->backToPayment($order, $message);
             }
 
             if ($isBiller) {
@@ -395,6 +424,14 @@ class Swich extends PaymentAbstract
         }
 
         return '';
+    }
+
+    protected function isInvalidWalletAccount(array $response): bool
+    {
+        $code = (string) ($response['code'] ?? '');
+        $message = strtolower((string) ($response['message'] ?? ''));
+
+        return $code === '0036' || str_contains($message, 'invalid account');
     }
 
     protected function opt(string $key): mixed

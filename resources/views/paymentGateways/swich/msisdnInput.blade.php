@@ -63,8 +63,14 @@
             </div>
 
             <div>
-                <label for="swich_mobile" class="block mb-2 text-sm font-bold text-heading">JazzCash / EasyPaisa number</label>
+                <label for="swich_mobile" class="block mb-2 text-sm font-bold text-heading">JazzCash / EasyPaisa wallet number</label>
                 <input type="tel" inputmode="numeric" autocomplete="tel" name="swich_mobile" id="swich_mobile" value="{{ $defaultPhone }}" placeholder="03072753841" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
+                <p class="mt-2 text-xs text-paragraph">JazzCash ke liye JazzCash wallet number, EasyPaisa ke liye EasyPaisa wallet number. Jo SIM registered nahi, us par OTP nahi jata — us case mein 1Bill use karein.</p>
+            </div>
+
+            <div>
+                <label for="swich_cnic" class="block mb-2 text-sm font-bold text-heading">CNIC (optional)</label>
+                <input type="tel" inputmode="numeric" name="swich_cnic" id="swich_cnic" value="{{ old('swich_cnic') }}" placeholder="13 digits, no dashes" maxlength="13" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
             </div>
 
             <div>
