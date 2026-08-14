@@ -46,6 +46,11 @@ class PaymentGatewayService
 
             return PaymentGateway::with('gatewayOptions', 'media')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
+                    if ($key === 'status' && $request !== '' && $request !== null) {
+                        $query->where('status', (int) $request);
+                        continue;
+                    }
+
                     if (in_array($key, $this->paymentGatewayFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
                     }
@@ -132,6 +137,13 @@ class PaymentGatewayService
                 $this->gateway->save();
             }
 
+            if ($this->gateway->slug === 'swich' && (int) $this->gateway->status === Activity::ENABLE) {
+                $this->ensureSwichMethodsEnabled();
+                $this->enableOnlinePaymentsSetting();
+            } elseif ((int) $this->gateway->status === Activity::ENABLE && !in_array($this->gateway->slug, ['cashondelivery', 'credit'], true)) {
+                $this->enableOnlinePaymentsSetting();
+            }
+
             return $this->gateway->fresh(['gatewayOptions', 'media']);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -165,5 +177,33 @@ class PaymentGatewayService
         }
 
         return '';
+    }
+
+    protected function ensureSwichMethodsEnabled(): void
+    {
+        $ewallet = $this->gateway->gatewayOptions()->where('option', 'swich_ewallet_status')->first();
+        $biller = $this->gateway->gatewayOptions()->where('option', 'swich_biller_status')->first();
+        $ewalletOn = (int) ($ewallet?->value ?? Activity::DISABLE) === Activity::ENABLE;
+        $billerOn = (int) ($biller?->value ?? Activity::DISABLE) === Activity::ENABLE;
+
+        if ($ewalletOn || $billerOn) {
+            return;
+        }
+
+        if ($ewallet) {
+            $ewallet->value = (string) Activity::ENABLE;
+            $ewallet->save();
+        }
+    }
+
+    protected function enableOnlinePaymentsSetting(): void
+    {
+        try {
+            \Dipokhalder\Settings\Facades\Settings::group('site')->set([
+                'site_online_payment_gateway' => Activity::ENABLE,
+            ]);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+        }
     }
 }

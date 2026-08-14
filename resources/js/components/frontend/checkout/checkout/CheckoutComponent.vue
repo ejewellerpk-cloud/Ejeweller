@@ -72,7 +72,7 @@
                 </h4>
 
                 <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 p-4">
-                    <div v-if="Object.keys(cashOnDelivery).length > 0 && setting.site_cash_on_delivery === ActivityEnum.ENABLE"
+                    <div v-if="Object.keys(cashOnDelivery).length > 0 && Number(setting.site_cash_on_delivery) === ActivityEnum.ENABLE"
                         @click.prevent="selectPaymentMethod(cashOnDelivery)"
                         :class="Object.keys(paymentMethod).length > 0 && cashOnDelivery.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
                         class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
@@ -80,20 +80,22 @@
                         <span class="text-xs font-medium">{{ cashOnDelivery.name }}</span>
                     </div>
 
-                    <div v-if="profile.balance >= total" @click.prevent="selectPaymentMethod(credit)"
+                    <div v-if="profile.balance >= total && credit.id" @click.prevent="selectPaymentMethod(credit)"
                         :class="Object.keys(paymentMethod).length > 0 && credit.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
                         class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
                         <img class="h-6" :src="credit.image" alt="payment" loading="lazy" decoding="async" />
                         <span class="text-xs font-medium">{{ credit.name }} ({{ profile.balance }})</span>
                     </div>
 
-                    <div v-if="setting.site_online_payment_gateway === ActivityEnum.ENABLE"
-                        v-for="paymentGateway in paymentGateways" @click.prevent="selectPaymentMethod(paymentGateway)"
-                        :class="Object.keys(paymentMethod).length > 0 && paymentGateway.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
-                        class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
-                        <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
-                        <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
-                    </div>
+                    <template v-if="showOnlinePaymentGateways">
+                        <div v-for="paymentGateway in paymentGateways" :key="paymentGateway.id"
+                            @click.prevent="selectPaymentMethod(paymentGateway)"
+                            :class="Object.keys(paymentMethod).length > 0 && paymentGateway.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
+                            class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
+                            <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
+                            <span class="text-xs font-medium">{{ paymentGateway.name }}</span>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -254,6 +256,9 @@ export default {
         totalTax: function () {
             return this.$store.getters['frontendCart/totalTax'];
         },
+        showOnlinePaymentGateways: function () {
+            return this.paymentGateways.length > 0;
+        },
     },
     beforeRouteLeave(to, from, next) {
         if (from.path !== '/checkout/checkout') {
@@ -317,10 +322,10 @@ export default {
                     this.credit = gateway;
                 } else if (gateway.slug === 'cashondelivery') {
                     this.cashOnDelivery = gateway;
-                    if (this.setting.site_cash_on_delivery === this.ActivityEnum.ENABLE) {
+                    if (Number(this.setting.site_cash_on_delivery) === this.ActivityEnum.ENABLE) {
                         this.selectPaymentMethod(this.cashOnDelivery);
                     }
-                } else {
+                } else if (Number(gateway.status) === this.ActivityEnum.ENABLE) {
                     this.paymentGateways.push(gateway);
                 }
             });

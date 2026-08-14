@@ -36,11 +36,7 @@ class Swich extends PaymentAbstract
 
     public function status(): bool
     {
-        if (!PaymentGateway::where(['slug' => self::SLUG, 'status' => Activity::ENABLE])->exists()) {
-            return false;
-        }
-
-        return $this->ewalletEnabled() || $this->billerEnabled();
+        return PaymentGateway::where(['slug' => self::SLUG, 'status' => Activity::ENABLE])->exists();
     }
 
     public function ewalletEnabled(): bool

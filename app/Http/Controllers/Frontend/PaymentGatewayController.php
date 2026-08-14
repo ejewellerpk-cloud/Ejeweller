@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 
+use App\Enums\Activity;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\SimplePaymentGatewayResource;
@@ -23,6 +24,10 @@ class PaymentGatewayController extends AdminController
     public function index(PaginateRequest $request): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
+            if (!$request->filled('status')) {
+                $request->merge(['status' => Activity::ENABLE]);
+            }
+
             return SimplePaymentGatewayResource::collection($this->paymentGatewayService->list($request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
