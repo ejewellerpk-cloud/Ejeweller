@@ -2,8 +2,8 @@
     $swichOptions = collect($paymentGateway->gatewayOptions ?? [])->pluck('value', 'option');
     $ewalletOn = (int) ($swichOptions['swich_ewallet_status'] ?? \App\Enums\Activity::DISABLE) === \App\Enums\Activity::ENABLE;
     $billerOn = (int) ($swichOptions['swich_biller_status'] ?? \App\Enums\Activity::DISABLE) === \App\Enums\Activity::ENABLE;
-    $defaultEmail = old('email', $order->shippingAddress->email ?? $order->user->email ?? '');
-    $rawPhone = old('msisdn', $order->shippingAddress->phone ?? '');
+    $defaultEmail = old('swich_email', old('email', $order->shippingAddress->email ?? $order->user->email ?? ''));
+    $rawPhone = old('swich_mobile', old('msisdn', $order->shippingAddress->phone ?? ''));
     $defaultPhone = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
         (string) $rawPhone,
         (string) ($order->shippingAddress->country_code ?? '')
@@ -12,11 +12,6 @@
     $amountLabel = number_format((float) $order->total, 2);
     $swichOpen = ($paymentMethod->slug ?? '') === 'swich';
 @endphp
-{{-- Always posted. Never put these inside a disabled/hidden toggle. --}}
-<input type="hidden" name="msisdn" id="swich_msisdn_posted" value="{{ $defaultPhone }}">
-<input type="hidden" name="email" id="swich_email_posted" value="{{ $defaultEmail }}">
-<input type="hidden" name="swich_method" id="swich_method_posted" value="{{ $defaultMethod }}">
-
 <div id="{{ $paymentGateway->slug }}_div" class="{{ $swichOpen ? '' : 'hidden' }} mb-6">
     <div class="rounded-3xl bg-white border border-[#E8E4DC] shadow-[0_18px_50px_rgba(31,31,57,0.08)] overflow-hidden">
         <div class="bg-heading text-white px-6 py-5 flex items-center justify-between gap-4">
@@ -33,7 +28,7 @@
         <div class="p-6 space-y-6">
             <p class="text-sm text-paragraph">
                 Order <span class="font-bold text-heading">{{ $order->order_serial_no }}</span>.
-                Wallet payments send an OTP to this mobile number. 1Bill creates a PSID you pay from JazzCash, EasyPaisa, or a 1Bill partner. Credit is applied only after Swich confirms success.
+                Wallet payments send an OTP to this mobile number. 1Bill creates a PSID you pay from JazzCash, EasyPaisa, or a 1Bill partner.
             </p>
 
             <div>
@@ -41,26 +36,26 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     @if ($ewalletOn)
                         <label class="cursor-pointer">
-                            <input class="peer sr-only swich-method-ui" type="radio" name="swich_method_ui" value="jazzcash" {{ $defaultMethod === 'jazzcash' ? 'checked' : '' }}>
+                            <input class="peer sr-only" type="radio" name="swich_method" value="jazzcash" {{ $defaultMethod === 'jazzcash' ? 'checked' : '' }}>
                             <span class="flex flex-col h-full rounded-2xl border-2 border-[#E8E4DC] px-4 py-4 peer-checked:border-primary peer-checked:bg-primary-slate transition">
                                 <span class="text-base font-extrabold text-heading">JazzCash</span>
-                                <span class="mt-1 text-xs text-paragraph">E-Wallet · OTP · channel 10</span>
+                                <span class="mt-1 text-xs text-paragraph">E-Wallet · OTP</span>
                             </span>
                         </label>
                         <label class="cursor-pointer">
-                            <input class="peer sr-only swich-method-ui" type="radio" name="swich_method_ui" value="easypaisa" {{ $defaultMethod === 'easypaisa' ? 'checked' : '' }}>
+                            <input class="peer sr-only" type="radio" name="swich_method" value="easypaisa" {{ $defaultMethod === 'easypaisa' ? 'checked' : '' }}>
                             <span class="flex flex-col h-full rounded-2xl border-2 border-[#E8E4DC] px-4 py-4 peer-checked:border-primary peer-checked:bg-primary-slate transition">
                                 <span class="text-base font-extrabold text-heading">EasyPaisa</span>
-                                <span class="mt-1 text-xs text-paragraph">E-Wallet · OTP · channel 8</span>
+                                <span class="mt-1 text-xs text-paragraph">E-Wallet · OTP</span>
                             </span>
                         </label>
                     @endif
                     @if ($billerOn)
                         <label class="cursor-pointer">
-                            <input class="peer sr-only swich-method-ui" type="radio" name="swich_method_ui" value="biller" {{ $defaultMethod === 'biller' || !$ewalletOn ? 'checked' : '' }}>
+                            <input class="peer sr-only" type="radio" name="swich_method" value="biller" {{ $defaultMethod === 'biller' || !$ewalletOn ? 'checked' : '' }}>
                             <span class="flex flex-col h-full rounded-2xl border-2 border-[#E8E4DC] px-4 py-4 peer-checked:border-primary peer-checked:bg-primary-slate transition">
                                 <span class="text-base font-extrabold text-heading">1Bill / PSID</span>
-                                <span class="mt-1 text-xs text-paragraph">Biller · channel 11</span>
+                                <span class="mt-1 text-xs text-paragraph">Pay later via voucher</span>
                             </span>
                         </label>
                     @endif
@@ -68,54 +63,14 @@
             </div>
 
             <div>
-                <label for="swich_msisdn" class="block mb-2 text-sm font-bold text-heading">Mobile number</label>
-                <input type="tel" inputmode="numeric" autocomplete="tel" id="swich_msisdn" value="{{ $defaultPhone }}" placeholder="03XXXXXXXXX" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
-                <p class="mt-2 text-xs text-paragraph">Use <strong>03072753841</strong> style numbers. +92 is converted automatically.</p>
+                <label for="swich_mobile" class="block mb-2 text-sm font-bold text-heading">JazzCash / EasyPaisa number</label>
+                <input type="tel" inputmode="numeric" autocomplete="tel" name="swich_mobile" id="swich_mobile" value="{{ $defaultPhone }}" placeholder="03072753841" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
             </div>
 
             <div>
                 <label for="swich_email" class="block mb-2 text-sm font-bold text-heading">Email</label>
-                <input type="email" id="swich_email" value="{{ $defaultEmail }}" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
+                <input type="email" name="swich_email" id="swich_email" value="{{ $defaultEmail }}" class="w-full h-12 rounded-xl px-4 border border-[#D9DBE9] bg-white text-heading">
             </div>
         </div>
     </div>
 </div>
-<script>
-    (function () {
-        function toSwichMsisdn(value) {
-            let digits = String(value || '').replace(/\D+/g, '');
-            const match = digits.match(/(?:92)?0?(3\d{9})$/);
-            return match ? ('0' + match[1]) : digits;
-        }
-        function syncSwichFields() {
-            const phone = document.getElementById('swich_msisdn');
-            const email = document.getElementById('swich_email');
-            const postedPhone = document.getElementById('swich_msisdn_posted');
-            const postedEmail = document.getElementById('swich_email_posted');
-            const postedMethod = document.getElementById('swich_method_posted');
-            if (phone && postedPhone) {
-                const next = toSwichMsisdn(phone.value);
-                postedPhone.value = /^03\d{9}$/.test(next) ? next : String(phone.value || '').trim();
-                if (/^03\d{9}$/.test(next)) phone.value = next;
-            }
-            if (email && postedEmail) postedEmail.value = email.value;
-            const selected = document.querySelector('input.swich-method-ui:checked');
-            if (selected && postedMethod) postedMethod.value = selected.value;
-        }
-        const form = document.getElementById('paymentForm');
-        ['swich_msisdn', 'swich_email'].forEach(function (id) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', syncSwichFields);
-                el.addEventListener('blur', syncSwichFields);
-            }
-        });
-        document.querySelectorAll('input.swich-method-ui').forEach(function (el) {
-            el.addEventListener('change', syncSwichFields);
-        });
-        if (form) {
-            form.addEventListener('submit', syncSwichFields);
-        }
-        syncSwichFields();
-    })();
-</script>

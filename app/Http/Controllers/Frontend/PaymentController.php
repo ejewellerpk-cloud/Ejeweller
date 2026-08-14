@@ -73,20 +73,9 @@ class PaymentController extends Controller
             $className = 'App\\Http\\PaymentGateways\\PaymentRequests\\' . ucfirst($request->paymentMethod);
             $gateway   = new $className;
             if ($request->paymentMethod === \App\Http\PaymentGateways\Gateways\Swich::SLUG) {
-                $address = $order->shippingAddress;
-                $posted = $request->input('msisdn', $request->input('swich_msisdn', ''));
-                if (is_array($posted)) {
-                    $posted = implode('', $posted);
-                }
-                $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn((string) $posted);
-                if ($msisdn === '') {
-                    $msisdn = \App\Http\PaymentGateways\Gateways\Swich::normalizeMsisdn(
-                        (string) ($address?->phone ?? ''),
-                        (string) ($address?->country_code ?? '')
-                    );
-                }
+                $msisdn = \App\Http\PaymentGateways\Gateways\Swich::msisdnFromRequest($request, $order);
                 if ($msisdn !== '') {
-                    $request->merge(['msisdn' => $msisdn]);
+                    $request->merge(['msisdn' => $msisdn, 'swich_mobile' => $msisdn]);
                 }
             }
             $request->validate($gateway->rules(), method_exists($gateway, 'messages') ? $gateway->messages() : []);

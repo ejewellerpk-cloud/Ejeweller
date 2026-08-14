@@ -52,26 +52,25 @@ class Swich extends PaymentAbstract
     public function payment($order, $request): mixed
     {
         try {
-            $method = $this->resolveMethod((string) ($request->swich_method ?? ''));
+            $method = $this->resolveMethod((string) ($request->swich_method ?? $request->swich_method_ui ?? ''));
+            if ($method === null) {
+                $method = $this->ewalletEnabled() ? self::METHOD_JAZZCASH : ($this->billerEnabled() ? self::METHOD_BILLER : null);
+            }
             if ($method === null) {
                 return $this->backToPayment($order, trans('all.message.swich_method_required'));
             }
 
-            $msisdn = self::normalizeMsisdn(
-                (string) ($request->msisdn ?? ''),
-                (string) ($order->shippingAddress?->country_code ?? '')
-            );
+            $msisdn = self::msisdnFromRequest($request, $order);
             if ($msisdn === '') {
-                $msisdn = self::normalizeMsisdn(
-                    (string) ($order->shippingAddress?->phone ?? ''),
-                    (string) ($order->shippingAddress?->country_code ?? '')
-                );
-            }
-            if ($msisdn === '') {
+                Log::warning('Swich PayIn rejected MSISDN', [
+                    'order_id' => $order->id,
+                    'keys' => array_keys($request->all()),
+                ]);
+
                 return $this->backToPayment($order, trans('all.message.swich_msisdn_required'));
             }
 
-            $email = $this->resolveEmail($order, (string) ($request->email ?? ''));
+            $email = $this->resolveEmail($order, (string) ($request->swich_email ?? $request->email ?? ''));
             if ($email === '') {
                 return $this->backToPayment($order, trans('all.message.swich_email_required'));
             }
@@ -329,18 +328,50 @@ class Swich extends PaymentAbstract
         return substr('EJ' . $order->id . Str::upper(Str::random(10)), 0, 50);
     }
 
+    public static function msisdnFromRequest(mixed $request, Order $order): string
+    {
+        $candidates = [];
+        foreach (['swich_mobile', 'msisdn', 'swich_msisdn', 'mobile', 'phone'] as $key) {
+            $value = $request->input($key);
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    $candidates[] = (string) $item;
+                }
+            } elseif ($value !== null && $value !== '') {
+                $candidates[] = (string) $value;
+            }
+        }
+
+        $address = $order->shippingAddress;
+        $candidates[] = (string) ($address?->phone ?? '');
+        $candidates[] = (string) ($order->user?->phone ?? '');
+
+        foreach ($candidates as $candidate) {
+            $normalized = self::normalizeMsisdn(
+                $candidate,
+                (string) ($address?->country_code ?? '')
+            );
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return '';
+    }
+
     /**
      * Swich PayIn preferred format is 03xxxxxxxxx (11 digits).
-     * Accepts +92, 92, 9203…, 3XXXXXXXXX, country_code + local, and Arabic-Indic digits.
      */
     public static function normalizeMsisdn(string $phone, string $countryCode = ''): string
     {
-        $fromPhone = self::extractMsisdnDigits($phone);
-        if ($fromPhone !== '') {
-            return $fromPhone;
+        foreach ([$phone, $countryCode . $phone, $countryCode . '0' . ltrim($phone, '0')] as $candidate) {
+            $normalized = self::extractMsisdnDigits($candidate);
+            if ($normalized !== '') {
+                return $normalized;
+            }
         }
 
-        return self::extractMsisdnDigits($countryCode . $phone);
+        return '';
     }
 
     protected static function extractMsisdnDigits(string $value): string
@@ -352,7 +383,16 @@ class Swich extends PaymentAbstract
             '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
         ];
         $digits = preg_replace('/\D+/', '', strtr($value, $map)) ?? '';
+        if ($digits === '') {
+            return '';
+        }
 
+        if (preg_match('/03\d{9}$/', $digits, $matches)) {
+            return substr($matches[0], -11);
+        }
+        if (preg_match('/^3\d{9}$/', $digits)) {
+            return '0' . $digits;
+        }
         if (preg_match('/(?:92)?0?(3\d{9})$/', $digits, $matches)) {
             return '0' . $matches[1];
         }
