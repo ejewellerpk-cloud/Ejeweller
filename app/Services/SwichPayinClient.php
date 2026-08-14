@@ -50,12 +50,12 @@ class SwichPayinClient
 
     public function purchaseEwallet(array $payload): array
     {
-        return $this->postJson('/gateway/payin/v2.0/purchase/ewallet', $this->withRemoteIp($payload));
+        return $this->postJson('/gateway/payin/v2.0/purchase/ewallet', $payload);
     }
 
     public function purchaseBiller(array $payload): array
     {
-        return $this->postJson('/gateway/payin/v2.0/purchase/biller', $this->withRemoteIp($payload));
+        return $this->postJson('/gateway/payin/v2.0/purchase/biller', $payload);
     }
 
     public function inquire(string $customerTransactionId): array
@@ -174,24 +174,5 @@ class SwichPayinClient
         }
 
         return $json;
-    }
-
-    protected function withRemoteIp(array $payload): array
-    {
-        $ip = trim((string) $this->remoteIp);
-        if ($ip === '') {
-            $ip = Cache::remember('swich_payin_outbound_ip', 3600, function () {
-                try {
-                    return trim((string) Http::timeout(5)->get('https://api.ipify.org')->body());
-                } catch (\Throwable) {
-                    return '';
-                }
-            });
-        }
-        if (filter_var($ip, FILTER_VALIDATE_IP)) {
-            $payload['remoteIPAddress'] = $ip;
-        }
-
-        return $payload;
     }
 }

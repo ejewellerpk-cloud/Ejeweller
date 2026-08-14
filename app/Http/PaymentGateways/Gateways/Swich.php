@@ -150,7 +150,9 @@ class Swich extends PaymentAbstract
                 ]);
                 $message = $this->isInvalidWalletAccount($response)
                     ? trans('all.message.swich_wallet_invalid')
-                    : (string) ($response['message'] ?? trans('all.message.something_wrong'));
+                    : ((string) ($response['code'] ?? '') === '0027'
+                        ? trans('all.message.swich_ip_not_whitelisted')
+                        : (string) ($response['message'] ?? trans('all.message.something_wrong')));
 
                 return $this->backToPayment($order, $message);
             }
