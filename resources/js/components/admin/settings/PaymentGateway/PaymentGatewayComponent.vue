@@ -105,7 +105,11 @@ export default {
     },
     computed: {
         paymentGateways: function () {
-            return this.$store.getters["paymentGateway/lists"];
+            const list = this.$store.getters["paymentGateway/lists"] || [];
+            const swich = list.filter((g) => g.slug === "swich");
+            const paypal = list.filter((g) => g.slug === "paypal");
+            const rest = list.filter((g) => g.slug !== "swich" && g.slug !== "paypal");
+            return [...swich, ...rest, ...paypal];
         },
     },
     mounted() {

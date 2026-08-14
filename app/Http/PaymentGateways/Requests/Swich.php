@@ -19,8 +19,6 @@ class Swich extends FormRequest
         return [
             'swich_client_id' => [$required, 'string'],
             'swich_client_secret' => [$required, 'string'],
-            'swich_secret_key' => [$required, 'string'],
-            'swich_whitelisted_ip' => [$required, 'string'],
             'swich_ewallet_status' => ['nullable', 'numeric'],
             'swich_biller_status' => ['nullable', 'numeric'],
             'swich_mode' => [$required, 'string'],

@@ -96,11 +96,6 @@ class Swich extends PaymentAbstract
                 'email' => $email,
             ];
 
-            $remoteIp = trim((string) $this->opt('swich_whitelisted_ip'));
-            if ($remoteIp !== '') {
-                $payload['remoteIPAddress'] = $remoteIp;
-            }
-
             $response = $isBiller
                 ? $client->purchaseBiller($payload)
                 : $client->purchaseEwallet($payload);
@@ -272,14 +267,12 @@ class Swich extends PaymentAbstract
     public function client(): SwichPayinClient
     {
         $clientSecret = (string) $this->opt('swich_client_secret');
-        $checksumSecret = (string) ($this->opt('swich_secret_key') ?: $clientSecret);
 
         return new SwichPayinClient(
             (string) $this->opt('swich_client_id'),
             $clientSecret,
-            $checksumSecret,
+            $clientSecret,
             (int) ($this->opt('swich_mode') ?: GatewayMode::SANDBOX),
-            $this->opt('swich_whitelisted_ip') ?: null,
         );
     }
 

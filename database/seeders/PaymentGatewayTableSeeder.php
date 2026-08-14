@@ -893,16 +893,6 @@ class PaymentGatewayTableSeeder extends Seeder
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'swich_secret_key',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'swich_whitelisted_ip',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
                     "option"     => 'swich_ewallet_status',
                     "value"      => Activity::DISABLE,
                     "type"       => InputType::SELECT,
