@@ -114,6 +114,6 @@ class Easypaisa extends PaymentAbstract
 
     public function cancel($order, $request) : \Illuminate\Http\RedirectResponse
     {
-        return redirect('/checkout/payment')->with('error', trans('all.message.payment_canceled'));
+        return redirect('/checkout/checkout')->with('error', trans('all.message.payment_canceled'));
     }
 }

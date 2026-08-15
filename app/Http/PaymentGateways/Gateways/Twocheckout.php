@@ -142,6 +142,6 @@ class Twocheckout extends PaymentAbstract
 
     public function cancel($order, $request): \Illuminate\Foundation\Application|\Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse|\Illuminate\Contracts\Foundation\Application
     {
-        return redirect('/checkout/payment');
+        return redirect('/checkout/checkout');
     }
 }

@@ -154,6 +154,7 @@ class Swich extends PaymentAbstract
             return [
                 'ok' => true,
                 'status' => 'pending',
+                'requested' => true,
                 'method' => $record->method,
                 'consumerNumber' => $record->method === self::METHOD_BILLER ? $record->consumer_number : null,
             ];
@@ -235,6 +236,7 @@ class Swich extends PaymentAbstract
         return [
             'ok' => true,
             'status' => 'pending',
+            'requested' => true,
             'method' => $record->method,
             'consumerNumber' => $isBiller ? $record->consumer_number : null,
         ];
@@ -255,7 +257,7 @@ class Swich extends PaymentAbstract
 
     public function cancel($order, $request): \Illuminate\Http\RedirectResponse
     {
-        return redirect('/checkout/payment')->with('error', trans('all.message.payment_canceled'));
+        return redirect('/checkout/checkout')->with('error', trans('all.message.payment_canceled'));
     }
 
     public function settleFromInquire(Order $order, bool $redirectOnFailure = true): ?\Illuminate\Http\RedirectResponse
@@ -272,9 +274,14 @@ class Swich extends PaymentAbstract
         try {
             $response = $this->client()->inquire($record->customer_transaction_id);
             $txnStatus = strtolower((string) data_get($response, 'transaction.transactionStatus', $response['status'] ?? ''));
-            $inquireMessage = (string) ($response['message'] ?? data_get($response, 'transaction.message', ''));
+            $inquireMessage = (string) ($response['message']
+                ?? data_get($response, 'transaction.message', '')
+                ?? data_get($response, 'transaction.transactionStatusDescription', ''));
             if ($this->isCancelledStatus($txnStatus, $inquireMessage)) {
                 $txnStatus = 'cancelled';
+            }
+            if ($txnStatus === '') {
+                return null;
             }
             $record->update([
                 'status' => $txnStatus,
@@ -336,6 +343,11 @@ class Swich extends PaymentAbstract
             return ['ok' => true, 'credited' => false];
         }
 
+        $callbackMessage = (string) ($payload['Message'] ?? $payload['message'] ?? '');
+        if ($this->isCancelledStatus($status, $callbackMessage)) {
+            $status = 'cancelled';
+        }
+
         $record->update([
             'status' => $status !== '' ? $status : $record->status,
             'swich_order_id' => (string) ($payload['OrderId'] ?? $payload['orderId'] ?? $record->swich_order_id),
@@ -343,10 +355,6 @@ class Swich extends PaymentAbstract
         ]);
 
         if ($status !== 'success') {
-            if ($this->isCancelledStatus($status, (string) ($payload['Message'] ?? $payload['message'] ?? ''))) {
-                $record->update(['status' => 'cancelled']);
-            }
-
             return ['ok' => true, 'credited' => false];
         }
 
@@ -484,8 +492,19 @@ class Swich extends PaymentAbstract
         $status = strtolower(trim($status));
         $message = strtolower($message);
 
-        return in_array($status, ['cancelled', 'canceled', 'declined', 'rejected', 'expired', 'terminated'], true)
-            || str_contains($message, 'cancel');
+        if (in_array($status, ['cancelled', 'canceled', 'declined', 'rejected', 'expired', 'terminated'], true)) {
+            return true;
+        }
+
+        $haystack = $status . ' ' . $message;
+
+        return str_contains($haystack, 'cancel')
+            || str_contains($haystack, 'mpin')
+            || str_contains($haystack, 'authorisation rejected')
+            || str_contains($haystack, 'authorization rejected')
+            || str_contains($haystack, 'authorization failed')
+            || str_contains($haystack, 'authorisation failed')
+            || (str_contains($haystack, 'reject') && !str_contains($haystack, 'otp'));
     }
 
     protected function isHardPurchaseFailure(array $response): bool

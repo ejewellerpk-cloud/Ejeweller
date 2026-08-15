@@ -86,12 +86,16 @@ class SwichPayinController extends Controller
         $record = method_exists($gateway, 'latestRecord') ? $gateway->latestRecord($order) : null;
 
         $isBiller = $record && $record->method === Swich::METHOD_BILLER;
+        $status = strtolower((string) ($record?->status ?: 'pending'));
+        if ($this->isCancelledApiStatus($status)) {
+            $status = 'cancelled';
+        }
 
         return response()->json([
-            'status' => $record?->status ?: 'pending',
+            'status' => $status,
             'method' => $record?->method,
             'consumerNumber' => $isBiller ? $record->consumer_number : null,
-            'message' => $this->statusMessage($record?->status),
+            'message' => $this->statusMessage($status),
         ]);
     }
 
@@ -108,10 +112,15 @@ class SwichPayinController extends Controller
     protected function statusMessage(?string $status): ?string
     {
         $status = strtolower((string) $status);
-        if (in_array($status, ['cancelled', 'canceled'], true)) {
+        if ($this->isCancelledApiStatus($status)) {
             return trans('all.message.swich_payment_cancelled');
         }
 
         return null;
+    }
+
+    protected function isCancelledApiStatus(?string $status): bool
+    {
+        return in_array(strtolower((string) $status), ['cancelled', 'canceled', 'declined', 'rejected'], true);
     }
 }

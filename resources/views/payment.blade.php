@@ -93,7 +93,7 @@
 
         <div id="backBtn"
              class="py-5 px-4 w-full max-w-3xl mx-auto flex flex-col items-center justify-center {{ !session()->has('error') ? 'hidden' : '' }}">
-            <a class="text-primary" href="{{ url('/checkout/payment') }}">{{ __('all.label.back_to_payment') }}</a>
+            <a class="text-primary" href="{{ url('/checkout/checkout') }}">{{ __('all.label.back_to_payment') }}</a>
         </div>
     </form>
 </div>

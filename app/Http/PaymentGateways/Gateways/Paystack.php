@@ -106,6 +106,6 @@ class Paystack extends PaymentAbstract
 
     public function cancel($order, $request): \Illuminate\Http\RedirectResponse
     {
-        return redirect('/checkout/payment');
+        return redirect('/checkout/checkout');
     }
 }

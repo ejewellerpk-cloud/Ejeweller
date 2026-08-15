@@ -103,7 +103,7 @@ class Senangpay extends PaymentAbstract
 
     public function cancel($order, $request): \Illuminate\Http\RedirectResponse
     {
-        return redirect('/checkout/payment');
+        return redirect('/checkout/checkout');
     }
 
     public function webhook(Request $request): \Illuminate\Http\RedirectResponse
