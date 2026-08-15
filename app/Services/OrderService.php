@@ -31,6 +31,9 @@ use App\Http\Requests\WhatsappOrderRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Models\CapturePaymentNotification;
+use App\Models\SwichPayinTransaction;
+use Illuminate\Support\Facades\Schema;
 use App\Services\PostEx\PostExOrderService;
 use App\Services\PostEx\PostExSettingsService;
 use App\Enums\Activity;
@@ -538,6 +541,10 @@ class OrderService
                 $order->address()?->delete();
                 $order->outletAddress()?->delete();
                 $order->orderCoupon()?->delete();
+                CapturePaymentNotification::where('order_id', $order->id)->delete();
+                if (Schema::hasTable('swich_payin_transactions')) {
+                    SwichPayinTransaction::where('order_id', $order->id)->delete();
+                }
                 $order->delete();
             });
         } catch (Exception $exception) {

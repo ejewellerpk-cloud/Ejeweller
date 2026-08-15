@@ -23,7 +23,11 @@ use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
 use App\Models\ProductVariation;
 use App\Models\OrderOutletAddress;
+use App\Models\CapturePaymentNotification;
+use App\Models\SwichPayinTransaction;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Requests\OrderRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -106,23 +110,7 @@ class FrontendOrderService
 
             DB::transaction(function () use ($request, $isCod) {
                 if (auth('sanctum')->check()) {
-                    $oldOrder     = Order::where(['user_id' => auth('sanctum')->user()->id, 'active' => Status::INACTIVE]);
-                    $orderReplace = $oldOrder;
-                    if (!blank($oldOrder->get())) {
-                        $ids          = $oldOrder->pluck('id');
-                        $stock        = Stock::whereIn('model_id', $ids)->where(['model_type' => Order::class, 'status' => Status::INACTIVE]);
-                        $stockReplace = $stock;
-                        $stock        = $stock->get();
-                        $stockIds     = $stock->pluck('id');
-                        if (!blank($stockIds)) {
-                            StockTax::whereIn('stock_id', $stockIds)?->delete();
-                        }
-                        $stockReplace?->delete();
-                        OrderAddress::whereIn('order_id', $ids)->where(['user_id' => auth('sanctum')->user()->id])?->delete();
-                        OrderOutletAddress::whereIn('order_id', $ids)->where(['user_id' => auth('sanctum')->user()->id])?->delete();
-                        OrderCoupon::whereIn('order_id', $ids)->where(['user_id' => auth('sanctum')->user()->id])?->delete();
-                        $orderReplace->delete();
-                    }
+                    $this->purgeInactiveCheckoutOrders((int) auth('sanctum')->user()->id);
                 }
 
                 $guestCheckout = Settings::group('site')->get('site_guest_checkout');
@@ -394,5 +382,37 @@ class FrontendOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function purgeInactiveCheckoutOrders(int $userId): void
+    {
+        $ids = Order::where('user_id', $userId)
+            ->where('active', Status::INACTIVE)
+            ->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        $stockIds = Stock::whereIn('model_id', $ids)
+            ->where('model_type', Order::class)
+            ->pluck('id');
+
+        if ($stockIds->isNotEmpty()) {
+            StockTax::whereIn('stock_id', $stockIds)->delete();
+            Stock::whereIn('id', $stockIds)->delete();
+        }
+
+        OrderAddress::whereIn('order_id', $ids)->delete();
+        OrderOutletAddress::whereIn('order_id', $ids)->delete();
+        OrderCoupon::whereIn('order_id', $ids)->delete();
+        Transaction::whereIn('order_id', $ids)->delete();
+        CapturePaymentNotification::whereIn('order_id', $ids)->delete();
+
+        if (Schema::hasTable('swich_payin_transactions')) {
+            SwichPayinTransaction::whereIn('order_id', $ids)->delete();
+        }
+
+        Order::whereIn('id', $ids)->delete();
     }
 }

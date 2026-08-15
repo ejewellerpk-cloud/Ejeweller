@@ -198,6 +198,7 @@ export default {
             loading: {
                 isActive: false
             },
+            confirmingOrder: false,
             enums : {
                 statusEnum: statusEnum
             },
@@ -489,12 +490,21 @@ export default {
             return true;
         },
         confirmOrder: function (e) {
+            if (this.confirmingOrder) {
+                return;
+            }
+
             if (!this.validateCheckout()) {
                 return;
             }
 
-            if (e && e.target) {
-                e.target.disabled = true;
+            this.confirmingOrder = true;
+            const submitButton = e && (e.currentTarget || e.target);
+            if (submitButton && submitButton.closest) {
+                const button = submitButton.tagName === 'BUTTON' ? submitButton : submitButton.closest('button');
+                if (button) {
+                    button.disabled = true;
+                }
             }
             this.loading.isActive = true;
 
@@ -524,6 +534,7 @@ export default {
 
             this.$store.dispatch('frontendOrder/save', this.form).then(orderResponse => {
                 this.loading.isActive = false;
+                this.confirmingOrder = false;
                 
                 if (orderResponse.data.data.guest_token) {
                     this.$store.commit('authLogin', {
@@ -551,8 +562,13 @@ export default {
                 }
             }).catch((err) => {
                 this.loading.isActive = false;
-                if (e && e.target) {
-                    e.target.disabled = false;
+                this.confirmingOrder = false;
+                const submitButton = e && (e.currentTarget || e.target);
+                if (submitButton && submitButton.closest) {
+                    const button = submitButton.tagName === 'BUTTON' ? submitButton : submitButton.closest('button');
+                    if (button) {
+                        button.disabled = false;
+                    }
                 }
                 const fieldErrors = err.response?.data?.errors;
                 if (fieldErrors && typeof fieldErrors === 'object') {
