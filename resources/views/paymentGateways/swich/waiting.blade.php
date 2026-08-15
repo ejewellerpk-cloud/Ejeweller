@@ -10,7 +10,7 @@
 </head>
 <body class="bg-[#F5F4F1] min-h-screen">
 @php
-    $isBiller = $record->method === 'biller' || filled($record->consumer_number);
+    $isBiller = $record->method === 'biller';
     $walletName = $record->method === 'easypaisa' ? 'EasyPaisa' : 'JazzCash';
 @endphp
 <div class="py-12 px-4 w-full max-w-lg mx-auto">
@@ -46,7 +46,7 @@
                 </div>
             @endif
 
-            <div id="swich-biller" class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center {{ $isBiller && $record->consumer_number ? '' : 'hidden' }}">
+            <div id="swich-biller" class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center {{ $isBiller && filled($record->consumer_number) ? '' : 'hidden' }}">
                 <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">1Bill consumer number (PSID)</p>
                 <p id="swich-psid" class="text-2xl font-black tracking-wide text-heading select-all break-all">{{ $record->consumer_number }}</p>
                 <p class="mt-3 text-sm text-paragraph">
@@ -54,7 +54,7 @@
                 </p>
             </div>
 
-            <div id="swich-wallet" class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5 space-y-3 {{ $isBiller && $record->consumer_number ? 'hidden' : '' }}">
+            <div id="swich-wallet" class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5 space-y-3 {{ $isBiller && filled($record->consumer_number) ? 'hidden' : '' }}">
                 <div class="flex justify-center">
                     <span class="inline-block h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></span>
                 </div>
@@ -75,7 +75,17 @@
     const initiateUrl = @json(route('payment.swich.initiate', ['order' => $order]));
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const cancelledText = @json(trans('all.message.swich_payment_cancelled'));
+    const paymentMethod = @json($record->method);
     let stopped = false;
+
+    function showBiller(consumerNumber) {
+        if (paymentMethod !== 'biller' || !consumerNumber) {
+            return;
+        }
+        document.getElementById('swich-psid').textContent = consumerNumber;
+        document.getElementById('swich-biller').classList.remove('hidden');
+        document.getElementById('swich-wallet').classList.add('hidden');
+    }
 
     function setStatus(text, isError) {
         const el = document.getElementById('swich-status');
@@ -95,11 +105,7 @@
                 }
             });
             const data = await res.json();
-            if (data.consumerNumber) {
-                document.getElementById('swich-psid').textContent = data.consumerNumber;
-                document.getElementById('swich-biller').classList.remove('hidden');
-                document.getElementById('swich-wallet').classList.add('hidden');
-            }
+            showBiller(data.consumerNumber);
             if (data.status === 'cancelled' || data.status === 'canceled') {
                 setStatus(data.message || cancelledText, true);
                 stopped = true;
@@ -134,10 +140,7 @@
                 setStatus('Payment failed. Please go back and try again.', true);
                 return;
             }
-            if (data.consumerNumber) {
-                document.getElementById('swich-psid').textContent = data.consumerNumber;
-                document.getElementById('swich-biller').classList.remove('hidden');
-            }
+            showBiller(data.consumerNumber);
         } catch (e) {}
         setTimeout(poll, 3000);
     }

@@ -85,9 +85,12 @@ class SwichPayinController extends Controller
 
         $record = method_exists($gateway, 'latestRecord') ? $gateway->latestRecord($order) : null;
 
+        $isBiller = $record && $record->method === Swich::METHOD_BILLER;
+
         return response()->json([
             'status' => $record?->status ?: 'pending',
-            'consumerNumber' => $record?->consumer_number,
+            'method' => $record?->method,
+            'consumerNumber' => $isBiller ? $record->consumer_number : null,
             'message' => $this->statusMessage($record?->status),
         ]);
     }

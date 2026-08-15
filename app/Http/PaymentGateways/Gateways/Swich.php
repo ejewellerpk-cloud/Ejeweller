@@ -150,11 +150,12 @@ class Swich extends PaymentAbstract
         if ($this->isCancelledStatus($current)) {
             return ['ok' => true, 'status' => 'cancelled', 'message' => trans('all.message.swich_payment_cancelled')];
         }
-        if ($record->swich_order_id || $record->swich_transaction_id || $record->consumer_number) {
+        if ($record->swich_order_id || $record->swich_transaction_id || ($record->method === self::METHOD_BILLER && $record->consumer_number)) {
             return [
                 'ok' => true,
                 'status' => 'pending',
-                'consumerNumber' => $record->consumer_number,
+                'method' => $record->method,
+                'consumerNumber' => $record->method === self::METHOD_BILLER ? $record->consumer_number : null,
             ];
         }
         if ($current === 'initiating') {
@@ -203,7 +204,7 @@ class Swich extends PaymentAbstract
         $record->update([
             'swich_order_id' => (string) ($response['orderId'] ?? ''),
             'swich_transaction_id' => (string) ($response['transactionId'] ?? ''),
-            'consumer_number' => (string) ($response['consumerNumber'] ?? ''),
+            'consumer_number' => $isBiller ? (string) ($response['consumerNumber'] ?? '') : null,
             'status' => $status === 'success' ? 'pending' : $status,
             'payload' => array_merge($record->payload ?? [], ['response' => $response]),
         ]);
@@ -234,7 +235,8 @@ class Swich extends PaymentAbstract
         return [
             'ok' => true,
             'status' => 'pending',
-            'consumerNumber' => $record->consumer_number,
+            'method' => $record->method,
+            'consumerNumber' => $isBiller ? $record->consumer_number : null,
         ];
     }
 
@@ -278,7 +280,9 @@ class Swich extends PaymentAbstract
                 'status' => $txnStatus,
                 'payload' => array_merge($record->payload ?? [], ['inquire' => $response]),
                 'swich_order_id' => data_get($response, 'transaction.orderId', $record->swich_order_id),
-                'consumer_number' => data_get($response, 'transaction.consumerNumber', $record->consumer_number),
+                'consumer_number' => $record->method === self::METHOD_BILLER
+                    ? data_get($response, 'transaction.consumerNumber', $record->consumer_number)
+                    : $record->consumer_number,
             ]);
 
             if ($txnStatus === 'success') {
