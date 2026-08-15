@@ -50,15 +50,19 @@
 
             <div id="swich-cancelled" class="rounded-2xl bg-red-50 border border-red-200 p-6 text-center {{ $isCancelled ? '' : 'hidden' }}">
                 <p class="text-3xl sm:text-4xl font-black text-red-600 leading-tight">Payment cancelled</p>
-                <p class="mt-3 text-sm text-paragraph">JazzCash / EasyPaisa ne request reject kar di. Dobara try karne ke liye checkout par wapas jayein.</p>
+                <p class="mt-3 text-sm text-paragraph">JazzCash / EasyPaisa sy request reject kar di gay hai. Dobara try karne ke liye checkout par wapas jayein.</p>
             </div>
 
-            <div id="swich-biller" class="rounded-2xl bg-primary-slate border border-primary/20 p-5 text-center {{ !$isCancelled && $isBiller && filled($record->consumer_number) ? '' : 'hidden' }}">
-                <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">1Bill consumer number (PSID)</p>
-                <p id="swich-psid" class="text-2xl font-black tracking-wide text-heading select-all break-all">{{ $record->consumer_number }}</p>
-                <p class="mt-3 text-sm text-paragraph">
-                    Pay this PSID from JazzCash, EasyPaisa, or any 1Bill partner. This page waits until Swich confirms payment.
-                </p>
+            <div id="swich-biller" class="rounded-2xl bg-primary-slate border border-primary/20 p-5 {{ !$isCancelled && $isBiller && filled($record->consumer_number) ? '' : 'hidden' }}">
+                <p class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2 text-center">1Bill consumer number (PSID)</p>
+                <p id="swich-psid" class="text-2xl font-black tracking-wide text-heading select-all break-all text-center">{{ $record->consumer_number }}</p>
+                <ol class="mt-5 space-y-2 text-sm text-heading text-left list-decimal list-inside leading-6">
+                    <li><strong>JazzCash</strong> application kholen.</li>
+                    <li><strong>More</strong> par click karein.</li>
+                    <li><strong>Corporate Payments</strong> open karein.</li>
+                    <li><strong>1Bill</strong> mein yeh PSID paste karke Pay karein.</li>
+                </ol>
+                <p class="mt-4 text-xs text-paragraph text-center">Yeh page band na karein. Payment confirm hote hi order complete ho jayega.</p>
             </div>
 
             <div id="swich-wallet" class="rounded-2xl bg-[#F7F7FC] border border-[#E8E4DC] p-5 space-y-3 {{ $isCancelled || ($isBiller && filled($record->consumer_number)) ? 'hidden' : '' }}">
