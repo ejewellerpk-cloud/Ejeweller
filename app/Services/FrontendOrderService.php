@@ -110,7 +110,7 @@ class FrontendOrderService
 
             DB::transaction(function () use ($request, $isCod) {
                 if (auth('sanctum')->check()) {
-                    $this->purgeInactiveCheckoutOrders((int) auth('sanctum')->user()->id);
+                    $this->abandonUnpaidCheckoutOrders((int) auth('sanctum')->user()->id);
                 }
 
                 $guestCheckout = Settings::group('site')->get('site_guest_checkout');
@@ -145,7 +145,7 @@ class FrontendOrderService
                         'status'         => OrderStatus::PENDING,
                         'payment_status' => PaymentStatus::UNPAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'active'         => $isCod ? Ask::YES : Ask::NO
+                        'active'         => Ask::YES
                     ]
                 );
 
@@ -384,17 +384,39 @@ class FrontendOrderService
         }
     }
 
-    private function purgeInactiveCheckoutOrders(int $userId): void
+    private function abandonUnpaidCheckoutOrders(int $userId): void
     {
-        $ids = Order::where('user_id', $userId)
-            ->where('active', Status::INACTIVE)
-            ->pluck('id');
+        $orders = Order::where('user_id', $userId)
+            ->where('payment_status', PaymentStatus::UNPAID)
+            ->where('status', OrderStatus::PENDING)
+            ->where(function ($query) {
+                $query->where('active', Status::INACTIVE)
+                    ->orWhereHas('paymentMethod', function ($payment) {
+                        $payment->where('slug', 'swich');
+                    });
+            })
+            ->get();
 
-        if ($ids->isEmpty()) {
-            return;
+        foreach ($orders as $order) {
+            $hasAttempt = Schema::hasTable('swich_payin_transactions')
+                && SwichPayinTransaction::where('order_id', $order->id)->exists();
+
+            if ($hasAttempt) {
+                $order->update([
+                    'status' => OrderStatus::CANCELED,
+                    'active' => Ask::YES,
+                    'reason' => 'Payment not completed. Customer started a new checkout.',
+                ]);
+                continue;
+            }
+
+            $this->deleteDraftCheckoutOrder($order);
         }
+    }
 
-        $stockIds = Stock::whereIn('model_id', $ids)
+    private function deleteDraftCheckoutOrder(Order $order): void
+    {
+        $stockIds = Stock::where('model_id', $order->id)
             ->where('model_type', Order::class)
             ->pluck('id');
 
@@ -403,16 +425,11 @@ class FrontendOrderService
             Stock::whereIn('id', $stockIds)->delete();
         }
 
-        OrderAddress::whereIn('order_id', $ids)->delete();
-        OrderOutletAddress::whereIn('order_id', $ids)->delete();
-        OrderCoupon::whereIn('order_id', $ids)->delete();
-        Transaction::whereIn('order_id', $ids)->delete();
-        CapturePaymentNotification::whereIn('order_id', $ids)->delete();
-
-        if (Schema::hasTable('swich_payin_transactions')) {
-            SwichPayinTransaction::whereIn('order_id', $ids)->delete();
-        }
-
-        Order::whereIn('id', $ids)->delete();
+        OrderAddress::where('order_id', $order->id)->delete();
+        OrderOutletAddress::where('order_id', $order->id)->delete();
+        OrderCoupon::where('order_id', $order->id)->delete();
+        Transaction::where('order_id', $order->id)->delete();
+        CapturePaymentNotification::where('order_id', $order->id)->delete();
+        $order->delete();
     }
 }

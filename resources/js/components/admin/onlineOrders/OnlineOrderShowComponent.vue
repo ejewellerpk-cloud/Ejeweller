@@ -13,7 +13,7 @@
                         <div class="flex items-center gap-2 mt-1.5">
                             <span
                                 :class="'text-sm capitalize h-5 leading-5 px-2 rounded-3xl text-[#FB4E4E] bg-[#FFDADA]' + statusClass(order.payment_status)">
-                                {{ paymentStatusEnumArray[order.payment_status] }}
+                                {{ order.payment_status_label || paymentStatusEnumArray[order.payment_status] }}
                             </span>
                             <span :class="'text-sm capitalize px-2 rounded-3xl ' + orderStatusClass(order.status)">
                                 {{ orderStatusEnumArray[order.status] }}
@@ -158,7 +158,26 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12" v-if="order.status === enums.orderStatusEnum.REJECTED">
+            <div class="col-12" v-if="order.swich_payin">
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <h3 class="db-card-title">Payment attempt</h3>
+                    </div>
+                    <div class="db-card-body">
+                        <ul class="flex flex-col gap-2 text-sm">
+                            <li>Method: <span class="font-semibold text-heading">{{ order.swich_payin.method_label }}</span></li>
+                            <li>Swich status: <span class="font-semibold text-heading capitalize">{{ order.swich_payin.status }}</span></li>
+                            <li v-if="order.swich_payin.msisdn">Wallet: <span class="font-semibold text-heading">{{ order.swich_payin.msisdn }}</span></li>
+                            <li v-if="order.swich_payin.consumer_number">PSID: <span class="font-semibold text-heading select-all">{{ order.swich_payin.consumer_number }}</span></li>
+                            <li v-if="order.swich_payin.customer_transaction_id">Txn ID: <span class="font-semibold text-heading break-all">{{ order.swich_payin.customer_transaction_id }}</span></li>
+                            <li v-if="order.swich_payin.swich_order_id">Swich order: <span class="font-semibold text-heading">{{ order.swich_payin.swich_order_id }}</span></li>
+                            <li v-if="order.swich_payin.last_inquired_at">Last inquire: <span class="font-semibold text-heading">{{ order.swich_payin.last_inquired_at }}</span></li>
+                            <li v-else-if="order.swich_payin.updated_at">Last update: <span class="font-semibold text-heading">{{ order.swich_payin.updated_at }}</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12" v-if="order.reason && (order.status === enums.orderStatusEnum.REJECTED || order.status === enums.orderStatusEnum.CANCELED)">
                 <div class="db-card">
                     <div class="db-card-header">
                         <h3 class="db-card-title">{{ $t('label.reason') }}</h3>

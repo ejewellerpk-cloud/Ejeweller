@@ -55,8 +55,10 @@ class OrderDetailsResource extends JsonResource
             'order_time'                     => AppLibrary::time($this->order_datetime),
             'order_datetime'                 => AppLibrary::datetime($this->order_datetime),
             'payment_method'                 => $this->payment_method,
-            'payment_method_name'            => $this->paymentMethod?->name,
+            'payment_method_name'            => $this->swichMethodLabel() ?: $this->paymentMethod?->name,
             'payment_status'                 => $this->payment_status,
+            'payment_status_label'           => $this->paymentStatusLabel(),
+            'swich_payin'                    => $this->swichPayinSummary(),
             'status'                         => $this->status,
             'reason'                         => $this->reason,
             'source'                         => $this->source,
@@ -85,5 +87,43 @@ class OrderDetailsResource extends JsonResource
             'postex_status'                  => $this->postex_status,
             'postex_booked_at'               => $this->postex_booked_at ? AppLibrary::datetime($this->postex_booked_at) : null,
         ] + $guestPayload;
+    }
+
+    protected function paymentStatusLabel(): string
+    {
+        if ((int) $this->payment_status === \App\Enums\PaymentStatus::PAID) {
+            return 'Paid';
+        }
+
+        $record = $this->latestSwichPayin();
+        if ($record && !in_array(strtolower((string) $record->status), ['cancelled', 'canceled', 'failed', 'success', 'paid'], true)) {
+            return 'Pending payment';
+        }
+
+        return 'Unpaid';
+    }
+
+    protected function swichPayinSummary(): ?array
+    {
+        $record = $this->latestSwichPayin();
+        if (!$record) {
+            return null;
+        }
+
+        $inquireAt = data_get($record->payload, 'inquire') ? $record->updated_at : null;
+
+        return [
+            'method' => $record->method,
+            'method_label' => $this->swichMethodLabel(),
+            'status' => $record->status,
+            'msisdn' => $record->msisdn,
+            'consumer_number' => $record->consumer_number,
+            'customer_transaction_id' => $record->customer_transaction_id,
+            'swich_order_id' => $record->swich_order_id,
+            'swich_transaction_id' => $record->swich_transaction_id,
+            'amount' => $record->amount,
+            'last_inquired_at' => $inquireAt ? AppLibrary::datetime($inquireAt) : null,
+            'updated_at' => AppLibrary::datetime($record->updated_at),
+        ];
     }
 }

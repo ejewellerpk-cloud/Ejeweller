@@ -154,6 +154,7 @@ class Swich extends PaymentAbstract
             return [
                 'ok' => true,
                 'status' => 'pending',
+                'phase' => 'waiting',
                 'requested' => true,
                 'method' => $record->method,
                 'consumerNumber' => $record->method === self::METHOD_BILLER ? $record->consumer_number : null,
@@ -236,6 +237,7 @@ class Swich extends PaymentAbstract
         return [
             'ok' => true,
             'status' => 'pending',
+            'phase' => 'waiting',
             'requested' => true,
             'method' => $record->method,
             'consumerNumber' => $isBiller ? $record->consumer_number : null,

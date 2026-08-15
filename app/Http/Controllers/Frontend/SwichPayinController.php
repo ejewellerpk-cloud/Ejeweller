@@ -67,6 +67,7 @@ class SwichPayinController extends Controller
         if ((int) $order->payment_status === PaymentStatus::PAID) {
             return response()->json([
                 'status' => 'paid',
+                'phase' => 'paid',
                 'redirect' => route('payment.successful', ['order' => $order]),
             ]);
         }
@@ -78,6 +79,7 @@ class SwichPayinController extends Controller
             if ((int) $order->payment_status === PaymentStatus::PAID) {
                 return response()->json([
                     'status' => 'paid',
+                    'phase' => 'paid',
                     'redirect' => route('payment.successful', ['order' => $order]),
                 ]);
             }
@@ -93,6 +95,7 @@ class SwichPayinController extends Controller
 
         return response()->json([
             'status' => $status,
+            'phase' => $this->paymentPhase($order, $record, $status),
             'method' => $record?->method,
             'consumerNumber' => $isBiller ? $record->consumer_number : null,
             'message' => $this->statusMessage($status),
@@ -122,5 +125,23 @@ class SwichPayinController extends Controller
     protected function isCancelledApiStatus(?string $status): bool
     {
         return in_array(strtolower((string) $status), ['cancelled', 'canceled', 'declined', 'rejected'], true);
+    }
+
+    protected function paymentPhase(Order $order, $record, string $status): string
+    {
+        if ((int) $order->payment_status === PaymentStatus::PAID || $status === 'paid' || $status === 'success') {
+            return 'paid';
+        }
+        if ($this->isCancelledApiStatus($status) || in_array($status, ['failed', 'terminated', 'block', 'expired'], true)) {
+            return 'cancelled';
+        }
+        if ($record && ($record->method === Swich::METHOD_BILLER && filled($record->consumer_number))) {
+            return 'waiting';
+        }
+        if ($record && (filled($record->swich_order_id) || filled($record->swich_transaction_id))) {
+            return 'waiting';
+        }
+
+        return 'sending';
     }
 }

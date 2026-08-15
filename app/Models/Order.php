@@ -136,4 +136,33 @@ class Order extends Model
     {
         return $this->hasOne(OrderCoupon::class);
     }
+
+    public function swichPayinTransactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SwichPayinTransaction::class);
+    }
+
+    public function latestSwichPayin(): ?SwichPayinTransaction
+    {
+        if ($this->relationLoaded('swichPayinTransactions')) {
+            return $this->swichPayinTransactions->sortByDesc('id')->first();
+        }
+
+        return $this->swichPayinTransactions()->latest('id')->first();
+    }
+
+    public function swichMethodLabel(): ?string
+    {
+        $record = $this->latestSwichPayin();
+        if (!$record) {
+            return null;
+        }
+
+        return match ($record->method) {
+            'jazzcash' => 'JazzCash',
+            'easypaisa' => 'EasyPaisa',
+            'biller' => '1Bill',
+            default => 'Swich',
+        };
+    }
 }
