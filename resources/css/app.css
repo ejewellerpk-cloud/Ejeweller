@@ -1593,6 +1593,26 @@
         @apply w-full border-b border-gray-200 bg-white;
     }
 
+    .db-card-filter-form-dropdown {
+        @apply absolute top-10 ltr:right-0 rtl:left-0 z-30 w-[min(100vw-2rem,22rem)] max-h-[min(70vh,32rem)] overflow-y-auto rounded-md border border-gray-100 bg-white p-3 shadow-lg;
+    }
+
+    .db-card-filter-form-dropdown .db-field-title {
+        @apply mb-1.5;
+    }
+
+    .db-card-filter-form-dropdown .db-field-control {
+        @apply mb-3;
+    }
+
+    .db-card-filter-form-dropdown .db-field-control:last-of-type {
+        @apply mb-0;
+    }
+
+    .db-card-filter-form-actions {
+        @apply flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100;
+    }
+
     /* TOOLTIP */
     .db-tooltip {
         @apply absolute left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap font-medium tracking-wide uppercase pt-[1px] pb-[2px] px-[7px] rounded bg-gray-700 text-white after:content-[''] after:absolute after:-bottom-[3px] after:left-1/2 after:-translate-x-1/2 after:rotate-45 after:border-solid after:border-t-4 after:border-4 after:rounded-sm after:border-t-transparent after:border-l-transparent after:border-r-gray-700 after:border-b-gray-700 -top-5 opacity-0 invisible transition

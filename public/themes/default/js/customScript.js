@@ -170,7 +170,7 @@ document.addEventListener('click', function (e) {
         }
 
         dropdownList.classList.toggle('active');
-    } else {
+    } else if (!e.target.closest('.dropdown-list') && !e.target.closest('.db-card-filter-form-dropdown')) {
         document.querySelectorAll('.dropdown-list').forEach(function (list) {
             list.classList.remove('active');
         });

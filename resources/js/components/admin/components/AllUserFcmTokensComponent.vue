@@ -15,6 +15,35 @@
             </div>
             <div class="db-card-filter">
                 <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
+                <ListFilterPanel as-dropdown v-slot="{ close }">
+                    <form class="w-full" @submit.prevent="applySearch(close)">
+                        <label for="fcmSearchName" class="db-field-title after:hidden">{{ $t("label.name") }}</label>
+                        <input id="fcmSearchName" v-model="props.search.name" type="text" class="db-field-control">
+
+                        <label for="fcmSearchEmail" class="db-field-title after:hidden">{{ $t("label.email") }}</label>
+                        <input id="fcmSearchEmail" v-model="props.search.email" type="text" class="db-field-control">
+
+                        <label for="fcmSearchDevice" class="db-field-title after:hidden">{{ $t("label.device") }}</label>
+                        <input id="fcmSearchDevice" v-model="props.search.device_name" type="text" class="db-field-control">
+
+                        <label for="fcmSearchPlatform" class="db-field-title after:hidden">{{ $t("label.platform") }}</label>
+                        <input id="fcmSearchPlatform" v-model="props.search.platform" type="text" class="db-field-control">
+
+                        <label for="fcmSearchIp" class="db-field-title after:hidden">{{ $t("label.ip_address") }}</label>
+                        <input id="fcmSearchIp" v-model="props.search.ip_address" type="text" class="db-field-control" dir="ltr">
+
+                        <div class="db-card-filter-form-actions">
+                            <button type="submit" class="db-btn py-2 text-white bg-primary">
+                                <i class="lab lab-line-search lab-font-size-16"></i>
+                                <span>{{ $t("button.search") }}</span>
+                            </button>
+                            <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="applyClear(close)">
+                                <i class="lab lab-line-cross lab-font-size-22"></i>
+                                <span>{{ $t("button.clear") }}</span>
+                            </button>
+                        </div>
+                    </form>
+                </ListFilterPanel>
             </div>
         </div>
 
@@ -35,29 +64,6 @@
                             <th class="db-table-head-th">{{ $t("label.ip_address") }}</th>
                             <th class="db-table-head-th">{{ $t("label.last_active") }}</th>
                             <th class="db-table-head-th">{{ $t("label.action") }}</th>
-                        </tr>
-                        <tr class="db-table-filter-tr">
-                            <th class="db-table-head-th">
-                                <input v-model="props.search.name" type="text" class="db-table-filter-control" :placeholder="$t('label.name')" @keyup.enter="search">
-                            </th>
-                            <th class="db-table-head-th">
-                                <input v-model="props.search.email" type="text" class="db-table-filter-control" :placeholder="$t('label.email')" @keyup.enter="search">
-                            </th>
-                            <th class="db-table-head-th">
-                                <input v-model="props.search.device_name" type="text" class="db-table-filter-control" :placeholder="$t('label.device')" @keyup.enter="search">
-                            </th>
-                            <th class="db-table-head-th">
-                                <input v-model="props.search.platform" type="text" class="db-table-filter-control" :placeholder="$t('label.platform')" @keyup.enter="search">
-                            </th>
-                            <th class="db-table-head-th"></th>
-                            <th class="db-table-head-th">
-                                <input v-model="props.search.ip_address" type="text" class="db-table-filter-control" :placeholder="$t('label.ip_address')" @keyup.enter="search">
-                            </th>
-                            <th class="db-table-head-th"></th>
-                            <th class="db-table-head-th">
-                                <button type="button" class="db-table-filter-btn bg-primary text-white" @click="search"><i class="lab lab-line-search"></i></button>
-                                <button type="button" class="db-table-filter-btn bg-gray-600 text-white ml-1" @click="clear"><i class="lab lab-line-cross"></i></button>
-                            </th>
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="tokens.length > 0">
@@ -104,6 +110,7 @@
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import TableLimitComponent from "./TableLimitComponent";
+import ListFilterPanel from "./ListFilterPanel";
 import PaginationTextComponent from "./pagination/PaginationTextComponent";
 import PaginationBox from "./pagination/PaginationBox";
 import PaginationSMBox from "./pagination/PaginationSMBox";
@@ -113,6 +120,7 @@ export default {
     emits: ["back"],
     components: {
         TableLimitComponent,
+        ListFilterPanel,
         PaginationTextComponent,
         PaginationBox,
         PaginationSMBox,
@@ -185,6 +193,12 @@ export default {
         search: function () {
             this.list(1);
         },
+        applySearch: function (close) {
+            this.search();
+            if (typeof close === "function") {
+                close();
+            }
+        },
         clear: function () {
             this.props.search.name = "";
             this.props.search.email = "";
@@ -193,6 +207,12 @@ export default {
             this.props.search.platform = "";
             this.props.search.ip_address = "";
             this.list(1);
+        },
+        applyClear: function (close) {
+            this.clear();
+            if (typeof close === "function") {
+                close();
+            }
         },
         textShortener: function (text, length) {
             return appService.textShortener(text, length);
@@ -227,30 +247,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.db-table-filter-tr .db-table-head-th {
-    padding-top: 0;
-    padding-bottom: 0.75rem;
-    vertical-align: top;
-}
-
-.db-table-filter-control {
-    width: 100%;
-    min-width: 72px;
-    height: 32px;
-    padding: 0 0.625rem;
-    border: 1px solid rgb(229 231 235);
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-}
-
-.db-table-filter-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 0.375rem;
-}
-</style>

@@ -6,10 +6,37 @@
                 <h3 class="db-card-title">{{ $t("menu.customers") }}</h3>
                 <div class="db-card-filter">
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
-                    <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
-                        <i class="lab lab-line-filter lab-font-size-14"></i>
-                        <span>{{ $t("button.filter") }}</span>
-                    </button>
+                    <ListFilterPanel as-dropdown v-slot="{ close }">
+                        <form class="w-full" @submit.prevent="applySearch(close)">
+                            <label for="searchName" class="db-field-title after:hidden">{{ $t("label.name") }}</label>
+                            <input id="searchName" v-model="props.search.name" type="text" class="db-field-control" />
+
+                            <label for="searchEmail" class="db-field-title after:hidden">{{ $t("label.email") }}</label>
+                            <input id="searchEmail" v-model="props.search.email" type="text" class="db-field-control" />
+
+                            <label for="searchPhone" class="db-field-title after:hidden">{{ $t("label.phone") }}</label>
+                            <input id="searchPhone" v-model="props.search.phone" v-on:keypress="phoneNumber($event)"
+                                type="text" class="db-field-control" />
+
+                            <label for="searchStatus" class="db-field-title after:hidden">{{ $t("label.status") }}</label>
+                            <select id="searchStatus" v-model="props.search.status" class="db-field-control">
+                                <option :value="null">--</option>
+                                <option :value="enums.statusEnum.ACTIVE">{{ $t('label.active') }}</option>
+                                <option :value="enums.statusEnum.INACTIVE">{{ $t('label.inactive') }}</option>
+                            </select>
+
+                            <div class="db-card-filter-form-actions">
+                                <button type="submit" class="db-btn py-2 text-white bg-primary">
+                                    <i class="lab lab-line-search lab-font-size-16"></i>
+                                    <span>{{ $t("button.search") }}</span>
+                                </button>
+                                <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="applyClear(close)">
+                                    <i class="lab lab-line-cross lab-font-size-22"></i>
+                                    <span>{{ $t("button.clear") }}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </ListFilterPanel>
                     <div class="dropdown-group">
                         <ExportComponent />
                         <div class="dropdown-list db-card-filter-dropdown-list">
@@ -17,77 +44,25 @@
                             <ExcelComponent :method="xls" />
                         </div>
                     </div>
-                    <button
-                        v-if="permissionChecker('customers_show')"
-                        type="button"
-                        class="db-btn py-2 h-[37px] text-white bg-gray-600"
-                        @click="listView = 'sessions'"
-                    >
-                        <i class="lab lab-monitor-mobbile lab-font-size-16"></i>
-                        <span>{{ $t("label.device_session_history") }}</span>
-                    </button>
-                    <button
-                        v-if="permissionChecker('customers_show')"
-                        type="button"
-                        class="db-btn py-2 h-[37px] text-white bg-gray-600"
-                        @click="listView = 'fcm_tokens'"
-                    >
-                        <i class="lab lab-line-notification lab-font-size-16"></i>
-                        <span>{{ $t("label.push_device_history") }}</span>
-                    </button>
+                    <div class="dropdown-group" v-if="permissionChecker('customers_show')">
+                        <button type="button" class="db-card-filter-btn dropdown-btn">
+                            <i class="lab lab-monitor-mobbile lab-font-size-16"></i>
+                            <span>{{ $t("button.history") }}</span>
+                        </button>
+                        <div class="dropdown-list db-card-filter-dropdown-list">
+                            <button type="button" class="db-card-filter-dropdown-menu w-full" @click="listView = 'sessions'">
+                                <i class="lab lab-monitor-mobbile"></i>
+                                <span>{{ $t("label.device_session_history") }}</span>
+                            </button>
+                            <button type="button" class="db-card-filter-dropdown-menu w-full" @click="listView = 'fcm_tokens'">
+                                <i class="lab lab-line-notification"></i>
+                                <span>{{ $t("label.push_device_history") }}</span>
+                            </button>
+                        </div>
+                    </div>
                     <CustomerCreateComponent :props="props" v-if="permissionChecker('customers_create')" />
                 </div>
             </div>
-
-            <ListFilterPanel :show="showFilter">
-                <form class="p-4 sm:p-5 mb-5 w-full d-block" @submit.prevent="search">
-                    <div class="row">
-                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchName" class="db-field-title after:hidden">{{
-                                $t("label.name")
-                                }}</label>
-                            <input id="searchName" v-model="props.search.name" type="text" class="db-field-control" />
-                        </div>
-                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchEmail" class="db-field-title after:hidden">{{
-                                $t("label.email")
-                                }}</label>
-                            <input id="searchEmail" v-model="props.search.email" type="text" class="db-field-control" />
-                        </div>
-                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchPhone" class="db-field-title after:hidden">{{
-                                $t("label.phone")
-                                }}</label>
-                            <input id="searchPhone" v-model="props.search.phone" v-on:keypress="phoneNumber($event)"
-                                type="text" class="db-field-control" />
-                        </div>
-
-                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchStatus" class="db-field-title after:hidden">{{
-                                $t("label.status")
-                                }}</label>
-                            <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
-                                v-model="props.search.status"
-                                :options="[{ id: enums.statusEnum.ACTIVE, name: $t('label.active') }, { id: enums.statusEnum.INACTIVE, name: $t('label.inactive') },]"
-                                label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
-                                :clearOnClose="true" placeholder="--" search-placeholder="--" />
-                        </div>
-
-                        <div class="col-12">
-                            <div class="flex flex-wrap gap-3 mt-4">
-                                <button class="db-btn py-2 text-white bg-primary">
-                                    <i class="lab lab-line-search lab-font-size-16"></i>
-                                    <span>{{ $t("button.search") }}</span>
-                                </button>
-                                <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clear">
-                                    <i class="lab lab-line-cross lab-font-size-22"></i>
-                                    <span>{{ $t("button.clear") }}</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </ListFilterPanel>
 
             <div class="db-table-responsive">
                 <table class="db-table stripe" id="print">
@@ -221,7 +196,6 @@ export default {
                 isActive: false,
             },
             listView: "users",
-            showFilter: false,
             enums: {
                 statusEnum: statusEnum,
                 statusEnumArray: {
@@ -293,6 +267,12 @@ export default {
         search: function () {
             this.list();
         },
+        applySearch: function (close) {
+            this.search();
+            if (typeof close === "function") {
+                close();
+            }
+        },
         clear: function () {
             this.props.search.paginate = 1;
             this.props.search.page = 1;
@@ -301,6 +281,12 @@ export default {
             this.props.search.phone = "";
             this.props.search.status = null;
             this.list();
+        },
+        applyClear: function (close) {
+            this.clear();
+            if (typeof close === "function") {
+                close();
+            }
         },
         list: function (page = 1) {
             this.loading.isActive = true;
