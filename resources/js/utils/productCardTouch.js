@@ -1,14 +1,14 @@
 /**
  * Product card touch + swiper behaviour.
  *
- * Tap      → open product detail
- * Swipe    → change image / video slide (handled by Swiper)
+ * Tap      → open product detail immediately
+ * Swipe    → change image / video slide (only when slide actually changes or clear horizontal drag)
  * Scroll   → page scrolls vertically (no navigation)
  */
 
-export const TAP_SLOP_PX = 12;
-export const SCROLL_SLOP_PX = 20;
-export const SWIPE_SLOP_PX = 14;
+export const TAP_SLOP_PX = 14;
+export const SCROLL_SLOP_PX = 24;
+export const SWIPE_SLOP_PX = 18;
 export const TOUCH_NAV_DEDUPE_MS = 400;
 
 /** Nested swiper inside homepage product rows — vertical scroll stays native. */
@@ -16,8 +16,8 @@ export const productCardSwiperProps = {
     nested: true,
     followFinger: true,
     touchRatio: 1,
-    touchAngle: 30,
-    threshold: 6,
+    touchAngle: 35,
+    threshold: 12,
     touchStartPreventDefault: false,
     passiveListeners: true,
     touchReleaseOnEdges: true,
@@ -36,7 +36,7 @@ export function isFinePointerDevice() {
 }
 
 export function isInteractiveCardTarget(target) {
-    return Boolean(target?.closest?.('button, .swiper-pagination'));
+    return Boolean(target?.closest?.('button, a, .swiper-pagination, .product-card__quick-view'));
 }
 
 export function readTouchPoint(event) {
@@ -47,11 +47,13 @@ export function readTouchPoint(event) {
     return { x: touch.clientX, y: touch.clientY };
 }
 
-export function createTouchSession(startPoint) {
+export function createTouchSession(startPoint, startSlideIndex = null) {
     return {
         startX: startPoint.x,
         startY: startPoint.y,
         sliderDragged: false,
+        startSlideIndex,
+        endSlideIndex: null,
     };
 }
 
@@ -61,10 +63,13 @@ export function markSliderDragged(session) {
     }
 }
 
-/** Swiper touchEnd runs before card touchend — never wipe the session here. */
-export function noteSliderTouchEnd(session) {
-    if (session?.sliderDragged) {
-        session.blockNavigation = true;
+/** Capture final slide index; do not block navigation on micro-drags alone. */
+export function noteSliderTouchEnd(session, endSlideIndex = null) {
+    if (!session) {
+        return;
+    }
+    if (endSlideIndex != null) {
+        session.endSlideIndex = endSlideIndex;
     }
 }
 
@@ -73,16 +78,17 @@ export function classifyTouchIntent(session, endPoint) {
         return 'unknown';
     }
 
-    if (session.blockNavigation) {
-        return 'swipe';
-    }
-
     const dx = endPoint.x - session.startX;
     const dy = endPoint.y - session.startY;
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
 
-    if (session.sliderDragged || (absX >= SWIPE_SLOP_PX && absX > absY)) {
+    const slideChanged =
+        session.startSlideIndex != null
+        && session.endSlideIndex != null
+        && session.startSlideIndex !== session.endSlideIndex;
+
+    if (slideChanged) {
         return 'swipe';
     }
 
@@ -90,10 +96,11 @@ export function classifyTouchIntent(session, endPoint) {
         return 'scroll';
     }
 
-    if (absX <= TAP_SLOP_PX && absY <= TAP_SLOP_PX) {
-        return 'tap';
+    if (absX >= SWIPE_SLOP_PX && absX > absY) {
+        return 'swipe';
     }
 
+    // Tiny jitter / Swiper first-move without a real slide change = tap
     return 'tap';
 }
 

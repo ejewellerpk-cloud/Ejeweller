@@ -3,10 +3,6 @@
     <section v-else class="mb-12">
         <div class="container">
             <div class="row">
-                <div class="col-12">
-                    <CategoryBreadcrumbComponent :categories="categories" />
-                </div>
-
                 <div v-if="combinedMedia.length" class="col-12 sm:col-6 lg:col-5 gallery-swiper-container relative">
                     <!-- Heart Screen Overlay Animation -->
                     <div v-if="animatingWishlist" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-2xl animate-fade-overlay">
@@ -777,7 +773,6 @@ import LoadingComponent from "../components/LoadingComponent";
 import starRating from "vue-star-rating";
 import targetService from "../../../services/targetService";
 import router from "../../../router";
-import CategoryBreadcrumbComponent from "../components/CategoryBreadcrumbComponent";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -804,7 +799,6 @@ export default {
         VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
         RecentlyViewedStripSkeleton,
         RelatedProductsSection: defineAsyncComponent(() => import("./RelatedProductsSection.vue")),
-        CategoryBreadcrumbComponent,
         starRating,
         Swiper,
         SwiperSlide,
@@ -947,9 +941,6 @@ export default {
                 Number(this.setting?.whatsapp_status) === activityEnum.ENABLE
                 && Number(this.setting?.whatsapp_product_status) === activityEnum.ENABLE
             );
-        },
-        categories: function () {
-            return this.$store.getters["frontendProductCategory/ancestorsAndSelf"];
         },
         initialVariations: function () {
             return this.$store.getters["frontendProductVariation/initialVariation"];
@@ -1919,12 +1910,6 @@ export default {
         loadSecondaryProductData: function (data, token) {
             const run = () => {
                 const tasks = [];
-
-                if (data.category_slug) {
-                    tasks.push(
-                        this.$store.dispatch('frontendProductCategory/ancestorsAndSelf', data.category_slug).catch(() => {})
-                    );
-                }
 
                 const productSlug = data.slug;
                 const productId = data.id;

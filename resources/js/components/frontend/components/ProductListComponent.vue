@@ -27,16 +27,21 @@
                     </span>
                 </div>
 
-                <button type="button" @click.stop="wishlist(product)"
+                <button
+                    type="button"
+                    @touchend.stop="onInstantAction($event, () => wishlist(product))"
+                    @click.stop="onInstantAction($event, () => wishlist(product))"
                     :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse shadow-[0_4px_12px_rgba(255,92,0,0.45)]' : 'lab-line-heart text-secondary hover:text-primary hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)]'"
-                    class="w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-10 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center">
+                    class="product-card__wishlist-btn w-8 h-8 leading-8 rounded-full text-center text-lg shadow-badge absolute top-3 right-3 z-30 bg-white hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center"
+                >
                 </button>
 
                 <button
                     type="button"
                     class="product-card__quick-view"
                     :aria-label="$t('label.quick_view')"
-                    @click.stop="openQuickView(product)"
+                    @touchend.stop="onInstantAction($event, () => openQuickView(product))"
+                    @click.stop="onInstantAction($event, () => openQuickView(product))"
                 >
                     <i class="fa-regular fa-eye"></i>
                     <span class="hidden sm:inline">{{ $t('label.quick_view') }}</span>
@@ -163,11 +168,16 @@
                     </span>
                 </div>
 
-                <button v-if="!isOutOfStock(product)" type="button" @click.stop="addToCart(product)"
+                <button
+                    v-if="!isOutOfStock(product)"
+                    type="button"
+                    @touchend.stop="onInstantAction($event, () => addToCart(product))"
+                    @click.stop="onInstantAction($event, () => addToCart(product))"
                     :title="product.variation_count > 0 ? ($t('label.choose_options') || 'Choose options') : ($t('button.add_to_cart') || 'Add to Cart')"
                     :class="animatingCartIds[product.id] ? 'animate-cart-bounce' : ''"
-                    class="product-card__cart-btn w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0">
-                    <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base"></i>
+                    class="product-card__cart-btn w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff5c00] text-white flex items-center justify-center shadow-[0_3px_8px_rgba(255,92,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 shrink-0"
+                >
+                    <i class="fa-solid fa-cart-plus text-white text-sm sm:text-base pointer-events-none"></i>
                 </button>
                 <span v-else-if="isOutOfStock(product)"
                     class="inline-flex items-center justify-center min-w-[4.5rem] sm:min-w-[5rem] h-9 sm:h-10 px-2 rounded-xl bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold uppercase tracking-wide shrink-0 pointer-events-none">
@@ -258,6 +268,7 @@ import {
     shouldSkipDuplicateClick,
     recordTouchNavigation,
 } from "../../../utils/productCardTouch";
+import { onInstantAction } from "../../../utils/instantTap";
 
 export default {
     name: "ProductListComponent",
@@ -271,6 +282,7 @@ export default {
         return {
             modules: [Pagination],
             cardSwiperProps: productCardSwiperProps,
+            onInstantAction,
         };
     },
     props: {
@@ -428,18 +440,35 @@ export default {
                 import('../product/ProductDetailsComponent.vue');
             }
         },
+        getSwiperSlideIndex(productId) {
+            const swiper = this.swiperInstances[productId];
+            if (!swiper) {
+                return null;
+            }
+            return swiper.realIndex ?? swiper.activeIndex ?? null;
+        },
         onCardTouchStart(productId, event) {
             const point = readTouchPoint(event);
             if (!point) {
                 return;
             }
-            this.touchSessions[productId] = createTouchSession(point);
+            this.touchSessions[productId] = createTouchSession(
+                point,
+                this.getSwiperSlideIndex(productId)
+            );
         },
         onSliderDragStart(productId) {
-            markSliderDragged(this.touchSessions[productId]);
+            const session = this.touchSessions[productId];
+            markSliderDragged(session);
+            if (session && session.startSlideIndex == null) {
+                session.startSlideIndex = this.getSwiperSlideIndex(productId);
+            }
         },
         onSliderTouchEnd(productId) {
-            noteSliderTouchEnd(this.touchSessions[productId]);
+            noteSliderTouchEnd(
+                this.touchSessions[productId],
+                this.getSwiperSlideIndex(productId)
+            );
         },
         onCardActivate(product, event) {
             if (isInteractiveCardTarget(event.target)) {
@@ -455,7 +484,9 @@ export default {
                     return;
                 }
 
-                event.preventDefault();
+                if (event.cancelable) {
+                    event.preventDefault();
+                }
                 recordTouchNavigation(product.id, this.touchNavTimestamps);
                 delete this.touchSessions[product.id];
                 this.navigateToProduct(product);
@@ -464,6 +495,7 @@ export default {
 
             if (event.type === 'click') {
                 if (shouldSkipDuplicateClick(product.id, this.touchNavTimestamps)) {
+                    event.preventDefault();
                     return;
                 }
                 this.navigateToProduct(product);
@@ -860,7 +892,7 @@ export default {
 .product-card-slider :deep(.swiper-pagination-bullet)::before {
     content: '';
     position: absolute;
-    inset: -10px;
+    inset: -4px;
 }
 
 .product-card-slider :deep(.swiper-pagination-bullet-active) {
@@ -939,6 +971,17 @@ export default {
     }
 }
 
+.product-card__wishlist-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.product-card__cart-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 5;
+}
+
 .product-card__quick-view {
     position: absolute;
     left: 50%;
@@ -958,7 +1001,10 @@ export default {
     font-weight: 800;
     letter-spacing: 0.01em;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-    opacity: 0.95;
+    opacity: 0;
+    pointer-events: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -966,13 +1012,8 @@ export default {
     transform: translateX(-50%) scale(0.97);
 }
 
-@media (min-width: 640px) {
-    .product-card__quick-view {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateX(-50%) translateY(4px);
-    }
-
+/* Desktop only: Quick View on hover so mobile taps open the product */
+@media (hover: hover) and (pointer: fine) {
     .product-card.group:hover .product-card__quick-view {
         opacity: 1;
         pointer-events: auto;
