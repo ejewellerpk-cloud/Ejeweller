@@ -1,5 +1,5 @@
 <template>
-    <div v-if="setting.top_bar_status === 'active' && !$route.meta.hideTopBar && topBarTitles.length > 0" 
+    <div v-if="setting.top_bar_status === 'active' && $route.name === 'frontend.home' && topBarTitles.length > 0" 
          id="frontend-top-bar"
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
          class="w-full py-2 z-40 relative min-h-[40px] overflow-hidden">
