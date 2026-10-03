@@ -582,13 +582,14 @@ export const frontendCart = {
         },
         shippingCharge: function (state, payload) {
             if (state.orderType === orderTypeEnum.DELIVERY) {
-                if (payload.setting.shipping_setup_method === shippingMethodEnum.FLAT_RATE_WISE) {
-                    state.shippingCharge = parseFloat(payload.setting.shipping_setup_flat_rate_wise_cost);
-                } else if (payload.setting.shipping_setup_method === shippingMethodEnum.PRODUCT_WISE) {
+                const method = parseInt(payload.setting?.shipping_setup_method, 10);
+                if (method === shippingMethodEnum.FLAT_RATE_WISE) {
+                    state.shippingCharge = parseFloat(payload.setting.shipping_setup_flat_rate_wise_cost) || 0;
+                } else if (method === shippingMethodEnum.PRODUCT_WISE) {
                     let totalShippingCost = 0;
                     _.forEach(state.lists, (list, listKey) => {
-                        if (list.shipping.shipping_type === ShippingTypeEnum.FLAT_RATE) {
-                            if (list.shipping.is_product_quantity_multiply === AskEnum.YES) {
+                        if (parseInt(list.shipping?.shipping_type, 10) === ShippingTypeEnum.FLAT_RATE) {
+                            if (parseInt(list.shipping.is_product_quantity_multiply, 10) === AskEnum.YES) {
                                 totalShippingCost += (parseFloat(list.shipping.shipping_cost) * list.quantity);
                             } else {
                                 totalShippingCost += (parseFloat(list.shipping.shipping_cost));
@@ -596,18 +597,18 @@ export const frontendCart = {
                         }
                     });
                     state.shippingCharge = totalShippingCost;
-                } else if (payload.setting.shipping_setup_method === shippingMethodEnum.AREA_WISE) {
+                } else if (method === shippingMethodEnum.AREA_WISE) {
                     if (Object.keys(state.shippingAddress).length > 0) {
                         let status = false;
                         _.forEach(payload.area, (list, listKey) => {
                             if (list.country === state.shippingAddress.country && list.state === state.shippingAddress.state && list.city === state.shippingAddress.city) {
                                 status = true;
-                                state.shippingCharge = parseFloat(list.shipping_cost);
+                                state.shippingCharge = parseFloat(list.shipping_cost) || 0;
                             }
                         });
 
                         if (!status) {
-                            state.shippingCharge = parseFloat(payload.setting.shipping_setup_area_wise_default_cost);
+                            state.shippingCharge = parseFloat(payload.setting.shipping_setup_area_wise_default_cost) || 0;
                         }
                     }
                 }

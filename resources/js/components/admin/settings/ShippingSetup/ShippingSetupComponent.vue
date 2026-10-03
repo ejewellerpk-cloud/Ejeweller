@@ -184,6 +184,9 @@ export default {
                     this.loading.isActive = false;
                     alertService.successFlip(res.config.method === "put" ?? 0, this.$t("menu.shipping_setup"));
                     this.errors = {};
+                    this.$store.dispatch("frontendSetting/lists").then(() => {
+                        this.$store.dispatch("frontendCart/recalculateTotals").catch(() => {});
+                    }).catch(() => {});
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = err.response.data.errors;

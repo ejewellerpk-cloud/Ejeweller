@@ -39,6 +39,7 @@ class ShippingSetupService
     {
         try {
             Settings::group('shipping_setup')->set($request->validated());
+            SettingService::clearCache();
             return $this->list();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

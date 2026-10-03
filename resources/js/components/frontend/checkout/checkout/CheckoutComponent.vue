@@ -307,15 +307,16 @@ export default {
             const activeStatus = this.enums.statusEnum.ACTIVE;
 
             Promise.allSettled([
+                this.$store.dispatch('frontendSetting/lists'),
                 this.$store.dispatch('frontendOrderArea/lists'),
                 this.$store.dispatch('frontendOutlet/lists', { status: activeStatus }),
                 this.$store.dispatch('frontendPaymentGateway/lists', { status: activeStatus }),
             ]).then((results) => {
-                if (results[1].status === 'fulfilled') {
-                    this.applyOutletList(results[1].value);
-                }
                 if (results[2].status === 'fulfilled') {
-                    this.applyPaymentGateways(results[2].value);
+                    this.applyOutletList(results[2].value);
+                }
+                if (results[3].status === 'fulfilled') {
+                    this.applyPaymentGateways(results[3].value);
                 }
                 return this.$store.dispatch('frontendCart/recalculateTotals');
             }).finally(() => {
