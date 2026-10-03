@@ -67,7 +67,7 @@ class ProductService
             $orderType   = $request->get('order_type') ?? 'desc';
 
             if ($orderColumn === 'random') {
-                return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
+                return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum('productStocks', 'quantity')->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
                     $this->applyHasVideoFilter($query, $requests);
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->productFilter)) {
@@ -101,7 +101,7 @@ class ProductService
                 );
             }
 
-            return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
+            return Product::with('media', 'videos', 'category', 'brand', 'taxes', 'tags', 'reviews', 'variations')->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])->withReviewRating()->withSum('productStocks', 'quantity')->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')->where(function ($query) use ($requests) {
                 $this->applyHasVideoFilter($query, $requests);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->productFilter)) {
@@ -398,6 +398,7 @@ class ProductService
 
             return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
+                ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                 ->with('media', 'videos', 'variations', 'taxes')
@@ -608,6 +609,7 @@ class ProductService
 
             $products = Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.product_category_id', 'products.product_brand_id', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
+                ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->withSum(
                     ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
@@ -861,6 +863,7 @@ class ProductService
 
             return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
+                ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                 ->with('media', 'videos', 'variations', 'reviews', 'taxes')
@@ -891,6 +894,7 @@ class ProductService
 
             return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
                 ->withReviewRating()
+                ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                 ->with('media', 'videos', 'variations', 'reviews', 'taxes')
@@ -913,7 +917,7 @@ class ProductService
         try {
             return Product::with('media', 'videos', 'category', 'unit', 'taxes')
                 ->with(['seo' => fn($query) => $query->with('media')])
-                ->withSum('stockItems', 'quantity')
+                ->withSum('productStocks', 'quantity')
                 ->withCount('cartTrackers')
                 ->withCount('variations')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
@@ -937,7 +941,7 @@ class ProductService
         try {
             return Product::with('media', 'videos', 'category', 'unit', 'taxes')
                 ->with(['seo' => fn($query) => $query->with('media')])
-                ->withSum('stockItems', 'quantity')
+                ->withSum('productStocks', 'quantity')
                 ->withCount('cartTrackers')
                 ->withCount('variations')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')

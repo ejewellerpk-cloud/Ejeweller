@@ -140,6 +140,9 @@ class PurchaseService
                     $this->purchase->addMediaFromRequest('file')->toMediaCollection('purchase');
                 }
             });
+            if ((int) $request->status === PurchaseStatus::RECEIVED) {
+                app(ProductSectionService::class)->clearHomeSectionsCache();
+            }
             return $this->purchase;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -248,6 +251,7 @@ class PurchaseService
                     $purchase->addMediaFromRequest('file')->toMediaCollection('purchase');
                 }
             });
+            app(ProductSectionService::class)->clearHomeSectionsCache();
             return $purchase;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

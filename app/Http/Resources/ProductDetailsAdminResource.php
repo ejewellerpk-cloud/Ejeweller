@@ -69,7 +69,7 @@ class ProductDetailsAdminResource extends JsonResource
             'is_offer'                     => $isOffer,
             'rating_star'                  => $this->rating_star,
             'rating_star_count'            => $this->rating_star_count,
-            'stock'                        => $this->show_stock_out == Activity::DISABLE ? (int) $this->stock_items_sum_quantity : 0,
+            'stock'                        => (int) $this->stock,
             'taxes'                        => SimpleTaxResource::collection($this->taxes),
             'thumb'                        => $this->thumb,
             "barcode_image"                => $this->barcodeImage,

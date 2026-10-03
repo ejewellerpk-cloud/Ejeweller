@@ -179,13 +179,17 @@ class Product extends Model implements HasMedia
 
     public function getStockAttribute(): int
     {
-        if ($this->show_stock_out == \App\Enums\Activity::DISABLE) {
-            if (isset($this->attributes['stock_items_sum_quantity'])) {
-                return (int) $this->attributes['stock_items_sum_quantity'];
-            }
-            return (int) $this->stockItems()->sum('quantity');
+        // DISABLE = track real inventory. ENABLE = force sold-out on storefront.
+        if ($this->show_stock_out != \App\Enums\Activity::DISABLE) {
+            return 0;
         }
-        return 0;
+
+        // All active stock for this product_id (simple product + variations).
+        if (array_key_exists('product_stocks_sum_quantity', $this->attributes)) {
+            return (int) $this->attributes['product_stocks_sum_quantity'];
+        }
+
+        return (int) $this->productStocks()->sum('quantity');
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -294,6 +298,15 @@ class Product extends Model implements HasMedia
     public function stockItems(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->stocks()->where('status', Status::ACTIVE);
+    }
+
+    /**
+     * All active ledger rows for this product (parent + variation purchases/orders).
+     * Storefront cards must use this so variation stock is not shown as sold out.
+     */
+    public function productStocks(): HasMany
+    {
+        return $this->hasMany(Stock::class, 'product_id', 'id')->where('status', Status::ACTIVE);
     }
 
     public function taxes(): \Illuminate\Database\Eloquent\Relations\HasMany
