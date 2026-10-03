@@ -1,7 +1,6 @@
 <template>
     <section class="skeleton-section mb-10 sm:mb-14" aria-hidden="true">
         <div class="container">
-            <SkeletonBone width="40%" height="0.875rem" rounded="pill" class="mb-5" />
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
                 <div class="lg:col-span-7">
                     <div class="flex flex-col lg:flex-row gap-3">
