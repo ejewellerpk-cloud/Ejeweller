@@ -832,11 +832,7 @@
 
     /* GALLERY */
     .gallery-swiper {
-        @apply px-0 mb-0
-    }
-
-    .pdp-gallery .gallery-swiper {
-        @apply mb-0
+        @apply px-1 mb-3
     }
 
     .gallery-swiper .swiper-button-prev {

@@ -4,7 +4,7 @@
         <span>{{ $t('label.loading') || 'Loading options...' }}</span>
     </div>
 
-    <div v-else-if="variationTree.length > 0" class="product-variation-picker space-y-3.5 mb-5">
+    <div v-else-if="variationTree.length > 0" class="product-variation-picker space-y-4 mb-6">
         <div
             v-for="level in visibleLevels"
             :key="'attr-' + level.levelIndex"
