@@ -268,67 +268,73 @@
                     </button>
 
                     <div class="pdp-buybox__price flex flex-wrap items-baseline gap-2.5 mb-3">
-                        <span class="text-2xl sm:text-3xl font-bold text-heading tracking-tight">
+                        <span class="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
                             {{ detailPrices.salePrice }}
                         </span>
                         <template v-if="detailPrices.onSale">
-                            <del class="text-base text-slate-400">{{ detailPrices.originalPrice }}</del>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-600">
-                                {{ detailPrices.percent }}% off
+                            <del class="text-base text-gray-400">{{ detailPrices.originalPrice }}</del>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                                {{ detailPrices.percent }}% OFF
                             </span>
                         </template>
                     </div>
 
                     <div class="pdp-buybox__meta flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-600 mb-4 pb-4 border-b border-slate-100">
-                        <span v-if="currentActiveBadge" class="inline-flex items-center gap-1.5">
-                            <i v-if="currentActiveBadge.type === 'stock-ok'" class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
-                            <i v-else-if="currentActiveBadge.type === 'stock-low'" class="fa-solid fa-circle-exclamation text-amber-500 text-[10px]"></i>
-                            <i v-else-if="currentActiveBadge.type === 'sold'" class="fa-solid fa-bag-shopping text-slate-400 text-[10px]"></i>
-                            <span :class="currentActiveBadge.type === 'stock-low' ? 'text-amber-700 font-medium' : ''">{{ currentActiveBadge.text }}</span>
+                        <span v-if="currentActiveBadge" class="inline-flex items-center gap-1.5 font-semibold">
+                            <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2 w-2 shrink-0">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                            <i v-else-if="currentActiveBadge.type === 'stock-ok'" class="fa-solid fa-circle-check text-blue-500 text-[11px]"></i>
+                            <i v-else-if="currentActiveBadge.type === 'sold'" class="fa-solid fa-fire text-amber-500 text-[11px]"></i>
+                            <span :class="currentActiveBadge.type === 'stock-low' ? 'text-red-600' : currentActiveBadge.type === 'sold' ? 'text-emerald-700' : 'text-blue-600'">
+                                {{ currentActiveBadge.text }}
+                            </span>
                         </span>
                         <span class="text-slate-300" v-if="currentActiveBadge">·</span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <i class="fa-solid fa-truck text-[10px] text-slate-400"></i>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-gray-900">
+                            <i class="fa-solid fa-truck-fast text-[11px] text-primary"></i>
                             {{ getEstimatedDeliveryDate() }}
                         </span>
                         <span class="text-slate-300">·</span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <i class="fa-solid fa-box text-[10px] text-slate-400"></i>
-                            {{ getShippingFee() }}
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-gray-900">
+                            <i class="fa-solid fa-box text-[11px] text-green-600"></i>
+                            <span class="text-green-600">{{ getShippingFee() }}</span>
                         </span>
                     </div>
 
                     <p
                         v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0"
-                        class="text-slate-600 text-sm mb-4"
+                        class="text-red-500 font-semibold text-sm mb-3 flex items-center gap-1.5"
                     >
-                        {{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}
+                        <i class="fa-solid fa-fire text-red-500 text-xs"></i>
+                        <span>{{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}</span>
                     </p>
 
                     <div
                         v-if="product.flash_sale && flashSaleTimeLeft"
-                        class="mb-5 p-3 sm:p-4 rounded-xl bg-primary-slate border border-primary/20 flex flex-wrap items-center justify-between gap-3"
+                        class="mb-4 px-2.5 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white flex flex-wrap items-center justify-between gap-2"
                     >
-                        <div>
-                            <p class="text-sm font-bold text-heading">Flash sale ends in</p>
-                            <p class="text-xs text-slate-500 mt-0.5">Limited-time price</p>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <i class="fa-solid fa-bolt text-sm text-yellow-300 shrink-0"></i>
+                            <p class="text-xs font-bold leading-tight whitespace-nowrap">Flash Sale Ends In</p>
                         </div>
-                        <div class="flex gap-1.5 text-center">
-                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
-                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.days }}</span>
-                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Days</span>
+                        <div class="flex gap-1 text-center">
+                            <div class="bg-white/20 rounded px-1.5 py-1 min-w-[34px] backdrop-blur-sm border border-white/25">
+                                <span class="block text-sm font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
+                                <span class="text-[8px] uppercase font-bold tracking-wide mt-0.5 block opacity-80">Days</span>
                             </div>
-                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
-                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.hours }}</span>
-                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Hrs</span>
+                            <div class="bg-white/20 rounded px-1.5 py-1 min-w-[34px] backdrop-blur-sm border border-white/25">
+                                <span class="block text-sm font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
+                                <span class="text-[8px] uppercase font-bold tracking-wide mt-0.5 block opacity-80">Hrs</span>
                             </div>
-                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
-                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.minutes }}</span>
-                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Min</span>
+                            <div class="bg-white/20 rounded px-1.5 py-1 min-w-[34px] backdrop-blur-sm border border-white/25">
+                                <span class="block text-sm font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
+                                <span class="text-[8px] uppercase font-bold tracking-wide mt-0.5 block opacity-80">Min</span>
                             </div>
-                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
-                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.seconds }}</span>
-                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Sec</span>
+                            <div class="bg-white/20 rounded px-1.5 py-1 min-w-[34px] backdrop-blur-sm border border-white/25">
+                                <span class="block text-sm font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
+                                <span class="text-[8px] uppercase font-bold tracking-wide mt-0.5 block opacity-80">Sec</span>
                             </div>
                         </div>
                     </div>
@@ -382,7 +388,7 @@
 
                     <p v-if="temp.quantity > 1" class="text-sm text-slate-600 mb-4">
                         {{ $t('label.total_price') }}:
-                        <span class="font-bold text-heading">
+                        <span class="font-bold text-green-500 text-lg">
                             {{
                                 currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point,
                                     setting.site_default_currency_symbol, setting.site_currency_position)
@@ -1163,9 +1169,9 @@ export default {
             } else if (this.temp.stock > 0) {
                 list.push({
                     type: 'stock-ok',
-                    text: 'In stock',
-                    icon: 'fa-solid fa-circle-check text-emerald-500 mr-2',
-                    bgClass: 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+                    text: 'In Stock',
+                    icon: 'fa-solid fa-circle-check text-blue-500 mr-2',
+                    bgClass: 'bg-blue-50 border border-blue-100 text-blue-600'
                 });
             }
             
@@ -1173,9 +1179,9 @@ export default {
             if (this.shouldShowSoldCount()) {
                 list.push({
                     type: 'sold',
-                    text: `${this.getProductSoldCount()} sold`,
-                    icon: 'fa-solid fa-bag-shopping text-slate-400 mr-2',
-                    bgClass: 'bg-slate-50 border border-slate-100 text-slate-600'
+                    text: `${this.getProductSoldCount()} Sold`,
+                    icon: 'fa-solid fa-fire text-amber-500 mr-2',
+                    bgClass: 'bg-emerald-50 border border-emerald-100 text-emerald-700'
                 });
             }
             
