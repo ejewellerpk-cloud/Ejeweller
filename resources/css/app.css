@@ -564,36 +564,92 @@
         @apply scale-y-100 pointer-events-auto
     }
 
-    .header-category-mega__tab {
-        @apply text-heading hover:text-primary
+    .header-category-mega__layout {
+        @apply flex max-h-[70vh]
     }
 
-    .header-category-mega__tab::after {
-        @apply content-[''] absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-0 bg-primary transition-all duration-300 rounded-full
+    .header-category-mega__rail {
+        @apply w-60 shrink-0 overflow-y-auto border-r border-slate-100 bg-slate-50/80 py-2
     }
 
-    .header-category-mega__tab--active {
-        @apply text-primary
+    .header-category-mega__rail-item {
+        @apply flex items-center justify-between gap-2 px-5 py-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-white hover:text-primary
     }
 
-    .header-category-mega__tab--active::after {
-        @apply w-3/4
+    .header-category-mega__rail-item--active {
+        @apply bg-white text-primary shadow-[inset_3px_0_0_0_rgb(var(--primary))]
     }
 
-    .header-category-mega__sub-pill {
-        @apply border-slate-200 bg-white text-slate-600 hover:border-primary/30 hover:text-primary
+    .header-category-mega__rail-label {
+        @apply min-w-0 truncate
     }
 
-    .header-category-mega__sub-pill--active {
-        @apply border-primary bg-primary text-white shadow-sm
+    .header-category-mega__rail-chevron {
+        @apply shrink-0 text-xs opacity-50
     }
 
-    .header-category-mega__panel {
-        @apply bg-white
+    .header-category-mega__rail-item--active .header-category-mega__rail-chevron {
+        @apply opacity-80 text-primary
     }
 
-    .header-category-mega__hero {
-        @apply ring-1 ring-slate-200/80
+    .header-category-mega__main {
+        @apply min-w-0 flex-1 overflow-y-auto bg-white
+    }
+
+    .header-category-mega__main-inner {
+        @apply flex gap-6 p-6 lg:p-7
+    }
+
+    .header-category-mega__columns-wrap {
+        @apply min-w-0 flex-1
+    }
+
+    .header-category-mega__columns {
+        @apply grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-7
+    }
+
+    .header-category-mega__col {
+        @apply min-w-0
+    }
+
+    .header-category-mega__col-title {
+        @apply inline-block text-sm font-bold text-heading border-b border-slate-200 pb-2 mb-3 hover:text-primary transition-colors duration-200
+    }
+
+    .header-category-mega__col-list {
+        @apply space-y-1.5
+    }
+
+    .header-category-mega__link {
+        @apply text-sm leading-6 text-slate-600 hover:text-primary transition-colors duration-200 inline-block
+    }
+
+    .header-category-mega__link--shop {
+        @apply font-semibold text-primary
+    }
+
+    .header-category-mega__empty {
+        @apply flex items-start py-2
+    }
+
+    .header-category-mega__feature {
+        @apply relative hidden w-52 shrink-0 overflow-hidden rounded-xl bg-slate-100 lg:block aspect-[3/4]
+    }
+
+    .header-category-mega__feature-img {
+        @apply h-full w-full object-cover transition-transform duration-500 group-hover:scale-105
+    }
+
+    .header-category-mega__feature-overlay {
+        @apply absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4 text-white
+    }
+
+    .header-category-mega__feature-name {
+        @apply text-sm font-bold leading-tight
+    }
+
+    .header-category-mega__feature-cta {
+        @apply inline-flex items-center gap-1.5 text-xs font-semibold opacity-90
     }
 
     .header-nav-menu {
