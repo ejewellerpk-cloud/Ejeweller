@@ -1,6 +1,6 @@
 <template>
     <div
-        class="header-category-mega fixed left-0 z-50 w-full origin-top scale-y-0 transition-all duration-300"
+        class="header-category-mega fixed left-0 z-[60] w-full origin-top scale-y-0 transition-all duration-300"
         style="top: var(--frontend-header-bottom, 4rem);"
         @mouseenter="onMegaEnter"
     >

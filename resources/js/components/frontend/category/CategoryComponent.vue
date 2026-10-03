@@ -6,15 +6,15 @@
             </h3>
 
             <div v-if="categories.length > 0">
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-5">
-                    <div v-for="category in categories" :key="category.id" class="relative h-full">
+                <div class="category-page-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-5">
+                    <div v-for="category in categories" :key="category.id" class="category-page-grid__cell relative h-full z-0 hover:z-20 focus-within:z-20">
                         <router-link
                             :to="{ name: 'frontend.product', query: { category: category.slug } }"
-                            class="category-card w-full h-full flex flex-col items-center gap-2 sm:gap-3 group">
-                            <div class="category-card__media w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
+                            class="category-card w-full h-full flex flex-col items-center gap-2 sm:gap-3 group relative isolate">
+                            <div class="category-card__media w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] group-hover:border-primary/20 group-hover:-translate-y-0.5">
                                 <img
                                     v-if="category.thumb && !category.thumb.includes('default/category')"
-                                    class="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.05]"
+                                    class="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.04]"
                                     :src="category.thumb"
                                     :alt="category.name"
                                     loading="lazy"

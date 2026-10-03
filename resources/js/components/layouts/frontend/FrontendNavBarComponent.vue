@@ -24,7 +24,7 @@
 
     <header
         id="frontend-main-header"
-        class="frontend-main-header relative z-40 overflow-visible max-lg:sticky max-lg:top-0 w-full mb-5 sm:mb-8 shadow-xs bg-white"
+        class="frontend-main-header relative z-50 overflow-visible max-lg:sticky max-lg:top-0 w-full mb-5 sm:mb-8 shadow-xs bg-white"
         :class="isSticky === true ? 'lg:fixed lg:top-0 lg:left-0 lg:right-0' : ''">
         <div class="container py-3 px-3 sm:py-3.5 sm:px-4 lg:py-0 overflow-visible">
             <div class="flex items-center justify-between gap-3 sm:gap-5 overflow-visible">

@@ -556,12 +556,14 @@
     }
 
     .header-category-mega {
-        @apply pointer-events-none
+        @apply pointer-events-none;
+        z-index: 60;
     }
 
     .header-nav-item--categories:hover > .header-category-mega,
     .header-category-mega:hover {
-        @apply scale-y-100 pointer-events-auto
+        @apply scale-y-100 pointer-events-auto;
+        z-index: 60;
     }
 
     .header-category-mega__layout {
@@ -725,7 +727,7 @@
 
     .frontend-main-header {
         position: relative;
-        z-index: 40;
+        z-index: 50;
         overflow: visible;
         padding-top: var(--safe-top);
         padding-left: var(--safe-left);
@@ -739,14 +741,40 @@
         }
     }
 
+    /* Keep nav/mega above search + account icons in the header flex row */
+    .frontend-main-header .header-nav {
+        position: relative;
+        z-index: 30;
+    }
+
+    .frontend-main-header .header-nav-item--categories {
+        position: relative;
+        z-index: 40;
+    }
+
+    .frontend-main-header .header-nav-item--categories:hover,
+    .frontend-main-header .header-nav-item--categories:focus-within {
+        z-index: 60;
+    }
+
+    .frontend-main-header form {
+        position: relative;
+        z-index: 10;
+    }
+
     .header-account-dropdown {
         position: relative;
-        z-index: 50;
+        z-index: 20;
     }
 
     .header-account-dropdown-menu {
         position: absolute;
         z-index: 50;
+    }
+
+    .header-account-dropdown:hover,
+    .header-account-dropdown:focus-within {
+        z-index: 55;
     }
 
     .hero-banner-section {
@@ -804,7 +832,11 @@
 
     /* GALLERY */
     .gallery-swiper {
-        @apply px-1 mb-3
+        @apply px-0 mb-0
+    }
+
+    .pdp-gallery .gallery-swiper {
+        @apply mb-0
     }
 
     .gallery-swiper .swiper-button-prev {

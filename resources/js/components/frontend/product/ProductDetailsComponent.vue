@@ -1,272 +1,337 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
-    <section v-else class="mb-12">
+    <section v-else class="pdp mb-10 sm:mb-14">
         <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <CategoryBreadcrumbComponent :categories="categories" />
-                </div>
+            <div class="mb-4 sm:mb-5">
+                <CategoryBreadcrumbComponent :categories="categories" />
+            </div>
 
-                <div v-if="combinedMedia.length" class="col-12 sm:col-6 lg:col-5 gallery-swiper-container relative">
-                    <!-- Heart Screen Overlay Animation -->
-                    <div v-if="animatingWishlist" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-2xl animate-fade-overlay">
-                        <div class="w-20 h-20 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
-                            <i class="lab-fill-heart text-primary text-4xl animate-heart-pulse"></i>
-                        </div>
-                    </div>
-
-                    <!-- SAVE % tag overlaid on top-left of image/slider -->
-                    <span v-if="detailPrices.onSale" 
-                        class="absolute top-4 left-4 z-20 bg-primary text-white text-[11px] sm:text-xs font-extrabold px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
-                        <i class="fa-solid fa-tags text-[10px]"></i>
-                        SAVE {{ detailPrices.percent }}%
-                    </span>
-
-                    <!-- Wishlist Button Overlay -->
-                    <button type="button" @click="wishlist()"
-                        class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-16 z-20 bg-white hover:scale-105 active:scale-90 transition-all duration-300 flex items-center justify-center border border-gray-100">
-                        <i :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse' : 'lab-line-heart text-secondary'" class="text-xl mt-0.5"></i>
-                    </button>
-
-                    <!-- Share Button Overlay -->
-                    <button type="button" @click="shareProduct"
-                        class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
-                        <i class="fa-solid fa-share-nodes text-base"></i>
-                    </button>
-
-                    <Swiper dir="ltr"
-                        :key="'gallery-main-' + props.search.slug"
-                        v-bind="gallerySwiperProps"
-                        :spaceBetween="10"
-                        :navigation="true"
-                        :pagination="galleryPaginationConfig"
-                        :thumbs="galleryThumbsConfig"
-                        :modules="modules"
-                        :loop="combinedMedia.length > 2"
-                        class="gallery-swiper mb-4"
-                        @swiper="setMainSwiper"
-                        @slideChange="onMainGallerySlideChange"
-                        @sliderFirstMove="onGallerySliderDrag"
-                        @touchEnd="onGallerySliderTouchEnd"
-                        @click="onGallerySwiperClick">
-                        <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
-                            <template v-if="media.type === 'image'">
-                                <div class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide">
-                                    <img :src="media.url" alt="product"
-                                        :loading="index === 0 ? 'eager' : 'lazy'"
-                                        :fetchpriority="index === 0 ? 'high' : 'auto'"
-                                        decoding="async"
-                                        draggable="false"
-                                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                                        class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center pointer-events-none" />
-                                </div>
-                            </template>
-                            <template v-else-if="media.type === 'video'">
-                                <iframe v-if="isEmbedVideo(media)"
-                                    :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                                <div v-else class="relative w-full h-full bg-black">
+            <div class="pdp-hero grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
+                <!-- Gallery -->
+                <div class="pdp-gallery lg:col-span-7 gallery-swiper-container">
+                    <div v-if="combinedMedia.length" class="flex flex-col lg:flex-row gap-3">
+                        <!-- Desktop vertical thumbs -->
+                        <div
+                            v-if="combinedMedia.length > 1"
+                            class="pdp-gallery__thumbs hidden lg:flex flex-col gap-2 w-[72px] shrink-0 max-h-[min(560px,70vh)] overflow-y-auto order-1"
+                        >
+                            <button
+                                v-for="(media, index) in combinedMedia"
+                                :key="'thumb-lg-' + index"
+                                type="button"
+                                class="pdp-gallery__thumb relative w-[72px] h-[72px] rounded-lg overflow-hidden border-2 bg-slate-100 shrink-0 transition-colors duration-200"
+                                :class="mainSwiperActiveIndex === index ? 'border-primary' : 'border-transparent hover:border-slate-300'"
+                                @click="slideGalleryTo(index)"
+                                @mouseenter="slideGalleryTo(index)"
+                            >
+                                <img
+                                    v-if="media.type === 'image'"
+                                    class="w-full h-full object-cover"
+                                    loading="lazy"
+                                    :src="media.url"
+                                    alt=""
+                                    @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
+                                />
+                                <template v-else>
                                     <img
+                                        class="w-full h-full object-cover"
+                                        loading="lazy"
                                         :src="getVideoPoster(media)"
-                                        alt="video preview"
-                                        class="w-full h-full object-cover absolute inset-0"
-                                        :class="mainSwiperActiveIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                                        alt=""
+                                        @error="onVideoPosterImageError($event)"
                                     />
-                                    <video
-                                        v-if="mainSwiperActiveIndex === index"
-                                        :src="media.data.link"
-                                        :poster="getVideoPoster(media)"
-                                        autoplay
-                                        muted
-                                        loop
-                                        playsinline
-                                        webkit-playsinline
-                                        preload="auto"
-                                        class="w-full h-full object-cover relative z-[1] pointer-events-none"
-                                    ></video>
-                                </div>
-                            </template>
-                        </SwiperSlide>
-                    </Swiper>
-
-                    <Swiper v-if="combinedMedia.length > 1"
-                        :key="'gallery-thumbs-' + props.search.slug"
-                        dir="ltr"
-                        @swiper="setThumbsSwiper"
-                        :spaceBetween="12"
-                        :slidesPerView="4"
-                        :freeMode="true"
-                        :watchSlidesProgress="true" :modules="modules" class="thumb-swiper hidden sm:block">
-                        <SwiperSlide v-for="(media, index) in combinedMedia" :key="'thumb-media-' + index"
-                            @mouseover="thumbsSwiper ? thumbsSwiper.slideTo(index) : null"
-                            class="w-full cursor-pointer rounded-lg border border-gray-200 transition-all duration-500 bg-black flex items-center justify-center aspect-square relative" style="aspect-ratio: 1/1;">
-                            <template v-if="media.type === 'image'">
-                                <img class="w-full h-full rounded-lg border-2 border-gray-200 transition-all duration-500 object-cover" loading="lazy"
-                                    @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
-                                    :src="media.url" alt="gallery" />
-                            </template>
-                            <template v-else-if="media.type === 'video'">
-                                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-45 rounded-lg z-10">
-                                    <i class="fa-solid fa-play text-white text-base"></i>
-                                </div>
-                                <img class="w-full h-full rounded-lg border-2 border-gray-200 object-cover" loading="lazy"
-                                    @error="onVideoPosterImageError($event)"
-                                    :src="getVideoPoster(media)" alt="video thumbnail" />
-                            </template>
-                        </SwiperSlide>
-                    </Swiper>
-                </div>
-
-                <div v-else class="col-12 sm:col-6 lg:col-5 relative">
-                    <!-- Heart Screen Overlay Animation -->
-                    <div v-if="animatingWishlist" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-2xl animate-fade-overlay">
-                        <div class="w-20 h-20 rounded-full bg-white/95 flex items-center justify-center shadow-2xl animate-heart-burst">
-                            <i class="lab-fill-heart text-primary text-4xl animate-heart-pulse"></i>
-                        </div>
-                    </div>
-
-                    <!-- SAVE % tag overlaid on top-left of image/slider -->
-                    <span v-if="detailPrices.onSale" 
-                        class="absolute top-4 left-4 z-20 bg-primary text-white text-[11px] sm:text-xs font-extrabold px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(255,92,0,0.25)] flex items-center gap-1 animate-pulse">
-                        <i class="fa-solid fa-tags text-[10px]"></i>
-                        SAVE {{ detailPrices.percent }}%
-                    </span>
-
-                    <!-- Wishlist Button Overlay -->
-                    <button type="button" @click="wishlist(product.wishlist = !product.wishlist)"
-                        class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-16 z-20 bg-white hover:scale-105 active:scale-90 transition-all duration-300 flex items-center justify-center border border-gray-100">
-                        <i :class="product.wishlist ? 'lab-fill-heart text-primary animate-heart-pulse' : 'lab-line-heart text-secondary'" class="text-xl mt-0.5"></i>
-                    </button>
-
-                    <!-- Share Button Overlay -->
-                    <button type="button" @click="shareProduct"
-                        class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-4 z-20 bg-white text-secondary hover:text-primary hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border border-gray-100">
-                        <i class="fa-solid fa-share-nodes text-base"></i>
-                    </button>
-                    <div @touchend="onFallbackImageTap($event)"
-                        @click="onFallbackImageTap($event)"
-                        class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide rounded-2xl">
-                        <img :src="product.image" alt="products" loading="eager" fetchpriority="high" decoding="async"
-                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                            class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center rounded-2xl" />
-                    </div>
-                </div>
-
-                <div class="col-12 sm:col-6 lg:col-7 lg:pl-10">
-                    <!-- Premium Interactive Price & Offer Row (Container styling removed as requested) -->
-                    <div class="mb-2">
-                        <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full">
-                            <!-- Left: Price and Discount Pill -->
-                            <div class="flex flex-nowrap items-baseline gap-2 sm:gap-3 shrink-0">
-                                <span class="text-4xl min-[360px]:text-5xl sm:text-6xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
-                                    {{ detailPrices.salePrice }}
-                                </span>
-                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="detailPrices.onSale">
-                                    <del class="text-base min-[360px]:text-lg sm:text-xl font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
-                                        {{ detailPrices.originalPrice }}
-                                    </del>
-                                    <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs min-[360px]:text-sm sm:text-sm font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
-                                        {{ detailPrices.percent }}% OFF
+                                    <span class="absolute inset-0 flex items-center justify-center bg-black/40">
+                                        <i class="fa-solid fa-play text-white text-xs"></i>
                                     </span>
+                                </template>
+                            </button>
+                        </div>
+
+                        <div class="relative flex-1 min-w-0 order-2">
+                            <div v-if="animatingWishlist" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-xl animate-fade-overlay">
+                                <div class="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl animate-heart-burst">
+                                    <i class="lab-fill-heart text-primary text-3xl animate-heart-pulse"></i>
                                 </div>
                             </div>
 
-                            <!-- Right: Dynamic Ticker Stock & Sales Conveyor Badge -->
-                            <div class="h-[44px] overflow-hidden flex items-center relative select-none shrink-0">
-                                <Transition name="badge-fade">
-                                    <div :key="currentActiveBadge ? currentActiveBadge.type : 'empty'" v-if="currentActiveBadge"
-                                        :class="currentActiveBadge.bgClass"
-                                        class="inline-flex items-center px-3 py-2 sm:px-5 sm:py-2.5 rounded-full border text-xs min-[360px]:text-sm sm:text-base font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
-                                        
-                                        <!-- Low Stock Pulsing Indicator -->
-                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2.5 w-2.5 mr-2 sm:h-3 sm:w-3 sm:mr-2.5 shrink-0">
-                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                        </span>
-                                        
-                                        <!-- In Stock / Sold Count Icons -->
-                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-2 sm:mr-2.5 text-xs min-[360px]:text-sm sm:text-base"></i>
-                                        
-                                        <span>{{ currentActiveBadge.text }}</span>
-                                    </div>
-                                </Transition>
+                            <span
+                                v-if="detailPrices.onSale"
+                                class="absolute top-3 left-3 z-20 bg-heading text-white text-[11px] font-semibold px-2.5 py-1 rounded-md"
+                            >
+                                {{ detailPrices.percent }}% off
+                            </span>
+
+                            <div class="absolute top-3 right-3 z-20 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    @click="wishlist()"
+                                    class="w-9 h-9 rounded-full bg-white/95 shadow-sm border border-slate-200 text-secondary hover:text-primary flex items-center justify-center transition-colors"
+                                    :aria-label="$t('label.wishlist')"
+                                >
+                                    <i :class="isWishlisted(product) ? 'lab-fill-heart text-primary' : 'lab-line-heart'" class="text-lg"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="shareProduct"
+                                    class="w-9 h-9 rounded-full bg-white/95 shadow-sm border border-slate-200 text-secondary hover:text-primary flex items-center justify-center transition-colors"
+                                    :aria-label="$t('label.share')"
+                                >
+                                    <i class="fa-solid fa-share-nodes text-sm"></i>
+                                </button>
                             </div>
+
+                            <Swiper
+                                dir="ltr"
+                                :key="'gallery-main-' + props.search.slug"
+                                v-bind="gallerySwiperProps"
+                                :spaceBetween="10"
+                                :navigation="true"
+                                :pagination="galleryPaginationConfig"
+                                :modules="modules"
+                                :loop="combinedMedia.length > 2"
+                                class="gallery-swiper pdp-gallery__main mb-0"
+                                @swiper="setMainSwiper"
+                                @slideChange="onMainGallerySlideChange"
+                                @sliderFirstMove="onGallerySliderDrag"
+                                @touchEnd="onGallerySliderTouchEnd"
+                                @click="onGallerySwiperClick"
+                            >
+                                <SwiperSlide
+                                    v-for="(media, index) in combinedMedia"
+                                    :key="'media-' + index"
+                                    class="w-full flex items-center justify-center bg-slate-100 rounded-xl overflow-hidden aspect-square"
+                                >
+                                    <template v-if="media.type === 'image'">
+                                        <div class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide">
+                                            <img
+                                                :src="media.url"
+                                                :alt="product.name"
+                                                :loading="index === 0 ? 'eager' : 'lazy'"
+                                                :fetchpriority="index === 0 ? 'high' : 'auto'"
+                                                decoding="async"
+                                                draggable="false"
+                                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
+                                                class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center pointer-events-none"
+                                            />
+                                        </div>
+                                    </template>
+                                    <template v-else-if="media.type === 'video'">
+                                        <iframe
+                                            v-if="isEmbedVideo(media)"
+                                            :src="formatVideoLink(media.data)"
+                                            class="w-full h-full pointer-events-none"
+                                            frameborder="0"
+                                            allow="autoplay; encrypted-media"
+                                            allowfullscreen
+                                        ></iframe>
+                                        <div v-else class="relative w-full h-full bg-black">
+                                            <img
+                                                :src="getVideoPoster(media)"
+                                                alt="video preview"
+                                                class="w-full h-full object-cover absolute inset-0"
+                                                :class="mainSwiperActiveIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                                            />
+                                            <video
+                                                v-if="mainSwiperActiveIndex === index"
+                                                :src="media.data.link"
+                                                :poster="getVideoPoster(media)"
+                                                autoplay
+                                                muted
+                                                loop
+                                                playsinline
+                                                webkit-playsinline
+                                                preload="auto"
+                                                class="w-full h-full object-cover relative z-[1] pointer-events-none"
+                                            ></video>
+                                        </div>
+                                    </template>
+                                </SwiperSlide>
+                            </Swiper>
+                        </div>
+
+                        <!-- Mobile / tablet horizontal thumbs -->
+                        <div
+                            v-if="combinedMedia.length > 1"
+                            class="pdp-gallery__thumbs-mobile flex lg:hidden gap-2 overflow-x-auto order-3 pb-0.5"
+                        >
+                            <button
+                                v-for="(media, index) in combinedMedia"
+                                :key="'thumb-sm-' + index"
+                                type="button"
+                                class="pdp-gallery__thumb relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-lg overflow-hidden border-2 bg-slate-100 shrink-0 transition-colors duration-200"
+                                :class="mainSwiperActiveIndex === index ? 'border-primary' : 'border-transparent hover:border-slate-300'"
+                                @click="slideGalleryTo(index)"
+                            >
+                                <img
+                                    v-if="media.type === 'image'"
+                                    class="w-full h-full object-cover"
+                                    loading="lazy"
+                                    :src="media.url"
+                                    alt=""
+                                    @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.add('object-contain', 'bg-white', 'p-2')"
+                                />
+                                <template v-else>
+                                    <img
+                                        class="w-full h-full object-cover"
+                                        loading="lazy"
+                                        :src="getVideoPoster(media)"
+                                        alt=""
+                                        @error="onVideoPosterImageError($event)"
+                                    />
+                                    <span class="absolute inset-0 flex items-center justify-center bg-black/40">
+                                        <i class="fa-solid fa-play text-white text-xs"></i>
+                                    </span>
+                                </template>
+                            </button>
                         </div>
                     </div>
 
-                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm mb-2 flex items-center gap-1.5 animate-pulse">
-                        <i class="fa-solid fa-fire text-red-500 text-xs"></i>
-                        <span>{{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}</span>
+                    <!-- Fallback single image -->
+                    <div v-else class="relative">
+                        <div v-if="animatingWishlist" class="absolute inset-0 flex items-center justify-center bg-black/10 z-30 pointer-events-none rounded-xl animate-fade-overlay">
+                            <div class="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl animate-heart-burst">
+                                <i class="lab-fill-heart text-primary text-3xl animate-heart-pulse"></i>
+                            </div>
+                        </div>
+                        <span
+                            v-if="detailPrices.onSale"
+                            class="absolute top-3 left-3 z-20 bg-heading text-white text-[11px] font-semibold px-2.5 py-1 rounded-md"
+                        >
+                            {{ detailPrices.percent }}% off
+                        </span>
+                        <div class="absolute top-3 right-3 z-20 flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="wishlist()"
+                                class="w-9 h-9 rounded-full bg-white/95 shadow-sm border border-slate-200 text-secondary hover:text-primary flex items-center justify-center transition-colors"
+                            >
+                                <i :class="isWishlisted(product) ? 'lab-fill-heart text-primary' : 'lab-line-heart'" class="text-lg"></i>
+                            </button>
+                            <button
+                                type="button"
+                                @click="shareProduct"
+                                class="w-9 h-9 rounded-full bg-white/95 shadow-sm border border-slate-200 text-secondary hover:text-primary flex items-center justify-center transition-colors"
+                            >
+                                <i class="fa-solid fa-share-nodes text-sm"></i>
+                            </button>
+                        </div>
+                        <div
+                            @touchend="onFallbackImageTap($event)"
+                            @click="onFallbackImageTap($event)"
+                            class="w-full aspect-square relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide rounded-xl bg-slate-100"
+                        >
+                            <img
+                                :src="product.image"
+                                :alt="product.name"
+                                loading="eager"
+                                fetchpriority="high"
+                                decoding="async"
+                                @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
+                                class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buy box -->
+                <div class="pdp-buybox lg:col-span-5 lg:sticky lg:top-24">
+                    <h1 class="pdp-buybox__title text-xl sm:text-2xl lg:text-[28px] font-bold capitalize text-heading leading-snug tracking-tight mb-2">
+                        {{ product.name }}
+                    </h1>
+
+                    <button
+                        type="button"
+                        @click="scrollToReviews"
+                        class="pdp-buybox__rating inline-flex items-center gap-2 text-sm text-slate-600 hover:text-primary transition-colors mb-4"
+                    >
+                        <template v-if="averageRating">
+                            <starRating
+                                border-color="#FFBC1F"
+                                :rounded-corners="true"
+                                :padding="2"
+                                :border-width="2"
+                                :star-size="14"
+                                inactive-color="#FFFFFF"
+                                active-color="#FFBC1F"
+                                :round-start-rating="false"
+                                :show-rating="false"
+                                :read-only="true"
+                                :max-rating="5"
+                                :rating="Number(averageRating)"
+                            />
+                            <span class="font-semibold text-heading">{{ averageRating }}</span>
+                            <span class="text-slate-500">({{ product.rating_star_count }} {{ product.rating_star_count > 1 ? $t('label.reviews') : $t('label.review') }})</span>
+                        </template>
+                        <template v-else>
+                            <span class="text-slate-500 underline-offset-2 hover:underline">No reviews yet</span>
+                        </template>
+                    </button>
+
+                    <div class="pdp-buybox__price flex flex-wrap items-baseline gap-2.5 mb-3">
+                        <span class="text-2xl sm:text-3xl font-bold text-heading tracking-tight">
+                            {{ detailPrices.salePrice }}
+                        </span>
+                        <template v-if="detailPrices.onSale">
+                            <del class="text-base text-slate-400">{{ detailPrices.originalPrice }}</del>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-600">
+                                {{ detailPrices.percent }}% off
+                            </span>
+                        </template>
+                    </div>
+
+                    <div class="pdp-buybox__meta flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-600 mb-4 pb-4 border-b border-slate-100">
+                        <span v-if="currentActiveBadge" class="inline-flex items-center gap-1.5">
+                            <i v-if="currentActiveBadge.type === 'stock-ok'" class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+                            <i v-else-if="currentActiveBadge.type === 'stock-low'" class="fa-solid fa-circle-exclamation text-amber-500 text-[10px]"></i>
+                            <i v-else-if="currentActiveBadge.type === 'sold'" class="fa-solid fa-bag-shopping text-slate-400 text-[10px]"></i>
+                            <span :class="currentActiveBadge.type === 'stock-low' ? 'text-amber-700 font-medium' : ''">{{ currentActiveBadge.text }}</span>
+                        </span>
+                        <span class="text-slate-300" v-if="currentActiveBadge">·</span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-truck text-[10px] text-slate-400"></i>
+                            {{ getEstimatedDeliveryDate() }}
+                        </span>
+                        <span class="text-slate-300">·</span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-box text-[10px] text-slate-400"></i>
+                            {{ getShippingFee() }}
+                        </span>
+                    </div>
+
+                    <p
+                        v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0"
+                        class="text-slate-600 text-sm mb-4"
+                    >
+                        {{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}
                     </p>
 
-                    <!-- Flash Sale Countdown Timer -->
-                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-bolt text-2xl animate-pulse text-yellow-300"></i>
-                            <div>
-                                <h3 class="font-black text-lg sm:text-xl leading-none tracking-tight">Flash Sale Ends In</h3>
-                                <p class="text-xs sm:text-sm font-medium text-red-100 mt-1">Don't miss out on this offer!</p>
-                            </div>
+                    <div
+                        v-if="product.flash_sale && flashSaleTimeLeft"
+                        class="mb-5 p-3 sm:p-4 rounded-xl bg-primary-slate border border-primary/20 flex flex-wrap items-center justify-between gap-3"
+                    >
+                        <div>
+                            <p class="text-sm font-bold text-heading">Flash sale ends in</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Limited-time price</p>
                         </div>
-                        <div class="flex gap-2 text-center">
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Days</span>
+                        <div class="flex gap-1.5 text-center">
+                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
+                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.days }}</span>
+                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Days</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Hrs</span>
+                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
+                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.hours }}</span>
+                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Hrs</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Min</span>
+                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
+                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.minutes }}</span>
+                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Min</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Sec</span>
+                            <div class="bg-white rounded-lg px-2 py-1.5 min-w-[44px] border border-slate-100">
+                                <span class="block text-base font-bold leading-none text-heading">{{ flashSaleTimeLeft.seconds }}</span>
+                                <span class="text-[9px] uppercase text-slate-400 mt-0.5 block">Sec</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-3">{{ product.name }}</h2>
-
-                    <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
-                    <div class="grid grid-cols-3 gap-1 py-2 my-2 text-center text-xs sm:text-sm">
-                        <!-- 1. Star Ratings Column -->
-                        <div @click="scrollToReviews" class="flex flex-col items-center justify-center px-1 cursor-pointer hover:opacity-85 transition-opacity">
-                            <div class="flex items-center gap-1 mb-1">
-                                <span class="text-sm font-black text-gray-900">{{ product.rating_star_count > 0 ? (product.rating_star / product.rating_star_count).toFixed(1) : '5.0' }}</span>
-                                <i class="fa-solid fa-star text-[#FFBC1F] text-xs"></i>
-                            </div>
-                            <span class="text-[11px] text-gray-500 hover:text-primary cursor-pointer font-bold whitespace-nowrap">
-                                ({{ product.rating_star_count }} {{ product.rating_star_count > 1 ? $t('label.reviews') : $t('label.review') }})
-                            </span>
-                        </div>
-                        
-                        <!-- 2. Dynamic Estimated Delivery Column -->
-                        <div class="flex flex-col items-center justify-center px-1">
-                            <div class="flex items-center gap-1.5 mb-1 text-primary">
-                                <i class="fa-solid fa-truck-fast text-xs"></i>
-                                <span class="text-xs font-black text-gray-900">Arrives Soon</span>
-                            </div>
-                            <span class="text-[11px] font-bold text-green-600 whitespace-nowrap">
-                                {{ getEstimatedDeliveryDate() }}
-                            </span>
-                        </div>
-                        
-                        <!-- 3. Shipping Fee Column -->
-                        <div class="flex flex-col items-center justify-center px-1">
-                            <div class="flex items-center gap-1 mb-1 text-green-600">
-                                <i class="fa-solid fa-box text-xs"></i>
-                                <span class="text-xs font-black text-green-600">Shipping</span>
-                            </div>
-                            <span class="text-[11px] font-bold text-gray-900 whitespace-nowrap">
-                                {{ getShippingFee() }}
-                            </span>
                         </div>
                     </div>
-
-
 
                     <VariationComponent
                         v-if="showVariationComponent && product.slug"
@@ -278,61 +343,77 @@
                         :variations="initialVariations"
                     />
 
-                    <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-                        <dt class="capitalize text-lg font-semibold">{{ $t('label.quantity') }}:</dt>
-                        <dd class="flex items-center gap-6">
-                            <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
-                                <button @click.prevent="quantityDecrement" type="button"
-                                    :class="temp.quantity === 1 ? 'cursor-not-allowed' : ''"
-                                    class="lab-fill-circle-minus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
-                                <input type="number" v-model="temp.quantity" v-on:keypress="onlyNumber($event)"
-                                    v-on:keyup="quantityUp" class="text-center w-full h-5 text-sm font-medium">
-                                <button @click.prevent="quantityIncrement" type="button"
-                                    :class="temp.stock === temp.quantity ? 'cursor-not-allowed' : temp.quantity === temp.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
-                                    class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
-                            </div>
-                            <div v-if="!initialVariations.length || selectedVariation != null">
-                                <p v-if="temp.stock > 0" class="capitalize">
-                                    {{ $t('label.available') }}:
-                                    <b>({{ temp.stock }}) </b>
-                                    {{ product.unit }}
-                                </p>
-                                <p v-else class="capitalize text-danger">
-                                    {{ $t('label.stock_out') }}
-                                </p>
-                            </div>
-                        </dd>
-                    </dl>
+                    <div class="flex flex-wrap items-center gap-3 mb-4 mt-1">
+                        <span class="text-sm font-semibold text-heading capitalize">{{ $t('label.quantity') }}</span>
+                        <div class="flex items-center gap-1 w-[104px] p-1 rounded-xl bg-slate-100">
+                            <button
+                                @click.prevent="quantityDecrement"
+                                type="button"
+                                :class="temp.quantity === 1 ? 'cursor-not-allowed opacity-40' : ''"
+                                class="lab-fill-circle-minus text-lg leading-none transition-colors hover:text-primary px-1"
+                            ></button>
+                            <input
+                                type="number"
+                                v-model="temp.quantity"
+                                v-on:keypress="onlyNumber($event)"
+                                v-on:keyup="quantityUp"
+                                class="text-center w-full h-7 text-sm font-semibold bg-transparent"
+                            />
+                            <button
+                                @click.prevent="quantityIncrement"
+                                type="button"
+                                :class="temp.stock === temp.quantity || temp.quantity === temp.maximum_purchase_quantity ? 'cursor-not-allowed opacity-40' : ''"
+                                class="lab-fill-circle-plus text-lg leading-none transition-colors hover:text-primary px-1"
+                            ></button>
+                        </div>
+                        <span
+                            v-if="(!initialVariations.length || selectedVariation != null) && temp.stock > 0"
+                            class="text-sm text-slate-500"
+                        >
+                            {{ $t('label.available') }}: {{ temp.stock }} {{ product.unit }}
+                        </span>
+                        <span
+                            v-else-if="(!initialVariations.length || selectedVariation != null) && temp.stock <= 0"
+                            class="text-sm text-danger font-medium capitalize"
+                        >
+                            {{ $t('label.stock_out') }}
+                        </span>
+                    </div>
 
-                    <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-                        <dt class="capitalize text-lg font-semibold">{{ $t('label.total_price') }}:</dt>
-                        <dd class="flex items-center gap-6 text-green-500 font-semibold text-lg">
+                    <p v-if="temp.quantity > 1" class="text-sm text-slate-600 mb-4">
+                        {{ $t('label.total_price') }}:
+                        <span class="font-bold text-heading">
                             {{
                                 currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point,
                                     setting.site_default_currency_symbol, setting.site_currency_position)
                             }}
-                        </dd>
-                    </dl>
+                        </span>
+                    </p>
 
-                    <div class="flex flex-row flex-wrap items-center justify-center gap-2 mb-3">
-                        <button @click.prevent="addToCart" type="button"
-                            class="flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-8 rounded-full text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-btn-primary !bg-primary">
+                    <div class="pdp-buybox__ctas flex flex-col sm:flex-row flex-wrap gap-2.5">
+                        <button
+                            @click.prevent="addToCart"
+                            type="button"
+                            class="flex-1 min-w-[140px] h-12 px-5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99] shadow-btn-primary !bg-primary hover:opacity-95"
+                        >
                             <i class="lab-line-bag text-lg"></i>
-                            <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.add_to_cart") }}</span>
+                            <span class="text-sm">{{ $t("button.add_to_cart") }}</span>
                         </button>
-                        <button @click.prevent="buyNow" type="button"
-                            class="flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-10 rounded-full text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] shadow-[0_4px_15px_rgba(220,38,38,0.3)] bg-red-600 hover:bg-red-700 hover:scale-[1.02]">
-                            <i class="fa-solid fa-bolt text-lg text-yellow-300 animate-pulse"></i>
-                            <span class="whitespace-nowrap text-xs sm:text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
+                        <button
+                            @click.prevent="buyNow"
+                            type="button"
+                            class="flex-1 min-w-[120px] h-12 px-5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99] bg-heading hover:bg-secondary"
+                        >
+                            <span class="text-sm">{{ $t("button.buy_now") || 'Buy Now' }}</span>
                         </button>
                         <button
                             v-if="showWhatsAppOrder"
                             @click.prevent="orderOnWhatsApp"
                             type="button"
-                            class="whatsapp-sparkle-btn flex-1 min-w-0 sm:flex-none h-12 px-4 sm:px-6 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-extrabold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] relative overflow-hidden"
+                            class="sm:flex-none h-12 px-5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5a] text-white font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99]"
                         >
-                            <i class="fa-brands fa-whatsapp text-xl relative z-10"></i>
-                            <span class="whitespace-nowrap text-xs sm:text-sm relative z-10">WhatsApp</span>
+                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                            <span class="text-sm">WhatsApp</span>
                         </button>
                     </div>
                 </div>
@@ -340,83 +421,128 @@
         </div>
     </section>
 
-    <section class="mb-24">
+    <section id="product-content-section" class="pdp-tabs mb-16 sm:mb-20 scroll-mt-24 sm:scroll-mt-28">
         <div class="container">
-            <div class="row">
-                <div class="col-12 flex flex-col gap-3">
-                    <!-- Details Section -->
-                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
-                            <i class="lab-line-document text-primary text-2xl sm:text-3xl"></i>
-                            {{ $t('label.product_details') }}
-                        </h3>
-                        <div class="text-description text-base text-gray-700 leading-relaxed" v-html="product.details"></div>
-                    </div>
+            <div class="border-b border-slate-200 flex gap-1 sm:gap-2 overflow-x-auto">
+                <button
+                    type="button"
+                    class="pdp-tabs__tab shrink-0 px-4 sm:px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors"
+                    :class="activeContentTab === 'details' ? 'border-primary text-heading' : 'border-transparent text-slate-500 hover:text-heading'"
+                    @click="activeContentTab = 'details'"
+                >
+                    {{ $t('label.product_details') }}
+                </button>
+                <button
+                    type="button"
+                    class="pdp-tabs__tab shrink-0 px-4 sm:px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors"
+                    :class="activeContentTab === 'reviews' ? 'border-primary text-heading' : 'border-transparent text-slate-500 hover:text-heading'"
+                    @click="activeContentTab = 'reviews'"
+                >
+                    {{ $t('label.product_reviews') }}
+                    <span v-if="product.rating_star_count > 0" class="text-slate-400 font-medium">({{ product.rating_star_count }})</span>
+                </button>
+                <button
+                    type="button"
+                    class="pdp-tabs__tab shrink-0 px-4 sm:px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors"
+                    :class="activeContentTab === 'shipping' ? 'border-primary text-heading' : 'border-transparent text-slate-500 hover:text-heading'"
+                    @click="activeContentTab = 'shipping'"
+                >
+                    {{ $t('label.product_shipping_and_return') }}
+                </button>
+            </div>
 
+            <div class="pt-5 sm:pt-6">
+                <div v-show="activeContentTab === 'details'" class="text-description text-base text-slate-700 leading-relaxed max-w-4xl" v-html="product.details"></div>
 
-
-                    <!-- Reviews Section -->
-                    <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6 scroll-mt-24 sm:scroll-mt-28">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="capitalize text-2xl sm:text-3xl font-bold flex items-center gap-3 text-heading">
-                                <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
-                                {{ $t('label.product_reviews') }}
-                            </h3>
-                            <button v-if="product.rating_star_count > reviews.length" @click.prevent="readMore"
-                                type="button" class="text-primary font-bold hover:underline transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
-                                View All
-                            </button>
-                        </div>
-                        
-                        <div class="flex flex-wrap items-center gap-3 mb-4 pb-2">
-                            <starRating border-color="#FFBC1F" :rounded-corners="true" :padding="2.5"
-                                :border-width="2.5" :star-size="14" class="-mt-0.5" inactive-color="#FFFFFF"
-                                active-color="#FFBC1F" :round-start-rating="false" :show-rating="false"
-                                :read-only="true" :max-rating="5"
-                                :rating="(product.rating_star / product.rating_star_count)" />
-                            <div v-if="product.rating_star_count > 0" class="flex items-center gap-1.5">
-                                <span class="text-lg font-bold text-heading">
-                                    {{ (product.rating_star / product.rating_star_count).toFixed(1) }}
-                                </span>
-                                <span class="text-base font-medium text-gray-500">
+                <div
+                    v-show="activeContentTab === 'reviews'"
+                    id="product-reviews-section"
+                    class="scroll-mt-24 sm:scroll-mt-28 max-w-4xl"
+                >
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <template v-if="averageRating">
+                                <starRating
+                                    border-color="#FFBC1F"
+                                    :rounded-corners="true"
+                                    :padding="2.5"
+                                    :border-width="2.5"
+                                    :star-size="14"
+                                    class="-mt-0.5"
+                                    inactive-color="#FFFFFF"
+                                    active-color="#FFBC1F"
+                                    :round-start-rating="false"
+                                    :show-rating="false"
+                                    :read-only="true"
+                                    :max-rating="5"
+                                    :rating="Number(averageRating)"
+                                />
+                                <span class="text-lg font-bold text-heading">{{ averageRating }}</span>
+                                <span class="text-sm text-slate-500">
                                     ({{ product.rating_star_count }} {{ product.rating_star_count > 1 ? $t('label.reviews') : $t('label.review') }})
                                 </span>
-                            </div>
+                            </template>
+                            <span v-else class="text-sm text-slate-500">No reviews yet</span>
                         </div>
-
-                        <div v-if="reviews && reviews.length" class="space-y-6">
-                            <div v-for="(review, index) in reviews?.slice()?.reverse()" :key="index" class="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
-                                <div class="flex items-center justify-between gap-4 mb-2">
-                                    <h4 class="text-lg font-bold text-heading capitalize">{{ review.name }}</h4>
-                                    <span class="text-sm text-gray-400 font-medium">{{ review.date }}</span>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2 mb-3">
-                                    <starRating border-color="#FFBC1F" inactive-color="#FFFFFF" active-color="#FFBC1F"
-                                        :rounded-corners="true" :padding="2" :border-width="2" :star-size="11"
-                                        class="-mt-0.5" :round-start-rating="false" :show-rating="false"
-                                        :read-only="true" :max-rating="5" :rating="review.star" />
-                                </div>
-                                <p class="text-base text-gray-600 leading-relaxed mb-4">{{ review.review }}</p>
-
-                                <div class="flex flex-wrap gap-3" v-if="review.images && review.images.length > 0">
-                                    <img v-for="(reviewImage, imgIndex) in review.images" :key="imgIndex" :src="reviewImage" alt="review image" loading="lazy"
-                                        class="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-85 transition-all duration-300 border border-gray-200" 
-                                        @click="previewImage(review.images, imgIndex, review)" data-modal="imagePreviewModal">
-                                </div>
-                            </div>
-
-                        </div>
+                        <button
+                            v-if="product.rating_star_count > reviews.length"
+                            @click.prevent="readMore"
+                            type="button"
+                            class="text-primary font-semibold hover:underline text-sm whitespace-nowrap"
+                        >
+                            View All
+                        </button>
                     </div>
 
-                    <!-- Shipping and Return Section -->
-                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
-                            <i class="lab-line-truck text-primary text-2xl sm:text-3xl"></i>
-                            {{ $t('label.product_shipping_and_return') }}
-                        </h3>
-                        <div class="text-description text-base text-gray-700 leading-relaxed" v-html="product.shipping_and_return"></div>
+                    <div v-if="reviews && reviews.length" class="space-y-6">
+                        <div
+                            v-for="(review, index) in reviews?.slice()?.reverse()"
+                            :key="index"
+                            class="border-b border-slate-100 last:border-b-0 pb-6 last:pb-0"
+                        >
+                            <div class="flex items-center justify-between gap-4 mb-2">
+                                <h4 class="text-base font-bold text-heading capitalize">{{ review.name }}</h4>
+                                <span class="text-sm text-slate-400">{{ review.date }}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 mb-2">
+                                <starRating
+                                    border-color="#FFBC1F"
+                                    inactive-color="#FFFFFF"
+                                    active-color="#FFBC1F"
+                                    :rounded-corners="true"
+                                    :padding="2"
+                                    :border-width="2"
+                                    :star-size="11"
+                                    class="-mt-0.5"
+                                    :round-start-rating="false"
+                                    :show-rating="false"
+                                    :read-only="true"
+                                    :max-rating="5"
+                                    :rating="review.star"
+                                />
+                            </div>
+                            <p class="text-sm sm:text-base text-slate-600 leading-relaxed mb-3">{{ review.review }}</p>
+                            <div class="flex flex-wrap gap-2" v-if="review.images && review.images.length > 0">
+                                <img
+                                    v-for="(reviewImage, imgIndex) in review.images"
+                                    :key="imgIndex"
+                                    :src="reviewImage"
+                                    alt="review image"
+                                    loading="lazy"
+                                    class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg cursor-pointer hover:opacity-85 transition-opacity border border-slate-200"
+                                    @click="previewImage(review.images, imgIndex, review)"
+                                    data-modal="imagePreviewModal"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <div
+                    v-show="activeContentTab === 'shipping'"
+                    class="text-description text-base text-slate-700 leading-relaxed max-w-4xl"
+                    v-html="product.shipping_and_return"
+                ></div>
             </div>
         </div>
     </section>
@@ -689,32 +815,37 @@
         </div>
     </div>
 
-    <div class="pdp-mobile-sticky-bar fixed left-3 right-3 z-20 p-2.5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex flex-col gap-2">
-        <div class="text-center">
-            <span class="text-[9px] font-bold text-text uppercase tracking-widest">{{ $t('label.total_price') }}</span>
-            <span class="ml-1.5 text-sm font-extrabold text-heading">
+    <div class="pdp-mobile-sticky-bar fixed left-3 right-3 z-20 p-2.5 bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)] sm:hidden flex items-center gap-2">
+        <div class="min-w-0 shrink">
+            <span class="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider leading-none mb-0.5">{{ $t('label.total_price') }}</span>
+            <span class="text-sm font-bold text-heading whitespace-nowrap">
                 {{
                     currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point,
                         setting.site_default_currency_symbol, setting.site_currency_position)
                 }}
             </span>
         </div>
-        <div class="flex items-center justify-center gap-1.5 w-full">
-            <button @click.prevent="addToCart" type="button"
-                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
-                <i class="lab-line-bag text-sm font-bold"></i>
+        <div class="flex items-center justify-end gap-1.5 flex-1 min-w-0">
+            <button
+                @click.prevent="addToCart"
+                type="button"
+                class="flex-1 min-w-0 h-10 px-2 rounded-xl text-white font-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-all text-[11px] whitespace-nowrap bg-primary shadow-btn-primary"
+            >
+                <i class="lab-line-bag text-sm"></i>
                 <span>{{ $t("button.add_to_cart") }}</span>
             </button>
-            <button @click.prevent="buyNow" type="button"
-                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
-                <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
-                <span class="text-[10px] min-[375px]:text-xs font-black uppercase tracking-wide">{{ $t("button.buy_now") || 'Buy Now' }}</span>
+            <button
+                @click.prevent="buyNow"
+                type="button"
+                class="flex-1 min-w-0 h-10 px-2 rounded-xl text-white font-semibold flex items-center justify-center active:scale-[0.98] transition-all text-[11px] whitespace-nowrap bg-heading"
+            >
+                {{ $t("button.buy_now") || 'Buy Now' }}
             </button>
             <button
                 v-if="showWhatsAppOrder"
                 @click.prevent="orderOnWhatsApp"
                 type="button"
-                class="h-10 w-10 shrink-0 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white flex items-center justify-center active:scale-[0.98] transition-all duration-300 shadow-[0_4px_12px_rgba(37,211,102,0.35)]"
+                class="h-10 w-10 shrink-0 rounded-xl bg-[#25D366] hover:bg-[#1ebd5a] text-white flex items-center justify-center active:scale-[0.98] transition-all"
                 :aria-label="$t('label.whatsapp')"
             >
                 <i class="fa-brands fa-whatsapp text-lg"></i>
@@ -733,7 +864,7 @@
                 <p class="text-sm text-text mb-6 text-center line-clamp-2">{{ product.name }}</p>
                 
                 <div class="grid grid-cols-4 gap-4 mb-6">
-                    <a :href="'https://api.whatsapp.com/send?text=' + encodeURIComponent('Look what I found on Ejweller: ' + shareUrl)" target="_blank"
+                    <a :href="'https://api.whatsapp.com/send?text=' + encodeURIComponent('Look what I found on ' + shareCompanyName + ': ' + shareUrl)" target="_blank"
                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors duration-300">
                         <i class="lab-fill-whatsapp text-3xl mb-1"></i>
                         <span class="text-xs font-bold">WhatsApp</span>
@@ -743,12 +874,12 @@
                         <i class="lab-fill-facebook text-3xl mb-1"></i>
                         <span class="text-xs font-bold">Facebook</span>
                     </a>
-                    <a :href="'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Look what I found on Ejweller: ') + '&url=' + encodeURIComponent(shareUrl)" target="_blank"
+                    <a :href="'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Look what I found on ' + shareCompanyName + ': ') + '&url=' + encodeURIComponent(shareUrl)" target="_blank"
                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-600 transition-colors duration-300">
                         <i class="lab-fill-x text-3xl mb-1"></i>
                         <span class="text-xs font-bold">Twitter</span>
                     </a>
-                    <a :href="'mailto:?subject=' + encodeURIComponent(product.name) + '&body=' + encodeURIComponent('Look what I found on Ejweller: ' + shareUrl)"
+                    <a :href="'mailto:?subject=' + encodeURIComponent(product.name) + '&body=' + encodeURIComponent('Look what I found on ' + shareCompanyName + ': ' + shareUrl)"
                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors duration-300">
                         <i class="lab-fill-mail text-3xl mb-1"></i>
                         <span class="text-xs font-bold">Email</span>
@@ -936,11 +1067,23 @@ export default {
             mainSwiperActiveIndex: 0,
             gallerySliderDragged: false,
             loadToken: 0,
+            activeContentTab: 'details',
         }
     },
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        shareCompanyName: function () {
+            return this.setting?.company_name || 'Store';
+        },
+        averageRating: function () {
+            const count = Number(this.product?.rating_star_count || 0);
+            if (!count) {
+                return null;
+            }
+            const stars = Number(this.product?.rating_star || 0);
+            return (stars / count).toFixed(1);
         },
         showWhatsAppOrder: function () {
             return (
@@ -1020,9 +1163,9 @@ export default {
             } else if (this.temp.stock > 0) {
                 list.push({
                     type: 'stock-ok',
-                    text: 'In Stock',
-                    icon: 'fa-solid fa-circle-check text-blue-500 mr-2',
-                    bgClass: 'bg-blue-50 border border-blue-100 text-blue-600'
+                    text: 'In stock',
+                    icon: 'fa-solid fa-circle-check text-emerald-500 mr-2',
+                    bgClass: 'bg-emerald-50 border border-emerald-100 text-emerald-700'
                 });
             }
             
@@ -1030,9 +1173,9 @@ export default {
             if (this.shouldShowSoldCount()) {
                 list.push({
                     type: 'sold',
-                    text: `${this.getProductSoldCount()} Sold`,
-                    icon: 'fa-solid fa-fire text-amber-500 animate-bounce mr-2',
-                    bgClass: 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+                    text: `${this.getProductSoldCount()} sold`,
+                    icon: 'fa-solid fa-bag-shopping text-slate-400 mr-2',
+                    bgClass: 'bg-slate-50 border border-slate-100 text-slate-600'
                 });
             }
             
@@ -1228,16 +1371,34 @@ export default {
             return true;
         },
         scrollToReviews: function () {
-            const element = document.getElementById('product-reviews-section');
-            if (!element) {
+            this.activeContentTab = 'reviews';
+            this.$nextTick(() => {
+                const element = document.getElementById('product-content-section')
+                    || document.getElementById('product-reviews-section');
+                if (!element) {
+                    return;
+                }
+                const header = document.querySelector('header');
+                const headerOffset = header
+                    ? Math.ceil(header.getBoundingClientRect().height) + 16
+                    : 96;
+                const top = element.getBoundingClientRect().top + window.scrollY - headerOffset;
+                window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            });
+        },
+        slideGalleryTo: function (index) {
+            if (!this.mainSwiper || this.mainSwiper.destroyed) {
                 return;
             }
-            const header = document.querySelector('header');
-            const headerOffset = header
-                ? Math.ceil(header.getBoundingClientRect().height) + 16
-                : 96;
-            const top = element.getBoundingClientRect().top + window.scrollY - headerOffset;
-            window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            try {
+                if (this.combinedMedia.length > 2 && typeof this.mainSwiper.slideToLoop === 'function') {
+                    this.mainSwiper.slideToLoop(index);
+                } else {
+                    this.mainSwiper.slideTo(index);
+                }
+            } catch (e) {
+                this.mainSwiper.slideTo(index);
+            }
         },
         isEmbedVideo: function (media) {
             if (!media?.data) {
@@ -2035,6 +2196,7 @@ export default {
             this.enableAddToCardButton = false;
             this.videoPosterMap = {};
             this.mainSwiperActiveIndex = 0;
+            this.activeContentTab = 'details';
             this.$store.commit('frontendProductVariation/initialVariation', []);
             this.$store.commit('frontendProductVariation/allVariation', []);
             this.props.search.slug = this.$route.params.slug;
@@ -2521,25 +2683,36 @@ export default {
 .gallery-swiper :deep(.swiper-pagination) {
     bottom: 10px !important;
 }
+.pdp-gallery__thumbs::-webkit-scrollbar,
+.pdp-gallery__thumbs-mobile::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.pdp-gallery__thumbs::-webkit-scrollbar-thumb,
+.pdp-gallery__thumbs-mobile::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 999px;
+}
+
 .gallery-swiper :deep(.swiper-pagination-bullet) {
-    background: #ff5c00 !important;
-    opacity: 0.65;
+    background: rgb(var(--primary)) !important;
+    opacity: 0.55;
     width: 8px;
     height: 8px;
     transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
     margin: 0 5px !important;
 }
 .gallery-swiper :deep(.swiper-pagination-bullet-active) {
     opacity: 1;
-    background: #ff5c00 !important;
+    background: rgb(var(--primary)) !important;
     width: 18px;
     border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 .gallery-swiper :deep(.swiper-button-next),
 .gallery-swiper :deep(.swiper-button-prev) {
-    color: #ff5c00 !important;
+    color: rgb(var(--primary)) !important;
     background: white;
     width: 35px;
     height: 35px;
