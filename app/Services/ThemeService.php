@@ -41,6 +41,7 @@ class ThemeService
 
         try {
             Settings::group('theme')->set($request->validated());
+            SettingService::clearCache();
             if ($request->theme_logo) {
                 $setting = ThemeSetting::where('key', 'theme_logo')->first();
                 $setting->clearMediaCollection('theme-logo');

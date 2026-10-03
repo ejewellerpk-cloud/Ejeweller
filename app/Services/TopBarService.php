@@ -31,6 +31,7 @@ class TopBarService
     {
         try {
             Settings::group('top_bar')->set($request->validated());
+            SettingService::clearCache();
             Artisan::call('optimize:clear');
             return $this->list();
         } catch (Exception $exception) {

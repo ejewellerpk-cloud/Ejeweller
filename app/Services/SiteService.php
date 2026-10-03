@@ -81,6 +81,7 @@ class SiteService
             }
 
             Settings::group('site')->set($data);
+            SettingService::clearCache();
 
             $this->envService->addData([
                 'APP_DEBUG'              => $app_debug == Activity::ENABLE ? 'true' : 'false',

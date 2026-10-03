@@ -318,6 +318,7 @@ class FrontendOrderService
                     \Illuminate\Support\Facades\Log::error('Order Notification Dispatch Error: ' . $e->getMessage());
                 }
                 $this->order->is_cod = true; // Add flag for frontend
+                app(ProductSectionService::class)->clearHomeSectionsCache();
             }
 
             return $this->order;

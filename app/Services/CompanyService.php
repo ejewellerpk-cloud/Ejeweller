@@ -41,6 +41,7 @@ class CompanyService
     {
         try {
             Settings::group('company')->set($request->validated());
+            SettingService::clearCache();
             $this->envService->addData(['APP_NAME' => $request->company_name]);
             Artisan::call('optimize:clear');
             return $this->list();

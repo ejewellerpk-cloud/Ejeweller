@@ -202,6 +202,7 @@ class PaymentGatewayService
             \Dipokhalder\Settings\Facades\Settings::group('site')->set([
                 'site_online_payment_gateway' => Activity::ENABLE,
             ]);
+            SettingService::clearCache();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
         }

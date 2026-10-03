@@ -49,6 +49,7 @@ class PaymentService
                 $order->payment_status = PaymentStatus::PAID;
                 $order->save();
                 Stock::where(['model_id' => $order->id, 'model_type' => Order::class, 'status' => Status::INACTIVE])?->update(['status' => Status::ACTIVE]);
+                app(ProductSectionService::class)->clearHomeSectionsCache();
 
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);

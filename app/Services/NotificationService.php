@@ -44,6 +44,7 @@ class NotificationService
             if (!$this->envService->getValue('DEMO')) {
                 AppLibrary::fcmDataBind($request);
                 Settings::group('notification')->set($request->validated());
+                SettingService::clearCache();
 
                 if ($request->notification_fcm_json_file) {
                     $newFilename = 'service-account-file' . '.' . $request->file('notification_fcm_json_file')->getClientOriginalExtension();

@@ -33,6 +33,7 @@ class OtpService
     {
         try {
             Settings::group('otp')->set($request->validated());
+            SettingService::clearCache();
             return $this->list();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
