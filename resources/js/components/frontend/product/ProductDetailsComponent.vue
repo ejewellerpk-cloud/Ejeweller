@@ -153,7 +153,7 @@
                         <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-2 w-full">
                             <!-- Left: Price and Discount Pill -->
                             <div class="flex flex-nowrap items-baseline gap-2 sm:gap-2 shrink-0">
-                                <span class="text-4xl min-[360px]:text-5xl sm:text-3xl lg:text-4xl font-black text-primary tracking-tight whitespace-nowrap shrink-0 leading-none">
+                                <span class="pdp-price text-4xl min-[360px]:text-5xl sm:text-3xl lg:text-4xl font-black text-primary tracking-tight whitespace-nowrap shrink-0 leading-none">
                                     {{ detailPrices.salePrice }}
                                 </span>
                                 <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-1.5 shrink-0" v-if="detailPrices.onSale">
@@ -196,7 +196,7 @@
                     </p>
 
                     <!-- Flash Sale Countdown Timer -->
-                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 sm:mb-2.5 p-4 sm:p-2.5 rounded-xl sm:rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-2">
+                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="pdp-flash-sale mb-6 sm:mb-2.5 p-4 sm:p-2.5 rounded-xl sm:rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-2">
                         <div class="flex items-center gap-3 sm:gap-2">
                             <i class="fa-solid fa-bolt text-2xl sm:text-base animate-pulse text-yellow-300"></i>
                             <div>
@@ -205,26 +205,26 @@
                             </div>
                         </div>
                         <div class="flex gap-2 sm:gap-1.5 text-center">
-                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
+                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
                                 <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Days</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
+                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
                                 <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Hrs</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
+                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
                                 <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Min</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
+                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
                                 <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Sec</span>
                             </div>
                         </div>
                     </div>
 
-                    <h2 class="text-2xl sm:text-xl lg:text-2xl font-bold capitalize text-heading mb-3 sm:mb-1.5 leading-snug">{{ product.name }}</h2>
+                    <h2 class="pdp-title text-2xl sm:text-xl lg:text-2xl font-bold capitalize text-heading mb-3 sm:mb-1.5 leading-snug">{{ product.name }}</h2>
 
                     <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
                     <div class="grid grid-cols-3 gap-1 py-2 my-2 sm:py-1 sm:my-1 text-center text-xs sm:text-xs">
@@ -2736,6 +2736,59 @@ body.image-preview-open .product-image-preview-modal {
 @media (max-width: 640px) {
     .whatsapp-btn {
         bottom: 168px !important;
+    }
+}
+
+/* Desktop-only PDP denser layout (mobile unchanged).
+   Forced via media query because object-style Tailwind screens break min/max variants. */
+@media (min-width: 768px) {
+    .pdp-price {
+        font-size: 1.875rem !important; /* ~30px vs previous ~60px */
+        line-height: 1.1 !important;
+    }
+
+    .pdp-price + div del {
+        font-size: 0.875rem !important;
+    }
+
+    .pdp-price + div span {
+        font-size: 0.75rem !important;
+        padding: 0.125rem 0.5rem !important;
+    }
+
+    .pdp-title {
+        font-size: 1.25rem !important;
+        margin-bottom: 0.375rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .pdp-flash-sale {
+        margin-bottom: 0.625rem !important;
+        padding: 0.625rem 0.75rem !important;
+        border-radius: 0.5rem !important;
+        gap: 0.5rem !important;
+    }
+
+    .pdp-flash-sale i.fa-bolt {
+        font-size: 1rem !important;
+    }
+
+    .pdp-flash-sale h3 {
+        font-size: 0.875rem !important;
+    }
+
+    .pdp-flash-sale p {
+        font-size: 0.6875rem !important;
+        margin-top: 0.125rem !important;
+    }
+
+    .pdp-flash-sale .pdp-flash-unit {
+        min-width: 2.35rem !important;
+        padding: 0.35rem !important;
+    }
+
+    .pdp-flash-sale .pdp-flash-num {
+        font-size: 0.875rem !important;
     }
 }
 </style>
