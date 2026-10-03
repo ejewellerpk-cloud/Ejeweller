@@ -1,20 +1,20 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-grid" :skeleton-count="8" />
-    <section class="mb-10 sm:mb-20">
+    <section class="mb-10 sm:mb-8">
         <div class="container">
-            <div class="flex items-center justify-between gap-5 mb-6 max-md:mb-8">
-                <div class="flex flex-wrap items-end gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5">
-                    <h3 class="text-3xl font-bold capitalize max-sm:text-lg">
+            <div class="flex items-center justify-between gap-5 mb-6 max-md:mb-8 md:mb-3">
+                <div class="flex flex-wrap items-end gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5 md:gap-2">
+                    <h3 class="text-3xl md:text-2xl font-bold capitalize max-sm:text-lg leading-tight">
                         {{ $t('label.flash_sale') }}
                     </h3>
-                    <span class="text-xl font-medium capitalize max-sm:text-sm">
+                    <span class="text-xl md:text-base font-medium capitalize max-sm:text-sm leading-tight">
                         ({{ products.length }} {{ products.length > 1 ? $t('label.products_found') : $t('label.product_found') }})
                     </span>
                 </div>
             </div>
 
             <div class="w-full max-md:p-0">
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-6 mb-12">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3 mb-12 sm:mb-6">
                     <LoadingContentComponent :props="loadingContent"/>
                     <ProductListComponent v-if="products.length > 0" :products="products"/>
                 </div>

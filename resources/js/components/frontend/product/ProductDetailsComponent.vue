@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
-    <section v-else class="mb-12">
+    <section v-else class="mb-12 sm:mb-6">
         <div class="container">
             <div class="row">
                 <div v-if="combinedMedia.length" class="col-12 sm:col-6 lg:col-5 gallery-swiper-container relative">
@@ -147,41 +147,41 @@
                     </div>
                 </div>
 
-                <div class="col-12 sm:col-6 lg:col-7 lg:pl-10">
+                <div class="col-12 sm:col-6 lg:col-7 lg:pl-6">
                     <!-- Premium Interactive Price & Offer Row (Container styling removed as requested) -->
-                    <div class="mb-2">
-                        <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full">
+                    <div class="mb-2 sm:mb-1">
+                        <div class="flex flex-nowrap items-center justify-between gap-2 sm:gap-2 w-full">
                             <!-- Left: Price and Discount Pill -->
-                            <div class="flex flex-nowrap items-baseline gap-2 sm:gap-3 shrink-0">
-                                <span class="text-4xl min-[360px]:text-5xl sm:text-6xl font-black text-primary tracking-tight whitespace-nowrap shrink-0">
+                            <div class="flex flex-nowrap items-baseline gap-2 sm:gap-2 shrink-0">
+                                <span class="text-4xl min-[360px]:text-5xl sm:text-3xl lg:text-4xl font-black text-primary tracking-tight whitespace-nowrap shrink-0 leading-none">
                                     {{ detailPrices.salePrice }}
                                 </span>
-                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-2 shrink-0" v-if="detailPrices.onSale">
-                                    <del class="text-base min-[360px]:text-lg sm:text-xl font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
+                                <div class="flex flex-nowrap items-baseline gap-1.5 sm:gap-1.5 shrink-0" v-if="detailPrices.onSale">
+                                    <del class="text-base min-[360px]:text-lg sm:text-sm font-medium text-gray-400 line-through whitespace-nowrap shrink-0">
                                         {{ detailPrices.originalPrice }}
                                     </del>
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs min-[360px]:text-sm sm:text-sm font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
+                                        class="inline-flex items-center px-2.5 py-1 sm:px-2 sm:py-0.5 rounded-full text-xs min-[360px]:text-sm sm:text-xs font-black bg-red-100 text-red-600 animate-pulse whitespace-nowrap shrink-0">
                                         {{ detailPrices.percent }}% OFF
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Right: Dynamic Ticker Stock & Sales Conveyor Badge -->
-                            <div class="h-[44px] overflow-hidden flex items-center relative select-none shrink-0">
+                            <div class="h-[44px] sm:h-[36px] overflow-hidden flex items-center relative select-none shrink-0">
                                 <Transition name="badge-fade">
                                     <div :key="currentActiveBadge ? currentActiveBadge.type : 'empty'" v-if="currentActiveBadge"
                                         :class="currentActiveBadge.bgClass"
-                                        class="inline-flex items-center px-3 py-2 sm:px-5 sm:py-2.5 rounded-full border text-xs min-[360px]:text-sm sm:text-base font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
+                                        class="inline-flex items-center px-3 py-2 sm:px-3 sm:py-1.5 rounded-full border text-xs min-[360px]:text-sm sm:text-xs font-black shadow-sm transition-all duration-300 whitespace-nowrap shrink-0">
                                         
                                         <!-- Low Stock Pulsing Indicator -->
-                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2.5 w-2.5 mr-2 sm:h-3 sm:w-3 sm:mr-2.5 shrink-0">
+                                        <span v-if="currentActiveBadge.type === 'stock-low'" class="relative flex h-2.5 w-2.5 mr-2 sm:h-2 sm:w-2 sm:mr-1.5 shrink-0">
                                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-2 sm:w-2 bg-red-500"></span>
                                         </span>
                                         
                                         <!-- In Stock / Sold Count Icons -->
-                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-2 sm:mr-2.5 text-xs min-[360px]:text-sm sm:text-base"></i>
+                                        <i v-else-if="currentActiveBadge.icon" :class="currentActiveBadge.icon" class="mr-2 sm:mr-1.5 text-xs min-[360px]:text-sm sm:text-xs"></i>
                                         
                                         <span>{{ currentActiveBadge.text }}</span>
                                     </div>
@@ -190,44 +190,44 @@
                         </div>
                     </div>
 
-                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm mb-2 flex items-center gap-1.5 animate-pulse">
+                    <p v-if="product.bought_last_24_hours > 0 || product.in_baskets > 0" class="text-red-500 font-bold text-sm sm:text-xs mb-2 sm:mb-1 flex items-center gap-1.5 animate-pulse leading-snug">
                         <i class="fa-solid fa-fire text-red-500 text-xs"></i>
                         <span>{{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}</span>
                     </p>
 
                     <!-- Flash Sale Countdown Timer -->
-                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-bolt text-2xl animate-pulse text-yellow-300"></i>
+                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="mb-6 sm:mb-2.5 p-4 sm:p-2.5 rounded-xl sm:rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-3 sm:gap-2">
+                            <i class="fa-solid fa-bolt text-2xl sm:text-base animate-pulse text-yellow-300"></i>
                             <div>
-                                <h3 class="font-black text-lg sm:text-xl leading-none tracking-tight">Flash Sale Ends In</h3>
-                                <p class="text-xs sm:text-sm font-medium text-red-100 mt-1">Don't miss out on this offer!</p>
+                                <h3 class="font-black text-lg sm:text-sm leading-none tracking-tight">Flash Sale Ends In</h3>
+                                <p class="text-xs sm:text-[11px] font-medium text-red-100 mt-1 sm:mt-0.5 leading-tight">Don't miss out on this offer!</p>
                             </div>
                         </div>
-                        <div class="flex gap-2 text-center">
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Days</span>
+                        <div class="flex gap-2 sm:gap-1.5 text-center">
+                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
+                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Days</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Hrs</span>
+                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
+                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Hrs</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Min</span>
+                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
+                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Min</span>
                             </div>
-                            <div class="bg-white/20 rounded-lg p-2 min-w-[50px] backdrop-blur-sm border border-white/30">
-                                <span class="block text-xl font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
-                                <span class="text-[10px] uppercase font-bold tracking-wider mt-1 block opacity-80">Sec</span>
+                            <div class="bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
+                                <span class="block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
+                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Sec</span>
                             </div>
                         </div>
                     </div>
 
-                    <h2 class="text-2xl sm:text-3xl font-bold capitalize text-heading mb-3">{{ product.name }}</h2>
+                    <h2 class="text-2xl sm:text-xl lg:text-2xl font-bold capitalize text-heading mb-3 sm:mb-1.5 leading-snug">{{ product.name }}</h2>
 
                     <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
-                    <div class="grid grid-cols-3 gap-1 py-2 my-2 text-center text-xs sm:text-sm">
+                    <div class="grid grid-cols-3 gap-1 py-2 my-2 sm:py-1 sm:my-1 text-center text-xs sm:text-xs">
                         <!-- 1. Star Ratings Column -->
                         <div @click="scrollToReviews" class="flex flex-col items-center justify-center px-1 cursor-pointer hover:opacity-85 transition-opacity">
                             <div class="flex items-center gap-1 mb-1">
@@ -274,9 +274,9 @@
                         :variations="initialVariations"
                     />
 
-                    <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-                        <dt class="capitalize text-lg font-semibold">{{ $t('label.quantity') }}:</dt>
-                        <dd class="flex items-center gap-6">
+                    <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 sm:mb-2 sm:gap-y-1">
+                        <dt class="capitalize text-lg sm:text-base font-semibold leading-tight">{{ $t('label.quantity') }}:</dt>
+                        <dd class="flex items-center gap-6 sm:gap-3">
                             <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
                                 <button @click.prevent="quantityDecrement" type="button"
                                     :class="temp.quantity === 1 ? 'cursor-not-allowed' : ''"
@@ -300,9 +300,9 @@
                         </dd>
                     </dl>
 
-                    <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-                        <dt class="capitalize text-lg font-semibold">{{ $t('label.total_price') }}:</dt>
-                        <dd class="flex items-center gap-6 text-green-500 font-semibold text-lg">
+                    <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 sm:mb-2 sm:gap-y-1">
+                        <dt class="capitalize text-lg sm:text-base font-semibold leading-tight">{{ $t('label.total_price') }}:</dt>
+                        <dd class="flex items-center gap-6 sm:gap-3 text-green-500 font-semibold text-lg sm:text-base">
                             {{
                                 currencyFormat(temp.totalPrice, setting.site_digit_after_decimal_point,
                                     setting.site_default_currency_symbol, setting.site_currency_position)
@@ -336,17 +336,17 @@
         </div>
     </section>
 
-    <section class="mb-24">
+    <section class="mb-24 sm:mb-10">
         <div class="container">
             <div class="row">
-                <div class="col-12 flex flex-col gap-3">
+                <div class="col-12 flex flex-col gap-3 sm:gap-2">
                     <!-- Details Section -->
-                    <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
-                            <i class="lab-line-document text-primary text-2xl sm:text-3xl"></i>
+                    <div class="rounded-[32px] sm:rounded-2xl border border-[#D9DBE9] bg-white p-4 sm:p-4">
+                        <h3 class="capitalize text-2xl sm:text-xl font-bold mb-3 sm:mb-2 flex items-center gap-2 text-heading leading-snug">
+                            <i class="lab-line-document text-primary text-2xl sm:text-xl"></i>
                             {{ $t('label.product_details') }}
                         </h3>
-                        <div class="text-description text-base text-gray-700 leading-relaxed" v-html="product.details"></div>
+                        <div class="text-description text-base sm:text-sm text-gray-700 leading-relaxed sm:leading-normal" v-html="product.details"></div>
                     </div>
 
 
@@ -354,8 +354,8 @@
                     <!-- Reviews Section -->
                     <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6 scroll-mt-24 sm:scroll-mt-28">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="capitalize text-2xl sm:text-3xl font-bold flex items-center gap-3 text-heading">
-                                <i class="lab-line-star text-primary text-2xl sm:text-3xl"></i>
+                            <h3 class="capitalize text-2xl sm:text-xl font-bold flex items-center gap-3 sm:gap-2 text-heading leading-snug">
+                                <i class="lab-line-star text-primary text-2xl sm:text-xl"></i>
                                 {{ $t('label.product_reviews') }}
                             </h3>
                             <button v-if="product.rating_star_count > reviews.length" @click.prevent="readMore"
@@ -364,7 +364,7 @@
                             </button>
                         </div>
                         
-                        <div class="flex flex-wrap items-center gap-3 mb-4 pb-2">
+                        <div class="flex flex-wrap items-center gap-3 sm:gap-2 mb-4 sm:mb-2 pb-2 sm:pb-1">
                             <starRating border-color="#FFBC1F" :rounded-corners="true" :padding="2.5"
                                 :border-width="2.5" :star-size="14" class="-mt-0.5" inactive-color="#FFFFFF"
                                 active-color="#FFBC1F" :round-start-rating="false" :show-rating="false"
@@ -406,11 +406,11 @@
 
                     <!-- Shipping and Return Section -->
                     <div class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6">
-                        <h3 class="capitalize text-2xl sm:text-3xl font-bold mb-3 flex items-center gap-2 text-heading">
-                            <i class="lab-line-truck text-primary text-2xl sm:text-3xl"></i>
+                        <h3 class="capitalize text-2xl sm:text-xl font-bold mb-3 sm:mb-2 flex items-center gap-2 text-heading leading-snug">
+                            <i class="lab-line-truck text-primary text-2xl sm:text-xl"></i>
                             {{ $t('label.product_shipping_and_return') }}
                         </h3>
-                        <div class="text-description text-base text-gray-700 leading-relaxed" v-html="product.shipping_and_return"></div>
+                        <div class="text-description text-base sm:text-sm text-gray-700 leading-relaxed sm:leading-normal" v-html="product.shipping_and_return"></div>
                     </div>
                 </div>
             </div>
