@@ -459,15 +459,54 @@ export default {
             });
         }
     },
+    isAdminDesktopLayout: function () {
+        return typeof window !== "undefined"
+            && window.matchMedia("(min-width: 1024px)").matches;
+    },
     toggleSidebar: function () {
-        document.querySelector(".db-main").classList.toggle("expand");
-        document.querySelector(".db-sidebar").classList.toggle("active");
-        document.querySelector(".backdrop").classList.toggle("active");
+        const main = document.querySelector(".db-main");
+        const sidebar = document.querySelector(".db-sidebar");
+        const backdrop = document.querySelector(".backdrop");
+        if (!main || !sidebar) {
+            return;
+        }
+
+        main.classList.toggle("expand");
+        sidebar.classList.toggle("active");
+
+        // Desktop: .active collapses the sidebar — never show the mobile dim overlay.
+        // Mobile: .active opens the sidebar — show backdrop only then.
+        if (this.isAdminDesktopLayout()) {
+            backdrop?.classList.remove("active");
+            document.body.style.overflowY = "auto";
+            return;
+        }
+
+        if (sidebar.classList.contains("active")) {
+            backdrop?.classList.add("active");
+            document.body.style.overflowY = "hidden";
+        } else {
+            backdrop?.classList.remove("active");
+            document.body.style.overflowY = "auto";
+        }
     },
     closeSidebar: function () {
-        document.querySelector(".db-main").classList.remove("expand");
-        document.querySelector(".db-sidebar").classList.remove("active");
-        document.querySelector(".backdrop").classList.remove("active");
+        const main = document.querySelector(".db-main");
+        const sidebar = document.querySelector(".db-sidebar");
+        const backdrop = document.querySelector(".backdrop");
+
+        // Mobile backdrop click closes the open drawer.
+        // Desktop should not use the shared backdrop for sidebar collapse.
+        if (this.isAdminDesktopLayout()) {
+            backdrop?.classList.remove("active");
+            document.body.style.overflowY = "auto";
+            return;
+        }
+
+        main?.classList.remove("expand");
+        sidebar?.classList.remove("active");
+        backdrop?.classList.remove("active");
+        document.body.style.overflowY = "auto";
     },
 
     openCanvas: function (targetID) {

@@ -1,26 +1,36 @@
 <template>
     <div class="backdrop" @click="closeSidebar"></div>
     <header class="db-header">
-        <router-link class="w-32 flex-shrink-0" :to="{ name: 'frontend.home' }">
-            <img class="w-full" :src="setting.theme_logo" alt="logo">
-        </router-link>
-        <div class="flex items-center justify-end w-full gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+            <button
+                type="button"
+                @click="toggleSidebar"
+                class="db-header-nav w-9 h-9 rounded-xl text-heading bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 flex items-center justify-center transition-colors shrink-0"
+                aria-label="Toggle sidebar"
+            >
+                <i class="fa-solid fa-align-left text-sm"></i>
+            </button>
+            <router-link class="w-28 sm:w-32 flex-shrink-0 min-w-0" :to="{ name: 'frontend.home' }">
+                <img class="w-full max-h-9 object-contain object-left" :src="setting.theme_logo" alt="logo">
+            </router-link>
+        </div>
+        <div class="flex items-center justify-end w-full gap-2 sm:gap-3 min-w-0">
             <div
-                class="sub-header flex items-center gap-4 transition xh:justify-between xh:fixed xh:left-0 xh:w-full xh:p-4 xh:border-y xh:border-[#EFF0F6] xh:bg-white">
-                <div class="flex items-center justify-between md:justify-center gap-4">
+                class="sub-header flex items-center gap-2 sm:gap-3 transition xh:justify-between xh:fixed xh:left-0 xh:w-full xh:px-4 xh:py-3 xh:border-y xh:border-slate-200 xh:bg-white/95 xh:backdrop-blur-md">
+                <div class="flex items-center justify-between md:justify-center gap-2 sm:gap-3">
                     <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
                         class="dropdown-group relative">
-                        <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]">
+                        <button class="dropdown-btn flex items-center gap-2 h-9 px-2.5 sm:px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
                             <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
-                            <span class="hidden md:block whitespace-nowrap text-xs font-medium capitalize text-heading">
+                            <span class="hidden md:block whitespace-nowrap text-xs font-semibold capitalize text-heading">
                                 {{ language.name }}
                             </span>
                         </button>
                         <ul v-if="languages.length > 0"
-                            class="p-2 min-w-[180px] rounded-lg shadow-xl absolute top-14 z-10 border border-gray-200 bg-white transition-all duration-300 dropdown-list">
+                            class="p-2 min-w-[180px] rounded-xl shadow-xl absolute top-12 z-10 border border-slate-200 bg-white transition-all duration-300 dropdown-list">
                             <li v-for="(language, index) in languages" :key="index"
                                 @click.prevent="changeLanguage(language.id, language.code, language.display_mode)"
-                                class="flex items-center gap-2 py-1.5 px-2.5 rounded-md cursor-pointer hover:bg-gray-100">
+                                class="flex items-center gap-2 py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-slate-50">
                                 <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
                                 <span class="text-heading capitalize text-sm">{{ language.name }}</span>
                             </li>
@@ -28,20 +38,22 @@
                     </div>
 
                     <router-link v-if="pos.permission"
-                        class="w-9 h-9 rounded-lg flex items-center justify-center text-primary bg-[#FFEBD8]"
-                        :to="{ path: '/admin/' + pos.url }">
+                        class="w-9 h-9 rounded-xl flex items-center justify-center text-primary bg-primary/10 border border-primary/15 hover:bg-primary/15 transition-colors"
+                        :to="{ path: '/admin/' + pos.url }"
+                        :title="$t('menu.pos') || 'POS'">
                         <i class="lab lab-fill-pos lab-font-size-16 font-fill-pos"></i>
                     </router-link>
                 </div>
             </div>
-            <button @click="toggleSidebar" class="fa-solid fa-align-left db-header-nav w-9 h-9 rounded-lg text-primary bg-primary/5"></button>
 
             <div class="dropdown-group">
-                <button class="dropdown-btn flex items-center gap-2">
-                    <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
-                    <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
-                            class="block font-semibold">{{ textShortener(authInfo.name, 15) }}</b></h3>
-                    <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i>
+                <button class="dropdown-btn flex items-center gap-2 h-10 pl-1 pr-2 sm:pr-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                    <img class="flex-shrink-0 w-8 h-8 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
+                    <h3 class="hidden sm:block whitespace-nowrap text-xs capitalize text-left leading-[15px] text-slate-500">
+                        {{ $t('label.hello') }}
+                        <b class="block font-semibold text-sm text-heading">{{ textShortener(authInfo.name, 15) }}</b>
+                    </h3>
+                    <i class="lab lab-arrow-down text-xs ml-0.5 lab-font-size-14 text-slate-400"></i>
                 </button>
                 <div class="dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100vh_-_75px)]
                     overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white">
