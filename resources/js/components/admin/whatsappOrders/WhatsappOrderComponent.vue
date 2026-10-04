@@ -516,7 +516,7 @@ export default {
             return 0;
         },
         onCustomverCreate(customerId) {
-            appService.modalHide();
+            appService.modalHide("#customerModal");
             this.customerList(customerId);
         },
     },

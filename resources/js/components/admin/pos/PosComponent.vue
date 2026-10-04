@@ -577,7 +577,7 @@ export default {
       }
     },
     onCustomverCreate: function (customerId) {
-      appService.modalHide();
+      appService.modalHide("#customerModal");
       this.customerList(customerId);
     },
     resetName: function(){

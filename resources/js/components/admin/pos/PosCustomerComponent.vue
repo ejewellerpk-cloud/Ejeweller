@@ -208,7 +208,7 @@ export default {
             this.props.form.country_code = e.calling_code;
         },
         reset: function () {
-            appService.modalHide();
+            appService.modalHide("#customerModal");
             this.errors = {};
             this.props.form = {
                 name: "",
@@ -227,7 +227,7 @@ export default {
                 this.$store
                     .dispatch(`${this.storeModule}/saveCustomer`, this.props)
                     .then((res) => {
-                        appService.sideDrawerHide();
+                        appService.modalHide("#customerModal");
                         this.loading.isActive = false;
                         alertService.successFlip(0,
                             this.$t("menu.customers")
@@ -246,7 +246,7 @@ export default {
                     })
                     .catch((err) => {
                         this.loading.isActive = false;
-                        this.errors = err.response.data.errors;
+                        this.errors = err.response?.data?.errors || {};
                     });
             } catch (err) {
                 this.loading.isActive = false;

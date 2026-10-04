@@ -62,20 +62,21 @@ export default {
     },
 
     modalShow: function (id = "#modal") {
-        console.log("modalShow called with id:", id);
         const modalDivs = document?.querySelectorAll(id);
-        console.log("modalTargets found:", modalDivs);
         if (modalDivs && modalDivs.length > 0) {
             modalDivs.forEach((modalDiv) => modalDiv?.classList?.add("active"));
             document.body.style.overflowY = "hidden";
-        } else {
-            console.error("No element found for selector:", id);
         }
     },
 
-    modalHide: function (id = "#modal") {
-        const modalDivs = document?.querySelectorAll(id);
-        modalDivs?.forEach((modalDiv) => modalDiv?.classList?.remove("active"));
+    modalHide: function (id) {
+        // Without an id, close every open modal (fixes #customerModal cancel when callers omit the selector).
+        const selectors = id ? [id] : [".modal.active", "#modal"];
+        selectors.forEach((selector) => {
+            document?.querySelectorAll(selector)?.forEach((modalDiv) => {
+                modalDiv?.classList?.remove("active");
+            });
+        });
         document.body.style.overflowY = "auto";
     },
 
