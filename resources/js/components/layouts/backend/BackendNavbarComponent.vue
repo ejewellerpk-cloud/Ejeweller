@@ -14,48 +14,43 @@
                 <img class="w-full max-h-9 object-contain object-left" :src="setting.theme_logo" alt="logo">
             </router-link>
         </div>
-        <div class="flex items-center justify-end w-full gap-2 sm:gap-3 min-w-0">
-            <div
-                class="sub-header flex items-center gap-2 sm:gap-3 transition xh:justify-between xh:fixed xh:left-0 xh:w-full xh:px-4 xh:py-3 xh:border-y xh:border-slate-200 xh:bg-white/95 xh:backdrop-blur-md">
-                <div class="flex items-center justify-between md:justify-center gap-2 sm:gap-3">
-                    <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
-                        class="dropdown-group relative">
-                        <button class="dropdown-btn flex items-center gap-2 h-9 px-2.5 sm:px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                            <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
-                            <span class="hidden md:block whitespace-nowrap text-xs font-semibold capitalize text-heading">
-                                {{ language.name }}
-                            </span>
-                        </button>
-                        <ul v-if="languages.length > 0"
-                            class="p-2 min-w-[180px] rounded-xl shadow-xl absolute top-12 z-10 border border-slate-200 bg-white transition-all duration-300 dropdown-list">
-                            <li v-for="(language, index) in languages" :key="index"
-                                @click.prevent="changeLanguage(language.id, language.code, language.display_mode)"
-                                class="flex items-center gap-2 py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-slate-50">
-                                <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
-                                <span class="text-heading capitalize text-sm">{{ language.name }}</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <router-link v-if="pos.permission"
-                        class="w-9 h-9 rounded-xl flex items-center justify-center text-primary bg-primary/10 border border-primary/15 hover:bg-primary/15 transition-colors"
-                        :to="{ path: '/admin/' + pos.url }"
-                        :title="$t('menu.pos') || 'POS'">
-                        <i class="lab lab-fill-pos lab-font-size-16 font-fill-pos"></i>
-                    </router-link>
-                </div>
+        <div class="flex items-center justify-end gap-1.5 sm:gap-3 shrink-0 min-w-0">
+            <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
+                class="dropdown-group relative">
+                <button class="dropdown-btn flex items-center gap-2 h-9 px-2 sm:px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                    <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                    <span class="hidden md:block whitespace-nowrap text-xs font-semibold capitalize text-heading">
+                        {{ language.name }}
+                    </span>
+                </button>
+                <ul v-if="languages.length > 0"
+                    class="p-2 min-w-[180px] rounded-xl shadow-xl absolute top-12 z-10 border border-slate-200 bg-white transition-all duration-300 dropdown-list ltr:right-0 rtl:left-0">
+                    <li v-for="(language, index) in languages" :key="index"
+                        @click.prevent="changeLanguage(language.id, language.code, language.display_mode)"
+                        class="flex items-center gap-2 py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-slate-50">
+                        <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                        <span class="text-heading capitalize text-sm">{{ language.name }}</span>
+                    </li>
+                </ul>
             </div>
 
+            <router-link v-if="pos.permission"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-primary bg-primary/10 border border-primary/15 hover:bg-primary/15 transition-colors shrink-0"
+                :to="{ path: '/admin/' + pos.url }"
+                :title="$t('menu.pos') || 'POS'">
+                <i class="lab lab-fill-pos lab-font-size-16 font-fill-pos"></i>
+            </router-link>
+
             <div class="dropdown-group">
-                <button class="dropdown-btn flex items-center gap-2 h-10 pl-1 pr-2 sm:pr-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                    <img class="flex-shrink-0 w-8 h-8 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
+                <button class="dropdown-btn flex items-center gap-2 h-9 sm:h-10 pl-1 pr-1.5 sm:pr-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                    <img class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
                     <h3 class="hidden sm:block whitespace-nowrap text-xs capitalize text-left leading-[15px] text-slate-500">
                         {{ $t('label.hello') }}
                         <b class="block font-semibold text-sm text-heading">{{ textShortener(authInfo.name, 15) }}</b>
                     </h3>
                     <i class="lab lab-arrow-down text-xs ml-0.5 lab-font-size-14 text-slate-400"></i>
                 </button>
-                <div class="dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100vh_-_75px)]
+                <div class="dropdown-list fixed sm:absolute top-[60px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100vh_-_60px)]
                     overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white">
                     <div class="w-fit mx-auto text-center mb-5">
                         <figure
