@@ -15,8 +15,8 @@
             </div>
         </div>
 
-        <div class="row g-4">
-            <div class="col-12 xl:col-8">
+        <div class="flex flex-wrap -m-3">
+            <div class="w-full p-3 xl:w-8/12 min-w-0">
                 <div class="db-card mb-6">
                     <div class="db-card-header">
                         <h3 class="db-card-title">{{ $t('label.customer') }} & {{ $t('label.shipping_address') }}</h3>
@@ -25,28 +25,28 @@
                         <div class="form-row">
                             <div class="form-col-12">
                                 <label class="db-field-title required">{{ $t('label.customer') }}</label>
-                                <div class="flex flex-col gap-2 sm:flex-row">
-                                    <vue-select v-model="checkoutProps.form.customer_id" class="db-field-control flex-1 f-b-custom-select"
+                                <div class="flex flex-col gap-2 sm:flex-row min-w-0">
+                                    <vue-select v-model="checkoutProps.form.customer_id" class="db-field-control flex-1 min-w-0 f-b-custom-select"
                                         :options="customers" label-by="name" value-by="id" :closeOnSelect="true"
                                         :searchable="true" :clearOnClose="true" :placeholder="$t('label.select_customer')"
                                         :search-placeholder="$t('label.search_customer')"
                                         @update:modelValue="fillShippingFromCustomer" />
-                                    <button type="button" class="db-btn h-[38px] flex-shrink-0 bg-primary text-white"
+                                    <button type="button" class="db-btn h-[38px] w-full sm:w-auto flex-shrink-0 bg-primary text-white"
                                         @click="addCustomer">
                                         <i class="lab lab-add-circle-line"></i>
                                         <span>{{ $t('button.add') }}</span>
                                     </button>
                                 </div>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title required">{{ $t('label.full_name') }}</label>
                                 <input v-model="shippingForm.shipping_full_name" type="text" class="db-field-control" />
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title required">{{ $t('label.phone') }}</label>
                                 <input v-model="shippingForm.shipping_phone" type="text" class="db-field-control" />
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title">{{ $t('label.email') }}</label>
                                 <input v-model="shippingForm.shipping_email" type="email" class="db-field-control" />
                             </div>
@@ -54,19 +54,19 @@
                                 <label class="db-field-title required">{{ $t('label.address') }}</label>
                                 <textarea v-model="shippingForm.shipping_address" rows="2" class="db-field-control"></textarea>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title">{{ $t('label.city') }}</label>
                                 <input v-model="shippingForm.shipping_city" type="text" class="db-field-control" />
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title">{{ $t('label.state') }}</label>
                                 <input v-model="shippingForm.shipping_state" type="text" class="db-field-control" />
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title">{{ $t('label.country') }}</label>
                                 <input v-model="shippingForm.shipping_country" type="text" class="db-field-control" />
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="w-full sm:w-1/2 px-1 py-2">
                                 <label class="db-field-title">{{ $t('label.zip_code') }}</label>
                                 <input v-model="shippingForm.shipping_zip_code" type="text" class="db-field-control" />
                             </div>
@@ -89,26 +89,28 @@
                     @onlyNumber="onlyNumber" />
             </div>
 
-            <div class="col-12 xl:col-4">
-                <div class="xl:sticky xl:top-24">
-                    <div class="db-card">
-                        <div class="db-card-header">
+            <div class="w-full p-3 xl:w-4/12 min-w-0">
+                <div class="w-full xl:sticky xl:top-24">
+                    <div class="db-card w-full overflow-hidden">
+                        <div class="db-card-header !items-start sm:!items-center">
                             <h3 class="db-card-title">{{ $t('label.order_summary') }}</h3>
                         </div>
-                        <div class="db-card-body">
-                            <div v-if="carts.length > 0" class="mb-4">
+                        <div class="db-card-body !p-4 sm:!p-5 space-y-4">
+                            <div v-if="carts.length > 0" class="w-full min-w-0">
                                 <label class="db-field-title">{{ $t('label.discount') }}</label>
-                                <div class="flex h-[38px]">
-                                    <div class="db-field-down-arrow">
+                                <div class="flex w-full min-w-0 flex-col gap-2 sm:h-[38px] sm:flex-row sm:gap-0">
+                                    <div class="db-field-down-arrow w-full sm:w-auto sm:flex-shrink-0">
                                         <select v-model="discountType"
-                                            class="h-full w-[110px] cursor-pointer appearance-none border border-[#EFF0F6] ltr:rounded-tl ltr:rounded-bl ltr:pl-3 rtl:rounded-tr rtl:rounded-br rtl:pr-3 text-sm">
+                                            class="h-10 w-full cursor-pointer appearance-none rounded-md border border-[#EFF0F6] bg-white ltr:pl-3 rtl:pr-3 text-sm sm:h-full sm:w-[108px] sm:rounded-none ltr:sm:rounded-tl ltr:sm:rounded-bl rtl:sm:rounded-tr rtl:sm:rounded-br">
                                             <option :value="discountTypeEnum.PERCENTAGE">{{ $t('label.percentage') }}</option>
                                             <option :value="discountTypeEnum.FIXED">{{ $t('label.fixed') }}</option>
                                         </select>
                                     </div>
-                                    <input v-model="discount" type="text" class="h-full flex-1 border-y border-[#EFF0F6] px-3 text-sm"
+                                    <input v-model="discount" type="text"
+                                        class="h-10 w-full min-w-0 flex-1 rounded-md border border-[#EFF0F6] px-3 text-sm sm:h-full sm:rounded-none sm:border-x-0 sm:border-y"
                                         :placeholder="$t('label.add_discount')" @keypress="floatNumber($event)" />
-                                    <button type="button" class="h-full w-16 flex-shrink-0 bg-primary text-sm text-white ltr:rounded-tr ltr:rounded-br rtl:rounded-tl rtl:rounded-bl"
+                                    <button type="button"
+                                        class="h-10 w-full flex-shrink-0 rounded-md bg-primary text-sm text-white sm:h-full sm:w-16 sm:rounded-none ltr:sm:rounded-tr ltr:sm:rounded-br rtl:sm:rounded-tl rtl:sm:rounded-bl"
                                         @click.prevent="applyDiscount">
                                         {{ $t('button.apply') }}
                                     </button>
@@ -116,42 +118,42 @@
                                 <p v-if="discountErrorMessage" class="db-field-alert mt-1">{{ discountErrorMessage }}</p>
                             </div>
 
-                            <div class="form-col-12 mb-4">
+                            <div class="w-full min-w-0">
                                 <label class="db-field-title">{{ $t('label.shipping_charge') }}</label>
-                                <input v-model="shippingForm.shipping_charge" type="text" class="db-field-control"
+                                <input v-model="shippingForm.shipping_charge" type="text" class="db-field-control w-full"
                                     @keypress="floatNumber($event)" />
                             </div>
 
-                            <ul class="mb-5 space-y-2 border-b border-[#EFF0F6] pb-4">
-                                <li class="flex items-center justify-between text-sm">
-                                    <span>{{ $t('label.sub_total') }}</span>
-                                    <span>{{ currencyFormat(subtotal) }}</span>
+                            <ul class="w-full space-y-2.5 border-y border-[#EFF0F6] py-4">
+                                <li class="flex items-start justify-between gap-3 text-sm">
+                                    <span class="text-slate-500 shrink-0">{{ $t('label.sub_total') }}</span>
+                                    <span class="font-medium text-right break-all">{{ currencyFormat(subtotal) }}</span>
                                 </li>
-                                <li class="flex items-center justify-between text-sm">
-                                    <span>{{ $t('label.tax') }}</span>
-                                    <span>{{ currencyFormat(totalTax) }}</span>
+                                <li class="flex items-start justify-between gap-3 text-sm">
+                                    <span class="text-slate-500 shrink-0">{{ $t('label.tax') }}</span>
+                                    <span class="font-medium text-right break-all">{{ currencyFormat(totalTax) }}</span>
                                 </li>
-                                <li class="flex items-center justify-between text-sm">
-                                    <span>{{ $t('label.discount') }}</span>
-                                    <span class="text-[#FB4E4E]">- {{ currencyFormat(posDiscount) }}</span>
+                                <li class="flex items-start justify-between gap-3 text-sm">
+                                    <span class="text-slate-500 shrink-0">{{ $t('label.discount') }}</span>
+                                    <span class="font-medium text-right break-all text-[#FB4E4E]">- {{ currencyFormat(posDiscount) }}</span>
                                 </li>
-                                <li class="flex items-center justify-between text-sm">
-                                    <span>{{ $t('label.shipping_charge') }}</span>
-                                    <span>{{ currencyFormat(shippingChargeAmount) }}</span>
+                                <li class="flex items-start justify-between gap-3 text-sm">
+                                    <span class="text-slate-500 shrink-0">{{ $t('label.shipping_charge') }}</span>
+                                    <span class="font-medium text-right break-all">{{ currencyFormat(shippingChargeAmount) }}</span>
                                 </li>
-                                <li class="flex items-center justify-between border-t border-[#EFF0F6] pt-3 text-base font-semibold">
-                                    <span>{{ $t('label.total') }}</span>
-                                    <span>{{ currencyFormat(orderGrandTotal) }}</span>
+                                <li class="flex items-start justify-between gap-3 border-t border-[#EFF0F6] pt-3 text-base font-semibold">
+                                    <span class="shrink-0">{{ $t('label.total') }}</span>
+                                    <span class="text-right break-all text-primary">{{ currencyFormat(orderGrandTotal) }}</span>
                                 </li>
                             </ul>
 
-                            <div class="flex flex-col gap-2 sm:flex-row xl:flex-col">
-                                <button type="button" class="db-btn w-full bg-[#FB4E4E] text-white"
+                            <div class="flex w-full flex-col gap-2">
+                                <button type="button" class="db-btn w-full justify-center bg-[#FB4E4E] text-white"
                                     :disabled="carts.length === 0" @click.prevent="resetCart">
                                     <i class="lab lab-line-reset"></i>
                                     <span>{{ $t('button.cancel') }}</span>
                                 </button>
-                                <button type="button" class="db-btn w-full bg-primary text-white"
+                                <button type="button" class="db-btn w-full justify-center bg-primary text-white"
                                     :disabled="carts.length === 0" @click.prevent="placeOrder">
                                     <i class="lab lab-fill-bag"></i>
                                     <span>{{ $t('button.order') }}</span>
