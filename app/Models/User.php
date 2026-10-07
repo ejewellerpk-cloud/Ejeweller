@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Libraries\AppLibrary;
 use Spatie\Image\Enums\Fit;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
@@ -85,19 +86,21 @@ class User extends Authenticatable implements HasMedia
 
     public function getImageAttribute(): string
     {
+        $fallback = '/images/required/profile.png';
         if (!empty($this->getFirstMediaUrl('profile'))) {
-            return asset($this->getFirstMediaUrl('profile'));
+            return AppLibrary::mediaUrl($this->getFirstMediaUrl('profile'), $fallback);
         }
-        return asset('images/required/profile.png');
+        return $fallback;
     }
 
     public function getThumbAttribute(): string
     {
+        $fallback = '/images/required/profile.png';
         if (!empty($this->getFirstMediaUrl('profile'))) {
             $profile = $this->getMedia('profile')->last();
-            return $profile->getUrl('thumb');
+            return AppLibrary::mediaUrl($profile->getUrl('thumb'), $fallback);
         }
-        return asset('images/required/profile.png');
+        return $fallback;
     }
 
     public function registerMediaConversions(?Media $media = null): void

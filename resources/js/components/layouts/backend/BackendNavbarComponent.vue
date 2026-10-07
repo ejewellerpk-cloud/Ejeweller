@@ -43,7 +43,7 @@
 
             <div class="dropdown-group">
                 <button class="dropdown-btn flex items-center gap-2 h-9 sm:h-10 pl-1 pr-1.5 sm:pr-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                    <img class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
+                    <img class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-lg" :src="profileImage" alt="avatar">
                     <h3 class="hidden sm:block whitespace-nowrap text-xs capitalize text-left leading-[15px] text-slate-500">
                         {{ $t('label.hello') }}
                         <b class="block font-semibold text-sm text-heading">{{ textShortener(authInfo.name, 15) }}</b>
@@ -55,7 +55,7 @@
                     <div class="w-fit mx-auto text-center mb-5">
                         <figure
                             class="relative z-10 w-[98px] h-[98px] border-2 border-dashed rounded-full inline-flex items-center justify-center border-white bg-gradient-to-t from-[#FF7A00] to-[#FF016C] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-24 before:h-24 before:rounded-full before:-z-10 before:bg-white">
-                            <img class="w-[90px] h-[90px] rounded-full shadow-avatar" :src="authInfo.image"
+                            <img class="w-[90px] h-[90px] rounded-full shadow-avatar" :src="profileImage"
                                 alt="avatar">
                         </figure>
 
@@ -180,6 +180,9 @@ export default {
         },
         authInfo: function () {
             return this.$store.getters.authInfo;
+        },
+        profileImage: function () {
+            return appService.resolveMediaUrl(this.authInfo?.image) || '/images/required/profile.png';
         },
         languages: function () {
             return this.$store.getters['frontendLanguage/lists'];

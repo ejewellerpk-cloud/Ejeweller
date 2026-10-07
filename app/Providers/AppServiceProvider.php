@@ -28,8 +28,13 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
-        if (!file_exists(public_path('storage'))) {
-            @symlink(storage_path('app/public'), public_path('storage'));
+        $storageLink = public_path('storage');
+        $storageTarget = storage_path('app/public');
+        if (!file_exists($storageLink)) {
+            if (!is_dir($storageTarget)) {
+                @mkdir($storageTarget, 0755, true);
+            }
+            @symlink($storageTarget, $storageLink);
         }
     }
 }

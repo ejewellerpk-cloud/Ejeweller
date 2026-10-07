@@ -95,6 +95,16 @@ app.use(head)
 
 async function bootstrap() {
     await router.isReady();
+
+    // Refresh auth profile so cached vuex image URLs (old APP_URL/host) are replaced.
+    if (store.getters.authStatus && store.getters.authToken) {
+        try {
+            await store.dispatch('profile');
+        } catch (e) {
+            // Keep persisted session; broken profile fetch should not block app boot.
+        }
+    }
+
     app.mount('#app');
     requestAnimationFrame(() => {
         document.documentElement.classList.add('app-ready');

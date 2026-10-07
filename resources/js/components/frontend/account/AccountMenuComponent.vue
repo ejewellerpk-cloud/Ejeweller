@@ -2,7 +2,7 @@
     <div class="py-6 lg:rounded-2xl lg:shadow-card bg-white">
         <div class="flex flex-col items-center justify-center mb-5">
             <RouterLink to="#" class="w-20 h-20 mb-3 rounded-full border border-primary">
-                <img :src="profile.image" alt="avatar"
+                <img :src="profileImage" alt="avatar"
                     class=" w-full h-full object-cover rounded-full border-2 border-white">
             </RouterLink>
             <h3 class="capitalize text-lg font-semibold text-center mb-0.5">{{ profile.name }}</h3>
@@ -57,6 +57,8 @@
 </template>
 
 <script>
+import appService from "../../../services/appService";
+
 export default {
     name: "AccountMenuComponent",
     data() {
@@ -69,6 +71,9 @@ export default {
     computed: {
         profile: function () {
             return this.$store.getters.authInfo;
+        },
+        profileImage: function () {
+            return appService.resolveMediaUrl(this.profile?.image) || '/images/required/profile.png';
         },
     }
 };

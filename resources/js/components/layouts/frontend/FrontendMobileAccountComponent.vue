@@ -17,7 +17,7 @@
 
             <div class="py-6 lg:rounded-2xl lg:shadow-card bg-white">
                 <div class="flex flex-col items-center justify-center mb-5">
-                    <img :src="profile?.image" alt="avatar" class="w-20 h-20 mb-3 rounded-full border border-primary">
+                    <img :src="profileImage" alt="avatar" class="w-20 h-20 mb-3 rounded-full border border-primary">
                     <h3 class="capitalize text-lg font-semibold text-center mb-0.5">{{ textShortener(profile.name, 20)
                         }}</h3>
                     <p v-if="profile.phone" class="text-center text-text" dir="ltr">{{ profile.country_code }}{{
@@ -112,6 +112,9 @@ export default {
         },
         profile: function () {
             return this.$store.getters.authInfo;
+        },
+        profileImage: function () {
+            return appService.resolveMediaUrl(this.profile?.image) || '/images/required/profile.png';
         },
         authDefaultPermission: function () {
             return this.$store.getters.authDefaultPermission;

@@ -38,8 +38,12 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Write directly under public/storage so images are web-accessible
+            // even when Windows/shared hosting cannot create a symlink.
+            'root' => public_path('storage'),
+            // Path-only URL so browsers always load media from the current host
+            // (avoids broken http://127.0.0.1/... links on another laptop/LAN IP).
+            'url' => env('FILESYSTEM_PUBLIC_URL', '/storage'),
             'visibility' => 'public',
             'throw' => false,
         ],

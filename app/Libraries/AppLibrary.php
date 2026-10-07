@@ -537,4 +537,26 @@ class AppLibrary
     public static function appVersion(){
         return config('product.version');
     }
+
+    /**
+     * Normalize media/asset URLs to a same-origin path so images keep working
+     * across hosts/laptops regardless of the APP_URL used when the file was saved.
+     */
+    public static function mediaUrl(?string $url, string $fallback = ''): string
+    {
+        if (blank($url)) {
+            return $fallback;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!blank($path)) {
+            return $path;
+        }
+
+        return $url;
+    }
 }

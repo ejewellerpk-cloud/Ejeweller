@@ -79,8 +79,18 @@ class FirebaseService
         $parsed_url = parse_url($keyFilePath);
 
         if (isset($parsed_url['path'])) {
-            $relative_path = ltrim($parsed_url['path'], '/storage');
-            $this->filePath = storage_path('app/public/' . $relative_path);
+            $relative_path = preg_replace('#^/?storage/#', '', ltrim($parsed_url['path'], '/'));
+            $candidates = [
+                public_path('storage/' . $relative_path),
+                storage_path('app/public/' . $relative_path),
+            ];
+            $this->filePath = $candidates[0];
+            foreach ($candidates as $candidate) {
+                if (file_exists($candidate)) {
+                    $this->filePath = $candidate;
+                    break;
+                }
+            }
         } else {
             throw new Exception('No file found in the URL');
         }

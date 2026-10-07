@@ -165,6 +165,27 @@ export default {
         }
         return text;
     },
+    /**
+     * Rewrite absolute media URLs from another host/APP_URL to the current origin path.
+     * Keeps same-origin and relative URLs unchanged.
+     */
+    resolveMediaUrl: function (url) {
+        if (!url || typeof url !== 'string') {
+            return url;
+        }
+        if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) {
+            return url;
+        }
+        try {
+            const parsed = new URL(url, window.location.origin);
+            if (parsed.origin !== window.location.origin) {
+                return parsed.pathname + parsed.search;
+            }
+            return url;
+        } catch (e) {
+            return url;
+        }
+    },
     htmlTagRemover: function (text) {
         if (text != null && text !== "" && isNaN(text)) {
             return text.replace(/(<([^>]+)>)/gi, "");
