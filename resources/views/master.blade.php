@@ -34,20 +34,34 @@
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
     <!-- PAGE TITLE & SEO META -->
+    @php
+        $siteName = Settings::group('company')->get('company_name') ?: config('app.name');
+        $defaultSeoDescription = trim((string) ($seoDescription ?? '')) !== ''
+            ? $seoDescription
+            : ($siteName . ' — Shop authentic jewelry online with secure checkout and fast delivery across Pakistan.');
+    @endphp
     @if(!empty($seoTitle))
-        <title>{{ $seoTitle }} - {{ Settings::group('company')->get('company_name') }}</title>
-        <meta name="description" content="{{ $seoDescription }}">
+        <title>{{ $seoTitle }} - {{ $siteName }}</title>
+        <meta name="description" content="{{ $seoDescription ?: $defaultSeoDescription }}">
         <meta property="og:title" content="{{ $seoTitle }}">
-        <meta property="og:description" content="{{ $seoDescription }}">
+        <meta property="og:description" content="{{ $seoDescription ?: $defaultSeoDescription }}">
         <meta property="og:image" content="{{ $seoImage }}">
         <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:type" content="product">
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="{{ $seoTitle }}">
-        <meta name="twitter:description" content="{{ $seoDescription }}">
+        <meta name="twitter:description" content="{{ $seoDescription ?: $defaultSeoDescription }}">
         <meta name="twitter:image" content="{{ $seoImage }}">
     @else
-        <title>{{ Settings::group('company')->get('company_name') }}</title>
+        <title>{{ $siteName }}</title>
+        <meta name="description" content="{{ $defaultSeoDescription }}">
+        <meta property="og:title" content="{{ $siteName }}">
+        <meta property="og:description" content="{{ $defaultSeoDescription }}">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="{{ $siteName }}">
+        <meta name="twitter:description" content="{{ $defaultSeoDescription }}">
     @endif
 
     @if (!empty($isHomepage) && !empty($heroPreloadImage))

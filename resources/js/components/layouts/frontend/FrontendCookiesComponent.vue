@@ -1,6 +1,6 @@
 <template>
-    <div v-if="status && setting.cookies_summary"  :class="activeClass" 
-        class=" translate-y-0 w-full max-w-full sm:max-w-xs p-4 fixed bottom-0 ltr:left-0 rtl:right-0 sm:bottom-6 ltr:sm:left-6 rtl:sm:right-6 z-50 rounded-t-2xl sm:rounded-2xl shadow-cookies bg-white transition-all duration-500">
+    <div v-if="status && setting.cookies_summary" :class="activeClass"
+        class="cookies-banner w-full max-w-full sm:max-w-xs p-4 fixed bottom-0 ltr:left-0 rtl:right-0 sm:bottom-6 ltr:sm:left-6 rtl:sm:right-6 z-50 rounded-t-2xl sm:rounded-2xl shadow-cookies bg-white">
         <div class="flex items-center gap-2 mb-4">
             <i class="lab-fill-cookie-bite text-heading"></i>
             <h3 class="font-bold capitalize">{{ $t('label.about_our_privacy') }}</h3>
@@ -63,3 +63,19 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+/* Fixed overlay — transform/opacity only so appearing banner does not tank CLS */
+.cookies-banner {
+    transform: translate3d(0, 110%, 0);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.45s ease, opacity 0.45s ease;
+    will-change: transform, opacity;
+}
+.cookies-banner.active {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+    pointer-events: auto;
+}
+</style>

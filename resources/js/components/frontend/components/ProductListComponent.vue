@@ -74,6 +74,7 @@
                                     </div>
                                 </div>
                                 <img :src="media.url" alt="product" loading="lazy"
+                                    width="400" height="500"
                                     @load="onImageLoad(product.id + '-img-' + media.imageIndex)"
                                     @error="onImageError($event, product.id + '-img-' + media.imageIndex)"
                                     :class="loadedImages[product.id + '-img-' + media.imageIndex] ? 'opacity-100' : 'opacity-0'"
@@ -83,7 +84,7 @@
                                 <div class="w-full h-full bg-black relative aspect-[4/5]">
                                     <iframe v-if="isEmbedVideo(media.video)"
                                         :key="`card-embed-${product.id}-${mediaIndex}`"
-                                        :src="isCardVideoActive(product.id) ? formatProductCardVideoLink(media.video) : ''"
+                                        :src="shouldLoadCardVideo(product.id, mediaIndex) ? formatProductCardVideoLink(media.video) : ''"
                                         class="w-full h-full pointer-events-none"
                                         frameborder="0"
                                         allow="autoplay; encrypted-media; picture-in-picture"
@@ -92,14 +93,14 @@
                                     <video v-else
                                         :key="`card-video-${product.id}-${mediaIndex}`"
                                         data-card-video
-                                        :src="media.video.link"
+                                        :src="shouldLoadCardVideo(product.id, mediaIndex) ? media.video.link : undefined"
                                         :poster="getVideoPosterForCard(media.video, product)"
                                         :autoplay="isCardVideoActive(product.id)"
                                         muted
                                         loop
                                         playsinline
                                         webkit-playsinline
-                                        preload="auto"
+                                        preload="none"
                                         class="w-full h-full object-cover pointer-events-none"
                                         @canplay="onCardVideoCanPlay(product.id, $event)">
                                     </video>
@@ -144,6 +145,7 @@
                                 </div>
                             </div>
                             <img :src="product.cover" alt="product" loading="lazy"
+                                width="400" height="500"
                                 @load="onImageLoad(product.id + '-cover')"
                                 @error="onImageError($event, product.id + '-cover')"
                                 :class="loadedImages[product.id + '-cover'] ? 'opacity-100' : 'opacity-0'"
@@ -426,6 +428,13 @@ export default {
         },
         isCardVideoActive(productId) {
             return !!this.cardVideoActiveIds[productId];
+        },
+        /** Only fetch video bytes when that slide is active or playback started — avoids multi‑MB homepage payload. */
+        shouldLoadCardVideo(productId, mediaIndex) {
+            if (this.isCardVideoActive(productId)) {
+                return true;
+            }
+            return this.getCardActiveIndex(productId) === mediaIndex;
         },
         activateCardVideo(productId) {
             const product = this.products.find((item) => item.id === productId);

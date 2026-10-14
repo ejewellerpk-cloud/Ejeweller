@@ -121,6 +121,12 @@ export default {
 </script>
 
 <style scoped>
+.hero-banner-shell {
+    /* Reserve hero box before images paint — reduces CLS while slider/API loads */
+    aspect-ratio: 1689 / 600;
+    width: 100%;
+}
+
 .hero-banner-frame {
     aspect-ratio: 1689 / 600;
     width: 100%;
@@ -129,6 +135,8 @@ export default {
 
 .hero-banner-image {
     display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .banner-swiper :deep(.swiper-pagination) {
