@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-C-yazL5K.js";import{f as r,g as t,l as n}from"./vendor-C4tK8qSi.js";const p={name:"SupplierComponent"};function s(c,a,_,m,i,f){const o=r("router-view");return t(),n(o)}const d=e(p,[["render",s]]);export{d as default};

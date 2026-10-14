@@ -255,6 +255,15 @@
 
                             <router-link
                                 class="flex items-center gap-3 px-4 py-2 transition-all duration-500 hover:bg-gray-100"
+                                :to="{ name: 'frontend.trackOrder' }">
+                                <i class="text-sm text-[#A0A3BD] lab-line-truck-check"></i>
+                                <span class="text-sm font-medium capitalize whitespace-nowrap">
+                                    {{ $t('menu.track_order') }}
+                                </span>
+                            </router-link>
+
+                            <router-link
+                                class="flex items-center gap-3 px-4 py-2 transition-all duration-500 hover:bg-gray-100"
                                 :to="{ name: 'frontend.account.returnOrders' }">
                                 <i class="text-sm text-[#A0A3BD] lab-fill-refresh"></i>
                                 <span class="text-sm font-medium capitalize whitespace-nowrap">

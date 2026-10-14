@@ -42,6 +42,14 @@
                         <span>{{ $t('menu.order_history') }}</span>
                     </router-link>
 
+                    <router-link :class="checkIsPathAndRoutePathSame('/track-order') ? '!text-primary' : ''"
+                        v-on:click="hideTarget('mobile-profile-canvas', 'canvas-active')"
+                        :to="{ name: 'frontend.trackOrder' }"
+                        class="profile-link font-medium flex items-center gap-4 capitalize py-3 px-4 group hover:text-primary transition-all duration-500">
+                        <i class="lab-line-truck-check text-[#A0A3BD] group-hover:text-primary transition-all duration-500"></i>
+                        <span>{{ $t('menu.track_order') }}</span>
+                    </router-link>
+
                     <router-link :class="checkIsPathAndRoutePathSame('/account/return-orders') ? '!text-primary' : ''"
                         v-on:click="hideTarget('mobile-profile-canvas', 'canvas-active')"
                         :to="{ name: 'frontend.account.returnOrders' }"
