@@ -1,7 +1,10 @@
 <template>
     <div class="homepage-root relative" :class="homepageThemeClass">
+        <!-- Eager hero — LCP must not wait on async chunk -->
         <SliderComponent />
-        <CategoryComponent />
+        <DeferUntilVisible min-height="100px">
+            <CategoryComponent />
+        </DeferUntilVisible>
         <DeferUntilVisible min-height="120px">
             <PromotionComponent />
         </DeferUntilVisible>
@@ -31,9 +34,9 @@
 
 <script>
 import { defineAsyncComponent } from "vue";
+import SliderComponent from "./SliderComponent.vue";
 import DeferUntilVisible from "../components/DeferUntilVisible.vue";
 
-const SliderComponent = defineAsyncComponent(() => import("./SliderComponent.vue"));
 const CategoryComponent = defineAsyncComponent(() => import("./CategoryComponent.vue"));
 const PromotionComponent = defineAsyncComponent(() => import("./PromotionComponent.vue"));
 const ProductSectionComponent = defineAsyncComponent(() => import("./ProductSectionComponent.vue"));

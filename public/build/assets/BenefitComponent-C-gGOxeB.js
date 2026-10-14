@@ -1,0 +1,1 @@
+import{_ as o,r as n,o as t,f as r}from"./appZone-CqK0bLkK.js";const s={name:"BenefitComponent"};function c(a,p,_,f,i,m){const e=n("router-view");return t(),r(e)}const d=o(s,[["render",c]]);export{d as default};

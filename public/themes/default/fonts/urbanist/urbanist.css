@@ -1,31 +1,8 @@
+/* Critical weights only — full family was ~370KB TTF on every storefront boot */
 @font-face {
     font-family: 'Urbanist';
     font-style: normal;
-    font-display: swap;
-    font-weight: 100;
-    src: url(Urbanist-Thin.ttf) format('truetype');
-}
-
-@font-face {
-    font-family: 'Urbanist';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 200;
-    src: url(Urbanist-ExtraLight.ttf) format('truetype');
-}
-
-@font-face {
-    font-family: 'Urbanist';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 300;
-    src: url(Urbanist-Light.ttf) format('truetype');
-}
-
-@font-face {
-    font-family: 'Urbanist';
-    font-style: normal;
-    font-display: swap;
+    font-display: optional;
     font-weight: 400;
     src: url(Urbanist-Regular.ttf) format('truetype');
 }
@@ -33,7 +10,7 @@
 @font-face {
     font-family: 'Urbanist';
     font-style: normal;
-    font-display: swap;
+    font-display: optional;
     font-weight: 500;
     src: url(Urbanist-Medium.ttf) format('truetype');
 }
@@ -41,7 +18,7 @@
 @font-face {
     font-family: 'Urbanist';
     font-style: normal;
-    font-display: swap;
+    font-display: optional;
     font-weight: 600;
     src: url(Urbanist-SemiBold.ttf) format('truetype');
 }
@@ -49,23 +26,7 @@
 @font-face {
     font-family: 'Urbanist';
     font-style: normal;
-    font-display: swap;
+    font-display: optional;
     font-weight: 700;
     src: url(Urbanist-Bold.ttf) format('truetype');
-}
-
-@font-face {
-    font-family: 'Urbanist';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 800;
-    src: url(Urbanist-ExtraBold.ttf) format('truetype');
-}
-
-@font-face {
-    font-family: 'Urbanist';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 900;
-    src: url(Urbanist-Black.ttf) format('truetype');
 }

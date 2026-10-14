@@ -8,10 +8,10 @@
                     <router-link :to="{name: 'frontend.product', query:{ category: category.slug}}"
                                  class="category-card w-full h-full flex flex-col items-center gap-2 sm:gap-3 group">
                         <div class="category-card__media w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
-                            <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.05]" :src="category.thumb" :alt="category.name" loading="lazy"
+                            <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full h-full object-cover block" :src="category.thumb" :alt="category.name" width="252" height="252" loading="lazy" decoding="async"
                                 @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')">
                             <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50">
-                                <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="logo" loading="lazy" class="w-1/2 h-1/2 object-contain opacity-40">
+                                <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="" width="126" height="126" loading="lazy" decoding="async" class="w-1/2 h-1/2 object-contain opacity-40">
                             </div>
                         </div>
                         <span class="category-card__label text-xs sm:text-sm md:text-base font-bold capitalize text-center leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-primary transition-colors px-1">

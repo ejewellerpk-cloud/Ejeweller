@@ -16,7 +16,17 @@ import alertService from "../services/alertService";
 import "../../../public/themes/default/fonts/urbanist/urbanist.css";
 import "../../../public/themes/default/fonts/iconly/iconly.css";
 import "../../../public/themes/default/fonts/public/public.css";
-import "../../../public/themes/default/fonts/fontawesome/fontawesome.css";
+// Font Awesome is large and rarely needed on first paint — load after idle
+if (typeof window !== "undefined") {
+    const loadFa = () => {
+        import("../../../public/themes/default/fonts/fontawesome/fontawesome.css").catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(loadFa, { timeout: 4000 });
+    } else {
+        window.setTimeout(loadFa, 2000);
+    }
+}
 
 const toastOptions = {
     timeout: 2000,
@@ -125,11 +135,10 @@ export async function createShopApp(RootComponent, router, options = {}) {
         }
     }
 
-    // Mount immediately — never block first paint on profile API
+    // Mount first while #app is still display:none (boot LCP hero stays visible),
+    // then swap in one turn — avoids empty flash and double-hero CLS.
     app.mount("#app");
-    requestAnimationFrame(() => {
-        document.documentElement.classList.add("app-ready");
-    });
+    document.documentElement.classList.add("app-ready");
 
     if (store.getters.authStatus && store.getters.authToken) {
         store.dispatch("profile").catch(() => {

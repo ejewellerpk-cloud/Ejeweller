@@ -17,10 +17,6 @@
         })();
     </script>
     <style>
-        html:not(.app-ready) #app {
-            visibility: hidden;
-        }
-
         html:not(.app-ready) body {
             background: #ffffff;
         }
@@ -28,11 +24,71 @@
         html.boot-admin:not(.app-ready) body {
             background: #f7f7fc;
         }
+
+        /*
+         * Storefront: paint LCP hero from HTML immediately.
+         * Keep #app hidden until Vue is ready so we do not double-paint hero (CLS).
+         * Admin: no boot chrome — show blank body until mount.
+         */
+        html.boot-storefront:not(.app-ready) #app {
+            display: none !important;
+        }
+
+        #boot-chrome {
+            display: none;
+        }
+
+        html.boot-storefront:not(.app-ready) #boot-chrome {
+            display: block;
+        }
+
+        html.app-ready #boot-chrome {
+            display: none !important;
+        }
+
+        #boot-chrome .boot-header-spacer {
+            height: 72px;
+            border-bottom: 1px solid #f3f4f6;
+            background: #ffffff;
+        }
+
+        #boot-lcp-hero {
+            margin: 1rem auto 2.5rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            max-width: 1280px;
+        }
+
+        #boot-lcp-hero .boot-lcp-shell {
+            aspect-ratio: 1689 / 600;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 1rem;
+            background: #f9fafb;
+            border: 1px solid #f3f4f6;
+        }
+
+        #boot-lcp-hero img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (min-width: 640px) {
+            #boot-chrome .boot-header-spacer {
+                height: 88px;
+            }
+            #boot-lcp-hero {
+                margin-bottom: 3rem;
+            }
+        }
     </style>
 
     <!-- CUSTOM STYLE -->
     @vite('resources/css/app.css')
-    <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
+    <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}"></noscript>
     <!-- PAGE TITLE & SEO META -->
     @php
         $siteName = Settings::group('company')->get('company_name') ?: config('app.name');
@@ -149,6 +205,24 @@
         @endforeach
     @endif
 
+    <div id="boot-chrome" aria-hidden="true">
+        <div class="boot-header-spacer"></div>
+        @if (!empty($isHomepage) && !empty($heroPreloadImage))
+            <div id="boot-lcp-hero">
+                <div class="boot-lcp-shell">
+                    <img
+                        src="{{ $heroPreloadImage }}"
+                        alt=""
+                        width="900"
+                        height="320"
+                        fetchpriority="high"
+                        decoding="async"
+                    >
+                </div>
+            </div>
+        @endif
+    </div>
+
     <div id="app"></div>
 
     @if (!blank($analytics))
@@ -180,9 +254,9 @@
 
 
 
-    <script src="{{ asset('themes/default/js/modal.js') }}"></script>
-    <script src="{{ asset('themes/default/js/customScript.js') }}"></script>
-    <script src="{{ asset('themes/default/js/tabs.js') }}"></script>
+    <script src="{{ asset('themes/default/js/modal.js') }}" defer></script>
+    <script src="{{ asset('themes/default/js/customScript.js') }}" defer></script>
+    <script src="{{ asset('themes/default/js/tabs.js') }}" defer></script>
 
 </body>
 
