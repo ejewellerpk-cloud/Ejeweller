@@ -113,8 +113,29 @@ class AppLibrary
         foreach ($buildArray as $key => $build) {
             if ($build['url'] == "#" && empty($build['children'])) {
                 unset($buildArray[$key]);
+                continue;
+            }
+
+            if (!empty($buildArray[$key]['children']) && is_array($buildArray[$key]['children'])) {
+                usort($buildArray[$key]['children'], static function ($a, $b) {
+                    $priorityCompare = ((int) ($a['priority'] ?? 100)) <=> ((int) ($b['priority'] ?? 100));
+                    if ($priorityCompare !== 0) {
+                        return $priorityCompare;
+                    }
+
+                    return ((int) ($a['id'] ?? 0)) <=> ((int) ($b['id'] ?? 0));
+                });
             }
         }
+
+        usort($buildArray, static function ($a, $b) {
+            $priorityCompare = ((int) ($a['priority'] ?? 100)) <=> ((int) ($b['priority'] ?? 100));
+            if ($priorityCompare !== 0) {
+                return $priorityCompare;
+            }
+
+            return ((int) ($a['id'] ?? 0)) <=> ((int) ($b['id'] ?? 0));
+        });
 
         return array_values($buildArray);
     }
