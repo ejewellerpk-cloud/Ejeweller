@@ -166,7 +166,160 @@
                 </form>
             </ListFilterPanel>
 
-            <div class="db-table-responsive">
+            <!-- Mobile cards -->
+            <div class="md:hidden p-3 space-y-3" v-if="orders.length > 0">
+                <article
+                    v-for="order in orders"
+                    :key="'card-' + order.id"
+                    class="order-card rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm"
+                    :class="{ 'ring-2 ring-emerald-400/50 border-emerald-300 bg-emerald-50/40': selectedOrderIds.includes(order.id) }"
+                >
+                    <div class="flex items-start gap-3">
+                        <input
+                            v-if="permissionChecker('online-orders')"
+                            type="checkbox"
+                            class="mt-1 w-4 h-4 accent-emerald-600 shrink-0"
+                            :value="order.id"
+                            v-model="selectedOrderIds"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-heading text-sm truncate">{{ order.order_serial_no }}</p>
+                                    <p class="text-xs text-slate-500 mt-0.5 truncate">{{ order.user?.name || '—' }}</p>
+                                </div>
+                                <div class="relative shrink-0" v-if="permissionChecker('online-orders')">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-heading shadow-sm"
+                                        :disabled="bulkBusy"
+                                        @click.stop="toggleActionMenu(order.id)"
+                                    >
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        {{ $t('label.action') }}
+                                    </button>
+                                    <div
+                                        v-if="openActionMenuId === order.id"
+                                        class="order-action-menu absolute right-0 top-full mt-1 z-30 w-52 rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+                                        @click.stop
+                                    >
+                                        <button
+                                            v-if="canConfirm(order)"
+                                            type="button"
+                                            class="order-menu-item text-emerald-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.CONFIRMED))"
+                                        >
+                                            <i class="fa-solid fa-check w-4"></i> {{ $t('label.confirmed') }}
+                                        </button>
+                                        <button
+                                            v-if="canShip(order)"
+                                            type="button"
+                                            class="order-menu-item text-sky-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.ON_THE_WAY))"
+                                        >
+                                            <i class="fa-solid fa-truck-fast w-4"></i> {{ $t('label.on_the_way') }}
+                                        </button>
+                                        <button
+                                            v-if="canDeliver(order)"
+                                            type="button"
+                                            class="order-menu-item text-violet-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.DELIVERED))"
+                                        >
+                                            <i class="fa-solid fa-box-open w-4"></i> {{ $t('label.delivered') }}
+                                        </button>
+                                        <button
+                                            v-if="canBookPostEx(order)"
+                                            type="button"
+                                            class="order-menu-item text-indigo-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowBookPostEx(order))"
+                                        >
+                                            <i class="fa-solid fa-truck w-4"></i> {{ $t('button.bulk_book_postex') }}
+                                        </button>
+                                        <button
+                                            v-if="canMarkPaid(order)"
+                                            type="button"
+                                            class="order-menu-item text-teal-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetPayment(order, enums.paymentStatusEnum.PAID))"
+                                        >
+                                            <i class="fa-solid fa-money-bill w-4"></i> {{ $t('label.paid') }}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-primary"
+                                            :disabled="slipPrintLoading || bulkBusy"
+                                            @click="runRowAction(() => printSingleSlip(order.id))"
+                                        >
+                                            <i class="lab lab-line-printer w-4"></i> {{ $t('button.print_shipping_slip') }}
+                                        </button>
+                                        <router-link
+                                            :to="{ name: 'admin.order.show', params: { id: order.id } }"
+                                            class="order-menu-item text-slate-700"
+                                            @click="closeActionMenu"
+                                        >
+                                            <i class="fa-regular fa-eye w-4"></i> {{ $t('button.view') || 'View' }}
+                                        </router-link>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-red-600"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => destroy(order.id))"
+                                        >
+                                            <i class="fa-regular fa-trash-can w-4"></i> {{ $t('button.delete') || 'Delete' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <span class="db-table-badge" :class="orderStatusClass(order.status)">
+                                    {{ enums.orderStatusEnumArray[order.status] }}
+                                </span>
+                                <span
+                                    class="db-table-badge"
+                                    :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'"
+                                >
+                                    {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                                </span>
+                                <span :class="statusClass(order.order_type)" class="text-[11px]">
+                                    {{ enums.orderTypeEnumArray[order.order_type] }}
+                                </span>
+                            </div>
+
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <p class="text-slate-400 uppercase tracking-wide text-[10px] font-semibold">{{ $t('label.amount') }}</p>
+                                    <p class="font-semibold text-heading mt-0.5">{{ order.total_amount_price }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-slate-400 uppercase tracking-wide text-[10px] font-semibold">{{ $t('label.date') }}</p>
+                                    <p class="font-medium text-slate-600 mt-0.5">{{ order.order_datetime }}</p>
+                                </div>
+                            </div>
+                            <p
+                                v-if="order.postex_tracking_number"
+                                class="mt-2 text-[11px] text-indigo-600 font-medium break-all"
+                            >
+                                {{ $t('label.tracking_no') }}: {{ order.postex_tracking_number }}
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="md:hidden p-6 text-center" v-else>
+                <div class="max-w-[220px] mx-auto">
+                    <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
+                </div>
+                <span class="d-block mt-3 text-base text-slate-500">{{ $t('message.no_data_found') }}</span>
+            </div>
+
+            <!-- Desktop table -->
+            <div class="db-table-responsive hidden md:block">
                 <table class="db-table stripe" id="print">
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
@@ -240,68 +393,90 @@
                                 </span>
                             </td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
-                                <div class="flex flex-wrap justify-start items-center gap-1">
+                                <div class="relative inline-block">
                                     <button
-                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.PENDING"
                                         type="button"
-                                        class="row-act bg-emerald-600 hover:bg-emerald-700"
-                                        :title="$t('label.confirmed')"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-heading shadow-sm hover:bg-slate-50"
                                         :disabled="bulkBusy"
-                                        @click="rowSetStatus(order, enums.orderStatusEnum.CONFIRMED)"
+                                        @click.stop="toggleActionMenu(order.id)"
                                     >
-                                        <i class="fa-solid fa-check"></i>
+                                        <i class="fa-solid fa-ellipsis"></i>
+                                        {{ $t('label.action') }}
                                     </button>
-                                    <button
-                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.CONFIRMED"
-                                        type="button"
-                                        class="row-act bg-sky-600 hover:bg-sky-700"
-                                        :title="$t('label.on_the_way')"
-                                        :disabled="bulkBusy"
-                                        @click="rowSetStatus(order, enums.orderStatusEnum.ON_THE_WAY)"
+                                    <div
+                                        v-if="openActionMenuId === order.id"
+                                        class="order-action-menu absolute right-0 top-full mt-1 z-30 w-52 rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+                                        @click.stop
                                     >
-                                        <i class="fa-solid fa-truck-fast"></i>
-                                    </button>
-                                    <button
-                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.ON_THE_WAY"
-                                        type="button"
-                                        class="row-act bg-violet-600 hover:bg-violet-700"
-                                        :title="$t('label.delivered')"
-                                        :disabled="bulkBusy"
-                                        @click="rowSetStatus(order, enums.orderStatusEnum.DELIVERED)"
-                                    >
-                                        <i class="fa-solid fa-box-open"></i>
-                                    </button>
-                                    <button
-                                        v-if="!order.postex_tracking_number && parseInt(order.status, 10) !== enums.orderStatusEnum.CANCELED && parseInt(order.status, 10) !== enums.orderStatusEnum.REJECTED"
-                                        type="button"
-                                        class="row-act bg-indigo-600 hover:bg-indigo-700"
-                                        :title="$t('button.bulk_book_postex')"
-                                        :disabled="bulkBusy"
-                                        @click="rowBookPostEx(order)"
-                                    >
-                                        <i class="fa-solid fa-truck"></i>
-                                    </button>
-                                    <button
-                                        v-if="parseInt(order.payment_status, 10) !== enums.paymentStatusEnum.PAID"
-                                        type="button"
-                                        class="row-act bg-teal-600 hover:bg-teal-700"
-                                        :title="$t('label.paid')"
-                                        :disabled="bulkBusy"
-                                        @click="rowSetPayment(order, enums.paymentStatusEnum.PAID)"
-                                    >
-                                        <i class="fa-solid fa-money-bill"></i>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="row-act bg-primary hover:opacity-90"
-                                        :title="$t('button.print_shipping_slip')"
-                                        :disabled="slipPrintLoading || bulkBusy"
-                                        @click="printSingleSlip(order.id)"
-                                    >
-                                        <i class="lab lab-line-printer"></i>
-                                    </button>
-                                    <SmIconViewComponent :link="'admin.order.show'" :id="order.id" />
-                                    <SmIconDeleteComponent @click="destroy(order.id)" />
+                                        <button
+                                            v-if="canConfirm(order)"
+                                            type="button"
+                                            class="order-menu-item text-emerald-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.CONFIRMED))"
+                                        >
+                                            <i class="fa-solid fa-check w-4"></i> {{ $t('label.confirmed') }}
+                                        </button>
+                                        <button
+                                            v-if="canShip(order)"
+                                            type="button"
+                                            class="order-menu-item text-sky-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.ON_THE_WAY))"
+                                        >
+                                            <i class="fa-solid fa-truck-fast w-4"></i> {{ $t('label.on_the_way') }}
+                                        </button>
+                                        <button
+                                            v-if="canDeliver(order)"
+                                            type="button"
+                                            class="order-menu-item text-violet-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.DELIVERED))"
+                                        >
+                                            <i class="fa-solid fa-box-open w-4"></i> {{ $t('label.delivered') }}
+                                        </button>
+                                        <button
+                                            v-if="canBookPostEx(order)"
+                                            type="button"
+                                            class="order-menu-item text-indigo-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowBookPostEx(order))"
+                                        >
+                                            <i class="fa-solid fa-truck w-4"></i> {{ $t('button.bulk_book_postex') }}
+                                        </button>
+                                        <button
+                                            v-if="canMarkPaid(order)"
+                                            type="button"
+                                            class="order-menu-item text-teal-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => rowSetPayment(order, enums.paymentStatusEnum.PAID))"
+                                        >
+                                            <i class="fa-solid fa-money-bill w-4"></i> {{ $t('label.paid') }}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-primary"
+                                            :disabled="slipPrintLoading || bulkBusy"
+                                            @click="runRowAction(() => printSingleSlip(order.id))"
+                                        >
+                                            <i class="lab lab-line-printer w-4"></i> {{ $t('button.print_shipping_slip') }}
+                                        </button>
+                                        <router-link
+                                            :to="{ name: 'admin.order.show', params: { id: order.id } }"
+                                            class="order-menu-item text-slate-700"
+                                            @click="closeActionMenu"
+                                        >
+                                            <i class="fa-regular fa-eye w-4"></i> {{ $t('button.view') || 'View' }}
+                                        </router-link>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-red-600"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => destroy(order.id))"
+                                        >
+                                            <i class="fa-regular fa-trash-can w-4"></i> {{ $t('button.delete') || 'Delete' }}
+                                        </button>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -344,8 +519,6 @@ import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import TableLimitComponent from "../components/TableLimitComponent";
-import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
-import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import ListFilterPanel from "../components/ListFilterPanel";
 import ExportComponent from "../components/buttons/export/ExportComponent";
 import PrintComponent from "../components/buttons/export/PrintComponent";
@@ -365,8 +538,6 @@ export default {
         PaginationBox,
         PaginationTextComponent,
         LoadingComponent,
-        SmIconDeleteComponent,
-        SmIconViewComponent,
         ListFilterPanel,
         ExportComponent,
         PrintComponent,
@@ -427,6 +598,7 @@ export default {
             selectedOrderIds: [],
             slipPrintLoading: false,
             bulkBusy: false,
+            openActionMenuId: null,
         }
     },
     mounted() {
@@ -436,6 +608,10 @@ export default {
             order_type: 'asc',
             status: statusEnum.ACTIVE
         });
+        document.addEventListener('click', this.closeActionMenu);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.closeActionMenu);
     },
     computed: {
         orders: function () {
@@ -469,6 +645,42 @@ export default {
         },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
+        },
+        orderStatusInt(order) {
+            return parseInt(order?.status, 10);
+        },
+        orderPaymentInt(order) {
+            return parseInt(order?.payment_status, 10);
+        },
+        canConfirm(order) {
+            return this.orderStatusInt(order) === orderStatusEnum.PENDING;
+        },
+        canShip(order) {
+            return this.orderStatusInt(order) === orderStatusEnum.CONFIRMED;
+        },
+        canDeliver(order) {
+            return this.orderStatusInt(order) === orderStatusEnum.ON_THE_WAY;
+        },
+        canBookPostEx(order) {
+            const status = this.orderStatusInt(order);
+            return !order?.postex_tracking_number
+                && status !== orderStatusEnum.CANCELED
+                && status !== orderStatusEnum.REJECTED;
+        },
+        canMarkPaid(order) {
+            return this.orderPaymentInt(order) !== paymentStatusEnum.PAID;
+        },
+        toggleActionMenu(orderId) {
+            this.openActionMenuId = this.openActionMenuId === orderId ? null : orderId;
+        },
+        closeActionMenu() {
+            this.openActionMenuId = null;
+        },
+        runRowAction(fn) {
+            this.closeActionMenu();
+            if (typeof fn === 'function') {
+                fn();
+            }
         },
         search: function () {
             this.list();
@@ -777,7 +989,12 @@ export default {
     @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-.row-act {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-white text-xs transition disabled:opacity-50 disabled:cursor-not-allowed;
+.order-menu-item {
+    @apply flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.order-action-menu {
+    max-height: min(70vh, 360px);
+    overflow-y: auto;
 }
 </style>
