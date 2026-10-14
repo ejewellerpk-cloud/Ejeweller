@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-CkoEtvqW.js";import{f as t,g as n,l as r}from"./vendor-C4tK8qSi.js";const s={name:"RoleComponent"};function c(p,a,_,m,f,i){const o=t("router-view");return n(),r(o)}const d=e(s,[["render",c]]);export{d as default};

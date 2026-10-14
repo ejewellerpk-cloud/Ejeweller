@@ -17,6 +17,15 @@
                         </button>
                         <button
                             type="button"
+                            class="db-btn py-2 text-white bg-emerald-600 hover:bg-emerald-700 hidden-print"
+                            :disabled="bulkBusy"
+                            @click="bulkConfirmOrders"
+                        >
+                            <i class="fa-solid fa-check text-sm"></i>
+                            <span>{{ $t('button.bulk_confirm') }} ({{ selectedOrderIds.length }})</span>
+                        </button>
+                        <button
+                            type="button"
                             class="db-btn py-2 text-white bg-indigo-600 hidden-print"
                             :disabled="bulkBusy"
                             @click="bulkBookPostEx"
@@ -430,6 +439,42 @@ export default {
                     const firstError = (data.results || []).find((row) => !row.ok && row.message);
                     if (success > 0) {
                         alertService.success(res.data?.message || `Booked ${success} order(s). Failed: ${failed}.`);
+                        if (firstError && failed > 0) {
+                            alertService.error(firstError.message);
+                        }
+                    } else {
+                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
+                    }
+                    this.selectedOrderIds = [];
+                    this.list(this.props.search.page);
+                }).catch((err) => {
+                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                }).finally(() => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                });
+            }).catch(() => {});
+        },
+        bulkConfirmOrders: function () {
+            if (!this.selectedOrderIds.length) {
+                return;
+            }
+            appService.submitConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post('admin/online-order/bulk-change-status', {
+                    ids: this.selectedOrderIds,
+                    status: orderStatusEnum.CONFIRMED,
+                }).then((res) => {
+                    const data = res.data?.data || {};
+                    const success = data.success || 0;
+                    const failed = data.failed || 0;
+                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
+                    if (success > 0) {
+                        alertService.success(
+                            res.data?.message
+                            || (this.$t('message.bulk_confirm_success') || `Confirmed ${success} order(s). Failed: ${failed}.`)
+                        );
                         if (firstError && failed > 0) {
                             alertService.error(firstError.message);
                         }

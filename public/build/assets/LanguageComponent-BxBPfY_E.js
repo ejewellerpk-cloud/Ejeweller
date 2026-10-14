@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-EfPWCCbt.js";import{f as n,g as t,l as r}from"./vendor-C4tK8qSi.js";const a={name:"LanguageComponent"};function s(c,p,_,m,f,u){const o=n("router-view");return t(),r(o)}const l=e(a,[["render",s]]);export{l as default};
