@@ -108,7 +108,7 @@
                         </SwiperSlide>
                     </Swiper>
 
-                    <!-- Custom dots: 1st image → video (play) → remaining — all media kept -->
+                    <!-- Dots UI only: max 6 = 1st image → video icon → 4 more. All slides stay swipeable. -->
                     <div
                         v-if="hasMediaSlider(product)"
                         class="product-card-dots"
@@ -116,7 +116,7 @@
                         @touchend.stop
                     >
                         <button
-                            v-for="(media, mediaIndex) in getCardMediaSlides(product)"
+                            v-for="(media, mediaIndex) in getCardDotSlides(product)"
                             :key="`card-dot-${product.id}-${mediaIndex}`"
                             type="button"
                             class="product-card-dot"
@@ -362,8 +362,7 @@ export default {
             const previews = Array.isArray(product?.previews) ? product.previews.filter(Boolean) : [];
             const videos = Array.isArray(product?.videos) ? product.videos : [];
 
-            // Keep every image/video slide; only reorder dots/slides:
-            // 1st image → video (2nd when an image exists) → remaining images.
+            // All media kept for swiper; order: 1st image → video → remaining images.
             if (previews.length > 0) {
                 slides.push({ type: 'image', url: previews[0], imageIndex: 0 });
             }
@@ -377,6 +376,13 @@ export default {
             }
 
             return slides;
+        },
+        /**
+         * Dot indicators only — never more than 6:
+         * [1st image] [video play] [up to 4 more], regardless of total media count.
+         */
+        getCardDotSlides(product) {
+            return this.getCardMediaSlides(product).slice(0, 6);
         },
         cardMediaHasVideo(product) {
             return Array.isArray(product?.videos) && product.videos.length > 0;
