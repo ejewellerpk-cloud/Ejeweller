@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use Illuminate\Http\Request;
-use Exception;
 use App\Http\Resources\OrderDetailsResource;
+use App\Models\Order;
+use App\Services\PostEx\PostExOrderService;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TrackOrderController extends Controller
 {
+    public function __construct(
+        protected PostExOrderService $postExOrderService
+    ) {}
+
     public function track(Request $request)
     {
         try {
@@ -18,10 +23,13 @@ class TrackOrderController extends Controller
                 'order_serial_no' => 'required|string|max:64',
             ]);
 
-            $orderSerialNo = trim($request->input('order_serial_no'));
+            $lookup = trim((string) $request->input('order_serial_no'));
 
             $order = Order::query()
-                ->where('order_serial_no', $orderSerialNo)
+                ->where(function ($q) use ($lookup) {
+                    $q->where('order_serial_no', $lookup)
+                        ->orWhere('postex_tracking_number', $lookup);
+                })
                 ->with([
                     'shippingAddress',
                     'user',
@@ -31,10 +39,13 @@ class TrackOrderController extends Controller
                 ->first();
 
             if (!$order) {
-                throw new Exception('Order not found with the provided Order ID.', 404);
+                throw new Exception('Order not found with the provided Order ID / tracking number.', 404);
             }
 
-            return new OrderDetailsResource($order);
+            $resource = (new OrderDetailsResource($order))->resolve();
+            $resource['postex_tracking'] = $this->postExOrderService->publicTrackingForOrder($order);
+
+            return response(['data' => $resource]);
 
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

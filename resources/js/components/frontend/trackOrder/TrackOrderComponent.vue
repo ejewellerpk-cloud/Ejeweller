@@ -1,22 +1,34 @@
 <template>
     <section class="py-12 bg-gray-50 min-h-screen">
         <div class="container max-w-4xl mx-auto px-4">
-            <!-- Header -->
             <div class="text-center mb-10">
                 <h1 class="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">Track Your Order</h1>
-                <p class="text-gray-500 max-w-lg mx-auto">Enter your Order ID to see the current status and details of your purchase.</p>
+                <p class="text-gray-500 max-w-lg mx-auto">
+                    Enter your Order ID or PostEx tracking number to see where your package is.
+                </p>
             </div>
 
-            <!-- Form Card -->
             <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 mb-8" v-if="!orderDetails">
                 <form @submit.prevent="submitTracking">
                     <div class="max-w-md mx-auto mb-8">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Order ID <span class="text-red-500">*</span></label>
-                        <input v-model="form.order_serial_no" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="e.g. 123456789" required>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            Order ID / Tracking No <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            v-model="form.order_serial_no"
+                            type="text"
+                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                            placeholder="e.g. ORD-12345 or PostEx tracking #"
+                            required
+                        >
                     </div>
-                    
+
                     <div class="flex justify-center">
-                        <button type="submit" :disabled="loading" class="px-8 py-3.5 bg-primary text-white rounded-full font-black text-lg shadow-[0_8px_16px_rgba(var(--primary-color-rgb),0.3)] hover:shadow-[0_12px_24px_rgba(var(--primary-color-rgb),0.4)] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
+                        <button
+                            type="submit"
+                            :disabled="loading"
+                            class="px-8 py-3.5 bg-primary text-white rounded-full font-black text-lg shadow-[0_8px_16px_rgba(var(--primary-color-rgb),0.3)] hover:shadow-[0_12px_24px_rgba(var(--primary-color-rgb),0.4)] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+                        >
                             <span v-if="!loading">Track Order</span>
                             <span v-else>
                                 <i class="fa-solid fa-spinner fa-spin"></i> Tracking...
@@ -27,32 +39,75 @@
                 </form>
             </div>
 
-            <!-- Results Card -->
             <div v-else class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10">
-                <div class="flex justify-between items-center border-b border-gray-100 pb-6 mb-8">
+                <div class="flex flex-wrap justify-between items-start gap-4 border-b border-gray-100 pb-6 mb-8">
                     <div>
-                        <button @click="resetForm" class="text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-2 mb-2">
+                        <button
+                            type="button"
+                            @click="resetForm"
+                            class="text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-2 mb-2"
+                        >
                             <i class="fa-solid fa-arrow-left"></i> Track Another Order
                         </button>
                         <h2 class="text-2xl font-black text-gray-900">Order #{{ orderDetails.order_serial_no }}</h2>
                         <p class="text-sm text-gray-500 mt-1">Placed on {{ orderDetails.order_datetime || orderDetails.order_date }}</p>
                     </div>
                     <div class="text-right">
-                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-black"
-                            :class="getStatusColor(orderDetails.status)">
+                        <span
+                            class="inline-flex items-center px-4 py-2 rounded-full text-sm font-black"
+                            :class="getStatusColor(orderDetails.status)"
+                        >
                             {{ getStatusText(orderDetails.status) }}
                         </span>
                     </div>
                 </div>
 
-                <!-- Order Timeline -->
+                <!-- PostEx courier live tracking -->
+                <div v-if="postexTracking" class="mb-10 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/50 p-5 sm:p-6">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-500 mb-1">Courier Tracking</p>
+                            <h3 class="text-lg font-black text-gray-900">PostEx Shipment</h3>
+                            <p class="text-sm text-gray-600 mt-1 break-all">
+                                Tracking #:
+                                <span class="font-bold text-indigo-700">{{ postexTracking.tracking_number }}</span>
+                            </p>
+                        </div>
+                        <span
+                            v-if="postexTracking.status"
+                            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white"
+                        >
+                            {{ postexTracking.status }}
+                        </span>
+                    </div>
+
+                    <p v-if="!postexTracking.available && postexTracking.message" class="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
+                        {{ postexTracking.message }}
+                    </p>
+
+                    <div v-if="postexHistory.length > 0" class="relative pl-6 border-l-2 border-indigo-100 space-y-5">
+                        <div v-for="(event, index) in postexHistory" :key="'px-' + index" class="relative">
+                            <div
+                                class="absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white"
+                                :class="index === 0 ? 'bg-indigo-600' : 'bg-indigo-300'"
+                            ></div>
+                            <p class="font-bold text-gray-900 text-sm">{{ event.status }}</p>
+                            <p v-if="event.date" class="text-xs text-gray-500 mt-0.5">{{ event.date }}</p>
+                        </div>
+                    </div>
+                    <p v-else-if="postexTracking.available" class="text-sm text-gray-500">
+                        Shipment booked. Live scan history will appear here as PostEx updates the parcel.
+                    </p>
+                </div>
+
                 <div v-if="orderTimeline.length > 0" class="mb-10">
                     <h3 class="text-lg font-bold text-gray-900 mb-6">Order Timeline</h3>
                     <div class="relative pl-6 border-l-2 border-gray-100 space-y-8">
                         <div v-for="(timeline, index) in orderTimeline" :key="index" class="relative">
-                            <div class="absolute -left-[35px] top-1 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center"
-                                :class="timeline.status === orderDetails.status ? 'bg-primary' : 'bg-gray-300'">
-                            </div>
+                            <div
+                                class="absolute -left-[35px] top-1 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center"
+                                :class="timeline.status === orderDetails.status ? 'bg-primary' : 'bg-gray-300'"
+                            ></div>
                             <div>
                                 <p class="font-bold text-gray-900">{{ getStatusText(timeline.status) }}</p>
                                 <p class="text-sm text-gray-500">{{ timeline.date }}</p>
@@ -61,7 +116,6 @@
                     </div>
                 </div>
 
-                <!-- Order Items Summary -->
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-2">Order Summary</h3>
 
@@ -71,7 +125,14 @@
 
                     <div v-else class="space-y-4">
                         <div v-for="(item, index) in orderProducts" :key="item.id || index" class="flex gap-4 items-center">
-                            <img :src="item.product_image || placeholderImage" :alt="item.product_name" class="w-16 h-16 object-cover rounded-xl border border-gray-100 bg-gray-50">
+                            <img
+                                :src="item.product_image || placeholderImage"
+                                :alt="item.product_name"
+                                class="w-16 h-16 object-cover rounded-xl border border-gray-100 bg-gray-50"
+                                width="64"
+                                height="64"
+                                loading="lazy"
+                            >
                             <div class="flex-1 min-w-0">
                                 <p class="font-bold text-gray-900 line-clamp-2">{{ item.product_name }}</p>
                                 <p class="text-sm text-gray-500" v-if="item.variation_names">{{ item.variation_names }}</p>
@@ -82,13 +143,16 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mt-8 pt-6 border-t border-gray-100 space-y-3 max-w-sm ml-auto">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-medium">Subtotal</span>
                             <span class="font-bold text-gray-900">{{ orderDetails.subtotal_currency_price }}</span>
                         </div>
-                        <div class="flex justify-between text-sm" v-if="orderDetails.discount_currency_price && orderDetails.discount_currency_price !== '$0.00' && orderDetails.discount_currency_price !== '0.00'">
+                        <div
+                            class="flex justify-between text-sm"
+                            v-if="orderDetails.discount_currency_price && orderDetails.discount_currency_price !== '$0.00' && orderDetails.discount_currency_price !== '0.00'"
+                        >
                             <span class="text-gray-500 font-medium">Discount</span>
                             <span class="font-bold text-red-500">-{{ orderDetails.discount_currency_price }}</span>
                         </div>
@@ -138,12 +202,19 @@ export default {
             }
             return Array.isArray(this.orderDetails.order_timeline) ? this.orderDetails.order_timeline : [];
         },
+        postexTracking() {
+            return this.orderDetails?.postex_tracking || null;
+        },
+        postexHistory() {
+            const history = this.postexTracking?.history;
+            return Array.isArray(history) ? history : [];
+        },
     },
     methods: {
         submitTracking() {
             const orderId = (this.form.order_serial_no || '').trim();
             if (!orderId) {
-                alertService.error('Please enter your Order ID.');
+                alertService.error('Please enter your Order ID or tracking number.');
                 return;
             }
             this.loading = true;
@@ -152,7 +223,7 @@ export default {
                 this.loading = false;
             }).catch((err) => {
                 this.loading = false;
-                alertService.error(err.response?.data?.message || 'Order not found. Please check your Order ID.');
+                alertService.error(err.response?.data?.message || 'Order not found. Please check your Order ID / tracking number.');
             });
         },
         resetForm() {

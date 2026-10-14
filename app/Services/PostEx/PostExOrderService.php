@@ -86,6 +86,105 @@ class PostExOrderService
     }
 
     /**
+     * Safe customer-facing PostEx tracking (null if not booked / PostEx off / API error).
+     */
+    public function publicTrackingForOrder(Order $order): ?array
+    {
+        if (empty($order->postex_tracking_number)) {
+            return null;
+        }
+
+        if (!$this->settingsService->isEnabled() || !$this->apiClient->isConfigured()) {
+            return [
+                'tracking_number' => (string) $order->postex_tracking_number,
+                'status'          => $order->postex_status,
+                'history'         => [],
+                'available'       => false,
+                'message'         => 'Courier live tracking is temporarily unavailable.',
+            ];
+        }
+
+        try {
+            $raw = $this->apiClient->trackOrder((string) $order->postex_tracking_number);
+
+            return $this->normalizePublicTracking($raw, (string) $order->postex_tracking_number, $order->postex_status);
+        } catch (Exception $exception) {
+            Log::info('PostEx public track failed: ' . $exception->getMessage());
+
+            return [
+                'tracking_number' => (string) $order->postex_tracking_number,
+                'status'          => $order->postex_status,
+                'history'         => [],
+                'available'       => false,
+                'message'         => 'Courier live tracking is temporarily unavailable.',
+            ];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $raw
+     * @return array{tracking_number: string, status: ?string, history: array<int, array{status: string, date: ?string, code: ?string}>, available: bool, message: ?string}
+     */
+    protected function normalizePublicTracking(array $raw, string $fallbackTracking, ?string $fallbackStatus): array
+    {
+        $dist = $raw['dist'] ?? null;
+        if (is_array($dist) && array_is_list($dist)) {
+            $dist = $dist[0] ?? [];
+        }
+        if (!is_array($dist)) {
+            $dist = [];
+        }
+
+        $status = $dist['transactionStatus']
+            ?? $dist['orderStatus']
+            ?? $dist['shipmentStatus']
+            ?? $fallbackStatus;
+
+        $tracking = $dist['trackingNumber'] ?? $fallbackTracking;
+
+        $historyRaw = $dist['transactionStatusHistory']
+            ?? $dist['trackingHistory']
+            ?? $dist['history']
+            ?? [];
+
+        if (!is_array($historyRaw)) {
+            $historyRaw = [];
+        }
+
+        $history = [];
+        foreach ($historyRaw as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $message = $row['transactionStatusMessage']
+                ?? $row['statusMessage']
+                ?? $row['message']
+                ?? $row['status']
+                ?? null;
+            if ($message === null || $message === '') {
+                continue;
+            }
+            $history[] = [
+                'status' => (string) $message,
+                'date'   => isset($row['transactionStatusDate'])
+                    ? (string) $row['transactionStatusDate']
+                    : (isset($row['date']) ? (string) $row['date'] : null),
+                'code'   => isset($row['transactionStatusMessageCode'])
+                    ? (string) $row['transactionStatusMessageCode']
+                    : (isset($row['code']) ? (string) $row['code'] : null),
+            ];
+        }
+
+        return [
+            'tracking_number' => (string) $tracking,
+            'status'          => $status !== null && $status !== '' ? (string) $status : null,
+            'history'         => $history,
+            'available'       => true,
+            'message'         => null,
+        ];
+    }
+
+    /**
      * @throws Exception
      */
     public function cancel(Order $order): array
