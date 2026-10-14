@@ -396,14 +396,7 @@ export default {
                     alertService.success(res.data.message);
                     this.checkPendingWishlist();
                     this.$store.dispatch("frontendWishlist/lists").then().catch();
-                    if (this.carts.length > 0) {
-                        router.push({ name: "frontend.checkout" });
-                    } else {
-                        router.push({ name: "frontend.home" });
-                    }
-                    setTimeout(() => {
-                        appService.recursiveRouter(router.options.routes, this.$store.getters.authPermission);
-                    }, 1000);
+                    this.afterLoginRedirect();
                 }).catch((err) => {
                     this.loading.isActive = false;
                     if (err.response && err.response.data) {
@@ -427,14 +420,7 @@ export default {
                     alertService.success(res.data.message);
                     this.checkPendingWishlist();
                     this.$store.dispatch("frontendWishlist/lists").then().catch();
-                    if (this.carts.length > 0) {
-                        router.push({ name: "frontend.checkout" });
-                    } else {
-                        router.push({ name: "frontend.home" });
-                    }
-                    setTimeout(() => {
-                        appService.recursiveRouter(router.options.routes, this.$store.getters.authPermission);
-                    }, 1000);
+                    this.afterLoginRedirect();
                 }).catch((err) => {
                     this.loading.isActive = false;
                     if (err.response && err.response.data) {
@@ -475,6 +461,21 @@ export default {
                     localStorage.removeItem('pending_wishlist_product_id');
                 });
             }
+        },
+        afterLoginRedirect: function () {
+            const redirect = this.$route?.query?.redirect;
+            if (typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")) {
+                window.location.assign(redirect);
+                return;
+            }
+            if (this.carts.length > 0) {
+                this.$router.push({ name: "frontend.checkout" });
+            } else {
+                this.$router.push({ name: "frontend.home" });
+            }
+            setTimeout(() => {
+                appService.recursiveRouter(this.$router.options.routes, this.$store.getters.authPermission);
+            }, 1000);
         },
         handleField: function () {
             this.toggleValue = !this.toggleValue

@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-dBfwZFiP.js";import{k as r,v as t,b as n}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const p={name:"SupplierComponent"};function s(c,a,_,m,i,u){const o=r("router-view");return t(),n(o)}const v=e(p,[["render",s]]);export{v as default};

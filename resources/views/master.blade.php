@@ -159,7 +159,10 @@
         window.__HOME_HERO_SLIDERS__ = @json($heroSliders);
         @endif
     </script>
-    @vite('resources/js/app.js')
+    @php
+        $bootAdminApp = request()->is('admin') || request()->is('admin/*') || request()->is('exception');
+    @endphp
+    @vite($bootAdminApp ? 'resources/js/admin.js' : 'resources/js/storefront.js')
 
 
 

@@ -25,14 +25,14 @@
                     </p>
                 </div>
                 <nav class="flex flex-col">
-                    <router-link v-on:click="hideTarget('mobile-profile-canvas', 'canvas-active')"
+                    <a v-on:click="hideTarget('mobile-profile-canvas', 'canvas-active')"
                         v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0"
                         class="profile-link font-medium flex items-center gap-4 capitalize py-3 px-4 group hover:text-primary transition-all duration-500"
-                        :to="{ name: 'admin.dashboard' }">
+                        href="/admin/dashboard">
                         <i
                             class="lab-fill-dashboard text-[#A0A3BD] group-hover:text-primary transition-all duration-500"></i>
                         <span>{{ $t('menu.dashboard') }}</span>
-                    </router-link>
+                    </a>
 
                     <router-link :class="checkIsPathAndRoutePathSame('/account/order-history') ? '!text-primary' : ''"
                         v-on:click="hideTarget('mobile-profile-canvas', 'canvas-active')"

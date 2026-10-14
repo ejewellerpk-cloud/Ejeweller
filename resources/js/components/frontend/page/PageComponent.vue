@@ -66,7 +66,6 @@
 
 <script>
 import TemplateManagerComponent from "../components/TemplateManagerComponent.vue";
-import 'vue3-quill/lib/vue3-quill.css';
 
 export default {
     name: "PageComponent",

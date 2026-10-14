@@ -221,7 +221,7 @@ export default {
             this.$store.dispatch("authcheck").then(res => {
                 if (res.data.status === false) {
                     alertService.error(this.$t('message.demo_login_expired'));
-                    this.$router.push({ name: "frontend.home" });
+                    window.location.assign("/");
                 };
             }).catch();
         }
@@ -306,7 +306,7 @@ export default {
         },
         logout: function () {
             this.$store.dispatch("logout").then(res => {
-                this.$router.push({ name: "frontend.home" });
+                window.location.assign("/");
             }).catch();
         },
         changeLanguage: function (id, code, mode) {

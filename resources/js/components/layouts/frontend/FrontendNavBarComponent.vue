@@ -234,15 +234,15 @@
                             </dl>
                         </div>
                         <nav class="flex flex-col py-2">
-                            <router-link
+                            <a
                                 v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0"
                                 class="flex items-center gap-3 px-4 py-2 transition-all duration-500 hover:bg-gray-100"
-                                :to="{ path: '/admin/' + defaultMenu?.url }">
+                                :href="'/admin/' + (defaultMenu?.url || 'dashboard')">
                                 <i class="text-sm text-[#A0A3BD]" :class="defaultMenu?.icon"></i>
                                 <span class="text-sm font-medium capitalize whitespace-nowrap">
                                     {{ $t('menu.' + defaultMenu?.language) }}
                                 </span>
-                            </router-link>
+                            </a>
 
                             <router-link
                                 class="flex items-center gap-3 px-4 py-2 transition-all duration-500 hover:bg-gray-100"
@@ -372,10 +372,10 @@
                 {{ orderNotificationMessage }}
                 <span class="block">{{ $t('message.please_check_your_order_list') }}</span>
             </h3>
-            <router-link :to="{ path: '/admin/' + orderNotification.url }"
+            <a :href="'/admin/' + (orderNotification.url || 'online-orders')"
                 class="db-btn h-[38px] shadow-[0px_8px_15px_rgba(253,_139,_14,_0.18)] bg-primary text-white">
                 {{ $t('button.let_me_check') }}
-            </router-link>
+            </a>
         </div>
     </div>
     <!-- Notification End -->
