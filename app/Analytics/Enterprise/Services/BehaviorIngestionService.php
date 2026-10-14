@@ -74,7 +74,7 @@ class BehaviorIngestionService
             return [
                 'accepted' => false,
                 'message' => config('app.debug') ? $e->getMessage() : 'Ingest failed',
-                'status' => 503,
+                'status' => 204,
             ];
         }
     }

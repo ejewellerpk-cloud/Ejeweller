@@ -90,10 +90,11 @@ class AnalyticsIngestionService
                 ? $e->getMessage()
                 : 'Unable to store analytics events';
 
+            // Soft-fail for storefront tracker (avoid noisy browser 503s).
             return [
                 'accepted' => false,
                 'message' => $message,
-                'status' => 503,
+                'status' => 204,
             ];
         }
     }

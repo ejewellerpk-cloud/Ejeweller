@@ -1,5 +1,5 @@
 // Increment VERSION whenever you deploy — forces clients to drop old caches
-const VERSION = 'v2.4';
+const VERSION = 'v2.5';
 const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
@@ -58,28 +58,10 @@ const mustBypassCache = (request) => {
     return false;
 };
 
-const passthrough = (request) =>
-    fetch(request).catch((error) => {
-        const url = request.url || '';
-        if (url.includes('/api/')) {
-            return new Response(JSON.stringify({ success: false, offline: true }), {
-                status: 503,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-        throw error;
-    });
-
 self.addEventListener('fetch', (event) => {
+    // Do not call respondWith for API/build/media — browser talks to network directly.
+    // Wrapping fetch here turned brief network blips into fake HTTP 503s in the console.
     if (mustBypassCache(event.request)) {
-        event.respondWith(
-            passthrough(event.request).catch(() =>
-                new Response(JSON.stringify({ success: false, offline: true }), {
-                    status: 503,
-                    headers: { 'Content-Type': 'application/json' },
-                })
-            )
-        );
         return;
     }
 
