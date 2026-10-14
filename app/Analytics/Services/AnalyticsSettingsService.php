@@ -242,9 +242,44 @@ class AnalyticsSettingsService
             && !str_contains($url, 'localhost');
     }
 
+    /**
+     * One-click pack for the React Analytics dashboard (admin only).
+     */
+    public function connectionPack(?string $dashboardUrl = null): array
+    {
+        $apiUrl = rtrim((string) config('app.url'), '/');
+        $licenseKey = trim((string) env('VITE_API_KEY', ''));
+        $dashboard = rtrim((string) ($dashboardUrl ?: config('analytics.dashboard_url') ?: ''), '/');
+
+        $payload = [
+            'v' => 1,
+            'shop' => $apiUrl,
+            'key' => $licenseKey,
+            'at' => now()->getTimestamp(),
+        ];
+
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $code = 'sz1.' . rtrim(strtr(base64_encode($json ?: '{}'), '+/', '-_'), '=');
+
+        $openUrl = null;
+        if ($dashboard !== '') {
+            $openUrl = $dashboard . '/connect?code=' . rawurlencode($code);
+        }
+
+        return [
+            'api_url' => $apiUrl,
+            'license_key' => $licenseKey,
+            'connection_code' => $code,
+            'dashboard_url' => $dashboard !== '' ? $dashboard : null,
+            'open_url' => $openUrl,
+            'has_license_key' => $licenseKey !== '',
+        ];
+    }
+
     private function formatSite(AnalyticsSite $site): array
     {
         $origins = $site->allowed_origins ?? ['*'];
+        $dashboardUrl = rtrim((string) (config('analytics.dashboard_url') ?: ''), '/');
 
         return [
             'site_id' => $site->id,
@@ -256,6 +291,8 @@ class AnalyticsSettingsService
             'tracker_url' => asset(config('analytics.tracker.cdn_url', '/analytics/tracker.js')),
             'collect_url' => config('analytics.tracker.collect_url') ?: url('/api/analytics/v1/collect'),
             'has_secret_key' => !blank($site->secret_key_hash),
+            'dashboard_url' => $dashboardUrl !== '' ? $dashboardUrl : null,
+            'connection' => $this->connectionPack($dashboardUrl !== '' ? $dashboardUrl : null),
         ];
     }
 

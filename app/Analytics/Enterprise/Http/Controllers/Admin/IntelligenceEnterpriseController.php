@@ -3,6 +3,7 @@
 namespace App\Analytics\Enterprise\Http\Controllers\Admin;
 
 use App\Analytics\Enterprise\Jobs\GenerateAiInsightsJob;
+use App\Analytics\Enterprise\Services\EnterpriseGrowthService;
 use App\Analytics\Enterprise\Services\HeatmapService;
 use App\Analytics\Enterprise\Services\InsightsEngineService;
 use App\Analytics\Enterprise\Services\JourneyService;
@@ -19,6 +20,7 @@ class IntelligenceEnterpriseController extends Controller
         private readonly HeatmapService $heatmaps,
         private readonly InsightsEngineService $insights,
         private readonly JourneyService $journey,
+        private readonly EnterpriseGrowthService $growth,
     ) {}
 
     public function features(): JsonResponse
@@ -110,20 +112,53 @@ class IntelligenceEnterpriseController extends Controller
         ]);
     }
 
+    public function journeyVisitors(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        return response()->json([
+            'data' => $this->growth->recentJourneyVisitors($siteId, (int) $request->input('limit', 30)),
+        ]);
+    }
+
+    public function cartRecovery(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+        $from = $request->input('from', now()->subDays(6)->toDateString());
+        $to = $request->input('to', now()->toDateString());
+
+        return response()->json([
+            'data' => $this->growth->recoveryOverview($siteId, $from, $to),
+        ]);
+    }
+
+    public function ensureRecoveryCampaign(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        return response()->json([
+            'data' => $this->growth->ensureDefaultCampaign($siteId),
+            'success' => true,
+        ]);
+    }
+
     public function segments(Request $request): JsonResponse
     {
         $siteId = $this->siteId($request);
-        if (!AnalyticsSchema::hasTable('analytics_customer_scores')) {
-            return response()->json(['data' => $this->defaultSegments()]);
-        }
 
-        $counts = DB::table('analytics_customer_scores')
-            ->where('site_id', $siteId)
-            ->select('segment_slug', DB::raw('COUNT(*) as customers'))
-            ->groupBy('segment_slug')
-            ->get();
+        return response()->json([
+            'data' => $this->growth->segmentsOverview($siteId),
+        ]);
+    }
 
-        return response()->json(['data' => $counts]);
+    public function syncSegments(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        return response()->json([
+            'data' => $this->growth->syncSegmentScores($siteId),
+            'success' => true,
+        ]);
     }
 
     public function experiments(Request $request): JsonResponse
@@ -138,32 +173,100 @@ class IntelligenceEnterpriseController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    public function storeExperiment(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+        if (!AnalyticsSchema::hasTable('analytics_experiments')) {
+            return response()->json(['success' => false, 'message' => 'Experiments table missing'], 422);
+        }
+
+        $key = $request->input('experiment_key') ?: $request->input('key') ?: ('exp_' . substr(md5(uniqid('', true)), 0, 8));
+        $id = DB::table('analytics_experiments')->insertGetId([
+            'site_id' => $siteId,
+            'experiment_key' => $key,
+            'name' => $request->input('name', 'Untitled experiment'),
+            'status' => $request->input('status', 'draft'),
+            'variants' => json_encode($request->input('variants', [
+                ['key' => 'control', 'weight' => 50],
+                ['key' => 'variant_a', 'weight' => 50],
+            ])),
+            'traffic_percent' => (int) $request->input('traffic_percent', 100),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => DB::table('analytics_experiments')->where('id', $id)->first(),
+        ]);
+    }
+
     public function attribution(Request $request): JsonResponse
     {
         $siteId = $this->siteId($request);
-        if (!AnalyticsSchema::hasTable('analytics_attribution_touches')) {
-            return response()->json(['data' => ['model' => $request->input('model', 'last_click'), 'channels' => []]]);
+        $from = $request->input('from', now()->subDays(6)->toDateString());
+        $to = $request->input('to', now()->toDateString());
+        $model = $request->input('model', 'last_click');
+
+        return response()->json([
+            'data' => $this->growth->attributionReport($siteId, $from, $to, $model),
+        ]);
+    }
+
+    public function storeAttributionCost(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        try {
+            $row = $this->growth->saveCampaignCost($siteId, $request->all());
+
+            return response()->json(['success' => true, 'data' => $row]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
-
-        $rows = DB::table('analytics_attribution_touches')
-            ->where('site_id', $siteId)
-            ->whereBetween('touched_at', [$request->input('from'), $request->input('to')])
-            ->select('source', DB::raw('SUM(revenue) as revenue'), DB::raw('COUNT(*) as touches'))
-            ->groupBy('source')
-            ->get();
-
-        return response()->json(['data' => ['model' => $request->input('model', 'last_click'), 'channels' => $rows]]);
     }
 
     public function alertRules(Request $request): JsonResponse
     {
         $siteId = $this->siteId($request);
-        if (!AnalyticsSchema::hasTable('analytics_alert_rules')) {
-            return response()->json(['data' => []]);
-        }
 
         return response()->json([
-            'data' => DB::table('analytics_alert_rules')->where('site_id', $siteId)->get(),
+            'data' => [
+                'rules' => $this->growth->alertRules($siteId),
+                'incidents' => $this->growth->recentIncidents($siteId),
+            ],
+        ]);
+    }
+
+    public function storeAlertRule(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        try {
+            $rule = $this->growth->storeAlertRule($siteId, $request->all());
+
+            return response()->json(['success' => true, 'data' => $rule]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function toggleAlertRule(Request $request, int $id): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+        $active = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
+        $ok = $this->growth->toggleAlertRule($siteId, $id, $active);
+
+        return response()->json(['success' => $ok]);
+    }
+
+    public function seedAlertRules(Request $request): JsonResponse
+    {
+        $siteId = $this->siteId($request);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->growth->seedDefaultAlerts($siteId),
         ]);
     }
 
@@ -191,13 +294,4 @@ class IntelligenceEnterpriseController extends Controller
         return $siteId;
     }
 
-    private function defaultSegments(): array
-    {
-        return [
-            ['segment_slug' => 'vip', 'customers' => 0],
-            ['segment_slug' => 'at_risk', 'customers' => 0],
-            ['segment_slug' => 'new', 'customers' => 0],
-            ['segment_slug' => 'repeat', 'customers' => 0],
-        ];
-    }
 }

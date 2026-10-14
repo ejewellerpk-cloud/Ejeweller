@@ -17,7 +17,7 @@ class IntelligenceSettingsController extends AdminController implements HasMiddl
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:settings', only: ['show', 'update', 'regenerateKeys']),
+            new Middleware('permission:settings', only: ['show', 'update', 'regenerateKeys', 'connectionPack']),
         ];
     }
 
@@ -72,6 +72,29 @@ class IntelligenceSettingsController extends AdminController implements HasMiddl
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage() ?: 'Failed to regenerate keys.',
+            ], 422);
+        }
+    }
+
+    public function connectionPack(Request $request): JsonResponse
+    {
+        try {
+            $dashboardUrl = $request->query('dashboard_url')
+                ?: $request->input('dashboard_url')
+                ?: config('analytics.dashboard_url');
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->settings->connectionPack(
+                    is_string($dashboardUrl) ? $dashboardUrl : null
+                ),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'Failed to build connection pack.',
             ], 422);
         }
     }

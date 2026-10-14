@@ -53,11 +53,20 @@ Route::prefix('admin/intelligence')
             Route::get('/insights', [IntelligenceEnterpriseController::class, 'insights']);
             Route::post('/insights/generate', [IntelligenceEnterpriseController::class, 'generateInsights']);
             Route::patch('/insights/{id}/dismiss', [IntelligenceEnterpriseController::class, 'dismissInsight']);
+            Route::get('/journey/visitors', [IntelligenceEnterpriseController::class, 'journeyVisitors']);
             Route::get('/journey/visitors/{visitorUuid}', [IntelligenceEnterpriseController::class, 'journeyVisitor']);
+            Route::get('/recovery', [IntelligenceEnterpriseController::class, 'cartRecovery']);
+            Route::post('/recovery/ensure-campaign', [IntelligenceEnterpriseController::class, 'ensureRecoveryCampaign']);
             Route::get('/segments', [IntelligenceEnterpriseController::class, 'segments']);
+            Route::post('/segments/sync', [IntelligenceEnterpriseController::class, 'syncSegments']);
             Route::get('/experiments', [IntelligenceEnterpriseController::class, 'experiments']);
+            Route::post('/experiments', [IntelligenceEnterpriseController::class, 'storeExperiment']);
             Route::get('/attribution', [IntelligenceEnterpriseController::class, 'attribution']);
+            Route::post('/attribution/costs', [IntelligenceEnterpriseController::class, 'storeAttributionCost']);
             Route::get('/alerts/rules', [IntelligenceEnterpriseController::class, 'alertRules']);
+            Route::post('/alerts/rules', [IntelligenceEnterpriseController::class, 'storeAlertRule']);
+            Route::post('/alerts/rules/seed', [IntelligenceEnterpriseController::class, 'seedAlertRules']);
+            Route::patch('/alerts/rules/{id}', [IntelligenceEnterpriseController::class, 'toggleAlertRule']);
             Route::get('/billing/plans', [IntelligenceEnterpriseController::class, 'billingPlans']);
         });
         Route::prefix('advanced')->group(function () {
@@ -95,4 +104,5 @@ Route::prefix('admin/setting/intelligence-analytics')
         Route::get('/', [\App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController::class, 'show']);
         Route::match(['put', 'patch'], '/', [\App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController::class, 'update']);
         Route::post('/regenerate-keys', [\App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController::class, 'regenerateKeys']);
+        Route::get('/connection-pack', [\App\Analytics\Http\Controllers\Admin\IntelligenceSettingsController::class, 'connectionPack']);
     });

@@ -65,6 +65,10 @@
 
                     <div v-if="revealedSecret" class="form-col-12 p-4 rounded-xl bg-amber-50 border border-amber-200">
                         <p class="text-sm font-semibold text-amber-800 mb-2">{{ $t('label.secret_key') || 'Secret Key' }} ({{ $t('label.one_time') || 'one time only' }})</p>
+                        <p class="text-xs text-amber-700 mb-2">
+                            Yeh <code>sk_…</code> sirf server/API secrets ke liye hai — Analytics dashboard Connect screen pe mat paste karein.
+                            Dashboard ke liye neeche <strong>Connect key (sz1.…)</strong> use karein.
+                        </p>
                         <div class="flex gap-2">
                             <input :value="revealedSecret" type="text" class="db-field-control font-mono text-sm" readonly />
                             <button type="button" @click="copyKey(revealedSecret)"
@@ -98,6 +102,45 @@
             </form>
         </div>
     </div>
+
+    <div class="db-card mt-4">
+        <div class="db-card-header">
+            <h3 class="db-card-title">{{ $t('label.connect_analytics_dashboard') || 'Connect Analytics Dashboard' }}</h3>
+        </div>
+        <div class="db-card-body space-y-4">
+            <p class="text-sm text-gray-500">
+                Copy this <strong>Connect key</strong> (<code>sz1.…</code>) → Analytics → Connect → login.
+                <span class="text-amber-700"> Public (<code>pk_</code>) / Secret (<code>sk_</code>) keys yahan kaam nahi karti.</span>
+            </p>
+
+            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+                <label class="db-field-title text-emerald-900">Connect key for Analytics dashboard (sz1.…)</label>
+                <div class="flex gap-2">
+                    <input :value="connection.connection_code || 'Loading…'" type="text"
+                        class="db-field-control font-mono text-xs" readonly />
+                    <button type="button" @click="copyConnectKey"
+                        class="db-btn bg-primary text-white shrink-0 px-4"
+                        :disabled="!connection.connection_code">
+                        <i class="fa-regular fa-copy"></i>
+                        <span class="hidden sm:inline ml-1">Copy key</span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500">
+                    Shop: <code>{{ connection.api_url || '—' }}</code>
+                    <span v-if="connection.connection_code && !connection.has_license_key" class="text-amber-600 block mt-1">
+                        Shop server pe <code>VITE_API_KEY</code> set karein (license) — warna Analytics login fail hoga.
+                    </span>
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button type="button" @click="refreshConnection" class="db-btn bg-slate-700 text-white">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Refresh key</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -113,6 +156,12 @@ export default {
         return {
             loading: { isActive: false },
             revealedSecret: null,
+            connection: {
+                api_url: '',
+                connection_code: '',
+                open_url: null,
+                has_license_key: false,
+            },
             form: {
                 name: '',
                 domain: '',
@@ -138,6 +187,33 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(this.connectionErrorMessage(err, 'Failed to load settings'));
             });
+        },
+        refreshConnection() {
+            this.loading.isActive = true;
+            axios.get('admin/setting/intelligence-analytics/connection-pack').then((res) => {
+                this.applyConnection(res.data.data);
+                this.loading.isActive = false;
+                alertService.success('Connect key ready');
+            }).catch((err) => {
+                this.loading.isActive = false;
+                alertService.error(this.connectionErrorMessage(err, 'Failed to build connect key'));
+            });
+        },
+        copyConnectKey() {
+            if (!this.connection.connection_code) {
+                this.refreshConnection();
+                return;
+            }
+            this.copyKey(this.connection.connection_code);
+        },
+        applyConnection(c) {
+            if (!c) return;
+            this.connection = {
+                api_url: c.api_url || '',
+                connection_code: c.connection_code || '',
+                open_url: c.open_url || null,
+                has_license_key: Boolean(c.has_license_key),
+            };
         },
         save() {
             this.loading.isActive = true;
@@ -180,6 +256,11 @@ export default {
                 tracker_url: d.tracker_url || '',
                 collect_url: d.collect_url || '',
             };
+            if (d.connection) {
+                this.applyConnection(d.connection);
+            } else {
+                this.refreshConnection();
+            }
         },
         regenerate() {
             if (!confirm('Generate new keys? Old public key will stop working until you save and deploy.')) {

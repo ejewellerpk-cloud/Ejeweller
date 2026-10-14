@@ -3,6 +3,9 @@
 return [
     'enabled' => env('ANALYTICS_ENABLED', true),
 
+    /** React Analytics dashboard URL (e.g. https://analytics.ejeweller.pk) — used for one-click connect */
+    'dashboard_url' => env('ANALYTICS_DASHBOARD_URL', null),
+
     /**
      * Write ANALYTICS_* to .env from admin UI. Default false.
      * Enabling this can restart Vite or reset php artisan serve on Windows.
