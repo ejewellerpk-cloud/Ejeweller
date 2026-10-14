@@ -16,17 +16,8 @@ import alertService from "../services/alertService";
 import "../../../public/themes/default/fonts/urbanist/urbanist.css";
 import "../../../public/themes/default/fonts/iconly/iconly.css";
 import "../../../public/themes/default/fonts/public/public.css";
-// Font Awesome is large and rarely needed on first paint — load after idle
-if (typeof window !== "undefined") {
-    const loadFa = () => {
-        import("../../../public/themes/default/fonts/fontawesome/fontawesome.css").catch(() => {});
-    };
-    if ("requestIdleCallback" in window) {
-        window.requestIdleCallback(loadFa, { timeout: 4000 });
-    } else {
-        window.setTimeout(loadFa, 2000);
-    }
-}
+// Eager — cart/nav use fa-solid; deferred load left blank icons
+import "../../../public/themes/default/fonts/fontawesome/fontawesome.css";
 
 const toastOptions = {
     timeout: 2000,

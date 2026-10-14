@@ -3,7 +3,8 @@
  */
 
 @font-face {
-  font-display: optional;
+  /* swap — optional hid icons when woff2 missed the short load window */
+  font-display: swap;
   font-family: "Iconly";
   font-style: normal;
   font-weight: 400;
