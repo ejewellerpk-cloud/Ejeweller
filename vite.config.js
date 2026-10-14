@@ -50,12 +50,43 @@ export default defineConfig({
                     ) {
                         return;
                     }
-                    // Do NOT dump all node_modules into one shared "vendor" chunk —
-                    // that forced storefront to download admin-only deps (~900KB).
-                    // Do NOT force a shared swiper chunk either — it leaked into the
-                    // storefront critical path via cart/product list. Let Rollup split.
-                    // Do NOT split vue / vue-router / vuex / @vue into a separate chunk
+                    // Do NOT put vue / vue-router / @vue in a separate chunk
                     // (TDZ: "Cannot access before initialization").
+                    // Split secondary libs so storefront is not one ~666KB file
+                    // (large single downloads often hit ERR_CONNECTION_RESET on host).
+                    if (
+                        id.includes('node_modules/vue-i18n') ||
+                        id.includes('node_modules/@intlify')
+                    ) {
+                        return 'vendor-i18n';
+                    }
+                    if (
+                        id.includes('node_modules/vuex') ||
+                        id.includes('node_modules/vuex-persistedstate')
+                    ) {
+                        return 'vendor-vuex';
+                    }
+                    if (id.includes('node_modules/axios')) {
+                        return 'vendor-axios';
+                    }
+                    if (id.includes('node_modules/vue-toastification')) {
+                        return 'vendor-toast';
+                    }
+                    if (
+                        id.includes('node_modules/sweetalert2') ||
+                        id.includes('node_modules/vue3-simple-alert')
+                    ) {
+                        return 'vendor-alert';
+                    }
+                    if (id.includes('node_modules/vue-next-select')) {
+                        return 'vendor-select';
+                    }
+                    if (
+                        id.includes('node_modules/@vueuse/head') ||
+                        id.includes('node_modules/@unhead')
+                    ) {
+                        return 'vendor-head';
+                    }
                 }
             }
         }

@@ -1,5 +1,5 @@
 // Increment VERSION whenever you deploy — forces clients to drop old caches
-const VERSION = 'v2.5';
+const VERSION = 'v2.6';
 const staticCacheName = 'pwa-' + VERSION;
 
 const filesToCache = [
@@ -46,8 +46,10 @@ const mustBypassCache = (request) => {
     if (request.destination === 'video' || request.destination === 'audio') return true;
 
     const url = request.url || '';
-    // Vite build bundles — never intercept (large files + hashed names break SW fetch)
-    if (url.includes('/build/')) return true;
+    // Vite build bundles — never intercept. Wrapping large hashed JS caused
+    // net::ERR_CONNECTION_RESET 200 (OK) when the Response was truncated.
+    if (url.includes('/build/') || url.includes('/build/assets/')) return true;
+    if (/\.(js|css|mjs|map)(\?|$)/i.test(url) && url.includes('/assets/')) return true;
     // Never touch API/XHR — prevents redirect/cache loops (508) on production
     if (url.includes('/api/') || url.includes('/install')) return true;
     if (MEDIA_EXT.test(url)) return true;
