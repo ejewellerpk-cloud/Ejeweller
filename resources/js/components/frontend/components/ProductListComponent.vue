@@ -51,8 +51,7 @@
                     <Swiper v-if="hasMediaSlider(product)"
                         v-bind="cardSwiperProps"
                         :dir="'ltr'"
-                        :pagination="getPaginationConfig(product)"
-                        :modules="modules"
+                        :pagination="false"
                         :loop="!cardMediaHasVideo(product)"
                         class="w-full h-full product-card-swiper"
                         @swiper="onSwiperReady($event, product.id)"
@@ -108,6 +107,32 @@
                             </div>
                         </SwiperSlide>
                     </Swiper>
+
+                    <!-- Custom dots: 1st image → video (play) → remaining — all media kept -->
+                    <div
+                        v-if="hasMediaSlider(product)"
+                        class="product-card-dots"
+                        @click.stop
+                        @touchend.stop
+                    >
+                        <button
+                            v-for="(media, mediaIndex) in getCardMediaSlides(product)"
+                            :key="`card-dot-${product.id}-${mediaIndex}`"
+                            type="button"
+                            class="product-card-dot"
+                            :class="{
+                                'is-active': getCardActiveIndex(product.id) === mediaIndex,
+                                'video-dot': media.type === 'video',
+                            }"
+                            :aria-label="media.type === 'video' ? 'video' : `image ${mediaIndex + 1}`"
+                            @click.stop="goToCardSlide(product.id, mediaIndex)"
+                            @touchend.stop="onInstantAction($event, () => goToCardSlide(product.id, mediaIndex))"
+                        >
+                            <svg v-if="media.type === 'video'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M7 6v12l10-6z"/>
+                            </svg>
+                        </button>
+                    </div>
 
                     <div v-else class="w-full h-full block relative bg-gray-50">
                         <template v-if="product.cover && !product.cover.includes('default/product')">
@@ -212,9 +237,7 @@
 import starRating from "vue-star-rating";
 import router from "../../../router";
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { Pagination } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/pagination';
 import targetService from "../../../services/targetService";
 import alertService from "../../../services/alertService";
 import {
@@ -264,7 +287,6 @@ export default {
     },
     setup() {
         return {
-            modules: [Pagination],
             cardSwiperProps: productCardSwiperProps,
             onInstantAction,
         };
@@ -275,6 +297,7 @@ export default {
     data() {
         return {
             swiperInstances: {},
+            cardActiveIndexes: {},
             touchSessions: {},
             touchNavTimestamps: {},
             animatingWishlists: {},
@@ -302,7 +325,14 @@ export default {
         },
         onSwiperReady(swiper, productId) {
             this.swiperInstances[productId] = swiper;
+            this.setCardActiveIndex(productId, swiper?.realIndex ?? swiper?.activeIndex ?? 0);
             this.syncCardVideoPlayback(productId, swiper);
+        },
+        getCardActiveIndex(productId) {
+            return this.cardActiveIndexes[productId] ?? 0;
+        },
+        setCardActiveIndex(productId, index) {
+            this.cardActiveIndexes = { ...this.cardActiveIndexes, [productId]: index };
         },
         getCardRoot(productId) {
             return this.$el?.querySelector?.(`[data-card-product-id="${productId}"]`) || null;
@@ -370,6 +400,7 @@ export default {
             swiper.slideTo(index);
         },
         onCardSlideChange(swiper, productId) {
+            this.setCardActiveIndex(productId, swiper?.realIndex ?? swiper?.activeIndex ?? 0);
             this.syncCardVideoPlayback(productId, swiper);
         },
         syncCardVideoPlayback(productId, swiper) {
@@ -769,25 +800,6 @@ export default {
                 });
             }
         },
-        getPaginationConfig: function (product) {
-            const slides = this.getCardMediaSlides(product);
-            const videoSlideIndex = slides.findIndex((slide) => slide.type === 'video');
-            if (videoSlideIndex < 0) {
-                return { clickable: true };
-            }
-
-            // Dots: 1st = image, 2nd = video (when first image exists), then remaining image dots.
-            // All media slides stay swipeable; only the video bullet gets the play icon.
-            return {
-                clickable: true,
-                renderBullet: function (index, className) {
-                    if (index === videoSlideIndex) {
-                        return `<span class="${className} video-dot" aria-label="video"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
-                    }
-                    return `<span class="${className}"></span>`;
-                }
-            };
-        },
         isNew: function (product) {
             if (!product || !product.created_at) return false;
             const createdAt = new Date(product.created_at);
@@ -866,66 +878,80 @@ export default {
     }
 }
 
-.product-card-slider :deep(.swiper-pagination) {
-    bottom: 8px !important;
-    opacity: 0 !important;
-    transition: all 0.3s ease;
+.product-card-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.group:hover .product-card-slider :deep(.swiper-pagination) {
-    opacity: 1 !important;
+.group:hover .product-card-dots {
+    opacity: 1;
 }
 
 @media (hover: none), (pointer: coarse) {
-    .group:hover .product-card-slider :deep(.swiper-pagination) {
-        opacity: 1 !important;
+    .product-card-dots {
+        opacity: 1;
     }
 }
 
 @media (max-width: 640px) {
-    .product-card-slider :deep(.swiper-pagination) {
-        opacity: 1 !important;
+    .product-card-dots {
+        opacity: 1;
     }
 }
 
-.product-card-slider :deep(.swiper-pagination-bullet) {
-    background: #ff5c00 !important;
+.product-card-dot {
+    pointer-events: auto;
+    appearance: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: #ff5c00;
     width: 6px;
     height: 6px;
+    border-radius: 50%;
     opacity: 0.6;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
-    margin: 0 5px !important;
     position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.product-card-slider :deep(.swiper-pagination-bullet)::before {
+.product-card-dot::before {
     content: '';
     position: absolute;
     inset: -4px;
 }
 
-.product-card-slider :deep(.swiper-pagination-bullet-active) {
-    background: #ff5c00 !important;
+.product-card-dot.is-active {
     opacity: 1;
     width: 16px;
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* Video play icon replacing the 2nd pagination dot */
-.product-card-slider :deep(.video-dot) {
-    background: rgba(255, 92, 0, 0.55) !important;
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 50% !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    padding: 2px !important;
+.product-card-dot.video-dot {
+    background: rgba(255, 92, 0, 0.55);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    padding: 2px;
+    opacity: 0.85;
 }
 
-.product-card-slider :deep(.video-dot svg) {
+.product-card-dot.video-dot svg {
     width: 8px;
     height: 8px;
     fill: white;
@@ -933,10 +959,12 @@ export default {
     margin-left: 1px;
 }
 
-.product-card-slider :deep(.video-dot.swiper-pagination-bullet-active) {
-    background: #ff5c00 !important;
-    width: 14px !important;
-    border-radius: 50% !important;
+.product-card-dot.video-dot.is-active {
+    background: #ff5c00;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    opacity: 1;
 }
 
 .animate-heart-pulse {

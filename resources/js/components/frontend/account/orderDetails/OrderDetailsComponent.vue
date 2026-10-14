@@ -1,157 +1,135 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="order-list" :skeleton-count="1" />
-    <div class="flex items-center gap-4 mb-7">
-        <button @click.prevent="$router.back()" class="lab-line-undo text-xl font-bold text-primary"></button>
-        <h2 class="capitalize text-xl font-bold text-primary">{{ $t('label.order_details') }}</h2>
-    </div>
 
-    <div class="rounded-2xl shadow-card p-4 sm:p-6 mb-6 bg-white">
-        <div class="text-center mb-10">
-            <h3 class="text-xl font-semibold capitalize mb-4">{{ $t('message.thank_you') }}</h3>
-            <p class="text-sm font-medium mb-3">{{ $t('message.order_status_follows') }}</p>
-            <h4 class="text-sm font-semibold">{{ $t('label.order_id') }}: <span class="text-primary">#
-                    {{ order.order_serial_no }}
-                </span>
-            </h4>
-
-            <ul v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type !== enums.orderTypeEnum.PICK_UP"
-                class="w-full flex items-center justify-center pb-12 mt-8">
-                <li v-for="track in tracks" class="w-full flex items-center justify-center gap-1 relative">
-                    <hr :class="{ '!bg-success': track.step <= order.status }"
-                        class="block border-none w-full h-1 rounded-xl bg-gray-200" />
-                    <i :class="{ 'lab-fill-save !bg-success text-white': track.step <= order.status }"
-                        class="flex-shrink-0 w-7 h-7 !leading-7 text-center rounded-full bg-gray-200 lab-font-size-16" />
-                    <hr :class="{ '!bg-success': track.step <= order.status }"
-                        class="block border-none w-full h-1 rounded-xl bg-gray-200" />
-                    <span
-                        class="absolute top-10 left-1/2 -translate-x-1/2 w-14 sm:w-20 text-xs sm:text-sm leading-[18px] text-center capitalize">
-                        {{ track.title }}</span>
-                </li>
-            </ul>
-
-            <ul v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type === enums.orderTypeEnum.PICK_UP"
-                class="w-full flex items-center justify-center pb-12 mt-8">
-                <li v-for="track in pickupTracks" class="w-full flex items-center justify-center gap-1 relative">
-                    <hr :class="{ '!bg-success': track.step <= order.status }"
-                        class="block border-none w-full h-1 rounded-xl bg-gray-200" />
-                    <i :class="{ 'lab-fill-save !bg-success text-white': track.step <= order.status }"
-                        class="flex-shrink-0 w-7 h-7 !leading-7 text-center rounded-full bg-gray-200 lab-font-size-16" />
-                    <hr :class="{ '!bg-success': track.step <= order.status }"
-                        class="block border-none w-full h-1 rounded-xl bg-gray-200" />
-                    <span
-                        class="absolute top-10 left-1/2 -translate-x-1/2 w-14 sm:w-20 text-xs sm:text-sm leading-[18px] text-center capitalize">
-                        {{ track.title }}</span>
-                </li>
-            </ul>
-
-            <button v-if="order.status === enums.orderStatusEnum.CANCELED" type="button"
-                class="flex items-center justify-center gap-2 py-3 sm:py-4 px-7 sm:px-10 mx-auto mt-6 rounded-2xl border border-[#FB4E4E] text-[#FB4E4E] bg-white transition-all duration-500 hover:bg-[#FB4E4E] hover:text-white">
-                <i class="lab-fill-close-circle sm:text-xl"></i>
-                <span class="sm:text-lg font-bold capitalize whitespace-nowrap">{{ $t('label.order_cancelled') }}</span>
+    <div class="order-details mobile:mb-24">
+        <div class="flex items-center gap-3 mb-5">
+            <button
+                type="button"
+                @click.prevent="$router.back()"
+                class="w-10 h-10 rounded-xl border border-gray-200 bg-white text-heading flex items-center justify-center shadow-sm hover:bg-slate-50 transition"
+                :aria-label="$t('button.back') || 'Back'"
+            >
+                <i class="lab-line-undo text-lg"></i>
             </button>
-            <button v-if="order.status === enums.orderStatusEnum.REJECTED" type="button"
-                class="flex items-center justify-center gap-2 py-3 sm:py-4 px-7 sm:px-10 mx-auto mt-6 rounded-2xl border border-[#FB4E4E] text-[#FB4E4E] bg-white transition-all duration-500 hover:bg-[#FB4E4E] hover:text-white">
-                <i class="lab-fill-close-circle sm:text-xl"></i>
-                <span class="sm:text-lg font-bold capitalize whitespace-nowrap">{{ $t('label.order_rejected') }}</span>
-            </button>
+            <div class="min-w-0">
+                <h2 class="capitalize text-xl sm:text-2xl font-bold text-heading tracking-tight">{{ $t('label.order_details') }}</h2>
+                <p class="text-xs sm:text-sm text-text truncate">#{{ order.order_serial_no }} · {{ order.order_datetime }}</p>
+            </div>
         </div>
 
-        <div class="row">
-            <div class="col-12 md:col-5">
-                <div class="p-4 mb-6 rounded-2xl border border-gray-100">
-                    <ul class="flex flex-col gap-2.5">
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.order_id')
-                                }}:</span>
-                            <span class="text-sm font-semibold capitalize">#{{ order.order_serial_no }}</span>
+        <!-- Status hero -->
+        <div class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 mb-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{{ $t('label.order_status') }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize" :class="orderStatusClass(order.status)">
+                            {{ enums.orderStatusEnumArray[order.status] }}
+                        </span>
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize"
+                            :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'">
+                            {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{{ $t('label.total') }}</p>
+                    <p class="text-xl font-extrabold text-heading">{{ order.total_currency_price }}</p>
+                </div>
+            </div>
+
+            <div v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type !== enums.orderTypeEnum.PICK_UP"
+                class="pt-2 pb-8">
+                <ul class="w-full flex items-center justify-center">
+                    <li v-for="(track, index) in tracks" :key="'track-' + index" class="w-full flex items-center justify-center gap-1 relative">
+                        <hr :class="{ '!bg-success': track.step <= order.status }"
+                            class="block border-none w-full h-1 rounded-xl bg-gray-200" />
+                        <i :class="{ 'lab-fill-save !bg-success text-white': track.step <= order.status }"
+                            class="flex-shrink-0 w-7 h-7 !leading-7 text-center rounded-full bg-gray-200 lab-font-size-16" />
+                        <hr :class="{ '!bg-success': track.step <= order.status }"
+                            class="block border-none w-full h-1 rounded-xl bg-gray-200" />
+                        <span class="absolute top-9 left-1/2 -translate-x-1/2 w-16 sm:w-20 text-[10px] sm:text-xs leading-[14px] text-center capitalize text-text">
+                            {{ track.title }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <div v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type === enums.orderTypeEnum.PICK_UP"
+                class="pt-2 pb-8">
+                <ul class="w-full flex items-center justify-center">
+                    <li v-for="(track, index) in pickupTracks" :key="'pickup-' + index" class="w-full flex items-center justify-center gap-1 relative">
+                        <hr :class="{ '!bg-success': track.step <= order.status }"
+                            class="block border-none w-full h-1 rounded-xl bg-gray-200" />
+                        <i :class="{ 'lab-fill-save !bg-success text-white': track.step <= order.status }"
+                            class="flex-shrink-0 w-7 h-7 !leading-7 text-center rounded-full bg-gray-200 lab-font-size-16" />
+                        <hr :class="{ '!bg-success': track.step <= order.status }"
+                            class="block border-none w-full h-1 rounded-xl bg-gray-200" />
+                        <span class="absolute top-9 left-1/2 -translate-x-1/2 w-16 sm:w-20 text-[10px] sm:text-xs leading-[14px] text-center capitalize text-text">
+                            {{ track.title }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <div v-if="order.status === enums.orderStatusEnum.CANCELED || order.status === enums.orderStatusEnum.REJECTED"
+                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-red-100 bg-red-50 text-red-600">
+                <i class="lab-fill-close-circle text-lg"></i>
+                <span class="text-sm font-bold capitalize">
+                    {{ order.status === enums.orderStatusEnum.CANCELED ? $t('label.order_cancelled') : $t('label.order_rejected') }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-slate-400 mb-3">{{ $t('label.order_id') }}</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-text">{{ $t('label.order_id') }}</span>
+                            <span class="text-sm font-semibold text-heading text-right">#{{ order.order_serial_no }}</span>
                         </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.order_date')
-                                }}:</span>
-                          <span class="text-sm font-normal capitalize">{{ order.order_datetime }}</span>
+                        <li class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-text">{{ $t('label.order_date') }}</span>
+                            <span class="text-sm font-medium text-heading text-right">{{ order.order_datetime }}</span>
                         </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.order_type')
-                                }}:</span>
-                            <span>
-                                {{ enums.orderTypeEnumArray[order.order_type] }}
-                            </span>
+                        <li class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-text">{{ $t('label.order_type') }}</span>
+                            <span class="text-sm font-medium text-heading text-right capitalize">{{ enums.orderTypeEnumArray[order.order_type] }}</span>
                         </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.order_status')
-                                }}:</span>
-                            <span class="font-sm capitalize px-2 rounded-3xl" :class="orderStatusClass(order.status)">
-                                {{ enums.orderStatusEnumArray[order.status] }}
-                            </span>
+                        <li class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-text">{{ $t('label.payment_method') }}</span>
+                            <span class="text-sm font-medium text-heading text-right capitalize">{{ order.payment_method_name }}</span>
                         </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.payment_status')
-                                }}:</span>
-                            <span class="font-sm capitalize px-2 rounded-3xl"
-                                :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'">
-                                {{ enums.paymentStatusEnumArray[order.payment_status] }}
-                            </span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.payment_method')
-                                }}:</span>
-                            <span class="text-sm font-normal capitalize">
-                                {{ order.payment_method_name }}
-                            </span>
-                        </li>
-                          <li v-if="order.status === enums.orderStatusEnum.REJECTED" class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-28 flex-shrink-0">{{
-                                $t('label.reason')
-                            }}:</span>
-                            <span class="text-sm font-normal capitalize">
-                                {{ order.reason }}
-                            </span>
+                        <li v-if="order.status === enums.orderStatusEnum.REJECTED" class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-text">{{ $t('label.reason') }}</span>
+                            <span class="text-sm font-medium text-heading text-right capitalize">{{ order.reason }}</span>
                         </li>
                     </ul>
                 </div>
-                <div class="rounded-2xl border border-gray-100"
+
+                <div
                     v-if="order.order_type === enums.orderTypeEnum.DELIVERY && orderAddress.length > 0"
-                    v-for="address in orderAddress" :key="address"
-                    :class="address.address_type === enums.addressTypeEnum.SHIPPING ? 'mb-6' : ''">
-                    <h3 class="p-4 capitalize font-bold text-center"
-                        v-if="address.address_type === enums.addressTypeEnum.SHIPPING">{{ $t('label.shipping_address')
-                        }}
+                    v-for="(address, addressIndex) in orderAddress"
+                    :key="'addr-' + addressIndex"
+                    class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                >
+                    <h3 class="px-4 py-3 text-sm font-bold text-heading bg-slate-50 border-b border-gray-100 capitalize">
+                        {{ address.address_type === enums.addressTypeEnum.SHIPPING ? $t('label.shipping_address') : $t('label.billing_address') }}
                     </h3>
-                    <h3 class="p-4 capitalize font-bold text-center"
-                        v-if="address.address_type === enums.addressTypeEnum.BILLING">{{ $t('label.billing_address') }}
-                    </h3>
-                    <ul class="p-4 flex flex-col gap-2.5 border-t border-dashed border-gray-100">
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.name')
-                                }}:</span>
-                            <span class="text-sm font-normal capitalize">{{ address.full_name }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.phone')
-                                }}:</span>
-                            <span class="text-sm font-normal capitalize">{{ address.country_code }} {{ address.phone
-                                }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2" v-if="address.email">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.email')
-                                }}:</span>
-                            <span class="text-sm font-normal">{{ address.email }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">
-                                {{ $t('label.address') }}:</span>
-                            <span class="text-sm font-normal capitalize">
+                    <ul class="p-4 space-y-2.5">
+                        <li class="text-sm"><span class="text-text">{{ $t('label.name') }}:</span> <span class="font-semibold capitalize text-heading">{{ address.full_name }}</span></li>
+                        <li class="text-sm"><span class="text-text">{{ $t('label.phone') }}:</span> <span class="font-medium text-heading" dir="ltr">{{ address.country_code }}{{ address.phone }}</span></li>
+                        <li v-if="address.email" class="text-sm"><span class="text-text">{{ $t('label.email') }}:</span> <span class="font-medium text-heading break-all">{{ address.email }}</span></li>
+                        <li class="text-sm leading-relaxed">
+                            <span class="text-text">{{ $t('label.address') }}:</span>
+                            <span class="font-medium capitalize text-heading">
                                 <span v-if="address.address">{{ address.address }}</span>
-                                <span class="block" :class="address.address ? 'mt-2' : ''">
-                                    <span v-if="address.city">{{ address.city }},</span>
-                                    <span v-if="address.state">{{ address.state }},</span>
-                                    <span v-if="address.country">{{ address.country }},</span>
+                                <span class="block" :class="address.address ? 'mt-1' : ''">
+                                    <span v-if="address.city">{{ address.city }}, </span>
+                                    <span v-if="address.state">{{ address.state }}, </span>
+                                    <span v-if="address.country">{{ address.country }}, </span>
                                     <span v-if="address.zip_code">{{ address.zip_code }}</span>
                                 </span>
                             </span>
@@ -159,36 +137,24 @@
                     </ul>
                 </div>
 
-                <div class="rounded-2xl border border-gray-100"
-                    v-if="order.order_type === enums.orderTypeEnum.PICK_UP && Object.keys(outletAddress).length > 0">
-                    <h3 class="p-4 capitalize font-bold text-center">
+                <div
+                    v-if="order.order_type === enums.orderTypeEnum.PICK_UP && Object.keys(outletAddress).length > 0"
+                    class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                >
+                    <h3 class="px-4 py-3 text-sm font-bold text-heading bg-slate-50 border-b border-gray-100 capitalize">
                         {{ $t('label.pick_up_address') }}
                     </h3>
-                    <ul class="p-4 flex flex-col gap-2.5 border-t border-dashed border-gray-100">
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.name')
-                                }}:</span>
-                            <span class="text-sm font-normal capitalize">{{ outletAddress.name }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2" v-if="outletAddress.phone">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.phone')
-                                }}:</span>
-                            <span class="text-sm font-normal capitalize">{{ outletAddress.country_code }}
-                                {{ outletAddress.phone }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2" v-if="outletAddress.email">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{ $t('label.email')
-                                }}:</span>
-                            <span class="text-sm font-normal">{{ outletAddress.email }}</span>
-                        </li>
-                        <li class="flex flex-wrap sm:flex-nowrap gap-2">
-                            <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">
-                                {{ $t('label.address') }}:</span>
-                            <span class="text-sm font-normal capitalize">
+                    <ul class="p-4 space-y-2.5">
+                        <li class="text-sm"><span class="text-text">{{ $t('label.name') }}:</span> <span class="font-semibold capitalize text-heading">{{ outletAddress.name }}</span></li>
+                        <li v-if="outletAddress.phone" class="text-sm"><span class="text-text">{{ $t('label.phone') }}:</span> <span class="font-medium text-heading" dir="ltr">{{ outletAddress.country_code }}{{ outletAddress.phone }}</span></li>
+                        <li v-if="outletAddress.email" class="text-sm"><span class="text-text">{{ $t('label.email') }}:</span> <span class="font-medium text-heading break-all">{{ outletAddress.email }}</span></li>
+                        <li class="text-sm leading-relaxed">
+                            <span class="text-text">{{ $t('label.address') }}:</span>
+                            <span class="font-medium capitalize text-heading">
                                 <span v-if="outletAddress.address">{{ outletAddress.address }}</span>
-                                <span class="block" :class="outletAddress.address ? 'mt-2' : ''">
-                                    <span v-if="outletAddress.city">{{ outletAddress.city }},</span>
-                                    <span v-if="outletAddress.state">{{ outletAddress.state }},</span>
+                                <span class="block" :class="outletAddress.address ? 'mt-1' : ''">
+                                    <span v-if="outletAddress.city">{{ outletAddress.city }}, </span>
+                                    <span v-if="outletAddress.state">{{ outletAddress.state }}, </span>
                                     <span v-if="outletAddress.zip_code">{{ outletAddress.zip_code }}</span>
                                 </span>
                             </span>
@@ -196,83 +162,90 @@
                     </ul>
                 </div>
             </div>
-            <div class="col-12 md:col-7">
-                <div class="rounded-2xl border border-gray-100">
-                    <h3 class="p-4 capitalize font-bold text-center">{{ $t('label.order_summary') }}</h3>
-                    <ul class="border-b border-t border-dashed border-gray-100">
-                        <li v-for="orderProduct in orderProducts" :key="orderProduct"
-                            class="py-4 mx-4 flex gap-3 border-b last:border-0 border-dashed border-gray-100">
-                            <img :src="orderProduct.product_image" alt="product"
-                                class="w-14 h-14 object-cover rounded-md flex-shrink-0" />
-                            <div class="flex-auto overflow-hidden">
-                                <h4 :class="!orderProduct.variation_names ? 'mb-4' : ''"
-                                    class="text-sm capitalize whitespace-nowrap overflow-hidden text-ellipsis">
-                                    {{ orderProduct.product_name }}</h4>
-                                <p class="text-sm overflow-hidden">{{ orderProduct.variation_names }}</p>
-                                <div class="flex flex-wrap items-center justify-between gap-4">
-                                    <div class="flex items-center gap-8">
-                                        <span class="text-sm font-semibold">
-                                            {{ orderProduct.subtotal_currency_price }}
-                                        </span>
-                                        <span class="text-sm font-medium">
-                                            {{ $t('label.quantity') }}: {{ orderProduct.quantity }}
-                                        </span>
+
+            <div class="lg:col-span-3">
+                <div class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-slate-50 flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-heading capitalize">{{ $t('label.order_summary') }}</h3>
+                        <span class="text-xs font-semibold text-text">{{ orderProducts.length }} {{ $t('label.product') }}</span>
+                    </div>
+
+                    <ul class="divide-y divide-gray-100">
+                        <li
+                            v-for="(orderProduct, productIndex) in orderProducts"
+                            :key="'product-' + productIndex"
+                            class="p-4 sm:p-5 flex gap-3"
+                        >
+                            <img
+                                :src="orderProduct.product_image"
+                                alt="product"
+                                class="w-16 h-16 sm:w-[72px] sm:h-[72px] object-cover rounded-xl border border-gray-100 flex-shrink-0 bg-slate-50"
+                            />
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-sm font-semibold text-heading capitalize line-clamp-2">{{ orderProduct.product_name }}</h4>
+                                <p v-if="orderProduct.variation_names" class="mt-0.5 text-xs text-text line-clamp-2">{{ orderProduct.variation_names }}</p>
+                                <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-3 text-sm">
+                                        <span class="font-bold text-heading">{{ orderProduct.subtotal_currency_price }}</span>
+                                        <span class="text-text">× {{ orderProduct.quantity }}</span>
                                     </div>
                                     <router-link
                                         v-if="order.status === enums.orderStatusEnum.DELIVERED && !orderProduct.product_user_review"
                                         :to="{ name: 'frontend.account.productReview', params: { slug: orderProduct.product_slug } }"
-                                        class="text-sm font-semibold capitalize py-1 px-3 rounded-full whitespace-nowrap bg-[#FFF4F1] text-primary transition-all duration-500 hover:text-white hover:bg-primary">
+                                        class="text-xs font-semibold capitalize py-1.5 px-3 rounded-full whitespace-nowrap bg-[#FFF4F1] text-primary transition hover:bg-primary hover:text-white">
                                         {{ $t('button.write_review') }}
                                     </router-link>
-
                                     <router-link
                                         v-if="order.status === enums.orderStatusEnum.DELIVERED && orderProduct.product_user_review"
                                         :to="{ name: 'frontend.account.productReview.edit', params: { slug: orderProduct.product_slug, id: orderProduct.product_user_review_id } }"
-                                        class="text-sm font-semibold capitalize py-1 px-3 rounded-full whitespace-nowrap bg-[#FFF4F1] text-primary transition-all duration-500 hover:text-white hover:bg-primary">
+                                        class="text-xs font-semibold capitalize py-1.5 px-3 rounded-full whitespace-nowrap bg-[#FFF4F1] text-primary transition hover:bg-primary hover:text-white">
                                         {{ $t('button.edit_review') }}
                                     </router-link>
                                 </div>
                             </div>
                         </li>
                     </ul>
-                    <ul class="flex flex-col gap-2 py-4 mx-4 border-b border-dashed border-[#EFF0F6]">
-                        <li class="flex items-center justify-between">
-                            <span class="capitalize">{{ $t('label.subtotal') }}</span>
-                            <span class="font-medium">{{ order.subtotal_currency_price }}</span>
-                        </li>
-                        <li class="flex items-center justify-between">
-                            <span class="capitalize">{{ $t('label.tax_fee') }}</span>
-                            <span class="font-medium">{{ order.tax_currency_price }}</span>
-                        </li>
-                        <li class="flex items-center justify-between">
-                            <span class="capitalize">{{ $t('label.shipping_charge') }}</span>
-                            <span class="font-medium">{{ order.shipping_charge_currency_price }}</span>
-                        </li>
-                        <li class="flex items-center justify-between">
-                            <span class="capitalize">{{ $t('label.discount') }}</span>
-                            <span class="font-medium">{{ order.discount_currency_price }}</span>
-                        </li>
-                    </ul>
-                    <div class="flex items-center justify-between py-3 px-4">
-                        <span class="capitalize font-bold">{{ $t('label.total') }}</span>
-                        <span class="capitalize font-bold">{{ order.total_currency_price }}</span>
+
+                    <div class="border-t border-dashed border-gray-200 px-4 sm:px-5 py-4 space-y-2.5">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-text capitalize">{{ $t('label.subtotal') }}</span>
+                            <span class="font-semibold text-heading">{{ order.subtotal_currency_price }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-text capitalize">{{ $t('label.tax_fee') }}</span>
+                            <span class="font-semibold text-heading">{{ order.tax_currency_price }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-text capitalize">{{ $t('label.shipping_charge') }}</span>
+                            <span class="font-semibold text-heading">{{ order.shipping_charge_currency_price }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-text capitalize">{{ $t('label.discount') }}</span>
+                            <span class="font-semibold text-heading">{{ order.discount_currency_price }}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-4 sm:px-5 py-4 bg-slate-50 border-t border-gray-100">
+                        <span class="capitalize font-bold text-heading">{{ $t('label.total') }}</span>
+                        <span class="capitalize font-extrabold text-lg text-heading">{{ order.total_currency_price }}</span>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div v-if="order.status !== enums.orderStatusEnum.CANCELED" class="flex flex-wrap gap-6 mobile:mb-20">
-        <OrderReceiptComponent :order="order" :orderProducts="orderProducts" :orderUser="orderUser"
-            :orderAddress="orderAddress[0]" />
-        <button v-if="order.status === enums.orderStatusEnum.PENDING"
-            @click="changeStatus(enums.orderStatusEnum.CANCELED)" type="button"
-            class="px-6 py-3 capitalize rounded-full whitespace-nowrap text-center font-semibold border border-danger text-danger bg-white">
-            {{ $t('button.cancel_order') }}
-        </button>
-        <router-link v-if="order.status === enums.orderStatusEnum.DELIVERED && order.return_and_refund"
-            :to="{ name: 'frontend.account.returnOrder.request', params: { id: order.id } }"
-            class="px-6 py-3 capitalize rounded-full whitespace-nowrap text-center font-semibold border border-danger text-danger bg-white">
-            {{ $t('button.return_request') }}</router-link>
+
+        <div v-if="order.status !== enums.orderStatusEnum.CANCELED" class="mt-5 flex flex-wrap gap-3">
+            <OrderReceiptComponent :order="order" :orderProducts="orderProducts" :orderUser="orderUser"
+                :orderAddress="orderAddress[0]" />
+            <button v-if="order.status === enums.orderStatusEnum.PENDING"
+                @click="changeStatus(enums.orderStatusEnum.CANCELED)" type="button"
+                class="px-5 py-3 capitalize rounded-full whitespace-nowrap text-center text-sm font-semibold border border-danger text-danger bg-white hover:bg-red-50 transition">
+                {{ $t('button.cancel_order') }}
+            </button>
+            <router-link v-if="order.status === enums.orderStatusEnum.DELIVERED && order.return_and_refund"
+                :to="{ name: 'frontend.account.returnOrder.request', params: { id: order.id } }"
+                class="px-5 py-3 capitalize rounded-full whitespace-nowrap text-center text-sm font-semibold border border-danger text-danger bg-white hover:bg-red-50 transition">
+                {{ $t('button.return_request') }}
+            </router-link>
+        </div>
     </div>
 
     <div id="payment-modal"

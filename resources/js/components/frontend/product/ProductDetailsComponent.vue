@@ -30,59 +30,81 @@
                         <i class="fa-solid fa-share-nodes text-base"></i>
                     </button>
 
-                    <Swiper dir="ltr"
-                        :key="'gallery-main-' + props.search.slug"
-                        v-bind="gallerySwiperProps"
-                        :spaceBetween="10"
-                        :navigation="true"
-                        :pagination="galleryPaginationConfig"
-                        :thumbs="galleryThumbsConfig"
-                        :modules="modules"
-                        :loop="combinedMedia.length > 2"
-                        class="gallery-swiper mb-4"
-                        @swiper="setMainSwiper"
-                        @slideChange="onMainGallerySlideChange"
-                        @sliderFirstMove="onGallerySliderDrag"
-                        @touchEnd="onGallerySliderTouchEnd"
-                        @click="onGallerySwiperClick">
-                        <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
-                            <template v-if="media.type === 'image'">
-                                <div class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide">
-                                    <img :src="media.url" alt="product"
-                                        :loading="index === 0 ? 'eager' : 'lazy'"
-                                        :fetchpriority="index === 0 ? 'high' : 'auto'"
-                                        decoding="async"
-                                        draggable="false"
-                                        @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
-                                        class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center pointer-events-none" />
-                                </div>
-                            </template>
-                            <template v-else-if="media.type === 'video'">
-                                <iframe v-if="isEmbedVideo(media)"
-                                    :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                                <div v-else class="relative w-full h-full bg-black">
-                                    <img
-                                        :src="getVideoPoster(media)"
-                                        alt="video preview"
-                                        class="w-full h-full object-cover absolute inset-0"
-                                        :class="mainSwiperActiveIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-100'"
-                                    />
-                                    <video
-                                        v-if="mainSwiperActiveIndex === index"
-                                        :src="media.data.link"
-                                        :poster="getVideoPoster(media)"
-                                        autoplay
-                                        muted
-                                        loop
-                                        playsinline
-                                        webkit-playsinline
-                                        preload="auto"
-                                        class="w-full h-full object-cover relative z-[1] pointer-events-none"
-                                    ></video>
-                                </div>
-                            </template>
-                        </SwiperSlide>
-                    </Swiper>
+                    <div class="gallery-main-wrap relative mb-4">
+                        <Swiper dir="ltr"
+                            :key="'gallery-main-' + props.search.slug"
+                            v-bind="gallerySwiperProps"
+                            :spaceBetween="10"
+                            :navigation="true"
+                            :pagination="false"
+                            :thumbs="galleryThumbsConfig"
+                            :modules="modules"
+                            :loop="galleryLoopEnabled"
+                            class="gallery-swiper"
+                            @swiper="setMainSwiper"
+                            @slideChange="onMainGallerySlideChange"
+                            @sliderFirstMove="onGallerySliderDrag"
+                            @touchEnd="onGallerySliderTouchEnd"
+                            @click="onGallerySwiperClick">
+                            <SwiperSlide v-for="(media, index) in combinedMedia" :key="'media-' + index" class="w-full flex items-center justify-center bg-black rounded-2xl overflow-hidden aspect-square" style="aspect-ratio: 1/1;">
+                                <template v-if="media.type === 'image'">
+                                    <div class="w-full h-full relative overflow-hidden flex items-center justify-center select-none cursor-pointer product-gallery-slide">
+                                        <img :src="media.url" alt="product"
+                                            :loading="index === 0 ? 'eager' : 'lazy'"
+                                            :fetchpriority="index === 0 ? 'high' : 'auto'"
+                                            decoding="async"
+                                            draggable="false"
+                                            @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-8')"
+                                            class="w-full h-full object-cover transition-transform duration-300 ease-out origin-center pointer-events-none" />
+                                    </div>
+                                </template>
+                                <template v-else-if="media.type === 'video'">
+                                    <iframe v-if="isEmbedVideo(media)"
+                                        :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                                    <div v-else class="relative w-full h-full bg-black">
+                                        <img
+                                            :src="getVideoPoster(media)"
+                                            alt="video preview"
+                                            class="w-full h-full object-cover absolute inset-0"
+                                            :class="mainSwiperActiveIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                                        />
+                                        <video
+                                            v-if="mainSwiperActiveIndex === index"
+                                            :src="media.data.link"
+                                            :poster="getVideoPoster(media)"
+                                            autoplay
+                                            muted
+                                            loop
+                                            playsinline
+                                            webkit-playsinline
+                                            preload="auto"
+                                            class="w-full h-full object-cover relative z-[1] pointer-events-none"
+                                        ></video>
+                                    </div>
+                                </template>
+                            </SwiperSlide>
+                        </Swiper>
+
+                        <!-- Custom dots: 1st image → video (play) → remaining -->
+                        <div v-if="combinedMedia.length > 1" class="gallery-dots">
+                            <button
+                                v-for="(media, index) in combinedMedia"
+                                :key="'gallery-dot-' + index"
+                                type="button"
+                                class="gallery-dot"
+                                :class="{
+                                    'is-active': mainSwiperActiveIndex === index,
+                                    'video-dot': media.type === 'video',
+                                }"
+                                :aria-label="media.type === 'video' ? 'video' : `image ${index + 1}`"
+                                @click.stop="goToGallerySlide(index)"
+                            >
+                                <svg v-if="media.type === 'video'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M7 6v12l10-6z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
                     <Swiper v-if="combinedMedia.length > 1"
                         :key="'gallery-thumbs-' + props.search.slug"
@@ -1066,15 +1088,15 @@ export default {
         isPreviewImageZoomed: function () {
             return this.previewPinch.active || this.previewPinch.panning || this.previewPinch.scale > 1.05;
         },
-        galleryPaginationConfig: function () {
-            return this.getPaginationConfig();
-        },
-        lightboxLoopEnabled: function () {
+        galleryLoopEnabled: function () {
             const media = this.combinedMedia || [];
             if (media.some((item) => item.type === 'video')) {
                 return false;
             }
             return media.length > 2;
+        },
+        lightboxLoopEnabled: function () {
+            return this.galleryLoopEnabled;
         },
     },
     mounted() {
@@ -1288,7 +1310,18 @@ export default {
             });
         },
         onMainGallerySlideChange: function (swiper) {
-            this.mainSwiperActiveIndex = swiper?.realIndex ?? 0;
+            this.mainSwiperActiveIndex = swiper?.realIndex ?? swiper?.activeIndex ?? 0;
+        },
+        goToGallerySlide: function (index) {
+            const swiper = this.mainSwiper;
+            if (!swiper || index == null || index < 0) {
+                return;
+            }
+            if (swiper.params?.loop && typeof swiper.slideToLoop === 'function') {
+                swiper.slideToLoop(index);
+                return;
+            }
+            swiper.slideTo(index);
         },
         validatePurchaseBeforeAction: function () {
             if (this.showVariationComponent && (!this.selectedVariation || !this.selectedVariation.sku)) {
@@ -2094,8 +2127,8 @@ export default {
 
                 if (variation.image) {
                     const imageIndex = this.combinedMedia.findIndex(media => media.url === variation.image);
-                    if (imageIndex !== -1 && this.mainSwiper) {
-                        this.mainSwiper.slideToLoop(imageIndex);
+                    if (imageIndex !== -1) {
+                        this.goToGallerySlide(imageIndex);
                     }
                 }
 
@@ -2430,28 +2463,6 @@ export default {
             
             return 'FREE Delivery';
         },
-        getPaginationConfig: function () {
-            const videoIndices = [];
-            if (this.combinedMedia && this.combinedMedia.length > 0) {
-                this.combinedMedia.forEach((media, index) => {
-                    if (media.type === 'video') {
-                        videoIndices.push(index);
-                    }
-                });
-            }
-            if (videoIndices.length === 0) {
-                return { clickable: true };
-            }
-            return {
-                clickable: true,
-                renderBullet: function (index, className) {
-                    if (videoIndices.includes(index)) {
-                        return `<span class="${className} video-dot"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
-                    }
-                    return `<span class="${className}"></span>`;
-                }
-            };
-        }
     },
     watch: {
         '$route.params.slug'(newSlug, oldSlug) {
@@ -2503,24 +2514,63 @@ export default {
     touch-action: none;
 }
 
-.gallery-swiper :deep(.swiper-pagination) {
-    bottom: 10px !important;
+.gallery-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
 }
-.gallery-swiper :deep(.swiper-pagination-bullet) {
-    background: #ff5c00 !important;
-    opacity: 0.65;
+.gallery-dot {
+    pointer-events: auto;
+    appearance: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: #ff5c00;
     width: 8px;
     height: 8px;
-    transition: all 0.3s ease;
+    border-radius: 50%;
+    opacity: 0.65;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    margin: 0 5px !important;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
-.gallery-swiper :deep(.swiper-pagination-bullet-active) {
+.gallery-dot.is-active {
     opacity: 1;
-    background: #ff5c00 !important;
     width: 18px;
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.gallery-dot.video-dot {
+    background: rgba(255, 92, 0, 0.55);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    padding: 3px;
+    opacity: 0.9;
+}
+.gallery-dot.video-dot svg {
+    width: 9px;
+    height: 9px;
+    fill: #fff;
+    display: block;
+    margin-left: 1px;
+}
+.gallery-dot.video-dot.is-active {
+    background: #ff5c00;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    opacity: 1;
 }
 .gallery-swiper :deep(.swiper-button-next),
 .gallery-swiper :deep(.swiper-button-prev) {

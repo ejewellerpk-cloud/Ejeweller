@@ -36,7 +36,7 @@ export function isFinePointerDevice() {
 }
 
 export function isInteractiveCardTarget(target) {
-    return Boolean(target?.closest?.('button, a, .swiper-pagination, .product-card__quick-view'));
+    return Boolean(target?.closest?.('button, a, .swiper-pagination, .product-card-dots, .product-card__quick-view'));
 }
 
 export function readTouchPoint(event) {

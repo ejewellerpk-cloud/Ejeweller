@@ -1,81 +1,147 @@
 <template>
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="order-list" />
-    <h2 class="capitalize text-2xl font-bold mb-7 text-primary">{{ $t('label.order_history') }}</h2>
-    <div class="rounded-2xl shadow-card bg-white mobile:mb-20">
-        <div class="max-md:overflow-x-auto">
-            <table class="w-full text-left text-sm capitalize">
-                <thead class="font-semibold border-b-2 border-gray-200">
-                    <tr>
-                        <th class="p-4">{{ $t('label.order_id') }}</th>
-                        <th class="p-4">{{ $t('label.products') }}</th>
-                        <th class="p-4">{{ $t('label.status') }}</th>
-                        <th class="p-4">{{ $t('label.payment') }}</th>
-                        <th class="p-4">{{ $t('label.amount') }}</th>
-                        <th class="p-4">{{ $t('label.action') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="font-medium" v-if="orders.length > 0">
-                    <tr v-for="order in orders" :key="order">
-                        <td class="p-4 border-t border-gray-100">
-                            <h5 class="font-semibold mb-1">{{ order.order_serial_no }}</h5>
-                            <p class="text-xs text-text">{{ order.order_datetime }}</p>
-                        </td>
-                        <td class="p-4 border-t border-gray-100">
-                            {{ order.order_items }} {{ $t('label.product') }}
-                        </td>
-                        <td class="p-4 border-t border-gray-100">
-                            <span class="db-table-badge" :class="orderStatusClass(order.status)">
-                                {{ enums.orderStatusEnumArray[order.status] }}
-                            </span>
-                        </td>
-                        <td class="p-4 border-t border-gray-100">
-                            <span class="ext-xs px-2 py-1 rounded-full"
-                                :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'">
-                                {{ enums.paymentStatusEnumArray[order.payment_status] }}
-                            </span>
-                        </td>
-                        <td class="p-4 border-t border-gray-100">{{ order.total_currency_price }}</td>
-                        <td class="p-4 border-t border-gray-100">
-                            <div class="relative group w-fit">
-                                <button type="button">
-                                    <i
-                                        class="lab-fill-more-circle w-[30px] h-[30px] !leading-[30px] text-center rounded-lg text-white bg-primary shadow-action lab-font-size-16"></i>
-                                </button>
-                                <nav
-                                    class="rounded-lg shadow-md absolute top-8 ltr:right-0 rtl:left-0 z-30 border border-gray-100 bg-white transition-all duration-300 origin-top scale-y-0 group-hover:scale-y-100">
-                                    <router-link
-                                        :to="{ name: 'frontend.account.orderDetails', params: { id: order.id } }"
-                                        class="block w-full text-left capitalize rounded-lg text-sm py-2 pl-3 pr-5 border-b last:border-b-0 border-gray-100 transition-all duration-500 hover:bg-gray-50 hover:text-primary">
-                                        {{ $t('label.view') }}</router-link>
-                                    <button type="button" @click.prevent="handleOrderReceiptModal(order)"
-                                        class="block w-full text-left capitalize rounded-lg text-sm py-2 pl-3 pr-5 border-b last:border-b-0 border-gray-100 transition-all duration-500 hover:bg-gray-50 hover:text-primary">{{
-                                            $t('label.download') }}</button>
-                                </nav>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-                <tbody class="db-table-body" v-else>
-                    <tr class="db-table-body-tr">
-                        <td class="db-table-body-td text-center" colspan="6">
-                            <div class="p-4">
-                                <div class="max-w-[300px] mx-auto mt-2">
-                                    <img class="w-full h-full" :src="setting.not_found" alt="Not Found">
-                                </div>
-                                <span class="d-block mt-3 text-lg">{{ $t('message.no_data_found') }}</span>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+    <div class="order-history mobile:mb-20">
+        <div class="mb-6">
+            <h2 class="capitalize text-2xl font-bold text-heading tracking-tight">{{ $t('label.order_history') }}</h2>
+            <p class="mt-1 text-sm text-text">{{ $t('message.order_status_follows') || 'Track and manage your past orders.' }}</p>
         </div>
-        <div class="px-4 py-6 border-t border-gray-100" v-if="orders.length > 0">
-            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <PaginationTextComponent :props="{ page: paginationPage }" />
-                <PaginationComponent @pagination-change-page="list" :data="pagination" :limit="1"
-                    :keep-length="false" />
+
+        <!-- Empty state -->
+        <div v-if="!loading.isActive && orders.length === 0"
+            class="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center shadow-sm">
+            <div class="mx-auto mb-4 max-w-[220px]">
+                <img class="w-full h-auto opacity-80" :src="setting.not_found" alt="Not Found">
             </div>
+            <h3 class="text-lg font-semibold text-heading mb-1">{{ $t('message.no_data_found') }}</h3>
+            <router-link :to="{ name: 'frontend.product' }"
+                class="inline-flex mt-4 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90">
+                {{ $t('button.continue_shopping') || 'Continue Shopping' }}
+            </router-link>
         </div>
+
+        <template v-else-if="orders.length > 0">
+            <!-- Mobile cards -->
+            <div class="md:hidden space-y-3">
+                <article
+                    v-for="order in orders"
+                    :key="order.id"
+                    class="rounded-2xl border border-gray-100 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                >
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ $t('label.order_id') }}</p>
+                            <h3 class="text-base font-bold text-heading truncate">#{{ order.order_serial_no }}</h3>
+                            <p class="mt-0.5 text-xs text-text">{{ order.order_datetime }}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="text-base font-extrabold text-heading">{{ order.total_currency_price }}</p>
+                            <p class="mt-0.5 text-xs text-text">{{ order.order_items }} {{ $t('label.product') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 mb-4">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold capitalize"
+                            :class="orderStatusClass(order.status)">
+                            {{ enums.orderStatusEnumArray[order.status] }}
+                        </span>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold capitalize"
+                            :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'">
+                            {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <router-link
+                            :to="{ name: 'frontend.account.orderDetails', params: { id: order.id } }"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98]">
+                            <i class="fa-regular fa-eye text-xs"></i>
+                            {{ $t('label.view') }}
+                        </router-link>
+                        <button
+                            type="button"
+                            @click.prevent="handleOrderReceiptModal(order)"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-heading transition hover:bg-slate-100 active:scale-[0.98]">
+                            <i class="lab lab-fill-printer text-sm"></i>
+                            {{ $t('label.download') }}
+                        </button>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Desktop table -->
+            <div class="hidden md:block rounded-2xl border border-gray-100 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)] overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50/80 text-xs uppercase tracking-wide text-slate-500">
+                            <tr>
+                                <th class="px-5 py-3.5 font-semibold">{{ $t('label.order_id') }}</th>
+                                <th class="px-5 py-3.5 font-semibold">{{ $t('label.products') }}</th>
+                                <th class="px-5 py-3.5 font-semibold">{{ $t('label.status') }}</th>
+                                <th class="px-5 py-3.5 font-semibold">{{ $t('label.payment') }}</th>
+                                <th class="px-5 py-3.5 font-semibold">{{ $t('label.amount') }}</th>
+                                <th class="px-5 py-3.5 font-semibold text-right">{{ $t('label.action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="order in orders"
+                                :key="order.id"
+                                class="border-t border-gray-100 transition hover:bg-slate-50/60"
+                            >
+                                <td class="px-5 py-4">
+                                    <h5 class="font-semibold text-heading">#{{ order.order_serial_no }}</h5>
+                                    <p class="text-xs text-text mt-0.5">{{ order.order_datetime }}</p>
+                                </td>
+                                <td class="px-5 py-4 text-heading">
+                                    {{ order.order_items }} {{ $t('label.product') }}
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold capitalize"
+                                        :class="orderStatusClass(order.status)">
+                                        {{ enums.orderStatusEnumArray[order.status] }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold capitalize"
+                                        :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'">
+                                        {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 font-bold text-heading">{{ order.total_currency_price }}</td>
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <router-link
+                                            :to="{ name: 'frontend.account.orderDetails', params: { id: order.id } }"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition">
+                                            {{ $t('label.view') }}
+                                        </router-link>
+                                        <button
+                                            type="button"
+                                            @click.prevent="handleOrderReceiptModal(order)"
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition">
+                                            {{ $t('label.download') }}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-5 px-1" v-if="orders.length > 0">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <PaginationTextComponent :props="{ page: paginationPage }" />
+                    <PaginationComponent
+                        @pagination-change-page="list"
+                        :data="pagination"
+                        :limit="1"
+                        :keep-length="false"
+                    />
+                </div>
+            </div>
+        </template>
     </div>
 
     <div id="orderReceiptPrint"
@@ -109,6 +175,7 @@ import PaginationComponent from "../../components/PaginationComponent";
 import PaginationTextComponent from "../../components/PaginationTextComponent";
 import OrderReceiptComponent from "../../components/OrderReceiptComponent";
 import print from "vue3-print-nb";
+
 export default {
     name: "OrderHistoryComponent",
     components: { LoadingComponent, PaginationComponent, PaginationTextComponent, OrderReceiptComponent },
@@ -140,7 +207,6 @@ export default {
                     [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
                 },
             },
-
             search: {
                 paginate: 1,
                 page: 1,
@@ -148,10 +214,8 @@ export default {
                 order_column: "id",
                 order_by: "desc",
                 active: askEnum.YES,
-
             },
             orderId: "",
-
         };
     },
     mounted() {
@@ -168,7 +232,7 @@ export default {
             return this.$store.getters["frontendOrder/pagination"];
         },
         paginationPage: function () {
-            return this.$store.getters['frontendOrder/page'];
+            return this.$store.getters["frontendOrder/page"];
         },
     },
     methods: {
@@ -177,6 +241,9 @@ export default {
         },
         handleOrderReceiptModal: function (order) {
             this.orderId = order.id;
+            this.$nextTick(() => {
+                targetService.showTarget("orderReceiptPrint", 'modal-active');
+            });
         },
         reset: function () {
             targetService.hideTarget("orderReceiptPrint", 'modal-active');
@@ -189,9 +256,9 @@ export default {
             this.search.page = page;
             this.$store.dispatch("frontendOrder/lists", {
                 search: this.search
-            }).then((res) => {
+            }).then(() => {
                 this.loading.isActive = false;
-            }).catch((err) => {
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         },
