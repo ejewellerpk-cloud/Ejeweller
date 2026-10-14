@@ -210,6 +210,13 @@ export default {
             return Array.isArray(history) ? history : [];
         },
     },
+    mounted() {
+        const prefill = String(this.$route.query.order || this.$route.query.order_serial_no || '').trim();
+        if (prefill) {
+            this.form.order_serial_no = prefill;
+            this.submitTracking();
+        }
+    },
     methods: {
         submitTracking() {
             const orderId = (this.form.order_serial_no || '').trim();

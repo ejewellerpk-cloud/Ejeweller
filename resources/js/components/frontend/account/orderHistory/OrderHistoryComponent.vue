@@ -51,17 +51,23 @@
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-3 gap-2">
                         <router-link
                             :to="{ name: 'frontend.account.orderDetails', params: { id: order.id } }"
-                            class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98]">
+                            class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-2 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98]">
                             <i class="fa-regular fa-eye text-xs"></i>
                             {{ $t('label.view') }}
+                        </router-link>
+                        <router-link
+                            :to="{ name: 'frontend.trackOrder', query: { order: order.order_serial_no } }"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-2 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 active:scale-[0.98]">
+                            <i class="fa-solid fa-location-dot text-xs"></i>
+                            {{ $t('label.track_order') || 'Track' }}
                         </router-link>
                         <button
                             type="button"
                             @click.prevent="handleOrderReceiptModal(order)"
-                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-heading transition hover:bg-slate-100 active:scale-[0.98]">
+                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-slate-50 px-2 py-2.5 text-sm font-semibold text-heading transition hover:bg-slate-100 active:scale-[0.98]">
                             <i class="lab lab-fill-printer text-sm"></i>
                             {{ $t('label.download') }}
                         </button>
@@ -110,11 +116,17 @@
                                 </td>
                                 <td class="px-5 py-4 font-bold text-heading">{{ order.total_currency_price }}</td>
                                 <td class="px-5 py-4">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="flex items-center justify-end gap-2 flex-wrap">
                                         <router-link
                                             :to="{ name: 'frontend.account.orderDetails', params: { id: order.id } }"
                                             class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition">
                                             {{ $t('label.view') }}
+                                        </router-link>
+                                        <router-link
+                                            :to="{ name: 'frontend.trackOrder', query: { order: order.order_serial_no } }"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                                            <i class="fa-solid fa-location-dot text-[10px]"></i>
+                                            {{ $t('label.track_order') || 'Track' }}
                                         </router-link>
                                         <button
                                             type="button"
