@@ -133,9 +133,73 @@ export function getPhoneDigitLimit({ callingCode = '', iso2 = '' } = {}) {
     return DEFAULT_PHONE_DIGIT_LIMIT;
 }
 
-/** Keep digits only and truncate to the country limit. */
-export function sanitizePhoneDigits(value, limit = DEFAULT_PHONE_DIGIT_LIMIT) {
-    const digits = String(value || '').replace(/\D/g, '');
+function isPakistan({ callingCode = '', iso2 = '' } = {}) {
+    const iso = String(iso2 || '').trim().toUpperCase();
+    if (iso === 'PK') {
+        return true;
+    }
+    return normalizeCallingCode(callingCode) === '+92';
+}
+
+/**
+ * Pakistan national mobiles are 10 digits (3XXXXXXXXX).
+ * Users often type local 0-prefix (03…) or country code (92… / 0092…).
+ * Strip those so the field only keeps the national number beside +92.
+ */
+function normalizePakistanNationalDigits(digits) {
+    let next = String(digits || '');
+
+    // International trunk: 0092XXXXXXXXXX
+    if (next.startsWith('0092')) {
+        next = next.slice(4);
+    }
+
+    // Country code without +: 92XXXXXXXXXX (12+ digits typical)
+    if (next.startsWith('92') && next.length > 10) {
+        next = next.slice(2);
+    } else if (next.startsWith('92') && next.length >= 2) {
+        // While typing 92… strip as soon as country code is entered
+        next = next.slice(2);
+    }
+
+    // Local trunk prefix: 03XXXXXXXXX → 3XXXXXXXXX
+    while (next.startsWith('0')) {
+        next = next.slice(1);
+    }
+
+    return next;
+}
+
+/**
+ * Keep digits only, strip common trunk/country prefixes for the selected country,
+ * then truncate to the national digit limit.
+ *
+ * @param {string} value
+ * @param {number|object} limitOrOptions limit number, or { limit, callingCode, iso2 }
+ * @param {object} [maybeOptions]
+ */
+export function sanitizePhoneDigits(value, limitOrOptions = DEFAULT_PHONE_DIGIT_LIMIT, maybeOptions = {}) {
+    let limit = DEFAULT_PHONE_DIGIT_LIMIT;
+    let callingCode = '';
+    let iso2 = '';
+
+    if (limitOrOptions && typeof limitOrOptions === 'object') {
+        limit = limitOrOptions.limit ?? getPhoneDigitLimit(limitOrOptions);
+        callingCode = limitOrOptions.callingCode || '';
+        iso2 = limitOrOptions.iso2 || '';
+    } else {
+        limit = limitOrOptions;
+        callingCode = maybeOptions.callingCode || '';
+        iso2 = maybeOptions.iso2 || '';
+    }
+
+    let digits = String(value || '').replace(/\D/g, '');
+
+    if (isPakistan({ callingCode, iso2 })) {
+        digits = normalizePakistanNationalDigits(digits);
+        limit = BY_ISO2.PK;
+    }
+
     const max = Number(limit) > 0 ? Number(limit) : DEFAULT_PHONE_DIGIT_LIMIT;
     return digits.slice(0, max);
 }

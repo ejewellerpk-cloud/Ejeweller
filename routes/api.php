@@ -895,8 +895,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/show/{order}', [OnlineOrderController::class, 'show']);
         Route::delete('/{order}', [OnlineOrderController::class, 'destroy']);
         Route::get('/export', [OnlineOrderController::class, 'export']);
+        Route::post('/bulk-change-status', [OnlineOrderController::class, 'bulkChangeStatus']);
         Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
         Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus']);
+        Route::post('/postex/bulk-create', [PostExOrderController::class, 'bulkCreate']);
         Route::post('/{order}/postex/create', [PostExOrderController::class, 'create']);
         Route::get('/{order}/postex/track', [PostExOrderController::class, 'track']);
         Route::put('/{order}/postex/cancel', [PostExOrderController::class, 'cancel']);

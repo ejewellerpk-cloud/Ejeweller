@@ -586,6 +586,9 @@
         "shipper_information": "Shipper Information",
         "shipment_information": "Shipment Information",
         "order_information": "Order Information",
+        "order_timeline": "Order Timeline",
+        "need_help": "Need Help?",
+        "each": "each",
         "delivery_address": "Delivery Address",
         "pickup_address": "Pickup Address",
         "return_address": "Return Address",
@@ -919,6 +922,8 @@
         "cancel_order": "Cancel Order",
         "return_request": "Return Request",
         "write_review": "Write Review",
+        "copy": "Copy",
+        "back": "Back",
         "see_your_order_details": "See your order details",
         "add_return_reason": "Add Return Reason",
         "submit_return": "Submit Return",
@@ -931,6 +936,8 @@
         "test_connection": "Test Connection",
         "load_pickup_addresses": "Load Pickup Addresses",
         "book_postex": "Book PostEx",
+        "bulk_book_postex": "Book PostEx",
+        "bulk_change_status": "Change Status",
         "track_postex": "Track PostEx",
         "cancel_postex": "Cancel PostEx",
         "postex_airway_bill": "Airway Bill",
@@ -1072,6 +1079,9 @@
         "session_logout_success": "Device logged out successfully.",
         "all_sessions_logout_success": "All devices logged out successfully.",
         "other_sessions_logout_success": "Other devices logged out successfully.",
-        "push_device_removed": "Push notification device removed successfully."
+        "push_device_removed": "Push notification device removed successfully.",
+        "copied": "Copied",
+        "order_help_hint": "Questions about this order? Contact us anytime.",
+        "reason_required": "Reason is required."
     }
 }

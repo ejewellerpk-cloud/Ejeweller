@@ -5,6 +5,7 @@ namespace App\Services\PostEx;
 use App\Enums\OrderType;
 use App\Exceptions\PostExApiException;
 use App\Models\Order;
+use App\Services\OrderTrackingNotificationBuilder;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -53,8 +54,18 @@ class PostExOrderService
             'postex_booked_at'       => now(),
         ]);
 
+        $freshOrder = $order->fresh(['shippingAddress', 'orderProducts.product']);
+
+        try {
+            if (!empty($freshOrder->postex_tracking_number)) {
+                (new OrderTrackingNotificationBuilder($freshOrder))->send();
+            }
+        } catch (Exception $exception) {
+            Log::info('PostEx tracking notification failed: ' . $exception->getMessage());
+        }
+
         return [
-            'order'    => $order->fresh(['shippingAddress', 'orderProducts.product']),
+            'order'    => $freshOrder,
             'postex'   => $response,
         ];
     }

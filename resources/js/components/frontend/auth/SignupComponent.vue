@@ -1,5 +1,4 @@
 <template>
-    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="form" />
     <div class="w-full max-w-3xl mx-auto rounded-2xl flex overflow-hidden gap-y-6 bg-white shadow-card mb-24 !sm:mb-0">
         <img :src="APP_URL + '/images/required/auth.jpg'" alt="banners"
             class="w-full hidden sm:block sm:max-w-xs md:max-w-sm flex-shrink-0" loading="lazy">
@@ -78,9 +77,9 @@
                     class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500" />
                 <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>
             </div>
-            <button type="submit"
-                class="font-bold text-center w-full h-12 leading-12 rounded-full bg-primary text-white capitalize mb-6">
-                {{ $t('label.sign_up') }}
+            <button type="submit" :disabled="loading.isActive"
+                class="font-bold text-center w-full h-12 leading-12 rounded-full bg-primary text-white capitalize mb-6 disabled:opacity-70 disabled:cursor-wait">
+                {{ loading.isActive ? ($t('label.loading') || 'Loading...') : $t('label.sign_up') }}
             </button>
             <div class="flex items-center justify-center gap-1.5">
                 <span class="font-medium text-text">{{ $t('message.already_have_account') }}</span>
@@ -93,7 +92,6 @@
 </template>
 
 <script>
-import LoadingComponent from "../components/LoadingComponent";
 import EmailSuggestInput from "../components/EmailSuggestInput.vue";
 import appService from "../../../services/appService";
 import ENV from "../../../config/env";
@@ -107,7 +105,7 @@ import {
 } from "../../../utils/phoneNationalLength";
 export default {
     name: "LoginComponent",
-    components: { LoadingComponent, EmailSuggestInput },
+    components: { EmailSuggestInput },
     data() {
         return {
             loading: {
@@ -142,31 +140,34 @@ export default {
         },
     },
     mounted() {
-        this.loading.isActive = true;
+        // Load country / settings in background — do not block the form with a skeleton.
         this.$store.dispatch('frontendCountryCode/lists');
         this.$store.dispatch('frontendSetting/lists').then(res => {
-            this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code).then(res => {
-                this.form.country_code = res.data.data.calling_code;
-                this.flag = res.data.data.flag_emoji;
-                this.refreshPhoneDigitLimit();
-
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
+            return this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code);
+        }).then(res => {
+            if (!res?.data?.data) {
+                return;
+            }
+            this.form.country_code = res.data.data.calling_code;
+            this.flag = res.data.data.flag_emoji;
+            this.refreshPhoneDigitLimit();
+        }).catch(() => {});
     },
     methods: {
+        phoneSanitizeOptions() {
+            return {
+                limit: this.phoneDigitLimit,
+                callingCode: this.form.country_code,
+            };
+        },
         refreshPhoneDigitLimit() {
             this.phoneDigitLimit = getPhoneDigitLimit({
                 callingCode: this.form.country_code,
             });
-            this.form.phone = sanitizePhoneDigits(this.form.phone, this.phoneDigitLimit);
+            this.form.phone = sanitizePhoneDigits(this.form.phone, this.phoneSanitizeOptions());
         },
         onPhoneInput(event) {
-            this.form.phone = sanitizePhoneDigits(event.target.value, this.phoneDigitLimit);
+            this.form.phone = sanitizePhoneDigits(event.target.value, this.phoneSanitizeOptions());
         },
         phoneNumber(e) {
             return appService.phoneNumber(e);

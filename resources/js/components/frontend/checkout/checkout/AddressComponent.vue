@@ -460,15 +460,22 @@ export default {
             const match = (this.countries || []).find((c) => c.name === countryName);
             return match?.code || '';
         },
+        phoneSanitizeOptions() {
+            return {
+                limit: this.phoneDigitLimit,
+                callingCode: this.address.form.country_code,
+                iso2: this.resolveCountryIso2(this.address.form.country),
+            };
+        },
         refreshPhoneDigitLimit() {
             this.phoneDigitLimit = getPhoneDigitLimit({
                 callingCode: this.address.form.country_code,
                 iso2: this.resolveCountryIso2(this.address.form.country),
             });
-            this.address.form.phone = sanitizePhoneDigits(this.address.form.phone, this.phoneDigitLimit);
+            this.address.form.phone = sanitizePhoneDigits(this.address.form.phone, this.phoneSanitizeOptions());
         },
         onPhoneInput(event) {
-            this.address.form.phone = sanitizePhoneDigits(event.target.value, this.phoneDigitLimit);
+            this.address.form.phone = sanitizePhoneDigits(event.target.value, this.phoneSanitizeOptions());
         },
         phoneNumber(e) {
             return appService.phoneNumber(e);

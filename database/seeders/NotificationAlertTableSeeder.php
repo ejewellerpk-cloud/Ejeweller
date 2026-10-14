@@ -22,6 +22,7 @@ class NotificationAlertTableSeeder extends Seeder
             'Order Canceled Message',
             'Order Rejected Message',
             'Admin And Manager New Order Message',
+            'Order Tracking Message',
         ],
         'message' => [
             'Thank you for your purchase. Your order has been received and is currently being reviewed by our team.',
@@ -31,6 +32,7 @@ class NotificationAlertTableSeeder extends Seeder
             'Your order has been canceled as requested. If you need further assistance, please contact our support team.',
             'We are unable to process this order at the moment. Please contact support if you would like more information.',
             'A customer has placed a new order on the store. Please review and process it from the admin panel.',
+            'Your order #{ORDER_ID} has been booked for delivery. Tracking number: {TRACKING}. Use this number to track your shipment.',
         ]
 
     ];
@@ -38,15 +40,18 @@ class NotificationAlertTableSeeder extends Seeder
     public function run()
     {
         foreach ($this->notificationAlerts['name'] as $key => $notificationAlert) {
+            $language = str_replace(' ', '_', strtolower($notificationAlert));
+            $enabled  = $language === 'order_tracking_message' ? SwitchBox::ON : SwitchBox::OFF;
+
             NotificationAlert::create([
                 'name'                      => $notificationAlert,
-                'language'                  => str_replace(' ', '_', strtolower($notificationAlert)),
+                'language'                  => $language,
                 'mail_message'              => $this->notificationAlerts['message'][$key],
                 'sms_message'               => $this->notificationAlerts['message'][$key],
                 'push_notification_message' => $this->notificationAlerts['message'][$key],
-                'mail'                      => SwitchBox::OFF,
+                'mail'                      => $enabled,
                 'sms'                       => SwitchBox::OFF,
-                'push_notification'         => SwitchBox::OFF,
+                'push_notification'         => $enabled,
             ]);
         }
     }

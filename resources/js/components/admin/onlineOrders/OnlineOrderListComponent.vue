@@ -5,16 +5,41 @@
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
                 <div class="db-card-filter">
-                    <button
-                        v-if="permissionChecker('online-orders') && selectedOrderIds.length > 0"
-                        type="button"
-                        class="db-btn py-2 text-white bg-primary hidden-print"
-                        :disabled="slipPrintLoading"
-                        @click="printSelectedSlips"
-                    >
-                        <i class="lab lab-line-printer lab-font-size-16"></i>
-                        <span>{{ $t('button.print_selected_slips') }} ({{ selectedOrderIds.length }})</span>
-                    </button>
+                    <template v-if="permissionChecker('online-orders') && selectedOrderIds.length > 0">
+                        <button
+                            type="button"
+                            class="db-btn py-2 text-white bg-primary hidden-print"
+                            :disabled="bulkBusy"
+                            @click="printSelectedSlips"
+                        >
+                            <i class="lab lab-line-printer lab-font-size-16"></i>
+                            <span>{{ $t('button.print_selected_slips') }} ({{ selectedOrderIds.length }})</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="db-btn py-2 text-white bg-indigo-600 hidden-print"
+                            :disabled="bulkBusy"
+                            @click="bulkBookPostEx"
+                        >
+                            <i class="fa-solid fa-truck text-sm"></i>
+                            <span>{{ $t('button.bulk_book_postex') }} ({{ selectedOrderIds.length }})</span>
+                        </button>
+                        <div class="relative hidden-print">
+                            <select
+                                v-model="bulkStatus"
+                                class="db-btn py-2 pl-3 pr-8 appearance-none border border-primary text-primary bg-white capitalize text-sm"
+                                :disabled="bulkBusy"
+                                @change="bulkChangeStatus"
+                            >
+                                <option value="">{{ $t('button.bulk_change_status') }}</option>
+                                <option :value="enums.orderStatusEnum.CONFIRMED">{{ $t('label.confirmed') }}</option>
+                                <option :value="enums.orderStatusEnum.ON_THE_WAY">{{ $t('label.on_the_way') }}</option>
+                                <option :value="enums.orderStatusEnum.DELIVERED">{{ $t('label.delivered') }}</option>
+                                <option :value="enums.orderStatusEnum.CANCELED">{{ $t('label.canceled') }}</option>
+                                <option :value="enums.orderStatusEnum.REJECTED">{{ $t('label.rejected') }}</option>
+                            </select>
+                        </div>
+                    </template>
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
                     <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
                         <i class="lab lab-line-filter lab-font-size-14"></i>
@@ -211,6 +236,7 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
 import ENV from "../../../config/env";
+import axios from "axios";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
 
 
@@ -278,6 +304,8 @@ export default {
             ENV: ENV,
             selectedOrderIds: [],
             slipPrintLoading: false,
+            bulkBusy: false,
+            bulkStatus: "",
         }
     },
     mounted() {
@@ -374,6 +402,7 @@ export default {
                 return;
             }
             this.slipPrintLoading = true;
+            this.bulkBusy = true;
             this.loading.isActive = true;
             try {
                 await this.$refs.shippingSlipPrint.printOrders(orderIds);
@@ -381,8 +410,94 @@ export default {
                 alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
             } finally {
                 this.slipPrintLoading = false;
+                this.bulkBusy = false;
                 this.loading.isActive = false;
             }
+        },
+        bulkBookPostEx: function () {
+            if (!this.selectedOrderIds.length) {
+                return;
+            }
+            appService.submitConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post('admin/online-order/postex/bulk-create', {
+                    ids: this.selectedOrderIds,
+                }).then((res) => {
+                    const data = res.data?.data || {};
+                    const success = data.success || 0;
+                    const failed = data.failed || 0;
+                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
+                    if (success > 0) {
+                        alertService.success(res.data?.message || `Booked ${success} order(s). Failed: ${failed}.`);
+                        if (firstError && failed > 0) {
+                            alertService.error(firstError.message);
+                        }
+                    } else {
+                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
+                    }
+                    this.selectedOrderIds = [];
+                    this.list(this.props.search.page);
+                }).catch((err) => {
+                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                }).finally(() => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                });
+            }).catch(() => {});
+        },
+        bulkChangeStatus: function () {
+            const status = this.bulkStatus === "" ? null : parseInt(this.bulkStatus, 10);
+            if (!status || !this.selectedOrderIds.length) {
+                this.bulkStatus = "";
+                return;
+            }
+
+            const needsReason = status === orderStatusEnum.CANCELED || status === orderStatusEnum.REJECTED;
+            let reason = null;
+            if (needsReason) {
+                reason = window.prompt(this.$t('label.reason') || 'Reason');
+                if (!reason || !String(reason).trim()) {
+                    alertService.error(this.$t('message.reason_required') || 'Reason is required.');
+                    this.bulkStatus = "";
+                    return;
+                }
+                reason = String(reason).trim();
+            }
+
+            appService.submitConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post('admin/online-order/bulk-change-status', {
+                    ids: this.selectedOrderIds,
+                    status: status,
+                    reason: reason,
+                }).then((res) => {
+                    const data = res.data?.data || {};
+                    const success = data.success || 0;
+                    const failed = data.failed || 0;
+                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
+                    if (success > 0) {
+                        alertService.success(res.data?.message || `Updated ${success} order(s). Failed: ${failed}.`);
+                        if (firstError && failed > 0) {
+                            alertService.error(firstError.message);
+                        }
+                    } else {
+                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
+                    }
+                    this.selectedOrderIds = [];
+                    this.bulkStatus = "";
+                    this.list(this.props.search.page);
+                }).catch((err) => {
+                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                    this.bulkStatus = "";
+                }).finally(() => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                });
+            }).catch(() => {
+                this.bulkStatus = "";
+            });
         },
         xls: function () {
             this.loading.isActive = true;
