@@ -13,7 +13,7 @@
             <FrontendMobileCategoryComponent />
             <FrontendMobileAccountComponent />
             <FrontendCookiesComponent />
-            <FrontendFooterComponent v-if="!$route.meta.hideFooter" />
+            <FrontendFooterComponent v-if="showFooter" />
         </main>
     </div>
 
@@ -139,6 +139,10 @@ export default {
             const status = this.setting?.site_abandoned_cart_reminder;
             return status === undefined || status === null || Number(status) === activityEnum.ENABLE;
         },
+        showFooter: function () {
+            // Hide on focused flows (checkout, auth, PLP/categories) like major ecommerce stores
+            return !this.$route.matched.some((record) => record.meta && record.meta.hideFooter);
+        },
         showWhatsappFloating: function () {
             if (this.theme !== 'frontend') {
                 return false;
@@ -146,11 +150,11 @@ export default {
             if (!this.setting || this.setting.whatsapp_status !== 5 || this.setting.whatsapp_floating_status !== 5 || !this.setting.whatsapp_number) {
                 return false;
             }
-            const routeName = this.$route.name;
+            const routeName = this.$route.name || '';
             if (routeName === 'frontend.product.details') {
                 return false;
             }
-            if (routeName && routeName.startsWith('frontend.checkout')) {
+            if (routeName.startsWith('frontend.checkout') || routeName.startsWith('auth.')) {
                 return false;
             }
             return true;

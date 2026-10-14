@@ -46,12 +46,16 @@ const baseRoutes = [
         component: NotFoundComponent,
         meta: {
             isFrontend: true,
+            hideFooter: true,
         },
     },
     {
         path: "/exception",
         name: "route.exception",
         component: ExceptionComponent,
+        meta: {
+            hideFooter: true,
+        },
     },
     {
         path: "/admin/dashboard",

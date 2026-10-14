@@ -264,7 +264,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
-            hideFooter: true
+            hideFooter: true,
         },
         children: [
             {
@@ -273,7 +273,8 @@ export default [
                 name: "frontend.checkout.cartList",
                 meta: {
                     isFrontend: true,
-                    auth: false
+                    auth: false,
+                    hideFooter: true,
                 }
             },
             {
@@ -282,7 +283,8 @@ export default [
                 name: "frontend.checkout.checkout",
                 meta: {
                     isFrontend: true,
-                    auth: false
+                    auth: false,
+                    hideFooter: true,
                 }
             }
         ]

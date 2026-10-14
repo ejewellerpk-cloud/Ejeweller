@@ -1,0 +1,17 @@
+---
+description: After every build and push, always give the server deploy command
+alwaysApply: true
+---
+
+# Build + Push Deploy Reminder
+
+Whenever the user asks to **build and push** (or you complete a build + git push for them):
+
+1. Run `npm run build`, commit if needed, and push as usual.
+2. **Always** end the response with this server deploy command so they can run it on SSH:
+
+```bash
+cd public_html && git pull origin main && php artisan optimize:clear
+```
+
+Do not skip the deploy command after a successful push.

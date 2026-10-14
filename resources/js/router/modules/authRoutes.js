@@ -13,7 +13,8 @@ export default [
         name: 'auth.login',
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
     {
@@ -23,6 +24,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: false,
+            hideFooter: true,
         },
     },
     {
@@ -31,7 +33,8 @@ export default [
         name: 'auth.signup',
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
     {
@@ -40,7 +43,8 @@ export default [
         name: 'auth.signupVerify',
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
     {
@@ -49,7 +53,8 @@ export default [
         name: 'auth.forgotPassword',
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
     {
@@ -58,7 +63,8 @@ export default [
         component: ForgotPasswordVerifyComponent,
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
     {
@@ -67,7 +73,8 @@ export default [
         component: ResetPasswordComponent,
         meta: {
             isFrontend: true,
-            auth: false
+            auth: false,
+            hideFooter: true,
         }
     },
 
