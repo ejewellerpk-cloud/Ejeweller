@@ -240,12 +240,62 @@
                                 </span>
                             </td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
-                                <div class="flex justify-start items-center gap-1.5">
+                                <div class="flex flex-wrap justify-start items-center gap-1">
+                                    <button
+                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.PENDING"
+                                        type="button"
+                                        class="row-act bg-emerald-600 hover:bg-emerald-700"
+                                        :title="$t('label.confirmed')"
+                                        :disabled="bulkBusy"
+                                        @click="rowSetStatus(order, enums.orderStatusEnum.CONFIRMED)"
+                                    >
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                    <button
+                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.CONFIRMED"
+                                        type="button"
+                                        class="row-act bg-sky-600 hover:bg-sky-700"
+                                        :title="$t('label.on_the_way')"
+                                        :disabled="bulkBusy"
+                                        @click="rowSetStatus(order, enums.orderStatusEnum.ON_THE_WAY)"
+                                    >
+                                        <i class="fa-solid fa-truck-fast"></i>
+                                    </button>
+                                    <button
+                                        v-if="parseInt(order.status, 10) === enums.orderStatusEnum.ON_THE_WAY"
+                                        type="button"
+                                        class="row-act bg-violet-600 hover:bg-violet-700"
+                                        :title="$t('label.delivered')"
+                                        :disabled="bulkBusy"
+                                        @click="rowSetStatus(order, enums.orderStatusEnum.DELIVERED)"
+                                    >
+                                        <i class="fa-solid fa-box-open"></i>
+                                    </button>
+                                    <button
+                                        v-if="!order.postex_tracking_number && parseInt(order.status, 10) !== enums.orderStatusEnum.CANCELED && parseInt(order.status, 10) !== enums.orderStatusEnum.REJECTED"
+                                        type="button"
+                                        class="row-act bg-indigo-600 hover:bg-indigo-700"
+                                        :title="$t('button.bulk_book_postex')"
+                                        :disabled="bulkBusy"
+                                        @click="rowBookPostEx(order)"
+                                    >
+                                        <i class="fa-solid fa-truck"></i>
+                                    </button>
+                                    <button
+                                        v-if="parseInt(order.payment_status, 10) !== enums.paymentStatusEnum.PAID"
+                                        type="button"
+                                        class="row-act bg-teal-600 hover:bg-teal-700"
+                                        :title="$t('label.paid')"
+                                        :disabled="bulkBusy"
+                                        @click="rowSetPayment(order, enums.paymentStatusEnum.PAID)"
+                                    >
+                                        <i class="fa-solid fa-money-bill"></i>
+                                    </button>
                                     <button
                                         type="button"
-                                        class="db-table-action print"
+                                        class="row-act bg-primary hover:opacity-90"
                                         :title="$t('button.print_shipping_slip')"
-                                        :disabled="slipPrintLoading"
+                                        :disabled="slipPrintLoading || bulkBusy"
                                         @click="printSingleSlip(order.id)"
                                     >
                                         <i class="lab lab-line-printer"></i>
@@ -485,6 +535,74 @@ export default {
             this.selectedOrderIds = [];
             this.list(this.props.search.page);
         },
+        rowSetStatus: function (order, status) {
+            if (!order?.id || !status) {
+                return;
+            }
+            const needsReason = status === orderStatusEnum.CANCELED || status === orderStatusEnum.REJECTED;
+            let reason = null;
+            if (needsReason) {
+                reason = window.prompt(this.$t('label.reason') || 'Reason');
+                if (!reason || !String(reason).trim()) {
+                    alertService.error(this.$t('message.reason_required') || 'Reason is required.');
+                    return;
+                }
+                reason = String(reason).trim();
+            }
+            this.bulkBusy = true;
+            this.loading.isActive = true;
+            axios.post(`admin/online-order/change-status/${order.id}`, {
+                status: status,
+                reason: reason,
+            }).then(() => {
+                alertService.successFlip(1, this.$t('label.status'));
+                this.list(this.props.search.page);
+            }).catch((err) => {
+                alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+            }).finally(() => {
+                this.bulkBusy = false;
+                this.loading.isActive = false;
+            });
+        },
+        rowSetPayment: function (order, paymentStatus) {
+            if (!order?.id || !paymentStatus) {
+                return;
+            }
+            this.bulkBusy = true;
+            this.loading.isActive = true;
+            axios.post(`admin/online-order/change-payment-status/${order.id}`, {
+                payment_status: paymentStatus,
+            }).then(() => {
+                alertService.successFlip(1, this.$t('label.payment_status'));
+                this.list(this.props.search.page);
+            }).catch((err) => {
+                alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+            }).finally(() => {
+                this.bulkBusy = false;
+                this.loading.isActive = false;
+            });
+        },
+        rowBookPostEx: function (order) {
+            if (!order?.id) {
+                return;
+            }
+            appService.submitConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post(`admin/online-order/${order.id}/postex/create`)
+                    .then((res) => {
+                        alertService.success(res.data?.message || this.$t('message.postex_booked') || 'PostEx booked');
+                        this.list(this.props.search.page);
+                    })
+                    .catch((err) => {
+                        alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                    })
+                    .finally(() => {
+                        this.bulkBusy = false;
+                        this.loading.isActive = false;
+                    });
+            }).catch(() => {});
+        },
         printSingleSlip: function (orderId) {
             this.runSlipPrint([orderId]);
         },
@@ -657,5 +775,9 @@ export default {
 
 .bulk-btn {
     @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.row-act {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-white text-xs transition disabled:opacity-50 disabled:cursor-not-allowed;
 }
 </style>
