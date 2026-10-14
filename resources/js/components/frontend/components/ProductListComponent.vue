@@ -53,7 +53,7 @@
                         :dir="'ltr'"
                         :pagination="getPaginationConfig(product)"
                         :modules="modules"
-                        :loop="!(product.videos && product.videos.length > 0)"
+                        :loop="!cardMediaHasVideo(product)"
                         class="w-full h-full product-card-swiper"
                         @swiper="onSwiperReady($event, product.id)"
                         @slideChange="onCardSlideChange($event, product.id)"
@@ -61,39 +61,40 @@
                         @sliderFirstMove="onSliderDragStart(product.id)"
                         @touchEnd="onSliderTouchEnd(product.id)">
 
-                        <SwiperSlide v-if="product.previews.length > 0">
-                            <div class="w-full h-full relative bg-gray-50">
-                                <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-0']">
+                        <!-- Order: 1st image → video (2nd) → remaining images (all kept) -->
+                        <SwiperSlide
+                            v-for="(media, mediaIndex) in getCardMediaSlides(product)"
+                            :key="`card-media-${product.id}-${media.type}-${mediaIndex}`"
+                        >
+                            <div v-if="media.type === 'image'" class="w-full h-full relative bg-gray-50">
+                                <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + media.imageIndex]">
                                     <div class="flex gap-1.5">
                                         <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
                                         <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
                                         <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                                     </div>
                                 </div>
-                                <img :src="product.previews[0]" alt="product" loading="lazy"
-                                    @load="onImageLoad(product.id + '-img-0')"
-                                    @error="onImageError($event, product.id + '-img-0')"
-                                    :class="loadedImages[product.id + '-img-0'] ? 'opacity-100' : 'opacity-0'"
+                                <img :src="media.url" alt="product" loading="lazy"
+                                    @load="onImageLoad(product.id + '-img-' + media.imageIndex)"
+                                    @error="onImageError($event, product.id + '-img-' + media.imageIndex)"
+                                    :class="loadedImages[product.id + '-img-' + media.imageIndex] ? 'opacity-100' : 'opacity-0'"
                                     class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
                             </div>
-                        </SwiperSlide>
-
-                        <SwiperSlide v-if="product.videos && product.videos.length > 0">
-                            <div class="w-full h-full relative">
+                            <div v-else class="w-full h-full relative">
                                 <div class="w-full h-full bg-black relative aspect-[4/5]">
-                                    <iframe v-if="isEmbedVideo(product.videos[0])"
-                                        :key="`card-embed-${product.id}`"
-                                        :src="isCardVideoActive(product.id) ? formatProductCardVideoLink(product.videos[0]) : ''"
+                                    <iframe v-if="isEmbedVideo(media.video)"
+                                        :key="`card-embed-${product.id}-${mediaIndex}`"
+                                        :src="isCardVideoActive(product.id) ? formatProductCardVideoLink(media.video) : ''"
                                         class="w-full h-full pointer-events-none"
                                         frameborder="0"
                                         allow="autoplay; encrypted-media; picture-in-picture"
                                         loading="lazy">
                                     </iframe>
                                     <video v-else
-                                        :key="`card-video-${product.id}`"
+                                        :key="`card-video-${product.id}-${mediaIndex}`"
                                         data-card-video
-                                        :src="product.videos[0].link"
-                                        :poster="getVideoPosterForCard(product.videos[0], product)"
+                                        :src="media.video.link"
+                                        :poster="getVideoPosterForCard(media.video, product)"
                                         :autoplay="isCardVideoActive(product.id)"
                                         muted
                                         loop
@@ -104,23 +105,6 @@
                                         @canplay="onCardVideoCanPlay(product.id, $event)">
                                     </video>
                                 </div>
-                            </div>
-                        </SwiperSlide>
-
-                        <SwiperSlide v-for="(image, index) in product.previews.slice(1)" :key="index">
-                            <div class="w-full h-full relative bg-gray-50">
-                                <div class="absolute inset-0 flex items-center justify-center" v-if="!loadedImages[product.id + '-img-' + (index + 1)]">
-                                    <div class="flex gap-1.5">
-                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></div>
-                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
-                                        <div class="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
-                                    </div>
-                                </div>
-                                <img :src="image" alt="product" loading="lazy"
-                                    @load="onImageLoad(product.id + '-img-' + (index + 1))"
-                                    @error="onImageError($event, product.id + '-img-' + (index + 1))"
-                                    :class="loadedImages[product.id + '-img-' + (index + 1)] ? 'opacity-100' : 'opacity-0'"
-                                    class="product-card__image w-full h-full object-cover transition-all duration-700 relative z-10 pointer-events-none">
                             </div>
                         </SwiperSlide>
                     </Swiper>
@@ -343,12 +327,38 @@ export default {
                 playPromise.catch(() => {});
             }
         },
+        getCardMediaSlides(product) {
+            const slides = [];
+            const previews = Array.isArray(product?.previews) ? product.previews.filter(Boolean) : [];
+            const videos = Array.isArray(product?.videos) ? product.videos : [];
+
+            // Keep every image/video slide; only reorder dots/slides:
+            // 1st image → video (2nd when an image exists) → remaining images.
+            if (previews.length > 0) {
+                slides.push({ type: 'image', url: previews[0], imageIndex: 0 });
+            }
+
+            if (videos.length > 0) {
+                slides.push({ type: 'video', video: videos[0] });
+            }
+
+            for (let i = 1; i < previews.length; i++) {
+                slides.push({ type: 'image', url: previews[i], imageIndex: i });
+            }
+
+            return slides;
+        },
+        cardMediaHasVideo(product) {
+            return Array.isArray(product?.videos) && product.videos.length > 0;
+        },
         getVideoSlideIndex(product) {
-            return product.previews?.length > 0 ? 1 : 0;
+            const slides = this.getCardMediaSlides(product);
+            const videoIndex = slides.findIndex((slide) => slide.type === 'video');
+            return videoIndex >= 0 ? videoIndex : null;
         },
         goToCardSlide(productId, index) {
             const swiper = this.swiperInstances[productId];
-            if (!swiper || swiper.slides.length <= index) {
+            if (!swiper || index == null || index < 0 || swiper.slides.length <= index) {
                 return;
             }
 
@@ -427,9 +437,7 @@ export default {
             });
         },
         hasMediaSlider(product) {
-            return product.previews
-                && product.previews.length > 0
-                && (product.previews.length > 1 || (product.videos && product.videos.length > 0));
+            return this.getCardMediaSlides(product).length > 1;
         },
         productRoute(product) {
             return { name: 'frontend.product.details', params: { slug: product.slug } };
@@ -762,17 +770,19 @@ export default {
             }
         },
         getPaginationConfig: function (product) {
-            const hasVideo = product.videos && product.videos.length > 0;
-            if (!hasVideo) {
+            const slides = this.getCardMediaSlides(product);
+            const videoSlideIndex = slides.findIndex((slide) => slide.type === 'video');
+            if (videoSlideIndex < 0) {
                 return { clickable: true };
             }
-            // video slide index: always at position 1 (after 1st image slide)
-            const videoSlideIndex = 1;
+
+            // Dots: 1st = image, 2nd = video (when first image exists), then remaining image dots.
+            // All media slides stay swipeable; only the video bullet gets the play icon.
             return {
                 clickable: true,
                 renderBullet: function (index, className) {
                     if (index === videoSlideIndex) {
-                        return `<span class="${className} video-dot"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
+                        return `<span class="${className} video-dot" aria-label="video"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 6v12l10-6z"/></svg></span>`;
                     }
                     return `<span class="${className}"></span>`;
                 }

@@ -34,6 +34,26 @@
                 </ul>
             </div>
 
+            <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-heading bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 transition-colors shrink-0"
+                :title="$t('button.view_website') || 'View Website'"
+            >
+                <i class="lab lab-line-global lab-font-size-16"></i>
+            </a>
+
+            <button
+                type="button"
+                @click="clearCache"
+                :disabled="clearingCache"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-heading bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 transition-colors shrink-0 disabled:opacity-50"
+                :title="$t('button.clear_cache') || 'Clear Cache'"
+            >
+                <i :class="clearingCache ? 'fa-solid fa-spinner fa-spin text-sm' : 'lab lab-fill-refresh lab-font-size-16'"></i>
+            </button>
+
             <router-link v-if="pos.permission"
                 class="w-9 h-9 rounded-xl flex items-center justify-center text-primary bg-primary/10 border border-primary/15 hover:bg-primary/15 transition-colors shrink-0"
                 :to="{ path: '/admin/' + pos.url }"
@@ -172,6 +192,7 @@ export default {
                 order_type: "asc",
                 status: statusEnum.ACTIVE
             },
+            clearingCache: false,
         }
     },
     computed: {
@@ -363,6 +384,20 @@ export default {
         },
         closeSidebar : function(){
             return appService.closeSidebar()
+        },
+        clearCache: function () {
+            if (this.clearingCache) {
+                return;
+            }
+            this.clearingCache = true;
+            axios.post('/admin/cache/clear').then((res) => {
+                this.$store.dispatch('frontendSetting/lists').catch(() => {});
+                alertService.success(res.data?.message || this.$t('message.cache_cleared') || 'Cache cleared successfully.');
+            }).catch((err) => {
+                alertService.error(err.response?.data?.message || this.$t('message.something_wrong') || 'Failed to clear cache.');
+            }).finally(() => {
+                this.clearingCache = false;
+            });
         },
     }
 }

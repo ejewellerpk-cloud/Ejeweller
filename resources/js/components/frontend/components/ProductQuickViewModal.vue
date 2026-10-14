@@ -26,6 +26,7 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
 
+                    <div ref="scrollArea" class="quick-view-scroll">
                     <div v-if="loading" class="quick-view-loading">
                         <div class="quick-view-loading__media animate-pulse bg-gray-100 rounded-2xl"></div>
                         <div class="quick-view-loading__info space-y-3">
@@ -161,7 +162,7 @@
                                 </div>
                             </div>
 
-                            <div class="quick-view-actions">
+                            <div ref="actions" class="quick-view-actions">
                                 <button
                                     type="button"
                                     class="quick-view-btn quick-view-btn--wish"
@@ -193,6 +194,34 @@
                             <button type="button" class="quick-view-details-link" @click="goToDetails">
                                 {{ $t('label.view_full_details') || 'View full details' }}
                                 <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Sticky CTA: checkout-style fixed bar; hides when original actions are visible -->
+                    <div
+                        v-if="!loading && showStickyActions"
+                        class="quick-view-sticky-bar"
+                    >
+                        <div class="quick-view-sticky-bar__inner">
+                            <button
+                                type="button"
+                                class="quick-view-btn quick-view-btn--cart flex-1"
+                                :disabled="temp.stock <= 0 || addingToCart"
+                                @click="addToCart"
+                            >
+                                <i class="lab-line-bag"></i>
+                                <span>{{ $t('button.add_to_cart') }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="quick-view-btn quick-view-btn--buy flex-1"
+                                :disabled="temp.stock <= 0 || addingToCart"
+                                @click="buyNow"
+                            >
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>{{ $t('button.buy_now') }}</span>
                             </button>
                         </div>
                     </div>
@@ -280,6 +309,8 @@ export default {
                 totalPrice: 0,
                 maximum_purchase_quantity: 1,
             },
+            showStickyActions: false,
+            actionsObserver: null,
         };
     },
     computed: {
@@ -481,6 +512,7 @@ export default {
             } finally {
                 if (token === this.loadToken) {
                     this.loading = false;
+                    this.setupActionsObserver();
                 }
             }
         },
@@ -732,9 +764,50 @@ export default {
         },
         onCloseCleanup() {
             this.loadToken++;
+            this.teardownActionsObserver();
+            this.showStickyActions = false;
             document.body.classList.remove("quick-view-open");
             document.body.style.overflow = "";
         },
+        teardownActionsObserver() {
+            if (this.actionsObserver) {
+                this.actionsObserver.disconnect();
+                this.actionsObserver = null;
+            }
+        },
+        setupActionsObserver() {
+            this.teardownActionsObserver();
+            this.showStickyActions = false;
+
+            if (typeof IntersectionObserver === "undefined") {
+                this.showStickyActions = true;
+                return;
+            }
+
+            this.$nextTick(() => {
+                const actionsEl = this.$refs.actions;
+                const rootEl = this.$refs.scrollArea || this.$refs.panel;
+                if (!actionsEl || !rootEl) {
+                    return;
+                }
+
+                this.actionsObserver = new IntersectionObserver(
+                    (entries) => {
+                        const entry = entries[0];
+                        // Hide sticky when original Add to Cart / Buy Now are on screen
+                        this.showStickyActions = !(entry && entry.isIntersecting);
+                    },
+                    {
+                        root: rootEl,
+                        threshold: 0.35,
+                    }
+                );
+                this.actionsObserver.observe(actionsEl);
+            });
+        },
+    },
+    beforeUnmount() {
+        this.teardownActionsObserver();
     },
 };
 </script>
@@ -760,14 +833,40 @@ export default {
 .quick-view-panel {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: 960px;
     max-height: 92vh;
-    overflow: auto;
+    overflow: hidden;
     background: #fff;
     border-radius: 1.25rem 1.25rem 0 0;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
     outline: none;
+}
+
+.quick-view-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.quick-view-sticky-bar {
+    flex: 0 0 auto;
+    z-index: 6;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.quick-view-sticky-bar__inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
 }
 
 .quick-view-close {
@@ -794,6 +893,7 @@ export default {
     gap: 1rem;
     padding: 1rem 1rem 1.25rem;
 }
+
 
 .quick-view-loading__media {
     aspect-ratio: 1 / 1;

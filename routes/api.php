@@ -48,6 +48,7 @@ use App\Http\Controllers\Admin\PostExController;
 use App\Http\Controllers\Admin\PostExOrderController;
 use App\Http\Controllers\Admin\PostExOperationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\CacheController;
 use App\Http\Controllers\Admin\OrderAreaController;
 use App\Http\Controllers\Admin\PromotionController;
 use App\Http\Controllers\Auth\DeactivateController;
@@ -214,6 +215,8 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('/cache/clear', [CacheController::class, 'clear'])->name('cache.clear');
+
     Route::prefix('media-library')->name('media-library.')->group(function () {
         Route::get('', [MediaController::class, 'index']);
         Route::post('', [MediaController::class, 'store']);
