@@ -113,6 +113,7 @@ export function shouldSkipDuplicateClick(productId, navTimestamps) {
     return lastTouchNav && Date.now() - lastTouchNav < TOUCH_NAV_DEDUPE_MS;
 }
 
+/** Mark that a touch gesture was handled so the synthetic click is ignored. */
 export function recordTouchNavigation(productId, navTimestamps) {
     navTimestamps[productId] = Date.now();
 }

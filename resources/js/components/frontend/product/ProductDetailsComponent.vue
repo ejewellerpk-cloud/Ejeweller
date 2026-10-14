@@ -149,10 +149,10 @@
                         SAVE {{ detailPrices.percent }}%
                     </span>
 
-                    <!-- Wishlist Button Overlay -->
-                    <button type="button" @click="wishlist(product.wishlist = !product.wishlist)"
+                    <!-- Wishlist Button Overlay (must match gallery path — never mutate wishlist in the handler arg) -->
+                    <button type="button" @click="wishlist()"
                         class="w-10 h-10 rounded-full shadow-lg absolute top-4 right-16 z-20 bg-white hover:scale-105 active:scale-90 transition-all duration-300 flex items-center justify-center border border-gray-100">
-                        <i :class="product.wishlist ? 'lab-fill-heart text-primary animate-heart-pulse' : 'lab-line-heart text-secondary'" class="text-xl mt-0.5"></i>
+                        <i :class="isWishlisted(product) ? 'lab-fill-heart text-primary animate-heart-pulse' : 'lab-line-heart text-secondary'" class="text-xl mt-0.5"></i>
                     </button>
 
                     <!-- Share Button Overlay -->
@@ -1655,8 +1655,33 @@ export default {
         onFallbackImageTap: function (event) {
             this.onGalleryImageTap(999, event);
         },
+        /**
+         * Touchend + synthetic click must not count as a double-tap (iOS/Android).
+         * Touch starts the single-tap timer; the follow-up click is ignored.
+         * True double-tap is two touchends (or two clicks on desktop) within 320ms.
+         */
+        shouldIgnoreSyntheticGalleryClick: function (event) {
+            if (event?.type === 'touchend' || event?.type === 'touchcancel') {
+                this._galleryTouchGuardAt = Date.now();
+                if (event.cancelable) {
+                    event.preventDefault();
+                }
+                return false;
+            }
+            if (event?.type === 'click') {
+                const guardedAt = this._galleryTouchGuardAt || 0;
+                if (guardedAt > 0 && Date.now() - guardedAt < 450) {
+                    event.preventDefault?.();
+                    return true;
+                }
+            }
+            return false;
+        },
         onGalleryImageTap: function (index, event) {
             if (event?.type === 'click' && event?.detail === 0) {
+                return;
+            }
+            if (this.shouldIgnoreSyntheticGalleryClick(event)) {
                 return;
             }
             if (this.isDoubleTap(event, '_galleryImageTapState')) {

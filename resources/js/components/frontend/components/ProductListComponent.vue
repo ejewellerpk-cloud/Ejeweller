@@ -518,6 +518,10 @@ export default {
                 const endPoint = readTouchPoint(event);
                 const session = this.touchSessions[product.id];
 
+                // Always suppress the follow-up synthetic click after any touch
+                // (tap, swipe, or scroll) — otherwise swipe/scroll can still open PDP.
+                recordTouchNavigation(product.id, this.touchNavTimestamps);
+
                 if (!shouldOpenProductFromTouch(session, endPoint)) {
                     delete this.touchSessions[product.id];
                     return;
@@ -526,7 +530,6 @@ export default {
                 if (event.cancelable) {
                     event.preventDefault();
                 }
-                recordTouchNavigation(product.id, this.touchNavTimestamps);
                 delete this.touchSessions[product.id];
                 this.navigateToProduct(product);
                 return;
