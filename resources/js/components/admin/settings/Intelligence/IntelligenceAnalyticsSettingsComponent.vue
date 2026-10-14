@@ -92,12 +92,6 @@
                             <i class="fa-solid fa-key"></i>
                             <span>{{ $t('button.regenerate_keys') || 'Regenerate Keys' }}</span>
                         </button>
-                        <router-link v-if="permissionChecker('intelligence')"
-                            :to="{ name: 'admin.intelligence.dashboard' }"
-                            class="db-btn bg-slate-800 text-white inline-flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line"></i>
-                            <span>{{ $t('menu.intelligence_dashboard') || 'Open Dashboard' }}</span>
-                        </router-link>
                     </div>
                 </div>
             </form>
@@ -149,7 +143,6 @@ import axios from 'axios';
 import activityEnum from '../../../../enums/modules/activityEnum';
 import LoadingComponent from '../../components/LoadingComponent';
 import alertService from '../../../../services/alertService';
-import appService from '../../../../services/appService';
 
 export default {
     name: 'IntelligenceAnalyticsSettingsComponent',
@@ -180,9 +173,6 @@ export default {
         this.load();
     },
     methods: {
-        permissionChecker(permissionName) {
-            return appService.permissionChecker(permissionName);
-        },
         load() {
             this.loading.isActive = true;
             axios.get('admin/setting/intelligence-analytics').then((res) => {
