@@ -49,6 +49,7 @@ class SiteRequest extends FormRequest
             'site_facebook_capi_token'                    => ['required_if:site_facebook_capi_status,' . \App\Enums\Activity::ENABLE, 'nullable', 'string', 'max:500'],
             'site_facebook_capi_status'                   => ['nullable', 'numeric'],
             'site_guest_checkout'                         => ['nullable', 'numeric'],
+            'site_default_checkout_country'               => ['nullable', 'string', 'max:190'],
             'site_homepage_theme'                         => ['nullable', 'string', 'in:default,ramadan,eid,wedding,winter'],
             'site_show_stock_out'                         => ['nullable', 'numeric'],
             'site_abandoned_cart_reminder'                => ['nullable', 'numeric'],

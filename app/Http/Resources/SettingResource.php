@@ -43,6 +43,7 @@ class SettingResource extends JsonResource
             'shipping_setup_flat_rate_wise_cost'    => $this->info['shipping_setup_flat_rate_wise_cost'],
             'shipping_setup_area_wise_default_cost' => $this->info['shipping_setup_area_wise_default_cost'],
             'site_guest_checkout'                   => $this->info['site_guest_checkout'] ?? 10,
+            'site_default_checkout_country'         => $this->info['site_default_checkout_country'] ?? 'Pakistan',
             'theme_logo'                            => $this->themeImage('theme_logo')->logo,
             'theme_footer_logo'                     => $this->themeImage('theme_footer_logo')->footerLogo,
             'theme_favicon_logo'                    => $this->themeImage('theme_favicon_logo')->faviconLogo,

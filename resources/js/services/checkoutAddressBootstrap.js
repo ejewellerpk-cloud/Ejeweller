@@ -4,12 +4,19 @@
 
 let addressListsPromise = null;
 let countryBootstrapPromise = null;
-let pakistanStatesPromise = null;
+let defaultCountryStatesPromise = null;
+let defaultCountryStatesKey = null;
 let countriesPromise = null;
 
 function hasSetting(store) {
     const setting = store.getters["frontendSetting/lists"];
     return setting && Object.keys(setting).length > 0;
+}
+
+export function getDefaultCheckoutCountry(store) {
+    const setting = store.getters["frontendSetting/lists"] || {};
+    const name = String(setting.site_default_checkout_country || "").trim();
+    return name || "Pakistan";
 }
 
 export function ensureAddressLists(store) {
@@ -69,6 +76,7 @@ export function ensureCountryBootstrap(store) {
         return {
             calling_code: store.getters["frontendCountryCode/show"]?.calling_code,
             flag_emoji: store.getters["frontendCountryCode/show"]?.flag_emoji,
+            default_country: getDefaultCheckoutCountry(store),
         };
     })().catch((err) => {
         countryBootstrapPromise = null;
@@ -78,16 +86,28 @@ export function ensureCountryBootstrap(store) {
     return countryBootstrapPromise;
 }
 
-export function ensurePakistanStates(store) {
-    if (!pakistanStatesPromise) {
-        pakistanStatesPromise = store
-            .dispatch("frontendCountryStateCity/statesByCountry", "Pakistan")
-            .catch((err) => {
-                pakistanStatesPromise = null;
-                throw err;
-            });
+export function ensureDefaultCountryStates(store, countryName) {
+    const name = String(countryName || getDefaultCheckoutCountry(store) || "Pakistan").trim() || "Pakistan";
+
+    if (defaultCountryStatesPromise && defaultCountryStatesKey === name) {
+        return defaultCountryStatesPromise;
     }
-    return pakistanStatesPromise;
+
+    defaultCountryStatesKey = name;
+    defaultCountryStatesPromise = store
+        .dispatch("frontendCountryStateCity/statesByCountry", name)
+        .catch((err) => {
+            defaultCountryStatesPromise = null;
+            defaultCountryStatesKey = null;
+            throw err;
+        });
+
+    return defaultCountryStatesPromise;
+}
+
+/** @deprecated Use ensureDefaultCountryStates */
+export function ensurePakistanStates(store) {
+    return ensureDefaultCountryStates(store, "Pakistan");
 }
 
 export function ensureCountries(store) {
@@ -110,13 +130,16 @@ export function ensureCountries(store) {
 }
 
 export function bootstrapCheckoutAddress(store, { guest = false } = {}) {
-    const tasks = [
-        ensureAddressLists(store),
-        ensureCountryBootstrap(store),
-        ensurePakistanStates(store),
-    ];
-    if (guest) {
-        tasks.push(ensureCountries(store));
-    }
-    return Promise.all(tasks);
+    return (async () => {
+        const [addresses, countryMeta] = await Promise.all([
+            ensureAddressLists(store),
+            ensureCountryBootstrap(store),
+        ]);
+
+        const defaultCountry = countryMeta?.default_country || getDefaultCheckoutCountry(store);
+        const statesRes = await ensureDefaultCountryStates(store, defaultCountry);
+        const countries = guest ? await ensureCountries(store) : null;
+
+        return [addresses, countryMeta, statesRes, countries];
+    })();
 }

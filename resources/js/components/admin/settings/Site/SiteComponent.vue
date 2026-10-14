@@ -415,6 +415,20 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label for="site_default_checkout_country" class="db-field-title required">
+                            {{ $t("label.default_checkout_country") }}
+                        </label>
+                        <vue-select class="db-field-control f-b-custom-select" id="site_default_checkout_country"
+                            v-bind:class="errors.site_default_checkout_country ? 'is-invalid' : ''"
+                            v-model="form.site_default_checkout_country" :options="countries" label-by="name"
+                            value-by="name" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
+                            placeholder="--" search-placeholder="--" />
+                        <small class="db-field-alert" v-if="errors.site_default_checkout_country">
+                            {{ errors.site_default_checkout_country[0] }}
+                        </small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title required" for="site_show_stock_out_enable">{{
                             $t("label.site_show_stock_out")
                             }}</label>
@@ -580,6 +594,7 @@ export default {
                 site_facebook_capi_token: null,
                 site_facebook_capi_status: null,
                 site_guest_checkout: null,
+                site_default_checkout_country: 'Pakistan',
                 site_homepage_theme: 'default',
                 site_show_stock_out: null,
                 site_abandoned_cart_reminder: null,
@@ -618,6 +633,9 @@ export default {
         aiAgents: function () {
             return this.$store.getters['aiAgent/lists'].filter(agent => agent && agent.id);
         },
+        countries: function () {
+            return this.$store.getters['country/lists'] || [];
+        },
     },
     mounted() {
         this.load();
@@ -651,6 +669,13 @@ export default {
                     order_column: 'id',
                     order_type: 'asc',
                     status: statusEnum.ACTIVE
+                });
+
+                await this.$store.dispatch('country/lists', {
+                    paginate: 0,
+                    order_column: 'name',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE,
                 });
 
                 this.list();
@@ -688,6 +713,7 @@ export default {
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_guest_checkout: res.data.data.site_guest_checkout,
+                    site_default_checkout_country: res.data.data.site_default_checkout_country || 'Pakistan',
                     site_homepage_theme: res.data.data.site_homepage_theme || 'default',
                     site_show_stock_out: res.data.data.site_show_stock_out !== null && res.data.data.site_show_stock_out !== undefined
                         ? Number(res.data.data.site_show_stock_out)

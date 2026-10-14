@@ -47,6 +47,7 @@ class SiteResource extends JsonResource
             "site_cash_on_delivery"                      => $this->info['site_cash_on_delivery'],
             "site_is_return_product_price_add_to_credit" => $this->info['site_is_return_product_price_add_to_credit'] ?? null,
             "site_guest_checkout"                        => $this->info['site_guest_checkout'] ?? 10,
+            "site_default_checkout_country"              => $this->info['site_default_checkout_country'] ?? 'Pakistan',
             "site_whatsapp_status"                       => $this->info['site_whatsapp_status'] ?? 10,
             "site_facebook_pixel_id"                     => $this->info['site_facebook_pixel_id'] ?? '',
             "site_facebook_capi_token"                   => $this->info['site_facebook_capi_token'] ?? '',

@@ -11,9 +11,19 @@ import store from "../store";
 
 export default {
     phoneNumber: function (e) {
-        let char = String.fromCharCode(e.keyCode);
-        if (/^[+]?[0-9]*$/.test(char)) return true;
-        else e.preventDefault();
+        // National phone fields: digits only (no +, spaces, or symbols).
+        const key = e.key || String.fromCharCode(e.keyCode || e.which);
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+            return true;
+        }
+        if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) {
+            return true;
+        }
+        if (/^[0-9]$/.test(key)) {
+            return true;
+        }
+        e.preventDefault();
+        return false;
     },
 
     onlyNumber: function (e) {

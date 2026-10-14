@@ -47,11 +47,14 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="email" class="text-sm font-medium capitalize mb-1 field-title required">
+                        <label for="guest-email" class="text-sm font-medium capitalize mb-1 field-title required">
                             {{ $t("label.email") }}
                         </label>
-                        <input type="email" v-model="address.form.email" :class="errors.email ? 'invalid' : ''"
-                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 shadow-sm">
+                        <EmailSuggestInput
+                            input-id="guest-email"
+                            v-model="address.form.email"
+                            :input-class="(errors.email ? 'invalid ' : '') + 'w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 shadow-sm'"
+                        />
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
@@ -68,17 +71,30 @@
                                 </button>
                                 <ul
                                     class="p-1.5 w-24 rounded-lg shadow-xl absolute top-8 left-0 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
-                                    <li v-for="countryCode in countryCodes" @click.prevent="changeCountry(countryCode)"
+                                    <li v-for="countryCode in countryCodes" :key="countryCode.calling_code + (countryCode.country_code || '')"
+                                        @click.prevent="changeCountry(countryCode)"
                                         class="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-100">
                                         {{ countryCode.flag_emoji }}
                                         <span class="whitespace-nowrap text-xs">{{ countryCode.calling_code }}</span>
                                     </li>
                                 </ul>
                             </div>
-                            <input v-model="address.form.phone" v-on:keypress="phoneNumber($event)"
-                                :class="errors.phone ? 'invalid' : ''" type="text" id="phone"
-                                class="pl-2 text-sm w-full h-full h-12 outline-none" />
+                            <input
+                                :value="address.form.phone"
+                                @input="onPhoneInput($event)"
+                                @keypress="phoneNumber($event)"
+                                :maxlength="phoneDigitLimit"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                :class="errors.phone ? 'invalid' : ''"
+                                type="tel"
+                                id="phone"
+                                class="pl-2 text-sm w-full h-full h-12 outline-none"
+                            />
                         </div>
+                        <small class="text-[11px] text-slate-400 mt-1 block">
+                            {{ phoneDigitLimit }} digits max
+                        </small>
                     </div>
 
                     <div class="form-col-12">
@@ -152,18 +168,21 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="email" class="text-sm font-medium capitalize mb-1 field-title">
+                        <label for="modal-email" class="text-sm font-medium capitalize mb-1 field-title">
                             {{ $t("label.email") }}
                         </label>
-                        <input type="email" v-model="address.form.email" :class="errors.email ? 'invalid' : ''"
-                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
+                        <EmailSuggestInput
+                            input-id="modal-email"
+                            v-model="address.form.email"
+                            :input-class="(errors.email ? 'invalid ' : '') + 'w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500'"
+                        />
                         <small class="db-field-alert" v-if="errors.email">
                             {{ errors.email[0] }}
                         </small>
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="phone" class="text-sm font-medium capitalize mb-1 field-title required">
+                        <label for="modal-phone" class="text-sm font-medium capitalize mb-1 field-title required">
                             {{ $t("label.phone") }}
                         </label>
                         <div :class="errors.phone ? 'invalid' : ''" class="field-control flex items-center">
@@ -177,18 +196,30 @@
                                 </button>
                                 <ul
                                     class="p-1.5 w-24 rounded-lg shadow-xl absolute top-8 -left-4 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
-                                    <li v-for="countryCode in countryCodes" @click.prevent="changeCountry(countryCode)"
+                                    <li v-for="countryCode in countryCodes" :key="'m-' + countryCode.calling_code + (countryCode.country_code || '')"
+                                        @click.prevent="changeCountry(countryCode)"
                                         class="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-100">
                                         {{ countryCode.flag_emoji }}
                                         <span class="whitespace-nowrap text-xs">{{ countryCode.calling_code }}</span>
                                     </li>
                                 </ul>
                             </div>
-                            <input v-model="address.form.phone" v-on:keypress="phoneNumber($event)"
-                                :class="errors.phone ? 'invalid' : ''" type="text" id="phone"
-                                class="pl-2 text-sm w-full h-full" />
+                            <input
+                                :value="address.form.phone"
+                                @input="onPhoneInput($event)"
+                                @keypress="phoneNumber($event)"
+                                :maxlength="phoneDigitLimit"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                :class="errors.phone ? 'invalid' : ''"
+                                type="tel"
+                                id="modal-phone"
+                                class="pl-2 text-sm w-full h-full"
+                            />
                         </div>
-
+                        <small class="text-[11px] text-slate-400 mt-1 block">
+                            {{ phoneDigitLimit }} digits max
+                        </small>
                         <small class="db-field-alert" v-if="errors.phone">
                             {{ errors.phone[0] }}
                         </small>
@@ -277,7 +308,16 @@ import appService from "../../../../services/appService";
 import targetService from "../../../../services/targetService";
 import alertService from "../../../../services/alertService";
 import LoadingComponent from "../../components/LoadingComponent.vue";
-import { bootstrapCheckoutAddress } from "../../../../services/checkoutAddressBootstrap";
+import EmailSuggestInput from "../../components/EmailSuggestInput.vue";
+import {
+    bootstrapCheckoutAddress,
+    getDefaultCheckoutCountry,
+} from "../../../../services/checkoutAddressBootstrap";
+import {
+    getPhoneDigitLimit,
+    sanitizePhoneDigits,
+    DEFAULT_PHONE_DIGIT_LIMIT,
+} from "../../../../utils/phoneNationalLength";
 
 export default {
     name: "AddressComponent",
@@ -290,6 +330,7 @@ export default {
         "highlightInvalid": { type: Boolean, default: false }
     },
     data() {
+        const defaultCountry = "Pakistan";
         return {
             loading: {
                 isActive: false
@@ -301,7 +342,7 @@ export default {
                     email: "",
                     country_code: null,
                     phone: "",
-                    country: "Pakistan",
+                    country: defaultCountry,
                     state: null,
                     city: null,
                     zip_code: "",
@@ -321,10 +362,12 @@ export default {
             worldMapData: [],
             activeAddressId: null,
             errors: {},
+            phoneDigitLimit: DEFAULT_PHONE_DIGIT_LIMIT,
         }
     },
     components: {
-        LoadingComponent
+        LoadingComponent,
+        EmailSuggestInput,
     },
     computed: {
         logged: function () {
@@ -338,15 +381,38 @@ export default {
         },
         countries: function () {
             return this.$store.getters['frontendCountryStateCity/countries'];
-        }
+        },
+        defaultCheckoutCountry: function () {
+            return getDefaultCheckoutCountry(this.$store);
+        },
+    },
+    watch: {
+        'address.form': {
+            deep: true,
+            handler() {
+                if (!this.logged && typeof this.method === 'function') {
+                    this.method(this.address.form);
+                }
+            },
+        },
+        'address.form.country'(countryName) {
+            this.refreshPhoneDigitLimit();
+        },
+        'address.form.country_code'() {
+            this.refreshPhoneDigitLimit();
+        },
     },
     mounted() {
         this.loading.isActive = true;
+        this.address.form.country = this.defaultCheckoutCountry;
         bootstrapCheckoutAddress(this.$store, { guest: !this.logged })
             .then((results) => {
                 const addresses = results[0] || [];
                 const countryMeta = results[1] || {};
                 const statesRes = results[2];
+                const defaultCountry = countryMeta.default_country || this.defaultCheckoutCountry;
+
+                this.address.form.country = defaultCountry;
 
                 if (statesRes?.data?.data) {
                     this.address.states = statesRes.data.data;
@@ -357,6 +423,8 @@ export default {
                     this.address.calling_code = countryMeta.calling_code;
                     this.address.flag = countryMeta.flag_emoji || "";
                 }
+
+                this.refreshPhoneDigitLimit();
 
                 if (this.logged) {
                     if (this.slug === "shipping" && Object.keys(this.selectedAddress).length === 0) {
@@ -388,6 +456,20 @@ export default {
                 return (parseInt(address.id, 10) > parseInt(latest.id, 10)) ? address : latest;
             }, list[0]);
         },
+        resolveCountryIso2(countryName) {
+            const match = (this.countries || []).find((c) => c.name === countryName);
+            return match?.code || '';
+        },
+        refreshPhoneDigitLimit() {
+            this.phoneDigitLimit = getPhoneDigitLimit({
+                callingCode: this.address.form.country_code,
+                iso2: this.resolveCountryIso2(this.address.form.country),
+            });
+            this.address.form.phone = sanitizePhoneDigits(this.address.form.phone, this.phoneDigitLimit);
+        },
+        onPhoneInput(event) {
+            this.address.form.phone = sanitizePhoneDigits(event.target.value, this.phoneDigitLimit);
+        },
         phoneNumber(e) {
             return appService.phoneNumber(e);
         },
@@ -404,12 +486,15 @@ export default {
         changeCountry: function (e) {
             this.address.flag = e.flag_emoji;
             this.address.form.country_code = e.calling_code;
+            this.address.calling_code = e.calling_code;
+            this.refreshPhoneDigitLimit();
         },
         callStates: function (countryName) {
             this.address.form.state = null;
             this.address.cities = [];
             this.address.states = [];
             this.address.form.city = null;
+            this.refreshPhoneDigitLimit();
 
             this.$store.dispatch('frontendCountryStateCity/statesByCountry', countryName)
                 .then((res) => {
@@ -433,6 +518,7 @@ export default {
             this.method(this.address.form);
         },
         reset: function () {
+            const defaultCountry = this.defaultCheckoutCountry;
             targetService.hideTarget(this.slug + '-address-modal', 'modal-active');
             this.$store.dispatch("frontendAddress/reset").then().catch();
             this.errors = {};
@@ -441,13 +527,14 @@ export default {
                 email: "",
                 country_code: this.address.calling_code,
                 phone: "",
-                country: "Pakistan",
+                country: defaultCountry,
                 state: null,
                 city: null,
                 zip_code: "",
                 address: "",
             };
-            this.callStates("Pakistan");
+            this.callStates(defaultCountry);
+            this.refreshPhoneDigitLimit();
         },
         save: function () {
             if (!this.logged) {
@@ -457,6 +544,7 @@ export default {
             }
             try {
                 const tempId = this.$store.getters["frontendAddress/temp"].temp_id;
+                const defaultCountry = this.defaultCheckoutCountry;
                 this.loading.isActive = true;
                 this.$store.dispatch("frontendAddress/save", this.address).then((res) => {
                     targetService.hideTarget(this.slug + '-address-modal', 'modal-active');
@@ -467,13 +555,14 @@ export default {
                         email: "",
                         country_code: this.address.calling_code,
                         phone: "",
-                        country: "Pakistan",
+                        country: defaultCountry,
                         state: null,
                         city: null,
                         zip_code: "",
                         address: "",
                     };
-                    this.callStates("Pakistan");
+                    this.callStates(defaultCountry);
+                    this.refreshPhoneDigitLimit();
                     this.errors = {};
                     this.activeAddress(res.data.data);
                 }).catch((err) => {

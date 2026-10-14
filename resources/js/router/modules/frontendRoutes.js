@@ -153,6 +153,7 @@ export default [
         meta: {
             isFrontend: true,
             auth: true,
+            hideFooter: true,
         },
         children: [
             {

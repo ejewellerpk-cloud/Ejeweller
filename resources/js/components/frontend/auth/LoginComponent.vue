@@ -56,12 +56,29 @@
                         </ul>
 
                     </div>
-                    <input v-model="form.phone" v-on:keypress="phoneNumber($event)" v-bind:class="errors.phone
-                        ? 'invalid' : ''" type="text" id="phone" class="pl-2 text-sm w-full h-full" />
+                    <input
+                        :value="form.phone"
+                        @input="onPhoneInput($event)"
+                        @keypress="phoneNumber($event)"
+                        :maxlength="phoneDigitLimit"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        :class="errors.phone ? 'invalid' : ''"
+                        type="tel"
+                        id="phone"
+                        class="pl-2 text-sm w-full h-full"
+                    />
                 </div>
-                <input v-if="!toggleValue" v-model="form.email" :class="errors.email ? 'invalid' : ''" id="formEmail"
-                    type="text"
-                    class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500" />
+                <small v-if="toggleValue" class="text-[11px] text-slate-400 mt-1 block">
+                    {{ phoneDigitLimit }} digits max
+                </small>
+                <EmailSuggestInput
+                    v-if="!toggleValue"
+                    input-id="formEmail"
+                    v-model="form.email"
+                    input-type="text"
+                    :input-class="(errors.email ? 'invalid ' : '') + 'w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500'"
+                />
                 <small class="db-field-alert" v-if="errors.email_or_phone">{{ errors.email_or_phone }}</small>
                 <span v-else>
                     <small class="db-field-alert" v-if="errors.phone && toggleValue">{{ errors.phone[0] }}</small>
@@ -180,15 +197,21 @@
 <script>
 import router from "../../../router";
 import LoadingComponent from "../components/LoadingComponent";
+import EmailSuggestInput from "../components/EmailSuggestInput.vue";
 import alertService from "../../../services/alertService";
 import statusEnum from "../../../enums/modules/statusEnum";
 import appService from "../../../services/appService";
 import ENV from "../../../config/env";
 import activityEnum from "../../../enums/modules/activityEnum";
+import {
+    getPhoneDigitLimit,
+    sanitizePhoneDigits,
+    DEFAULT_PHONE_DIGIT_LIMIT,
+} from "../../../utils/phoneNationalLength";
 
 export default {
     name: "LoginComponent",
-    components: { LoadingComponent },
+    components: { LoadingComponent, EmailSuggestInput },
     data() {
         return {
             loading: {
@@ -215,7 +238,8 @@ export default {
             loginMethod: "password",
             otpSent: false,
             activityEnum: activityEnum,
-            otpDigits: []
+            otpDigits: [],
+            phoneDigitLimit: DEFAULT_PHONE_DIGIT_LIMIT,
         }
     },
     computed: {
@@ -265,6 +289,7 @@ export default {
             this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code).then(res => {
                 this.form.country_code = res.data.data.calling_code;
                 this.flag = res.data.data.flag_emoji;
+                this.refreshPhoneDigitLimit();
 
                 this.loading.isActive = false;
             }).catch((err) => {
@@ -275,6 +300,15 @@ export default {
         });
     },
     methods: {
+        refreshPhoneDigitLimit() {
+            this.phoneDigitLimit = getPhoneDigitLimit({
+                callingCode: this.form.country_code,
+            });
+            this.form.phone = sanitizePhoneDigits(this.form.phone, this.phoneDigitLimit);
+        },
+        onPhoneInput(event) {
+            this.form.phone = sanitizePhoneDigits(event.target.value, this.phoneDigitLimit);
+        },
         handleOtpInput(event, index) {
             const val = event.target.value;
             if (!/^[0-9]$/.test(val)) {
@@ -457,6 +491,7 @@ export default {
         countryCodeChange: function (e) {
             this.flag = e.flag_emoji;
             this.form.country_code = e.calling_code;
+            this.refreshPhoneDigitLimit();
         },
         close: function () {
             this.errors = {}

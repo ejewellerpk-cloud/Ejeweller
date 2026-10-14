@@ -45,6 +45,7 @@ class SiteTableSeeder extends Seeder
             'site_cash_on_delivery'                      => Activity::ENABLE,
             'site_is_return_product_price_add_to_credit' => Ask::YES,
             'site_guest_checkout'                        => Activity::DISABLE,
+            'site_default_checkout_country'              => 'Pakistan',
             'site_whatsapp_status'                       => Activity::DISABLE,
             'site_homepage_theme'                        => 'default',
             'site_show_stock_out'                        => Activity::ENABLE,
