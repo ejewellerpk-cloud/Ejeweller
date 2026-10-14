@@ -9,6 +9,7 @@ const router = createAdminRouter();
 bindAppRouter(router);
 
 createShopApp(AdminShell, router, {
+    store,
     registerPlugins: async (app) => {
         const { default: VueApexCharts } = await import("vue3-apexcharts");
         app.use(VueApexCharts);

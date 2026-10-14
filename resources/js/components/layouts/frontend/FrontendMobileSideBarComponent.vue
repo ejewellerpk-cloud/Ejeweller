@@ -102,6 +102,7 @@
 <script>
 import targetService from "../../../services/targetService";
 import activityEnum from "../../../enums/modules/activityEnum";
+import { loadLocaleMessages } from "../../../i18n";
 
 export default {
     name: "FrontendMobileSideBarComponent",
@@ -139,9 +140,11 @@ export default {
                 language_id: id,
                 language_code: code,
                 display_mode: mode
-            }).then(res => {
-                this.$store.dispatch('frontendLanguage/show', id).then(res => {
-                    this.$i18n.locale = res.data.data.code;
+            }).then(() => {
+                this.$store.dispatch('frontendLanguage/show', id).then(async (langRes) => {
+                    const locale = langRes.data.data.code;
+                    await loadLocaleMessages(locale);
+                    this.$i18n.locale = locale;
                 }).catch();
             }).catch();
         },

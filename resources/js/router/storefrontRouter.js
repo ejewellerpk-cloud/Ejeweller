@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
 import NotFoundComponent from "../components/exception/NotFoundComponent.vue";
-import store from "../store";
 import authRoutes from "./modules/authRoutes";
 import frontendRoutes from "./modules/frontendRoutes";
 import { navigateToZone, isAdminPath } from "../services/appZone";
@@ -20,7 +19,7 @@ const routes = [
     },
 ];
 
-export function createStorefrontRouter() {
+export function createStorefrontRouter(store) {
     const router = createRouter({
         linkActiveClass: "active",
         history: createWebHistory(),

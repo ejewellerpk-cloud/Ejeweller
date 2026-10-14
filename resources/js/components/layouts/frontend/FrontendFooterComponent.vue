@@ -185,7 +185,6 @@ import axios from "axios";
 import alertService from "../../../services/alertService";
 import LoadingComponent from "../../frontend/components/LoadingComponent";
 import menuSectionEnum from "../../../enums/modules/menuSectionEnum";
-import _ from "lodash";
 
 const FOOTER_SUPPORT_ORDER = [
     'contact-us',
@@ -240,7 +239,7 @@ export default {
             const legal = [];
             const support = [];
             if (res.data.data.length > 0) {
-                _.forEach(res.data.data, (page) => {
+                res.data.data.forEach((page) => {
                     if (page.menu_section_id === this.enums.menuSectionEnum.LEGAL) {
                         legal.push(page);
                     } else {

@@ -1,0 +1,1 @@
+import{_ as o,r as n,o as r,f as t}from"./appZone-DbcXuQJB.js";const p={name:"SupplierComponent"};function s(c,a,_,i,m,u){const e=n("router-view");return r(),t(e)}const l=o(p,[["render",s]]);export{l as default};

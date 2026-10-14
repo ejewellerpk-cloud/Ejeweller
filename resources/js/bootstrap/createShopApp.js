@@ -8,8 +8,7 @@ import "vue-next-select/dist/index.css";
 import { createHead } from "@vueuse/head";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-import i18n from "../i18n";
-import store from "../store";
+import i18n, { loadLocaleMessages } from "../i18n";
 import ENV from "../config/env";
 import appService from "../services/appService";
 import alertService from "../services/alertService";
@@ -33,7 +32,7 @@ const toastOptions = {
     rtl: false,
 };
 
-function configureAxios(router) {
+function configureAxios(router, store) {
     const API_URL = ENV.API_URL;
     const API_KEY = ENV.API_KEY;
 
@@ -85,10 +84,15 @@ function configureAxios(router) {
 /**
  * @param {import('vue').Component} RootComponent
  * @param {import('vue-router').Router} router
- * @param {{ registerPlugins?: (app: import('vue').App) => void | Promise<void> }} [options]
+ * @param {{ store: import('vuex').Store, registerPlugins?: (app: import('vue').App) => void | Promise<void> }} options
  */
 export async function createShopApp(RootComponent, router, options = {}) {
-    configureAxios(router);
+    const store = options.store;
+    if (!store) {
+        throw new Error("createShopApp requires options.store");
+    }
+
+    configureAxios(router, store);
 
     if (Array.isArray(window.__HOME_HERO_SLIDERS__) && window.__HOME_HERO_SLIDERS__.length > 0) {
         store.commit("frontendSlider/lists", window.__HOME_HERO_SLIDERS__);
@@ -111,18 +115,27 @@ export async function createShopApp(RootComponent, router, options = {}) {
 
     await router.isReady();
 
-    if (store.getters.authStatus && store.getters.authToken) {
+    const persistedLocale = store.getters["globalState/lists"]?.language_code;
+    if (persistedLocale && persistedLocale !== "en") {
         try {
-            await store.dispatch("profile");
+            await loadLocaleMessages(persistedLocale);
+            i18n.global.locale.value = persistedLocale;
         } catch (e) {
-            // Keep persisted session; broken profile fetch should not block boot.
+            // Fall back to English already loaded
         }
     }
 
+    // Mount immediately — never block first paint on profile API
     app.mount("#app");
     requestAnimationFrame(() => {
         document.documentElement.classList.add("app-ready");
     });
+
+    if (store.getters.authStatus && store.getters.authToken) {
+        store.dispatch("profile").catch(() => {
+            // Keep persisted session; broken profile fetch should not block boot.
+        });
+    }
 
     return app;
 }

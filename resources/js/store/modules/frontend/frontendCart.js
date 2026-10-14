@@ -1,4 +1,3 @@
-import _ from "lodash";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import shippingMethodEnum from "../../../enums/modules/shippingMethodEnum";
 import ShippingTypeEnum from "../../../enums/modules/shippingTypeEnum";
@@ -113,7 +112,7 @@ export const frontendCart = {
         totalSavings: function (state) {
             let savings = 0;
             if (state.lists.length > 0) {
-                _.forEach(state.lists, (list) => {
+                state.lists.forEach((list) => {
                     const price = parseAmount(list.price);
                     const oldPrice = parseAmount(list.old_price);
                     if (oldPrice > price) {
@@ -465,7 +464,7 @@ export const frontendCart = {
             if (state.lists.length > 0) {
                 let subtotal = 0;
                 let total = 0;
-                _.forEach(state.lists, (list, listKey) => {
+                state.lists.forEach((list, listKey) => {
                     normalizeCartLine(state.lists[listKey]);
                     const price = state.lists[listKey].price;
                     const quantity = parseInt(state.lists[listKey].quantity, 10) || 1;
@@ -556,11 +555,11 @@ export const frontendCart = {
         },
         taxCalculation: function (state) {
             let stateTotalTax = 0;
-            _.forEach(state.lists, (list, listKey) => {
+            state.lists.forEach((list, listKey) => {
                 if (list.taxes && list.taxes.length > 0) {
                     let taxes = [];
                     let total_tax = 0;
-                    _.forEach(list.taxes, (tax, taxKey) => {
+                    list.taxes.forEach((tax) => {
                         if (tax.tax_rate > 0) {
                             let taxPercentagePrice = ((list.price / 100) * parseFloat(tax.tax_rate));
                             total_tax += taxPercentagePrice;
@@ -587,7 +586,7 @@ export const frontendCart = {
                     state.shippingCharge = parseFloat(payload.setting.shipping_setup_flat_rate_wise_cost) || 0;
                 } else if (method === shippingMethodEnum.PRODUCT_WISE) {
                     let totalShippingCost = 0;
-                    _.forEach(state.lists, (list, listKey) => {
+                    state.lists.forEach((list) => {
                         if (parseInt(list.shipping?.shipping_type, 10) === ShippingTypeEnum.FLAT_RATE) {
                             if (parseInt(list.shipping.is_product_quantity_multiply, 10) === AskEnum.YES) {
                                 totalShippingCost += (parseFloat(list.shipping.shipping_cost) * list.quantity);
@@ -600,7 +599,7 @@ export const frontendCart = {
                 } else if (method === shippingMethodEnum.AREA_WISE) {
                     if (Object.keys(state.shippingAddress).length > 0) {
                         let status = false;
-                        _.forEach(payload.area, (list, listKey) => {
+                        (payload.area || []).forEach((list) => {
                             if (list.country === state.shippingAddress.country && list.state === state.shippingAddress.state && list.city === state.shippingAddress.city) {
                                 status = true;
                                 state.shippingCharge = parseFloat(list.shipping_cost) || 0;

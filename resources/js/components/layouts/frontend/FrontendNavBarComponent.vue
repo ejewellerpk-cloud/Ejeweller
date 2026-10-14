@@ -400,12 +400,10 @@ import activityEnum from "../../../enums/modules/activityEnum";
 import roleEnum from "../../../enums/modules/roleEnum";
 import HeaderCategoryMegaMenu from "./HeaderCategoryMegaMenu.vue";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
-import _ from "lodash";
 import axios from 'axios';
 import {useCanvas} from "../../../composables/canvas";
 import { onInstantAction, onInstantNavigate } from "../../../utils/instantTap";
+import { loadLocaleMessages } from "../../../i18n";
 
 
 export default {
@@ -566,72 +564,19 @@ export default {
 
             this.loading.isActive = false;
             this.$store.dispatch('frontendLanguage/lists', this.languageProps).then().catch();
-            this.$store.dispatch('frontendLanguage/show', this.defaultLanguage).then(res => {
-                this.$i18n.locale = res.data.data.code;
+            this.$store.dispatch('frontendLanguage/show', this.defaultLanguage).then(async (langRes) => {
+                const code = langRes.data.data.code;
+                await loadLocaleMessages(code);
+                this.$i18n.locale = code;
                 this.$store.dispatch("globalState/init", {
-                    language_code: res.data.data.code,
-                    display_mode: res.data.data.display_mode
+                    language_code: code,
+                    display_mode: langRes.data.data.display_mode
                 });
             }).catch();
 
             window.setTimeout(() => {
                 this.$store.dispatch('frontendCart/initOrderType', { order_type: orderTypeEnum.DELIVERY });
-
-                if (this.$store.getters.authStatus && res.data.data.notification_fcm_api_key && res.data.data.notification_fcm_auth_domain && res.data.data.notification_fcm_project_id && res.data.data.notification_fcm_storage_bucket && res.data.data.notification_fcm_messaging_sender_id && res.data.data.notification_fcm_app_id && res.data.data.notification_fcm_measurement_id) {
-                    initializeApp({
-                        apiKey: res.data.data.notification_fcm_api_key,
-                        authDomain: res.data.data.notification_fcm_auth_domain,
-                        projectId: res.data.data.notification_fcm_project_id,
-                        storageBucket: res.data.data.notification_fcm_storage_bucket,
-                        messagingSenderId: res.data.data.notification_fcm_messaging_sender_id,
-                        appId: res.data.data.notification_fcm_app_id,
-                        measurementId: res.data.data.notification_fcm_measurement_id
-                    });
-                    const messaging = getMessaging();
-
-                    Notification.requestPermission().then((permission) => {
-                        if (permission === 'granted') {
-                            getToken(messaging, { vapidKey: res.data.data.notification_fcm_public_vapid_key }).then((currentToken) => {
-                                if (currentToken) {
-                                    localStorage.setItem('fcm_web_token', currentToken);
-                                    axios.post('/frontend/device-token/web', {
-                                        token: currentToken,
-                                        platform: 'web',
-                                        device_id: appService.fcmDeviceId(),
-                                        device_name: appService.fcmDeviceName(),
-                                    }).then().catch((error) => {
-                                        // Network/HTTP2 failures have no response — never read .data blindly
-                                        const status = error?.response?.status;
-                                        const message = error?.response?.data?.message;
-                                        if (status === 401 || message === 'Unauthenticated.') {
-                                            this.$store.dispatch('loginDataReset');
-                                        }
-                                    });
-                                }
-                            }).catch();
-                        }
-                    });
-
-                    onMessage(messaging, (payload) => {
-                        const title = payload?.notification?.title;
-                        const body = payload?.notification?.body;
-                        if (title) {
-                            new Notification(title, {
-                                body: body || '',
-                                icon: '/images/required/firebase-logo.png'
-                            });
-                        }
-
-                        if (payload?.data?.topicName === 'new-order-found' && this.orderNotification.permission) {
-                            this.orderNotificationStatus = true;
-                            this.orderNotificationMessage = body || '';
-                            if (res?.data?.data?.notification_audio) {
-                                const audio = new Audio(res.data.data.notification_audio);
-                                audio.play().catch(() => {});
-                            }
-                        }
-                    });
-                }
+                this.initFirebaseMessaging(res.data.data);
             }, 3000);
 
             this.loading.isActive = false;
@@ -639,12 +584,15 @@ export default {
             this.loading.isActive = false;
         });
 
-        this.loading.isActive = true;
-        this.$store.dispatch('frontendProductCategory/trees').then(() => {
-            this.loading.isActive = false;
-        }).catch((err) => {
-            this.loading.isActive = false;
-        });
+        // Defer mega-menu trees so home hero APIs win the first network window
+        const loadCategoryTrees = () => {
+            this.$store.dispatch('frontendProductCategory/trees').catch(() => {});
+        };
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            window.requestIdleCallback(loadCategoryTrees, { timeout: 2500 });
+        } else {
+            window.setTimeout(loadCategoryTrees, 800);
+        }
 
         if (this.logged) {
             this.loading.isActive = true;
@@ -714,11 +662,89 @@ export default {
                 language_id: id,
                 language_code: code,
                 display_mode: mode
-            }).then(res => {
-                this.$store.dispatch('frontendLanguage/show', id).then(res => {
-                    this.$i18n.locale = res.data.data.code;
+            }).then(() => {
+                this.$store.dispatch('frontendLanguage/show', id).then(async (langRes) => {
+                    const locale = langRes.data.data.code;
+                    await loadLocaleMessages(locale);
+                    this.$i18n.locale = locale;
                 }).catch();
             }).catch();
+        },
+        async initFirebaseMessaging(settings) {
+            if (
+                !this.$store.getters.authStatus ||
+                !settings?.notification_fcm_api_key ||
+                !settings?.notification_fcm_auth_domain ||
+                !settings?.notification_fcm_project_id ||
+                !settings?.notification_fcm_storage_bucket ||
+                !settings?.notification_fcm_messaging_sender_id ||
+                !settings?.notification_fcm_app_id ||
+                !settings?.notification_fcm_measurement_id
+            ) {
+                return;
+            }
+
+            try {
+                const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
+                    import("firebase/app"),
+                    import("firebase/messaging"),
+                ]);
+
+                initializeApp({
+                    apiKey: settings.notification_fcm_api_key,
+                    authDomain: settings.notification_fcm_auth_domain,
+                    projectId: settings.notification_fcm_project_id,
+                    storageBucket: settings.notification_fcm_storage_bucket,
+                    messagingSenderId: settings.notification_fcm_messaging_sender_id,
+                    appId: settings.notification_fcm_app_id,
+                    measurementId: settings.notification_fcm_measurement_id,
+                });
+                const messaging = getMessaging();
+
+                Notification.requestPermission().then((permission) => {
+                    if (permission === "granted") {
+                        getToken(messaging, { vapidKey: settings.notification_fcm_public_vapid_key }).then((currentToken) => {
+                            if (currentToken) {
+                                localStorage.setItem("fcm_web_token", currentToken);
+                                axios.post("/frontend/device-token/web", {
+                                    token: currentToken,
+                                    platform: "web",
+                                    device_id: appService.fcmDeviceId(),
+                                    device_name: appService.fcmDeviceName(),
+                                }).then().catch((error) => {
+                                    const status = error?.response?.status;
+                                    const message = error?.response?.data?.message;
+                                    if (status === 401 || message === "Unauthenticated.") {
+                                        this.$store.dispatch("loginDataReset");
+                                    }
+                                });
+                            }
+                        }).catch();
+                    }
+                });
+
+                onMessage(messaging, (payload) => {
+                    const title = payload?.notification?.title;
+                    const body = payload?.notification?.body;
+                    if (title) {
+                        new Notification(title, {
+                            body: body || "",
+                            icon: "/images/required/firebase-logo.png",
+                        });
+                    }
+
+                    if (payload?.data?.topicName === "new-order-found" && this.orderNotification.permission) {
+                        this.orderNotificationStatus = true;
+                        this.orderNotificationMessage = body || "";
+                        if (settings?.notification_audio) {
+                            const audio = new Audio(settings.notification_audio);
+                            audio.play().catch(() => {});
+                        }
+                    }
+                });
+            } catch (e) {
+                // FCM optional — never block storefront
+            }
         },
         logout: function () {
             this.$store.dispatch("logout").then(res => {
@@ -736,12 +762,10 @@ export default {
         orderPermissionCheck: function () {
             const permissions = this.$store.getters.authPermission;
             if (permissions.length > 0) {
-                _.forEach(permissions, (permission) => {
-                    if (permission.name === 'online-orders') {
-                        if (permission.access === true) {
-                            this.orderNotification.permission = true;
-                            this.orderNotification.url = permission.url;
-                        }
+                permissions.forEach((permission) => {
+                    if (permission.name === 'online-orders' && permission.access === true) {
+                        this.orderNotification.permission = true;
+                        this.orderNotification.url = permission.url;
                     }
                 });
             }

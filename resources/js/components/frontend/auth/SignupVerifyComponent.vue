@@ -61,8 +61,6 @@
 import LoadingComponent from "../components/LoadingComponent";
 import alertService from "../../../services/alertService";
 import ENV from "../../../config/env";
-import _ from "lodash";
-
 export default {
     name: "SignupVerifyComponent",
     components: { LoadingComponent },
@@ -247,7 +245,7 @@ export default {
                     this.loading.isActive = false;
                 
                     if (typeof err.response.data.errors === 'object') {
-                        _.forEach(err.response.data.errors, (error) => {
+                        Object.values(err.response.data.errors).forEach((error) => {
                             alertService.error(error[0]);
                         });
                     }

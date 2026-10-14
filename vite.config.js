@@ -39,25 +39,23 @@ export default defineConfig({
                     if (!id.includes('node_modules')) {
                         return;
                     }
-                    // Leave heavy admin-only libs out of the shared "vendor" bucket so
-                    // storefront does not preload them. Rollup will emit async chunks.
+                    // Leave heavy admin-only libs out of any shared bucket.
                     if (
                         id.includes('node_modules/apexcharts') ||
                         id.includes('node_modules/vue3-apexcharts') ||
                         id.includes('node_modules/quill') ||
-                        id.includes('node_modules/vue3-quill')
+                        id.includes('node_modules/vue3-quill') ||
+                        id.includes('node_modules/lodash') ||
+                        id.includes('node_modules/firebase')
                     ) {
                         return;
                     }
-                    // Do NOT split vue / vue-router / vuex / @vue into a separate chunk.
-                    // That creates circular chunk init order (TDZ: "Cannot access before initialization").
-                    if (id.includes('node_modules/swiper')) {
-                        return 'vendor-swiper';
-                    }
-                    if (id.includes('node_modules/firebase')) {
-                        return 'vendor-firebase';
-                    }
-                    return 'vendor';
+                    // Do NOT dump all node_modules into one shared "vendor" chunk —
+                    // that forced storefront to download admin-only deps (~900KB).
+                    // Do NOT force a shared swiper chunk either — it leaked into the
+                    // storefront critical path via cart/product list. Let Rollup split.
+                    // Do NOT split vue / vue-router / vuex / @vue into a separate chunk
+                    // (TDZ: "Cannot access before initialization").
                 }
             }
         }

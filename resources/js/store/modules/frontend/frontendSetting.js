@@ -13,6 +13,16 @@ export const frontendSetting = {
     },
     actions: {
         lists: function (context, payload) {
+            // Shell + navbar both request settings — reuse in-memory result for same tick/session
+            if (
+                !payload &&
+                context.state.lists &&
+                typeof context.state.lists === "object" &&
+                Object.keys(context.state.lists).length > 0
+            ) {
+                return Promise.resolve({ data: { data: context.state.lists } });
+            }
+
             return new Promise((resolve, reject) => {
                 let url = "frontend/setting";
                 if (payload) {
