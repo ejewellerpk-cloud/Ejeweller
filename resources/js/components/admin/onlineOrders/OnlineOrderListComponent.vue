@@ -1,54 +1,15 @@
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12">
-        <div class="db-card">
+        <div class="db-card overflow-hidden">
             <div class="db-card-header border-none">
-                <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
+                <div>
+                    <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
+                    <p class="text-xs text-gray-500 mt-0.5 hidden sm:block">
+                        {{ $t('message.bulk_orders_hint') || 'Select orders to confirm, ship, print, mark paid, or delete in one go.' }}
+                    </p>
+                </div>
                 <div class="db-card-filter">
-                    <template v-if="permissionChecker('online-orders') && selectedOrderIds.length > 0">
-                        <button
-                            type="button"
-                            class="db-btn py-2 text-white bg-primary hidden-print"
-                            :disabled="bulkBusy"
-                            @click="printSelectedSlips"
-                        >
-                            <i class="lab lab-line-printer lab-font-size-16"></i>
-                            <span>{{ $t('button.print_selected_slips') }} ({{ selectedOrderIds.length }})</span>
-                        </button>
-                        <button
-                            type="button"
-                            class="db-btn py-2 text-white bg-emerald-600 hover:bg-emerald-700 hidden-print"
-                            :disabled="bulkBusy"
-                            @click="bulkConfirmOrders"
-                        >
-                            <i class="fa-solid fa-check text-sm"></i>
-                            <span>{{ $t('button.bulk_confirm') }} ({{ selectedOrderIds.length }})</span>
-                        </button>
-                        <button
-                            type="button"
-                            class="db-btn py-2 text-white bg-indigo-600 hidden-print"
-                            :disabled="bulkBusy"
-                            @click="bulkBookPostEx"
-                        >
-                            <i class="fa-solid fa-truck text-sm"></i>
-                            <span>{{ $t('button.bulk_book_postex') }} ({{ selectedOrderIds.length }})</span>
-                        </button>
-                        <div class="relative hidden-print">
-                            <select
-                                v-model="bulkStatus"
-                                class="db-btn py-2 pl-3 pr-8 appearance-none border border-primary text-primary bg-white capitalize text-sm"
-                                :disabled="bulkBusy"
-                                @change="bulkChangeStatus"
-                            >
-                                <option value="">{{ $t('button.bulk_change_status') }}</option>
-                                <option :value="enums.orderStatusEnum.CONFIRMED">{{ $t('label.confirmed') }}</option>
-                                <option :value="enums.orderStatusEnum.ON_THE_WAY">{{ $t('label.on_the_way') }}</option>
-                                <option :value="enums.orderStatusEnum.DELIVERED">{{ $t('label.delivered') }}</option>
-                                <option :value="enums.orderStatusEnum.CANCELED">{{ $t('label.canceled') }}</option>
-                                <option :value="enums.orderStatusEnum.REJECTED">{{ $t('label.rejected') }}</option>
-                            </select>
-                        </div>
-                    </template>
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
                     <button type="button" class="db-card-filter-btn table-filter-btn" @click="showFilter = !showFilter">
                         <i class="lab lab-line-filter lab-font-size-14"></i>
@@ -60,6 +21,87 @@
                             <PrintComponent :props="printObj" />
                             <ExcelComponent :method="xls" />
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky bulk action bar -->
+            <div
+                v-if="permissionChecker('online-orders') && selectedOrderIds.length > 0"
+                class="sticky top-0 z-20 border-y border-emerald-200/80 bg-gradient-to-r from-emerald-50 via-white to-indigo-50 px-3 sm:px-4 py-3 hidden-print"
+            >
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white text-xs font-bold px-3 py-1.5">
+                            <i class="fa-solid fa-check-double text-[10px]"></i>
+                            {{ selectedOrderIds.length }} {{ $t('label.selected') || 'selected' }}
+                        </span>
+                        <button
+                            type="button"
+                            class="text-xs font-semibold text-slate-600 hover:text-primary underline-offset-2 hover:underline"
+                            :disabled="bulkBusy"
+                            @click="selectAllPage"
+                        >
+                            {{ $t('button.select_page') || 'Select this page' }}
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xs font-semibold text-slate-500 hover:text-danger"
+                            :disabled="bulkBusy"
+                            @click="clearSelection"
+                        >
+                            {{ $t('button.clear_selection') || 'Clear' }}
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 hidden md:block">
+                        {{ $t('message.bulk_auto_book_note') || 'Confirm can auto-book PostEx if that setting is ON.' }}
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-2.5">
+                    <!-- Status -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-16 shrink-0">{{ $t('label.status') }}</span>
+                        <button type="button" class="bulk-btn bg-emerald-600 hover:bg-emerald-700" :disabled="bulkBusy" @click="bulkSetStatus(enums.orderStatusEnum.CONFIRMED)">
+                            <i class="fa-solid fa-check"></i> {{ $t('label.confirmed') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-sky-600 hover:bg-sky-700" :disabled="bulkBusy" @click="bulkSetStatus(enums.orderStatusEnum.ON_THE_WAY)">
+                            <i class="fa-solid fa-truck-fast"></i> {{ $t('label.on_the_way') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-violet-600 hover:bg-violet-700" :disabled="bulkBusy" @click="bulkSetStatus(enums.orderStatusEnum.DELIVERED)">
+                            <i class="fa-solid fa-box-open"></i> {{ $t('label.delivered') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-amber-500 hover:bg-amber-600" :disabled="bulkBusy" @click="bulkSetStatus(enums.orderStatusEnum.CANCELED)">
+                            <i class="fa-solid fa-ban"></i> {{ $t('label.canceled') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-rose-600 hover:bg-rose-700" :disabled="bulkBusy" @click="bulkSetStatus(enums.orderStatusEnum.REJECTED)">
+                            <i class="fa-solid fa-xmark"></i> {{ $t('label.rejected') }}
+                        </button>
+                    </div>
+
+                    <!-- Payment -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-16 shrink-0">{{ $t('label.payment') }}</span>
+                        <button type="button" class="bulk-btn bg-teal-600 hover:bg-teal-700" :disabled="bulkBusy" @click="bulkSetPayment(enums.paymentStatusEnum.PAID)">
+                            <i class="fa-solid fa-money-bill"></i> {{ $t('label.paid') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-slate-500 hover:bg-slate-600" :disabled="bulkBusy" @click="bulkSetPayment(enums.paymentStatusEnum.UNPAID)">
+                            <i class="fa-regular fa-circle-xmark"></i> {{ $t('label.unpaid') }}
+                        </button>
+                    </div>
+
+                    <!-- Shipping / tools -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-16 shrink-0">{{ $t('label.action') }}</span>
+                        <button type="button" class="bulk-btn bg-indigo-600 hover:bg-indigo-700" :disabled="bulkBusy" @click="bulkBookPostEx">
+                            <i class="fa-solid fa-truck"></i> {{ $t('button.bulk_book_postex') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-primary hover:opacity-90" :disabled="bulkBusy" @click="printSelectedSlips">
+                            <i class="lab lab-line-printer"></i> {{ $t('button.print_selected_slips') }}
+                        </button>
+                        <button type="button" class="bulk-btn bg-red-600 hover:bg-red-700" :disabled="bulkBusy" @click="bulkDeleteOrders">
+                            <i class="fa-regular fa-trash-can"></i> {{ $t('button.delete') || 'Delete' }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -103,8 +145,8 @@
                             <label for="searchStartDate" class="db-field-title after:hidden">
                                 {{ $t('label.date') }}
                             </label>
-                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false" 
-                                @update:modelValue="handleDate" v-model="modelValue" :range="true" >
+                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                                @update:modelValue="handleDate" v-model="modelValue" :range="true">
                             </Datepicker>
                         </div>
 
@@ -131,7 +173,7 @@
                             <th class="db-table-head-th hidden-print w-10" v-if="permissionChecker('online-orders')">
                                 <input
                                     type="checkbox"
-                                    class="w-4 h-4"
+                                    class="w-4 h-4 accent-emerald-600"
                                     :checked="allPageSelected"
                                     @change="toggleSelectAllPage"
                                 />
@@ -142,33 +184,43 @@
                             <th class="db-table-head-th">{{ $t('label.amount') }}</th>
                             <th class="db-table-head-th">{{ $t('label.date') }}</th>
                             <th class="db-table-head-th">{{ $t('label.status') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.payment') }}</th>
                             <th class="db-table-head-th hidden-print" v-if="permissionChecker('online-orders')">
                                 {{ $t('label.action') }}
                             </th>
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="orders.length > 0">
-                        <tr class="db-table-body-tr" v-for="order in orders" :key="order.id">
+                        <tr
+                            class="db-table-body-tr"
+                            :class="{ 'bg-emerald-50/60': selectedOrderIds.includes(order.id) }"
+                            v-for="order in orders"
+                            :key="order.id"
+                        >
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
                                 <input
                                     type="checkbox"
-                                    class="w-4 h-4"
+                                    class="w-4 h-4 accent-emerald-600"
                                     :value="order.id"
                                     v-model="selectedOrderIds"
                                 />
                             </td>
                             <td class="db-table-body-td">
-                                {{ order.order_serial_no }}
-
+                                <div class="font-semibold">{{ order.order_serial_no }}</div>
+                                <div
+                                    v-if="order.postex_tracking_number"
+                                    class="mt-0.5 text-[11px] text-indigo-600 font-medium break-all"
+                                >
+                                    {{ $t('label.tracking_no') }}: {{ order.postex_tracking_number }}
+                                </div>
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(order.order_type)">
                                     {{ enums.orderTypeEnumArray[order.order_type] }}
                                 </span>
                             </td>
-
                             <td class="db-table-body-td">
-                                {{ textShortener(order.user.name, 20) }}
+                                {{ textShortener(order.user?.name, 20) }}
                             </td>
                             <td class="db-table-body-td">{{ order.total_amount_price }}</td>
                             <td class="db-table-body-td">
@@ -179,8 +231,16 @@
                                     {{ enums.orderStatusEnumArray[order.status] }}
                                 </span>
                             </td>
+                            <td class="db-table-body-td">
+                                <span
+                                    class="db-table-badge"
+                                    :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'"
+                                >
+                                    {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                                </span>
+                            </td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('online-orders')">
-                                <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
+                                <div class="flex justify-start items-center gap-1.5">
                                     <button
                                         type="button"
                                         class="db-table-action print"
@@ -190,17 +250,15 @@
                                     >
                                         <i class="lab lab-line-printer"></i>
                                     </button>
-                                    <SmIconViewComponent :link="'admin.order.show'" :id="order.id"
-                                        v-if="permissionChecker('online-orders')" />
-                                    <SmIconDeleteComponent @click="destroy(order.id)"
-                                        v-if="permissionChecker('online-orders')" />
+                                    <SmIconViewComponent :link="'admin.order.show'" :id="order.id" />
+                                    <SmIconDeleteComponent @click="destroy(order.id)" />
                                 </div>
                             </td>
                         </tr>
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" :colspan="permissionChecker('online-orders') ? 8 : 7">
+                            <td class="db-table-body-td text-center" :colspan="permissionChecker('online-orders') ? 9 : 8">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
@@ -234,6 +292,7 @@ import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import appService from "../../../services/appService";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
@@ -247,7 +306,6 @@ import "@vuepic/vue-datepicker/dist/main.css";
 import ENV from "../../../config/env";
 import axios from "axios";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
-
 
 export default {
     name: "OnlineOrderListComponent",
@@ -275,6 +333,7 @@ export default {
             enums: {
                 orderStatusEnum: orderStatusEnum,
                 orderTypeEnum: orderTypeEnum,
+                paymentStatusEnum: paymentStatusEnum,
                 orderStatusEnumArray: {
                     [orderStatusEnum.PENDING]: this.$t("label.pending"),
                     [orderStatusEnum.CONFIRMED]: this.$t("label.confirmed"),
@@ -282,6 +341,10 @@ export default {
                     [orderStatusEnum.DELIVERED]: this.$t("label.delivered"),
                     [orderStatusEnum.CANCELED]: this.$t("label.canceled"),
                     [orderStatusEnum.REJECTED]: this.$t("label.rejected"),
+                },
+                paymentStatusEnumArray: {
+                    [paymentStatusEnum.PAID]: this.$t("label.paid"),
+                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
                 },
                 orderTypeEnumArray: {
                     [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
@@ -314,7 +377,6 @@ export default {
             selectedOrderIds: [],
             slipPrintLoading: false,
             bulkBusy: false,
-            bulkStatus: "",
         }
     },
     mounted() {
@@ -400,6 +462,29 @@ export default {
                 this.selectedOrderIds = this.selectedOrderIds.filter((id) => !pageIds.includes(id));
             }
         },
+        selectAllPage: function () {
+            const pageIds = this.orders.map((order) => order.id);
+            this.selectedOrderIds = [...new Set([...this.selectedOrderIds, ...pageIds])];
+        },
+        clearSelection: function () {
+            this.selectedOrderIds = [];
+        },
+        handleBulkResult: function (res, fallbackOk) {
+            const data = res.data?.data || {};
+            const success = data.success || 0;
+            const failed = data.failed || 0;
+            const firstError = (data.results || []).find((row) => !row.ok && row.message);
+            if (success > 0) {
+                alertService.success(res.data?.message || `${fallbackOk} ${success}. Failed: ${failed}.`);
+                if (firstError && failed > 0) {
+                    alertService.error(firstError.message);
+                }
+            } else {
+                alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
+            }
+            this.selectedOrderIds = [];
+            this.list(this.props.search.page);
+        },
         printSingleSlip: function (orderId) {
             this.runSlipPrint([orderId]);
         },
@@ -433,20 +518,7 @@ export default {
                 axios.post('admin/online-order/postex/bulk-create', {
                     ids: this.selectedOrderIds,
                 }).then((res) => {
-                    const data = res.data?.data || {};
-                    const success = data.success || 0;
-                    const failed = data.failed || 0;
-                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
-                    if (success > 0) {
-                        alertService.success(res.data?.message || `Booked ${success} order(s). Failed: ${failed}.`);
-                        if (firstError && failed > 0) {
-                            alertService.error(firstError.message);
-                        }
-                    } else {
-                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
-                    }
-                    this.selectedOrderIds = [];
-                    this.list(this.props.search.page);
+                    this.handleBulkResult(res, 'Booked');
                 }).catch((err) => {
                     alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
                 }).finally(() => {
@@ -455,46 +527,8 @@ export default {
                 });
             }).catch(() => {});
         },
-        bulkConfirmOrders: function () {
-            if (!this.selectedOrderIds.length) {
-                return;
-            }
-            appService.submitConfirmation().then(() => {
-                this.bulkBusy = true;
-                this.loading.isActive = true;
-                axios.post('admin/online-order/bulk-change-status', {
-                    ids: this.selectedOrderIds,
-                    status: orderStatusEnum.CONFIRMED,
-                }).then((res) => {
-                    const data = res.data?.data || {};
-                    const success = data.success || 0;
-                    const failed = data.failed || 0;
-                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
-                    if (success > 0) {
-                        alertService.success(
-                            res.data?.message
-                            || (this.$t('message.bulk_confirm_success') || `Confirmed ${success} order(s). Failed: ${failed}.`)
-                        );
-                        if (firstError && failed > 0) {
-                            alertService.error(firstError.message);
-                        }
-                    } else {
-                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
-                    }
-                    this.selectedOrderIds = [];
-                    this.list(this.props.search.page);
-                }).catch((err) => {
-                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
-                }).finally(() => {
-                    this.bulkBusy = false;
-                    this.loading.isActive = false;
-                });
-            }).catch(() => {});
-        },
-        bulkChangeStatus: function () {
-            const status = this.bulkStatus === "" ? null : parseInt(this.bulkStatus, 10);
-            if (!status || !this.selectedOrderIds.length) {
-                this.bulkStatus = "";
+        bulkSetStatus: function (status) {
+            if (!this.selectedOrderIds.length || !status) {
                 return;
             }
 
@@ -504,7 +538,6 @@ export default {
                 reason = window.prompt(this.$t('label.reason') || 'Reason');
                 if (!reason || !String(reason).trim()) {
                     alertService.error(this.$t('message.reason_required') || 'Reason is required.');
-                    this.bulkStatus = "";
                     return;
                 }
                 reason = String(reason).trim();
@@ -518,31 +551,53 @@ export default {
                     status: status,
                     reason: reason,
                 }).then((res) => {
-                    const data = res.data?.data || {};
-                    const success = data.success || 0;
-                    const failed = data.failed || 0;
-                    const firstError = (data.results || []).find((row) => !row.ok && row.message);
-                    if (success > 0) {
-                        alertService.success(res.data?.message || `Updated ${success} order(s). Failed: ${failed}.`);
-                        if (firstError && failed > 0) {
-                            alertService.error(firstError.message);
-                        }
-                    } else {
-                        alertService.error(firstError?.message || res.data?.message || this.$t('message.something_wrong'));
-                    }
-                    this.selectedOrderIds = [];
-                    this.bulkStatus = "";
-                    this.list(this.props.search.page);
+                    this.handleBulkResult(res, 'Updated');
                 }).catch((err) => {
                     alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
-                    this.bulkStatus = "";
                 }).finally(() => {
                     this.bulkBusy = false;
                     this.loading.isActive = false;
                 });
-            }).catch(() => {
-                this.bulkStatus = "";
-            });
+            }).catch(() => {});
+        },
+        bulkSetPayment: function (paymentStatus) {
+            if (!this.selectedOrderIds.length || !paymentStatus) {
+                return;
+            }
+            appService.submitConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post('admin/online-order/bulk-change-payment-status', {
+                    ids: this.selectedOrderIds,
+                    payment_status: paymentStatus,
+                }).then((res) => {
+                    this.handleBulkResult(res, 'Payment updated');
+                }).catch((err) => {
+                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                }).finally(() => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                });
+            }).catch(() => {});
+        },
+        bulkDeleteOrders: function () {
+            if (!this.selectedOrderIds.length) {
+                return;
+            }
+            appService.destroyConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                axios.post('admin/online-order/bulk-delete', {
+                    ids: this.selectedOrderIds,
+                }).then((res) => {
+                    this.handleBulkResult(res, 'Deleted');
+                }).catch((err) => {
+                    alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));
+                }).finally(() => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                });
+            }).catch(() => {});
         },
         xls: function () {
             this.loading.isActive = true;
@@ -567,6 +622,7 @@ export default {
                     this.loading.isActive = true;
                     this.$store.dispatch('onlineOrder/destroy', { id: id, search: this.props.search }).then((res) => {
                         this.loading.isActive = false;
+                        this.selectedOrderIds = this.selectedOrderIds.filter((oid) => oid !== id);
                         alertService.successFlip(null, this.$t('menu.online_orders'));
                     }).catch((err) => {
                         this.loading.isActive = false;
@@ -597,5 +653,9 @@ export default {
 
 .db-table-action.print i {
     @apply text-primary bg-primary/10 hover:bg-primary/20;
+}
+
+.bulk-btn {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed;
 }
 </style>

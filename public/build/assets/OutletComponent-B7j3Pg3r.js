@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-CRHpJUyg.js";import{f as t,g as n,l as r}from"./vendor-C4tK8qSi.js";const s={name:"OutletComponent"};function c(p,a,_,m,f,u){const o=t("router-view");return n(),r(o)}const d=e(s,[["render",c]]);export{d as default};

@@ -10,6 +10,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\BulkOrderStatusRequest;
+use App\Http\Requests\BulkPaymentStatusRequest;
+use App\Http\Requests\BulkPostExBookRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Http\Resources\OrderDetailsResource;
 use Illuminate\Routing\Controllers\Middleware;
@@ -33,6 +35,8 @@ class OnlineOrderController extends AdminController implements HasMiddleware
             new Middleware('permission:online-orders', only: ['export']),
             new Middleware('permission:online-orders', only: ['changeStatus']),
             new Middleware('permission:online-orders', only: ['bulkChangeStatus']),
+            new Middleware('permission:online-orders', only: ['bulkChangePaymentStatus']),
+            new Middleware('permission:online-orders', only: ['bulkDestroy']),
             new Middleware('permission:online-orders', only: ['changePaymentStatus']),
             new Middleware('permission:online-orders', only: ['destroy']),
         ];
@@ -151,5 +155,118 @@ class OnlineOrderController extends AdminController implements HasMiddleware
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    public function bulkChangePaymentStatus(BulkPaymentStatusRequest $request): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        $success = 0;
+        $failed  = 0;
+        $results = [];
+
+        $orders = Order::query()
+            ->whereIn('id', $request->validated('ids'))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($request->validated('ids') as $orderId) {
+            $order = $orders->get($orderId);
+            if (!$order) {
+                $failed++;
+                $results[] = [
+                    'id'      => (int) $orderId,
+                    'ok'      => false,
+                    'message' => 'Order not found.',
+                ];
+                continue;
+            }
+
+            try {
+                $paymentRequest = PaymentStatusRequest::create('/', 'POST', [
+                    'payment_status' => $request->validated('payment_status'),
+                ]);
+                $paymentRequest->setContainer(app())->setRedirector(app('redirect'));
+
+                $this->orderService->changePaymentStatus($order, $paymentRequest, false);
+                $success++;
+                $results[] = [
+                    'id'              => (int) $orderId,
+                    'ok'              => true,
+                    'order_serial_no' => $order->order_serial_no,
+                    'payment_status'  => (int) $request->validated('payment_status'),
+                ];
+            } catch (Exception $exception) {
+                $failed++;
+                $results[] = [
+                    'id'              => (int) $orderId,
+                    'ok'              => false,
+                    'order_serial_no' => $order->order_serial_no,
+                    'message'         => $exception->getMessage(),
+                ];
+            }
+        }
+
+        return response([
+            'status'  => true,
+            'message' => "Updated payment on {$success} order(s). Failed: {$failed}.",
+            'data'    => [
+                'success' => $success,
+                'failed'  => $failed,
+                'results' => $results,
+            ],
+        ]);
+    }
+
+    public function bulkDestroy(BulkPostExBookRequest $request): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        $success = 0;
+        $failed  = 0;
+        $results = [];
+
+        $orders = Order::query()
+            ->whereIn('id', $request->validated('ids'))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($request->validated('ids') as $orderId) {
+            $order = $orders->get($orderId);
+            if (!$order) {
+                $failed++;
+                $results[] = [
+                    'id'      => (int) $orderId,
+                    'ok'      => false,
+                    'message' => 'Order not found.',
+                ];
+                continue;
+            }
+
+            try {
+                $serial = $order->order_serial_no;
+                $this->orderService->destroy($order);
+                $success++;
+                $results[] = [
+                    'id'              => (int) $orderId,
+                    'ok'              => true,
+                    'order_serial_no' => $serial,
+                ];
+            } catch (Exception $exception) {
+                $failed++;
+                $results[] = [
+                    'id'              => (int) $orderId,
+                    'ok'              => false,
+                    'order_serial_no' => $order->order_serial_no,
+                    'message'         => $exception->getMessage(),
+                ];
+            }
+        }
+
+        return response([
+            'status'  => true,
+            'message' => "Deleted {$success} order(s). Failed: {$failed}.",
+            'data'    => [
+                'success' => $success,
+                'failed'  => $failed,
+                'results' => $results,
+            ],
+        ]);
     }
 }

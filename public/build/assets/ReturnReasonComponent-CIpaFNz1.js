@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-CRHpJUyg.js";import{f as n,g as t,l as r}from"./vendor-C4tK8qSi.js";const s={name:"ReturnReasonComponent"};function a(c,p,_,m,f,u){const o=n("router-view");return t(),r(o)}const d=e(s,[["render",a]]);export{d as default};
