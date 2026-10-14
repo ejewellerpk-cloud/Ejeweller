@@ -420,6 +420,16 @@ class MenuTableSeeder extends Seeder
                         'status'     => 1,
                         'created_at' => now(),
                         'updated_at' => now()
+                    ],
+                    [
+                        'name'       => 'Analytics',
+                        'language'   => 'intelligence',
+                        'url'        => 'intelligence',
+                        'icon'       => 'lab lab-line-analytic',
+                        'priority'   => 100,
+                        'status'     => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]
 
                 ]

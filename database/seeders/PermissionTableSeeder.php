@@ -599,6 +599,14 @@ class PermissionTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'title'      => 'Analytics',
+                'name'       => 'intelligence',
+                'guard_name' => 'sanctum',
+                'url'        => 'intelligence',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'title'      => 'Settings',
                 'name'       => 'settings',
                 'guard_name' => 'sanctum',

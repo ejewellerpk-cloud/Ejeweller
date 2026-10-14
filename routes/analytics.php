@@ -31,7 +31,7 @@ Route::prefix('analytics/v1')->group(function () {
 });
 
 Route::prefix('admin/intelligence')
-    ->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])
+    ->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'permission:intelligence'])
     ->group(function () {
         Route::get('/sites', [IntelligenceDashboardController::class, 'sites']);
         Route::get('/overview', [IntelligenceDashboardController::class, 'overview']);

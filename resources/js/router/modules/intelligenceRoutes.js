@@ -9,7 +9,7 @@ export default [
         meta: {
             isFrontend: false,
             auth: true,
-            permissionUrl: 'dashboard',
+            permissionUrl: 'intelligence',
             breadcrumb: 'intelligence',
         },
         children: [
@@ -20,7 +20,7 @@ export default [
                 meta: {
                     isFrontend: false,
                     auth: true,
-                    permissionUrl: 'dashboard',
+                    permissionUrl: 'intelligence',
                     breadcrumb: 'intelligence_dashboard',
                 },
             },
