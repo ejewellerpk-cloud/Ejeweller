@@ -21,7 +21,9 @@
                         <router-link v-if="slider.link" :to="slider.link" class="block w-full hero-banner-frame">
                             <img
                                 class="hero-banner-image w-full h-full object-cover block"
-                                :src="slider.image"
+                                :src="heroSrc(slider)"
+                                :srcset="heroSrcset(slider)"
+                                :sizes="heroSizes"
                                 :alt="slider.title || 'banner'"
                                 v-bind="heroImageAttrs(index)"
                             >
@@ -29,7 +31,9 @@
                         <div v-else class="w-full hero-banner-frame">
                             <img
                                 class="hero-banner-image w-full h-full object-cover block"
-                                :src="slider.image"
+                                :src="heroSrc(slider)"
+                                :srcset="heroSrcset(slider)"
+                                :sizes="heroSizes"
                                 :alt="slider.title || 'banner'"
                                 v-bind="heroImageAttrs(index)"
                             >
@@ -86,6 +90,9 @@ export default {
         showSkeleton: function () {
             return this.loading.isActive && this.sliders.length === 0;
         },
+        heroSizes() {
+            return '(max-width: 640px) 100vw, 1200px';
+        },
     },
     created() {
         if (this.sliders.length > 0) {
@@ -99,21 +106,32 @@ export default {
         });
     },
     methods: {
+        heroSrc(slider) {
+            return slider?.mobile_image || slider?.image || '';
+        },
+        heroSrcset(slider) {
+            const mobile = slider?.mobile_image;
+            const desktop = slider?.image;
+            if (mobile && desktop && mobile !== desktop) {
+                return `${mobile} 900w, ${desktop} 1689w`;
+            }
+            return undefined;
+        },
         heroImageAttrs(index) {
             if (index === 0) {
                 return {
                     loading: 'eager',
                     fetchpriority: 'high',
                     decoding: 'async',
-                    width: 1689,
-                    height: 600,
+                    width: 900,
+                    height: 320,
                 };
             }
             return {
                 loading: 'lazy',
                 decoding: 'async',
-                width: 1689,
-                height: 600,
+                width: 900,
+                height: 320,
             };
         },
     },

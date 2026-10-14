@@ -35,7 +35,10 @@ class RootController extends Controller
                     ->get()
             )->resolve();
 
-            $heroPreloadImage = $heroSliders[0]['image'] ?? null;
+            // Prefer mobile WebP for LCP preload (PageSpeed mobile lab).
+            $heroPreloadImage = $heroSliders[0]['mobile_image']
+                ?? $heroSliders[0]['image']
+                ?? null;
         }
 
         if (preg_match('/^product\/([^\/]+)$/', $path, $matches)) {

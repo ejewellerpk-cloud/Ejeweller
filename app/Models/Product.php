@@ -122,7 +122,7 @@ class Product extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
 
-            return $product->getUrl('thumb') ?: $product->getUrl();
+            return $this->resolveProductMediaUrl($product, ['thumb', 'cover', 'preview']);
         }
         return asset('images/default/product/thumb.png');
     }
@@ -132,7 +132,7 @@ class Product extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
 
-            return $product->getUrl('cover') ?: $product->getUrl();
+            return $this->resolveProductMediaUrl($product, ['cover', 'thumb', 'preview']);
         }
         return asset('images/default/product/cover.png');
     }
@@ -142,7 +142,7 @@ class Product extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('product'))) {
             $product = $this->getMedia('product')->first();
 
-            return $product->getUrl('preview') ?: $product->getUrl();
+            return $this->resolveProductMediaUrl($product, ['preview', 'cover', 'thumb']);
         }
         return asset('images/default/product/preview.png');
     }
@@ -152,13 +152,19 @@ class Product extends Model implements HasMedia
         return array_column($this->image_items, 'url');
     }
 
+    /** Smaller WebP URLs for product cards / home grids (not PDP gallery). */
+    public function getCardPreviewsAttribute(): array
+    {
+        return array_column($this->card_image_items, 'url');
+    }
+
     public function getImageItemsAttribute(): array
     {
         $response = [];
         if (!empty($this->getFirstMediaUrl('product'))) {
             $images = $this->getMedia('product');
             foreach ($images as $image) {
-                $url = $image->getUrl('preview') ?: $image->getUrl();
+                $url = $this->resolveProductMediaUrl($image, ['preview', 'cover', 'thumb']);
                 $response[] = [
                     'id' => $image->id,
                     'url' => $url,
@@ -167,6 +173,38 @@ class Product extends Model implements HasMedia
         }
 
         return $response;
+    }
+
+    public function getCardImageItemsAttribute(): array
+    {
+        $response = [];
+        if (!empty($this->getFirstMediaUrl('product'))) {
+            $images = $this->getMedia('product');
+            foreach ($images as $image) {
+                $response[] = [
+                    'id' => $image->id,
+                    'url' => $this->resolveProductMediaUrl($image, ['cover', 'thumb', 'preview']),
+                ];
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Prefer generated conversions (WebP) over the original upload.
+     *
+     * @param  list<string>  $conversions
+     */
+    protected function resolveProductMediaUrl(Media $image, array $conversions): string
+    {
+        foreach ($conversions as $conversion) {
+            if ($image->hasGeneratedConversion($conversion)) {
+                return $image->getUrl($conversion);
+            }
+        }
+
+        return $image->getUrl();
     }
 
     public function getBarcodeImageAttribute(): string
@@ -198,15 +236,17 @@ class Product extends Model implements HasMedia
             return;
         }
 
+        // Card / listing (~2x mobile tile). Keep small for homepage payload.
         $this->addMediaConversion('thumb')
             ->performOnCollections('product')
             ->width(168)->height(180)->format('webp')->quality(70)->nonOptimized();
         $this->addMediaConversion('cover')
             ->performOnCollections('product')
-            ->width(372)->height(405)->format('webp')->quality(70)->nonOptimized();
+            ->width(480)->height(600)->format('webp')->quality(68)->nonOptimized();
+        // PDP gallery — was 1536² (too heavy for Slow 4G).
         $this->addMediaConversion('preview')
             ->performOnCollections('product')
-            ->width(1536)->height(1536)->format('webp')->quality(70)->nonOptimized();
+            ->width(960)->height(960)->format('webp')->quality(68)->nonOptimized();
     }
 
     public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo

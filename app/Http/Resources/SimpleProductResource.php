@@ -36,7 +36,7 @@ class SimpleProductResource extends JsonResource
             'slug'              => $this->slug,
             'currency_price'    => AppLibrary::currencyAmountFormat($price),
             'cover'             => $this->cover,
-            'previews'          => $this->previews,
+            'previews'          => $this->card_previews,
             'flash_sale'        => $this->add_to_flash_sale == Ask::YES,
             'is_offer'          => $isOffer,
             'is_last_day_of_sale'=> $isOffer && $this->offer_end_date ? Carbon::parse($this->offer_end_date)->isToday() : false,

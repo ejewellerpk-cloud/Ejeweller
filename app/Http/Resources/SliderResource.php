@@ -18,12 +18,13 @@ class SliderResource extends JsonResource
 
 
         return [
-            'id'          => $this->id,
-            'title'       => $this->title,
-            'description' => $this->description === null ? '' : $this->description,
-            'status'      => $this->status,
-            'image'       => $this->image,
-            'link'        => $this->link
+            'id'           => $this->id,
+            'title'        => $this->title,
+            'description'  => $this->description === null ? '' : $this->description,
+            'status'       => $this->status,
+            'image'        => $this->image,
+            'mobile_image' => $this->mobile_image,
+            'link'         => $this->link
         ];
     }
 }
