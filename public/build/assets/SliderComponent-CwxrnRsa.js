@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-6AjiSnk3.js";import{f as r,g as t,l as n}from"./vendor-C4tK8qSi.js";const s={name:"SliderComponent"};function c(p,a,_,m,i,f){const o=r("router-view");return t(),n(o)}const u=e(s,[["render",c]]);export{u as default};
