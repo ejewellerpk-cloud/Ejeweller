@@ -688,6 +688,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/show/{administrator}', [AdministratorController::class, 'show']);
         Route::post('/', [AdministratorController::class, 'store']);
         Route::match(['post', 'put', 'patch'], '/{administrator}', [AdministratorController::class, 'update']);
+        Route::patch('/analytics-access/{administrator}', [AdministratorController::class, 'updateAnalyticsAccess']);
         Route::delete('/{administrator}', [AdministratorController::class, 'destroy']);
         Route::get('/export', [AdministratorController::class, 'export']);
         Route::post('/change-password/{administrator}', [AdministratorController::class, 'changePassword']);

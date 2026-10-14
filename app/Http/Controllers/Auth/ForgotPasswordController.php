@@ -211,7 +211,7 @@ class ForgotPasswordController extends Controller
 
             Auth::guard('web')->loginUsingId($userCheckByEmail->id);
             $this->token = $this->authTokenService->issueToken($userCheckByEmail, $request, $request->input('device_name'));
-            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByEmail->roles[0]));
+            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByEmail->roles[0], $userCheckByEmail));
             $defaultPermission = AppLibrary::defaultPermission($permission);
             $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByEmail->roles[0]), $defaultPermission);
             return new JsonResponse([
@@ -230,7 +230,7 @@ class ForgotPasswordController extends Controller
             ]);
             Auth::guard('web')->loginUsingId($userCheckByPhone->id);
             $this->token = $this->authTokenService->issueToken($userCheckByPhone, $request, $request->input('device_name'));
-            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByPhone->roles[0]));
+            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByPhone->roles[0], $userCheckByPhone));
             $defaultPermission = AppLibrary::defaultPermission($permission);
             $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByPhone->roles[0]), $defaultPermission);
             return new JsonResponse([

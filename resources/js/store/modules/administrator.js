@@ -147,6 +147,24 @@ export const administrator = {
                  });
             });
         },
+        updateAnalyticsAccess: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .patch(`/admin/administrator/analytics-access/${payload.id}`, {
+                        analytics_access: payload.analytics_access,
+                    })
+                    .then((res) => {
+                        context.commit("patchListItem", res.data.data);
+                        if (context.state.show?.id === payload.id) {
+                            context.commit("show", res.data.data);
+                        }
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         changeImage: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post(`/admin/administrator/change-image/${payload.id}`, payload.form, {
@@ -186,6 +204,15 @@ export const administrator = {
     mutations: {
         lists: function (state, payload) {
             state.lists = payload;
+        },
+        patchListItem: function (state, payload) {
+            if (!payload?.id) {
+                return;
+            }
+            const index = state.lists.findIndex((item) => item.id === payload.id);
+            if (index !== -1) {
+                state.lists.splice(index, 1, { ...state.lists[index], ...payload });
+            }
         },
         addressLists: function (state, payload) {
             state.addressLists = payload;

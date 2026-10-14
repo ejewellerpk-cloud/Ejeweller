@@ -1,11 +1,9 @@
 <?php
 
-use App\Enums\Role as EnumRole;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 return new class extends Migration
 {
@@ -17,10 +15,8 @@ return new class extends Migration
         );
 
         // No sidebar menu — Analytics uses its own separate dashboard.
-        // Permission still gates API / role assignment.
-
-        // Admin only by default — assign to other roles via Settings → Role & Permissions
-        Role::find(EnumRole::ADMIN)?->givePermissionTo('intelligence');
+        // Access is per-administrator (direct permission), not role-wide.
+        // See 2026_10_14_233000_move_intelligence_permission_to_administrators.
 
         try {
             Artisan::call('permission:cache-reset');

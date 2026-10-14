@@ -16,16 +16,17 @@ class AdministratorResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            "id"           => $this->id,
-            "name"         => $this->name,
-            "username"     => $this->username,
-            "email"        => $this->email,
-            "phone"        => $this->phone,
-            "status"       => $this->status,
-            "role_id"      => optional($this->roles[0])->id,
-            "role"         => optional($this->roles[0])->name,
-            "image"        => $this->image,
-            "country_code" => $this->country_code,
+            "id"               => $this->id,
+            "name"             => $this->name,
+            "username"         => $this->username,
+            "email"            => $this->email,
+            "phone"            => $this->phone,
+            "status"           => $this->status,
+            "role_id"          => optional($this->roles[0])->id,
+            "role"             => optional($this->roles[0])->name,
+            "image"            => $this->image,
+            "country_code"     => $this->country_code,
+            "analytics_access" => $this->hasDirectPermission('intelligence'),
         ];
     }
 }

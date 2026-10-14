@@ -171,7 +171,7 @@ class SignupController extends Controller
             if ($user) {
                 Auth::guard('web')->loginUsingId($user->id);
                 $this->token = $this->authTokenService->issueToken($user, $request, $request->input('device_name'));
-                $permission = PermissionResource::collection($this->permissionService->permission($user->roles[0]));
+                $permission = PermissionResource::collection($this->permissionService->permission($user->roles[0], $user));
                 $defaultPermission = AppLibrary::defaultPermission($permission);
                 return new JsonResponse([
                     'status' => true,

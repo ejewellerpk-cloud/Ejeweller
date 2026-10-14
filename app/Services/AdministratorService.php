@@ -34,7 +34,7 @@ class AdministratorService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media')->where(function ($query) use ($requests) {
+            return User::with(['media', 'permissions', 'roles'])->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->userFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
@@ -195,6 +195,33 @@ class AdministratorService
             } else {
                 throw new Exception(trans('The permission is denied.'), 422);
             }
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Toggle Analytics dashboard access for a single administrator (direct permission).
+     *
+     * @throws Exception
+     */
+    public function updateAnalyticsAccess(User $administrator, bool $enabled): User
+    {
+        try {
+            if (!$administrator->hasRole(EnumRole::ADMIN)) {
+                throw new Exception(trans('The permission is denied.'), 422);
+            }
+
+            if ($enabled) {
+                $administrator->givePermissionTo('intelligence');
+            } else {
+                $administrator->revokePermissionTo('intelligence');
+            }
+
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return $administrator->load(['permissions', 'roles', 'media']);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

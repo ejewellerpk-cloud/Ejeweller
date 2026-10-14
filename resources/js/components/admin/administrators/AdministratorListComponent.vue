@@ -80,6 +80,9 @@
                             <th class="db-table-head-th">
                                 {{ $t("label.status") }}
                             </th>
+                            <th class="db-table-head-th hidden-print">
+                                {{ $t("label.analytics_dashboard") }}
+                            </th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('administrators_show') || permissionChecker('administrators_edit') || permissionChecker('administrators_delete')">
                                 {{ $t("label.action") }}
@@ -104,6 +107,24 @@
                                     }}
                                 </span>
                             </td>
+                            <td class="db-table-body-td hidden-print">
+                                <label class="inline-flex items-center gap-2 cursor-pointer select-none"
+                                    v-if="permissionChecker('administrators_edit')">
+                                    <input
+                                        type="checkbox"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary"
+                                        :checked="!!administrator.analytics_access"
+                                        :disabled="analyticsToggleBusyId === administrator.id"
+                                        @change="toggleAnalyticsAccess(administrator, $event)"
+                                    />
+                                    <span class="text-sm text-gray-600">
+                                        {{ administrator.analytics_access ? $t('label.on') : $t('label.off') }}
+                                    </span>
+                                </label>
+                                <span v-else class="text-sm text-gray-500">
+                                    {{ administrator.analytics_access ? $t('label.on') : $t('label.off') }}
+                                </span>
+                            </td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('administrators_show') || permissionChecker('administrators_edit') || permissionChecker('administrators_delete')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
@@ -119,7 +140,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="5">
+                            <td class="db-table-body-td text-center" colspan="6">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
@@ -205,6 +226,7 @@ export default {
             loading: {
                 isActive: false,
             },
+            analyticsToggleBusyId: null,
             listView: "users",
             enums: {
                 statusEnum: statusEnum,
@@ -335,6 +357,30 @@ export default {
                 })
                 .catch((err) => {
                     alertService.error(err.response.data.message);
+                });
+        },
+        toggleAnalyticsAccess: function (administrator, event) {
+            const enabled = !!event.target.checked;
+            const previous = !!administrator.analytics_access;
+            this.analyticsToggleBusyId = administrator.id;
+            this.$store
+                .dispatch("administrator/updateAnalyticsAccess", {
+                    id: administrator.id,
+                    analytics_access: enabled,
+                })
+                .then(() => {
+                    this.analyticsToggleBusyId = null;
+                    alertService.successFlip(
+                        null,
+                        this.$t("label.analytics_dashboard")
+                    );
+                })
+                .catch((err) => {
+                    event.target.checked = previous;
+                    this.analyticsToggleBusyId = null;
+                    alertService.error(
+                        err?.response?.data?.message || this.$t("message.something_wrong")
+                    );
                 });
         },
         destroy: function (id) {

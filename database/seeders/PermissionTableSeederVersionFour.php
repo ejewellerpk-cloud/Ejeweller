@@ -2,11 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Enums\Role as EnumRole;
 use App\Libraries\AppLibrary;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class PermissionTableSeederVersionFour extends Seeder
 {
@@ -32,8 +30,6 @@ class PermissionTableSeederVersionFour extends Seeder
 
         Permission::insert($permissions);
 
-        Role::find(EnumRole::ADMIN)?->givePermissionTo(
-            Permission::where('name', 'intelligence')->first()
-        );
+        // Per-administrator only — do not attach to Admin role
     }
 }

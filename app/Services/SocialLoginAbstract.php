@@ -38,7 +38,7 @@ abstract class SocialLoginAbstract
         Auth::guard('web')->login($user);
         $token = $this->authTokenService->issueToken($user, request(), request()->input('device_name'));
 
-        $permission        = PermissionResource::collection($this->permissionService->permission($user->roles[0]));
+        $permission        = PermissionResource::collection($this->permissionService->permission($user->roles[0], $user));
         $defaultPermission = AppLibrary::defaultPermission($permission);
         $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($user->roles[0]), $defaultPermission);
 

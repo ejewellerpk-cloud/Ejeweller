@@ -35,7 +35,9 @@ class PermissionController extends AdminController implements HasMiddleware
     public function index(Role $role): \Illuminate\Foundation\Application|\Illuminate\Http\Response|JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            $permissions     = Permission::get();
+            $permissions     = Permission::query()
+                ->whereNotIn('name', PermissionService::USER_MANAGED_PERMISSIONS)
+                ->get();
             $rolePermissions = Permission::join(
                 "role_has_permissions",
                 "role_has_permissions.permission_id",

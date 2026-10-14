@@ -25,7 +25,7 @@ class OrderDetailsResource extends JsonResource
                 $menuService = app(\App\Services\MenuService::class);
                 $permissionService = app(\App\Services\PermissionService::class);
                 
-                $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($user->roles[0]));
+                $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($user->roles[0], $user));
                 $defaultPermission = AppLibrary::defaultPermission($permission);
                 $defaultMenu       = (object)AppLibrary::defaultMenu($menuService->menu($user->roles[0]), $defaultPermission);
                 

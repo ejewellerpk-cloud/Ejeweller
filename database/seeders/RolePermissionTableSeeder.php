@@ -18,7 +18,10 @@ class RolePermissionTableSeeder extends Seeder
     public function run()
     {
         $adminRole = Role::find(EnumRole::ADMIN);
-        $adminRole?->givePermissionTo(Permission::all());
+        // Analytics (intelligence) is managed per administrator, not via role
+        $adminRole?->givePermissionTo(
+            Permission::whereNotIn('name', ['intelligence'])->get()
+        );
 
         $branchManager = Role::find(3);
         if ($branchManager) {

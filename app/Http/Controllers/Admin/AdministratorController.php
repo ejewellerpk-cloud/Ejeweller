@@ -15,6 +15,7 @@ use App\Http\Requests\AdministratorRequest;
 use App\Http\Resources\AdministratorResource;
 use Illuminate\Routing\Controllers\Middleware;
 use App\Http\Requests\UserChangePasswordRequest;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 
 class AdministratorController extends AdminController implements HasMiddleware
@@ -37,6 +38,7 @@ class AdministratorController extends AdminController implements HasMiddleware
             new Middleware('permission:administrators', only: ['export']),
             new Middleware('permission:administrators_create', only: ['store']),
             new Middleware('permission:administrators_edit', only: ['update']),
+            new Middleware('permission:administrators_edit', only: ['updateAnalyticsAccess']),
             new Middleware('permission:administrators_delete', only: ['destroy']),
             new Middleware('permission:administrators_show', only: ['show']),
             new Middleware('permission:administrators_show', only: ['changePassword']),
@@ -122,6 +124,24 @@ class AdministratorController extends AdminController implements HasMiddleware
         try {
             return OrderResource::collection($this->orderService->userOrder($request, $administrator));
         } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function updateAnalyticsAccess(Request $request, User $administrator): AdministratorResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $validated = $request->validate([
+                'analytics_access' => ['required', 'boolean'],
+            ]);
+
+            return new AdministratorResource(
+                $this->administratorService->updateAnalyticsAccess(
+                    $administrator,
+                    (bool) $validated['analytics_access']
+                )
+            );
+        } catch (\Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
