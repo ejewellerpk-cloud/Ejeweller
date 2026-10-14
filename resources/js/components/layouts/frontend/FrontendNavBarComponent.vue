@@ -600,7 +600,10 @@ export default {
                                         device_id: appService.fcmDeviceId(),
                                         device_name: appService.fcmDeviceName(),
                                     }).then().catch((error) => {
-                                        if (error.response.data.message === 'Unauthenticated.') {
+                                        // Network/HTTP2 failures have no response — never read .data blindly
+                                        const status = error?.response?.status;
+                                        const message = error?.response?.data?.message;
+                                        if (status === 401 || message === 'Unauthenticated.') {
                                             this.$store.dispatch('loginDataReset');
                                         }
                                     });
@@ -610,18 +613,22 @@ export default {
                     });
 
                     onMessage(messaging, (payload) => {
-                        const notificationTitle = payload.notification.title;
-                        const notificationOptions = {
-                            body: payload.notification.body,
-                            icon: '/images/required/firebase-logo.png'
-                        };
-                        new Notification(notificationTitle, notificationOptions);
+                        const title = payload?.notification?.title;
+                        const body = payload?.notification?.body;
+                        if (title) {
+                            new Notification(title, {
+                                body: body || '',
+                                icon: '/images/required/firebase-logo.png'
+                            });
+                        }
 
-                        if (payload.data.topicName === 'new-order-found' && this.orderNotification.permission) {
+                        if (payload?.data?.topicName === 'new-order-found' && this.orderNotification.permission) {
                             this.orderNotificationStatus = true;
-                            this.orderNotificationMessage = payload.notification.body;
-                            const audio = new Audio(res.data.data.notification_audio);
-                            audio.play();
+                            this.orderNotificationMessage = body || '';
+                            if (res?.data?.data?.notification_audio) {
+                                const audio = new Audio(res.data.data.notification_audio);
+                                audio.play().catch(() => {});
+                            }
                         }
                     });
                 }
