@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-DdjmMRLM.js";import{f as t,g as n,l as r}from"./vendor-C4tK8qSi.js";const c={name:"AnalyticComponent"};function s(a,p,_,m,i,f){const o=t("router-view");return n(),r(o)}const d=e(c,[["render",s]]);export{d as default};

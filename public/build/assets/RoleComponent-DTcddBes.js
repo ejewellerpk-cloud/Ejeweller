@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as t,v as n,b as r}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const s={name:"RoleComponent"};function c(p,a,_,m,i,f){const o=t("router-view");return n(),r(o)}const v=e(s,[["render",c]]);export{v as default};

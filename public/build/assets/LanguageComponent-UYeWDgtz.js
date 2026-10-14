@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as n,v as t,b as r}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const a={name:"LanguageComponent"};function s(c,p,_,m,i,u){const o=n("router-view");return t(),r(o)}const l=e(a,[["render",s]]);export{l as default};

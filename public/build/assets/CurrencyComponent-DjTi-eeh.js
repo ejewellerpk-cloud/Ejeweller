@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as r,v as n,b as t}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const c={name:"CurrencyComponent"};function s(p,a,_,m,i,u){const o=r("router-view");return n(),t(o)}const l=e(c,[["render",s]]);export{l as default};

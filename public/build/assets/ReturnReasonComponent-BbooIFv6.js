@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as n,v as t,b as r}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const s={name:"ReturnReasonComponent"};function a(c,p,_,m,i,u){const o=n("router-view");return t(),r(o)}const v=e(s,[["render",a]]);export{v as default};

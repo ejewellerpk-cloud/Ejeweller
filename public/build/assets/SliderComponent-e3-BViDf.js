@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as r,v as t,b as n}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const s={name:"SliderComponent"};function c(p,a,_,m,i,f){const o=r("router-view");return t(),n(o)}const v=e(s,[["render",c]]);export{v as default};

@@ -1,1 +1,0 @@
-import{_ as o}from"./appZone-dBfwZFiP.js";import{k as t,v as n,b as r}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const s={name:"BenefitComponent"};function c(p,a,_,m,i,f){const e=t("router-view");return n(),r(e)}const v=o(s,[["render",c]]);export{v as default};

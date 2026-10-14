@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-dBfwZFiP.js";import{k as t,v as n,b as r}from"./vendor-vue-core-CbiGcb-a.js";import"./vendor-BpRD0mEL.js";const c={name:"AnalyticComponent"};function s(a,p,_,m,i,f){const o=t("router-view");return n(),r(o)}const v=e(c,[["render",s]]);export{v as default};

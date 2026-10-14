@@ -49,19 +49,13 @@ export default defineConfig({
                     ) {
                         return;
                     }
+                    // Do NOT split vue / vue-router / vuex / @vue into a separate chunk.
+                    // That creates circular chunk init order (TDZ: "Cannot access before initialization").
                     if (id.includes('node_modules/swiper')) {
                         return 'vendor-swiper';
                     }
                     if (id.includes('node_modules/firebase')) {
                         return 'vendor-firebase';
-                    }
-                    if (
-                        id.includes('node_modules/vue/') ||
-                        id.includes('node_modules/vue-router') ||
-                        id.includes('node_modules/vuex') ||
-                        id.includes('node_modules/@vue/')
-                    ) {
-                        return 'vendor-vue-core';
                     }
                     return 'vendor';
                 }
