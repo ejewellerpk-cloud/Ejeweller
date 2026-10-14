@@ -627,14 +627,8 @@ export default {
             return Array.isArray(timeline) ? timeline : [];
         },
         showTrackingId: function () {
-            const tracking = String(this.order?.postex_tracking_number || '').trim();
-            if (!tracking) {
-                return false;
-            }
-            const status = parseInt(this.order?.status, 10);
-            return status === orderStatusEnum.CONFIRMED
-                || status === orderStatusEnum.ON_THE_WAY
-                || status === orderStatusEnum.DELIVERED;
+            // Show as soon as PostEx (or any) tracking id is assigned — no status gate.
+            return String(this.order?.postex_tracking_number || '').trim() !== '';
         },
     },
     mounted() {
