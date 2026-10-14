@@ -5,7 +5,6 @@ export function useCanvas() {
     const hiddenClass = ref('overflow-hidden')
 
     function openCanvas(targetID) {
-        console.log("canvas.js: openCanvas called for targetID:", targetID);
         const targetElements = document.querySelectorAll(`#${targetID}`);
         if (targetElements.length > 0) {
             targetElements.forEach(el => el.classList.add(activeClass.value));
@@ -13,14 +12,10 @@ export function useCanvas() {
             if (targetID === 'cart-canvas') {
                 document.body.classList.add('cart-canvas-open');
             }
-            console.log("canvas.js: Classes added successfully.");
-        } else {
-            console.error("canvas.js: targetElement NOT FOUND!");
         }
     }
 
     function closeCanvas(targetID) {
-        console.log("canvas.js: closeCanvas called for targetID:", targetID);
         const targetElements = document.querySelectorAll(`#${targetID}`);
         if (targetElements.length > 0) {
             targetElements.forEach(el => el.classList.remove(activeClass.value));
@@ -28,7 +23,6 @@ export function useCanvas() {
             if (targetID === 'cart-canvas') {
                 document.body.classList.remove('cart-canvas-open');
             }
-            console.log("canvas.js: Classes removed successfully.");
         }
     }
 
