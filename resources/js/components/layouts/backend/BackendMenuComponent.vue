@@ -1,9 +1,9 @@
 <template>
     <aside class="db-sidebar">
         <div class="db-sidebar-header">
-            <router-link class="w-24" :to="{ name: 'frontend.home' }">
+            <a class="w-24" href="/" title="Storefront">
                 <img :src="setting.theme_logo" alt="logo">
-            </router-link>
+            </a>
             <button type="button" @click="closeSidebar" class="fa-solid fa-xmark xmark-btn close-db-menu"></button>
         </div>
 

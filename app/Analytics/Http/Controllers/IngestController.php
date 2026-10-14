@@ -15,8 +15,9 @@ class IngestController extends Controller
 
     public function collect(AnalyticsIngestRequest $request): JsonResponse
     {
+        // Soft-disable: 204 avoids noisy browser console 503s; storefront UX is unaffected.
         if (!config('analytics.enabled', true)) {
-            return response()->json(['success' => false, 'message' => 'Analytics disabled'], 503);
+            return response()->json(['success' => false, 'message' => 'Analytics disabled'], 204);
         }
 
         try {
@@ -40,10 +41,11 @@ class IngestController extends Controller
                 'exception' => $e,
             ]);
 
+            // Still accept client-side silently; failure is logged server-side for ops.
             return response()->json([
                 'success' => false,
                 'message' => config('app.debug') ? $e->getMessage() : 'Analytics ingest failed',
-            ], 503);
+            ], 204);
         }
     }
 }

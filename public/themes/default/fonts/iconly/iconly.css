@@ -3,12 +3,12 @@
  */
 
 @font-face {
-  font-display: auto;
+  font-display: swap;
   font-family: "Iconly";
   font-style: normal;
   font-weight: 400;
-  src: url("./iconly.eot?1775733957158");
-  src: url("./iconly.eot?#iefix") format("embedded-opentype"), url("./iconly.woff2?1775733957158") format("woff2"), url("./iconly.woff?1775733957158") format("woff"), url("./iconly.ttf?1775733957158") format("truetype"), url("./iconly.svg?1775733957158#Iconly") format("svg");
+  /* woff2 only — smaller critical-path download; Chrome intervention was from slow icon font */
+  src: url("./iconly.woff2?1775733957158") format("woff2");
 }
 
 [class="lab"], [class^="lab-"], [class*=" lab-"] {

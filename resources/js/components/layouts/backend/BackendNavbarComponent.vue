@@ -10,9 +10,9 @@
             >
                 <i class="fa-solid fa-align-left text-sm"></i>
             </button>
-            <router-link class="w-28 sm:w-32 flex-shrink-0 min-w-0" :to="{ name: 'frontend.home' }">
+            <a class="w-28 sm:w-32 flex-shrink-0 min-w-0" href="/" title="Storefront">
                 <img class="w-full max-h-9 object-contain object-left" :src="setting.theme_logo" alt="logo">
-            </router-link>
+            </a>
         </div>
         <div class="flex items-center justify-end gap-1.5 sm:gap-3 shrink-0 min-w-0">
             <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
