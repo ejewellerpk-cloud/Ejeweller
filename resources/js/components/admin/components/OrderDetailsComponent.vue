@@ -31,13 +31,17 @@
                 </div>
 
                 <div v-if="order.order_type === enums.orderTypeEnum.DELIVERY">
-                    <div v-for="orderAddress in orderAddresses" class="p-4 mb-6 rounded-2xl shadow-xs bg-white">
-                        <h3 class="text-sm leading-6 font-medium mb-2"
-                            v-if="orderAddress.address_type === enums.addressTypeEnum.SHIPPING">
-                            {{ $t("label.shipping_address") }}
-                        </h3>
-                        <h3 class="text-sm leading-6 font-medium mb-2" v-else>
-                            {{ $t("label.billing_address") }}
+                    <div
+                        v-for="(entry, idx) in displayAddresses"
+                        :key="'addr-' + idx"
+                        class="p-4 mb-6 rounded-2xl shadow-xs bg-white"
+                    >
+                        <h3 class="text-sm leading-6 font-medium mb-2">
+                            {{ addressTitle(entry.kind) }}
+                            <span
+                                v-if="entry.kind === 'both'"
+                                class="ml-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-600"
+                            >{{ $t('label.same_as_billing') }}</span>
                         </h3>
                         <div class="flex items-start justify-start gap-2.5">
                             <ul class="flex flex-col gap-2.5 border-t border-dashed border-gray-100">
@@ -45,32 +49,32 @@
                                     <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{
                                         $t('label.name')
                                     }}</span>
-                                    <span class="text-sm font-normal capitalize">{{ orderAddress.full_name }}</span>
+                                    <span class="text-sm font-normal capitalize">{{ entry.address.full_name }}</span>
                                 </li>
                                 <li class="flex flex-wrap sm:flex-nowrap gap-2">
                                     <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{
                                         $t('label.phone')
                                     }}</span>
-                                    <span class="text-sm font-normal capitalize">{{ orderAddress.country_code }}{{
-                                        orderAddress.phone
+                                    <span class="text-sm font-normal capitalize">{{ entry.address.country_code }}{{
+                                        entry.address.phone
                                     }}</span>
                                 </li>
                                 <li class="flex flex-wrap sm:flex-nowrap gap-2">
                                     <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{
                                         $t('label.email')
                                     }}</span>
-                                    <span class="text-sm font-normal">{{ orderAddress.email }}</span>
+                                    <span class="text-sm font-normal">{{ entry.address.email }}</span>
                                 </li>
                                 <li class="flex flex-wrap sm:flex-nowrap gap-2">
                                     <span class="text-sm font-semibold capitalize w-20 flex-shrink-0">{{
                                         $t('label.address')
                                     }}</span>
                                     <span class="text-sm font-normal capitalize">
-                                        <span v-if="orderAddress.address">{{ orderAddress.address }},</span>
-                                        <span v-if="orderAddress.state">{{ orderAddress.state }},</span>
-                                        <span v-if="orderAddress.city">{{ orderAddress.city }},</span>
-                                        <span v-if="orderAddress.country">{{ orderAddress.country }},</span>
-                                        <span v-if="orderAddress.zip_code">{{ orderAddress.zip_code }}</span>
+                                        <span v-if="entry.address.address">{{ entry.address.address }},</span>
+                                        <span v-if="entry.address.state">{{ entry.address.state }},</span>
+                                        <span v-if="entry.address.city">{{ entry.address.city }},</span>
+                                        <span v-if="entry.address.country">{{ entry.address.country }},</span>
+                                        <span v-if="entry.address.zip_code">{{ entry.address.zip_code }}</span>
                                     </span>
                                 </li>
                             </ul>
@@ -218,6 +222,7 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import OrderStatusComponent from "./OrderStatusComponent";
 import appService from "../../../services/appService";
+import { addressKindTitleKey, getDisplayOrderAddresses } from "../../../utils/orderAddresses";
 
 export default {
     name: "OrderDetailsComponent",
@@ -258,7 +263,15 @@ export default {
             },
         };
     },
+    computed: {
+        displayAddresses: function () {
+            return getDisplayOrderAddresses(this.orderAddresses, addressTypeEnum);
+        },
+    },
     methods: {
+        addressTitle: function (kind) {
+            return this.$t(addressKindTitleKey(kind));
+        },
         orderStatusClass: function (status) {
             return appService.orderStatusClass(status);
 

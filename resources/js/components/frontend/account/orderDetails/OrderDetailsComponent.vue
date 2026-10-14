@@ -24,41 +24,40 @@
             </router-link>
         </div>
 
-        <!-- Status + total hero -->
-        <div class="rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-6 mb-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+        <!-- Status hero -->
+        <div class="rounded-2xl border border-primary/15 bg-gradient-to-br from-[#FFF4F1] via-white to-[#F0F7FF] p-4 sm:p-6 mb-4 shadow-[0_2px_16px_rgba(15,23,42,0.05)]">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
                 <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">{{ $t('label.order_status') }}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-primary/70 mb-1.5">{{ $t('label.order_status') }}</p>
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize" :class="orderStatusClass(order.status)">
                             {{ enums.orderStatusEnumArray[order.status] }}
                         </span>
                         <span
                             class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize"
-                            :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769] bg-[#E2FFEE]' : 'text-[#FB4E4E] bg-[#FFE8E8]'"
+                            :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#0F7A3F] bg-[#D9F7E6]' : 'text-[#B42318] bg-[#FEE4E2]'"
                         >
                             {{ enums.paymentStatusEnumArray[order.payment_status] }}
                         </span>
-                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize bg-slate-100 text-slate-600">
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize bg-[#E8F1FF] text-[#175CD3]">
                             {{ enums.orderTypeEnumArray[order.order_type] }}
                         </span>
                     </div>
                 </div>
-                <div class="text-left sm:text-right">
+                <div class="text-left sm:text-right rounded-xl bg-white/80 border border-primary/10 px-4 py-3">
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{{ $t('label.total') }}</p>
                     <p class="text-2xl font-extrabold text-heading">{{ order.total_currency_price }}</p>
                     <p class="mt-0.5 text-xs text-text">{{ orderProducts.length }} {{ $t('label.product') }}</p>
                 </div>
             </div>
 
-            <!-- Tracking card -->
             <div
                 v-if="showTrackingId"
-                class="mb-5 rounded-2xl border border-primary/20 bg-[#FFF4F1] p-4 sm:p-5"
+                class="mb-5 rounded-2xl border border-[#B2DDFF] bg-gradient-to-r from-[#EFF8FF] to-white p-4 sm:p-5"
             >
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-[11px] font-semibold uppercase tracking-wide text-primary/70 mb-1">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-[#175CD3] mb-1">
                             {{ $t('label.shipment') }} · {{ $t('label.tracking_no') }}
                         </p>
                         <p class="text-lg sm:text-xl font-extrabold text-heading break-all tracking-wide">
@@ -72,7 +71,7 @@
                     <div class="flex flex-wrap gap-2 shrink-0">
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 rounded-full bg-white border border-gray-200 px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white transition"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#B2DDFF] px-3.5 py-2 text-xs font-bold text-[#175CD3] hover:bg-[#175CD3] hover:text-white transition"
                             @click="copyTrackingId"
                         >
                             <i class="fa-regular fa-copy"></i>
@@ -80,7 +79,7 @@
                         </button>
                         <router-link
                             :to="{ name: 'frontend.trackOrder' }"
-                            class="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-white hover:opacity-90 transition"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-[#175CD3] px-3.5 py-2 text-xs font-bold text-white hover:opacity-90 transition"
                         >
                             <i class="fa-solid fa-location-dot"></i>
                             {{ $t('label.track_order') }}
@@ -89,7 +88,6 @@
                 </div>
             </div>
 
-            <!-- Progress stepper -->
             <div
                 v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type !== enums.orderTypeEnum.PICK_UP"
                 class="pt-2 pb-10"
@@ -138,7 +136,7 @@
 
             <div
                 v-if="order.status === enums.orderStatusEnum.CANCELED || order.status === enums.orderStatusEnum.REJECTED"
-                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-red-100 bg-red-50 text-red-600"
+                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-red-200 bg-red-50 text-red-600"
             >
                 <i class="lab-fill-close-circle text-lg"></i>
                 <span class="text-sm font-bold capitalize">
@@ -148,16 +146,22 @@
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-            <!-- Main column: items + timeline -->
             <div class="xl:col-span-7 space-y-4">
                 <!-- Products -->
-                <div class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-                    <div class="px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-slate-50 flex items-center justify-between">
-                        <h3 class="text-sm font-bold text-heading capitalize">{{ $t('label.order_summary') }}</h3>
-                        <span class="text-xs font-semibold text-text">{{ orderProducts.length }} {{ $t('label.product') }}</span>
+                <section class="rounded-2xl border border-[#C7D7FE] bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-[#C7D7FE] bg-gradient-to-r from-[#EEF4FF] to-[#F8FAFF] flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-[#3538CD] capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#3538CD] text-white text-xs">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </span>
+                            {{ $t('label.order_summary') }}
+                        </h3>
+                        <span class="text-xs font-semibold text-[#3538CD]/bg-[#EEF4FF] px-2.5 py-1 rounded-full">
+                            {{ orderProducts.length }} {{ $t('label.product') }}
+                        </span>
                     </div>
 
-                    <ul class="divide-y divide-gray-100">
+                    <ul class="divide-y divide-indigo-50">
                         <li
                             v-for="(orderProduct, productIndex) in orderProducts"
                             :key="'product-' + productIndex"
@@ -171,14 +175,14 @@
                                 <img
                                     :src="orderProduct.product_image"
                                     alt="product"
-                                    class="w-16 h-16 sm:w-[76px] sm:h-[76px] object-cover rounded-xl border border-gray-100 bg-slate-50"
+                                    class="w-16 h-16 sm:w-[76px] sm:h-[76px] object-cover rounded-xl border border-indigo-100 bg-slate-50"
                                 />
                             </router-link>
                             <img
                                 v-else
                                 :src="orderProduct.product_image"
                                 alt="product"
-                                class="w-16 h-16 sm:w-[76px] sm:h-[76px] object-cover rounded-xl border border-gray-100 bg-slate-50 shrink-0"
+                                class="w-16 h-16 sm:w-[76px] sm:h-[76px] object-cover rounded-xl border border-indigo-100 bg-slate-50 shrink-0"
                             />
 
                             <div class="min-w-0 flex-1">
@@ -216,7 +220,7 @@
                         </li>
                     </ul>
 
-                    <div class="border-t border-dashed border-gray-200 px-4 sm:px-5 py-4 space-y-2.5">
+                    <div class="border-t border-dashed border-indigo-100 px-4 sm:px-5 py-4 space-y-2.5 bg-[#F8FAFF]/50">
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-text capitalize">{{ $t('label.subtotal') }}</span>
                             <span class="font-semibold text-heading">{{ order.subtotal_currency_price }}</span>
@@ -234,47 +238,70 @@
                             <span class="font-semibold text-heading">{{ order.discount_currency_price }}</span>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between px-4 sm:px-5 py-4 bg-slate-50 border-t border-gray-100">
-                        <span class="capitalize font-bold text-heading">{{ $t('label.total') }}</span>
-                        <span class="capitalize font-extrabold text-lg text-heading">{{ order.total_currency_price }}</span>
+                    <div class="flex items-center justify-between px-4 sm:px-5 py-4 bg-gradient-to-r from-[#ECFDF3] to-[#F0FDF4] border-t border-[#ABEFC6]">
+                        <span class="capitalize font-bold text-[#067647]">{{ $t('label.total') }}</span>
+                        <span class="capitalize font-extrabold text-lg text-[#067647]">{{ order.total_currency_price }}</span>
                     </div>
-                </div>
+                </section>
 
                 <!-- Timeline -->
-                <div
+                <section
                     v-if="orderTimeline.length > 0"
-                    class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                    class="rounded-2xl border border-[#E9D7FE] bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
                 >
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-slate-400 mb-4">{{ $t('label.order_timeline') || 'Order Timeline' }}</h3>
-                    <div class="relative pl-5 border-l-2 border-gray-100 space-y-5">
-                        <div v-for="(item, index) in orderTimeline" :key="'timeline-' + index" class="relative">
-                            <div
-                                class="absolute -left-[27px] top-0.5 h-4 w-4 rounded-full border-2 border-white"
-                                :class="parseInt(item.status, 10) === parseInt(order.status, 10) ? 'bg-primary' : 'bg-slate-300'"
-                            ></div>
-                            <p class="text-sm font-semibold text-heading capitalize">
-                                {{ enums.orderStatusEnumArray[item.status] || item.label || item.status }}
-                            </p>
-                            <p class="text-xs text-text mt-0.5">{{ item.date }}</p>
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-[#E9D7FE] bg-gradient-to-r from-[#F9F5FF] to-white">
+                        <h3 class="text-sm font-bold text-[#6941C6] capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#7F56D9] text-white text-xs">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </span>
+                            {{ $t('label.order_timeline') || 'Order Timeline' }}
+                        </h3>
+                    </div>
+                    <div class="p-4 sm:p-5">
+                        <div class="relative pl-5 border-l-2 border-[#E9D7FE] space-y-5">
+                            <div v-for="(item, index) in orderTimeline" :key="'timeline-' + index" class="relative">
+                                <div
+                                    class="absolute -left-[27px] top-0.5 h-4 w-4 rounded-full border-2 border-white"
+                                    :class="parseInt(item.status, 10) === parseInt(order.status, 10) ? 'bg-[#7F56D9]' : 'bg-slate-300'"
+                                ></div>
+                                <p class="text-sm font-semibold text-heading capitalize">
+                                    {{ enums.orderStatusEnumArray[item.status] || item.label || item.status }}
+                                </p>
+                                <p class="text-xs text-text mt-0.5">{{ item.date }}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Order note -->
-                <div
+                <!-- Note -->
+                <section
                     v-if="order.note"
-                    class="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5"
+                    class="rounded-2xl border border-[#F9DBAF] bg-gradient-to-br from-[#FFFAEB] to-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
                 >
-                    <h3 class="text-sm font-bold text-heading mb-1.5">{{ $t('label.note') }}</h3>
-                    <p class="text-sm text-text leading-relaxed whitespace-pre-line">{{ order.note }}</p>
-                </div>
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-[#F9DBAF] bg-[#FFFAEB]">
+                        <h3 class="text-sm font-bold text-[#B54708] capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#DC6803] text-white text-xs">
+                                <i class="fa-regular fa-note-sticky"></i>
+                            </span>
+                            {{ $t('label.note') }}
+                        </h3>
+                    </div>
+                    <p class="p-4 sm:p-5 text-sm text-text leading-relaxed whitespace-pre-line">{{ order.note }}</p>
+                </section>
             </div>
 
-            <!-- Side column: info + addresses -->
             <div class="xl:col-span-5 space-y-4">
-                <div class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-slate-400 mb-3">{{ $t('label.order_information') }}</h3>
-                    <ul class="space-y-3">
+                <!-- Order info -->
+                <section class="rounded-2xl border border-[#FEC84B]/60 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-[#FEC84B]/50 bg-gradient-to-r from-[#FFFAEB] to-white">
+                        <h3 class="text-sm font-bold text-[#B54708] capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#F79009] text-white text-xs">
+                                <i class="fa-solid fa-receipt"></i>
+                            </span>
+                            {{ $t('label.order_information') }}
+                        </h3>
+                    </div>
+                    <ul class="p-4 sm:p-5 space-y-3">
                         <li class="flex items-start justify-between gap-3">
                             <span class="text-sm text-text">{{ $t('label.order_id') }}</span>
                             <span class="text-sm font-semibold text-heading text-right">#{{ order.order_serial_no }}</span>
@@ -295,7 +322,7 @@
                             <span class="text-sm text-text">{{ $t('label.payment_status') }}</span>
                             <span
                                 class="text-sm font-semibold text-right capitalize"
-                                :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#2AC769]' : 'text-[#FB4E4E]'"
+                                :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#067647]' : 'text-[#B42318]'"
                             >
                                 {{ enums.paymentStatusEnumArray[order.payment_status] }}
                             </span>
@@ -309,49 +336,77 @@
                             <span class="text-sm font-medium text-heading text-right capitalize">{{ order.reason }}</span>
                         </li>
                     </ul>
-                </div>
+                </section>
 
-                <template v-if="order.order_type === enums.orderTypeEnum.DELIVERY && orderAddress.length > 0">
-                    <div
-                        v-for="(address, addressIndex) in orderAddress"
+                <!-- Addresses (merged when same) -->
+                <template v-if="order.order_type === enums.orderTypeEnum.DELIVERY && displayAddresses.length > 0">
+                    <section
+                        v-for="(entry, addressIndex) in displayAddresses"
                         :key="'addr-' + addressIndex"
-                        class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                        class="rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                        :class="addressSectionClass(entry.kind)"
                     >
-                        <h3 class="px-4 py-3 text-sm font-bold text-heading bg-slate-50 border-b border-gray-100 capitalize flex items-center gap-2">
-                            <i
-                                class="text-primary"
-                                :class="address.address_type === enums.addressTypeEnum.SHIPPING ? 'fa-solid fa-truck' : 'fa-regular fa-credit-card'"
-                            ></i>
-                            {{ address.address_type === enums.addressTypeEnum.SHIPPING ? $t('label.shipping_address') : $t('label.billing_address') }}
-                        </h3>
-                        <ul class="p-4 space-y-2.5">
-                            <li class="text-sm"><span class="text-text">{{ $t('label.name') }}:</span> <span class="font-semibold capitalize text-heading">{{ address.full_name }}</span></li>
-                            <li class="text-sm"><span class="text-text">{{ $t('label.phone') }}:</span> <span class="font-medium text-heading" dir="ltr">{{ address.country_code }}{{ address.phone }}</span></li>
-                            <li v-if="address.email" class="text-sm"><span class="text-text">{{ $t('label.email') }}:</span> <span class="font-medium text-heading break-all">{{ address.email }}</span></li>
+                        <div
+                            class="px-4 py-3 border-b flex items-center justify-between gap-2"
+                            :class="addressHeaderClass(entry.kind)"
+                        >
+                            <h3 class="text-sm font-bold capitalize flex items-center gap-2" :class="addressTitleClass(entry.kind)">
+                                <span
+                                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-white text-xs"
+                                    :class="addressIconBg(entry.kind)"
+                                >
+                                    <i :class="entry.kind === 'billing' ? 'fa-regular fa-credit-card' : 'fa-solid fa-truck'"></i>
+                                </span>
+                                {{ addressTitle(entry.kind) }}
+                            </h3>
+                            <span
+                                v-if="entry.kind === 'both'"
+                                class="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-white/80 text-[#067647]"
+                            >
+                                {{ $t('label.same_as_billing') }}
+                            </span>
+                        </div>
+                        <ul class="p-4 space-y-2.5 bg-white">
+                            <li class="text-sm">
+                                <span class="text-text">{{ $t('label.name') }}:</span>
+                                <span class="font-semibold capitalize text-heading"> {{ entry.address.full_name }}</span>
+                            </li>
+                            <li class="text-sm">
+                                <span class="text-text">{{ $t('label.phone') }}:</span>
+                                <span class="font-medium text-heading" dir="ltr"> {{ entry.address.country_code }}{{ entry.address.phone }}</span>
+                            </li>
+                            <li v-if="entry.address.email" class="text-sm">
+                                <span class="text-text">{{ $t('label.email') }}:</span>
+                                <span class="font-medium text-heading break-all"> {{ entry.address.email }}</span>
+                            </li>
                             <li class="text-sm leading-relaxed">
                                 <span class="text-text">{{ $t('label.address') }}:</span>
                                 <span class="font-medium capitalize text-heading">
-                                    <span v-if="address.address">{{ address.address }}</span>
-                                    <span class="block" :class="address.address ? 'mt-1' : ''">
-                                        <span v-if="address.city">{{ address.city }}, </span>
-                                        <span v-if="address.state">{{ address.state }}, </span>
-                                        <span v-if="address.country">{{ address.country }}, </span>
-                                        <span v-if="address.zip_code">{{ address.zip_code }}</span>
+                                    <span v-if="entry.address.address"> {{ entry.address.address }}</span>
+                                    <span class="block" :class="entry.address.address ? 'mt-1' : ''">
+                                        <span v-if="entry.address.city">{{ entry.address.city }}, </span>
+                                        <span v-if="entry.address.state">{{ entry.address.state }}, </span>
+                                        <span v-if="entry.address.country">{{ entry.address.country }}, </span>
+                                        <span v-if="entry.address.zip_code">{{ entry.address.zip_code }}</span>
                                     </span>
                                 </span>
                             </li>
                         </ul>
-                    </div>
+                    </section>
                 </template>
 
-                <div
+                <section
                     v-if="order.order_type === enums.orderTypeEnum.PICK_UP && Object.keys(outletAddress).length > 0"
-                    class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                    class="rounded-2xl border border-[#A5F0FC] bg-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
                 >
-                    <h3 class="px-4 py-3 text-sm font-bold text-heading bg-slate-50 border-b border-gray-100 capitalize flex items-center gap-2">
-                        <i class="fa-solid fa-store text-primary"></i>
-                        {{ $t('label.pick_up_address') }}
-                    </h3>
+                    <div class="px-4 py-3 border-b border-[#A5F0FC] bg-gradient-to-r from-[#ECFEFF] to-white">
+                        <h3 class="text-sm font-bold text-[#0E7490] capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#0891B2] text-white text-xs">
+                                <i class="fa-solid fa-store"></i>
+                            </span>
+                            {{ $t('label.pick_up_address') }}
+                        </h3>
+                    </div>
                     <ul class="p-4 space-y-2.5">
                         <li class="text-sm"><span class="text-text">{{ $t('label.name') }}:</span> <span class="font-semibold capitalize text-heading">{{ outletAddress.name }}</span></li>
                         <li v-if="outletAddress.phone" class="text-sm"><span class="text-text">{{ $t('label.phone') }}:</span> <span class="font-medium text-heading" dir="ltr">{{ outletAddress.country_code }}{{ outletAddress.phone }}</span></li>
@@ -368,48 +423,56 @@
                             </span>
                         </li>
                     </ul>
-                </div>
+                </section>
 
-                <!-- Need help -->
-                <div
+                <!-- Help -->
+                <section
                     v-if="setting.company_email || setting.company_phone || setting.whatsapp_number"
-                    class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
+                    class="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white overflow-hidden shadow-[0_2px_12px_rgba(15,23,42,0.04)]"
                 >
-                    <h3 class="text-sm font-bold text-heading mb-2">{{ $t('label.need_help') || 'Need help?' }}</h3>
-                    <p class="text-xs text-text mb-3">{{ $t('message.order_help_hint') || 'Questions about this order? Contact us.' }}</p>
-                    <div class="flex flex-wrap gap-2">
-                        <a
-                            v-if="setting.company_email"
-                            :href="'mailto:' + setting.company_email"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition"
-                        >
-                            <i class="fa-regular fa-envelope"></i>
-                            {{ $t('label.email') }}
-                        </a>
-                        <a
-                            v-if="setting.company_phone"
-                            :href="'tel:' + (setting.company_calling_code || '') + setting.company_phone"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition"
-                        >
-                            <i class="fa-solid fa-phone"></i>
-                            {{ $t('label.phone') }}
-                        </a>
-                        <a
-                            v-if="setting.whatsapp_number"
-                            :href="'https://api.whatsapp.com/send?phone=' + (setting.whatsapp_calling_code || '') + setting.whatsapp_number"
-                            target="_blank"
-                            rel="noopener"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition"
-                        >
-                            <i class="fa-brands fa-whatsapp"></i>
-                            WhatsApp
-                        </a>
+                    <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200 bg-slate-100/80">
+                        <h3 class="text-sm font-bold text-slate-700 capitalize flex items-center gap-2">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-700 text-white text-xs">
+                                <i class="fa-regular fa-life-ring"></i>
+                            </span>
+                            {{ $t('label.need_help') || 'Need help?' }}
+                        </h3>
                     </div>
-                </div>
+                    <div class="p-4 sm:p-5">
+                        <p class="text-xs text-text mb-3">{{ $t('message.order_help_hint') || 'Questions about this order? Contact us.' }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <a
+                                v-if="setting.company_email"
+                                :href="'mailto:' + setting.company_email"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition"
+                            >
+                                <i class="fa-regular fa-envelope"></i>
+                                {{ $t('label.email') }}
+                            </a>
+                            <a
+                                v-if="setting.company_phone"
+                                :href="'tel:' + (setting.company_calling_code || '') + setting.company_phone"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition"
+                            >
+                                <i class="fa-solid fa-phone"></i>
+                                {{ $t('label.phone') }}
+                            </a>
+                            <a
+                                v-if="setting.whatsapp_number"
+                                :href="'https://api.whatsapp.com/send?phone=' + (setting.whatsapp_calling_code || '') + setting.whatsapp_number"
+                                target="_blank"
+                                rel="noopener"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                            >
+                                <i class="fa-brands fa-whatsapp"></i>
+                                WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
 
-        <!-- Actions -->
         <div class="mt-5 flex flex-wrap gap-3">
             <OrderReceiptComponent
                 v-if="order.status !== enums.orderStatusEnum.CANCELED"
@@ -476,6 +539,10 @@ import { pixelService } from "../../../../services/pixelService";
 import orderTypeEnum from "../../../../enums/modules/orderTypeEnum";
 import activityEnum from "../../../../enums/modules/activityEnum";
 import env from "../../../../config/env";
+import {
+    addressKindTitleKey,
+    getDisplayOrderAddresses,
+} from "../../../../utils/orderAddresses";
 
 export default {
     name: "OrderDetailsComponent",
@@ -543,6 +610,9 @@ export default {
         orderAddress: function () {
             return this.$store.getters['frontendOrder/orderAddress'];
         },
+        displayAddresses: function () {
+            return getDisplayOrderAddresses(this.orderAddress, addressTypeEnum);
+        },
         outletAddress: function () {
             return this.$store.getters['frontendOrder/outletAddress'];
         },
@@ -593,6 +663,29 @@ export default {
         }
     },
     methods: {
+        addressTitle: function (kind) {
+            return this.$t(addressKindTitleKey(kind));
+        },
+        addressSectionClass: function (kind) {
+            if (kind === 'both') return 'border border-[#ABEFC6]';
+            if (kind === 'billing') return 'border border-[#F9DBAF]';
+            return 'border border-[#A5F0FC]';
+        },
+        addressHeaderClass: function (kind) {
+            if (kind === 'both') return 'border-[#ABEFC6] bg-gradient-to-r from-[#ECFDF3] to-white';
+            if (kind === 'billing') return 'border-[#F9DBAF] bg-gradient-to-r from-[#FFFAEB] to-white';
+            return 'border-[#A5F0FC] bg-gradient-to-r from-[#ECFEFF] to-white';
+        },
+        addressTitleClass: function (kind) {
+            if (kind === 'both') return 'text-[#067647]';
+            if (kind === 'billing') return 'text-[#B54708]';
+            return 'text-[#0E7490]';
+        },
+        addressIconBg: function (kind) {
+            if (kind === 'both') return 'bg-[#12B76A]';
+            if (kind === 'billing') return 'bg-[#DC6803]';
+            return 'bg-[#0891B2]';
+        },
         showTarget: function (id, cClass) {
             targetService.showTarget(id, cClass);
         },
@@ -703,16 +796,11 @@ export default {
             --------------------------
             `;
             if (order.order_type === this.enums.orderTypeEnum.DELIVERY) {
-
-                for (let i = 0; i < order.order_address.length; i++) {
-                    let address = order.order_address[i];
-                    let address_type = '';
-                    if (address.address_type === this.enums.addressTypeEnum.SHIPPING) {
-                        address_type = this.$t('label.shipping_address')
-                    }
-                    else {
-                        address_type = this.$t('label.billing_address')
-                    }
+                const display = getDisplayOrderAddresses(order.order_address || [], addressTypeEnum);
+                for (let i = 0; i < display.length; i++) {
+                    const entry = display[i];
+                    const address = entry.address;
+                    const address_type = this.$t(addressKindTitleKey(entry.kind));
                     text += `
             ${address_type}
             --------------------------

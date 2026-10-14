@@ -1,1 +1,0 @@
-import{_ as e}from"./appZone-BFwzJF0w.js";import{f as t,g as n,l as r}from"./vendor-C4tK8qSi.js";const s={name:"PageComponent"};function a(c,p,_,m,f,i){const o=t("router-view");return n(),r(o)}const d=e(s,[["render",a]]);export{d as default};

@@ -283,42 +283,47 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12" v-if="order.order_type === enums.orderTypeEnum.DELIVERY && orderAddress.length > 0"
-                v-for="address in orderAddress">
+            <div
+                class="col-12"
+                v-if="order.order_type === enums.orderTypeEnum.DELIVERY && displayAddresses.length > 0"
+                v-for="(entry, addrIdx) in displayAddresses"
+                :key="'oa-' + addrIdx"
+            >
                 <div class="db-card">
                     <div class="db-card-header">
-                        <h3 class="db-card-title" v-if="address.address_type === enums.addressTypeEnum.SHIPPING">
-                            {{ $t('label.shipping_address') }}
-                        </h3>
-                        <h3 class="db-card-title" v-if="address.address_type === enums.addressTypeEnum.BILLING">
-                            {{ $t('label.billing_address') }}
+                        <h3 class="db-card-title">
+                            {{ addressTitle(entry.kind) }}
+                            <span
+                                v-if="entry.kind === 'both'"
+                                class="ml-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-600"
+                            >{{ $t('label.same_as_billing') }}</span>
                         </h3>
                     </div>
                     <div class="db-card-body">
                         <div class="flex items-center gap-3 mb-4">
                             <img class="w-8 rounded-full" alt="avatar" :src="orderUser.image">
                             <h4 class="font-semibold text-sm capitalize text-[#374151]">
-                                {{ textShortener(address.full_name, 20) }}
+                                {{ textShortener(entry.address.full_name, 20) }}
                             </h4>
                         </div>
                         <ul class="flex flex-col gap-3 py-4 border-t border-[#EFF0F6]">
-                            <li v-if="address.email" class="flex items-center gap-2.5">
+                            <li v-if="entry.address.email" class="flex items-center gap-2.5">
                                 <i class="lab lab-line-mail lab-font-size-14"></i>
-                                <span class="text-xs">{{ address.email }}</span>
+                                <span class="text-xs">{{ entry.address.email }}</span>
                             </li>
-                            <li class="flex items-center gap-2.5" v-if="address.phone">
+                            <li class="flex items-center gap-2.5" v-if="entry.address.phone">
                                 <i class="lab lab-line-call-calling lab-font-size-14"></i>
-                                <span class="text-xs" dir="ltr">{{ address.country_code + '' + address.phone }}</span>
+                                <span class="text-xs" dir="ltr">{{ entry.address.country_code + '' + entry.address.phone }}</span>
                             </li>
 
                             <li class="flex items-center gap-2.5">
                                 <i class="lab lab-line-location lab-font-size-14"></i>
                                 <span class="text-xs">
-                                    <span v-if="address.address">{{ address.address }},</span>
-                                    <span v-if="address.city">{{ address.city }},</span>
-                                    <span v-if="address.state">{{ address.state }},</span>
-                                    <span v-if="address.country">{{ address.country }},</span>
-                                    <span v-if="address.zip_code">{{ address.zip_code }}</span>
+                                    <span v-if="entry.address.address">{{ entry.address.address }},</span>
+                                    <span v-if="entry.address.city">{{ entry.address.city }},</span>
+                                    <span v-if="entry.address.state">{{ entry.address.state }},</span>
+                                    <span v-if="entry.address.country">{{ entry.address.country }},</span>
+                                    <span v-if="entry.address.zip_code">{{ entry.address.zip_code }}</span>
                                 </span>
                             </li>
                         </ul>
@@ -326,7 +331,7 @@
                 </div>
             </div>
 
-            <div class="col-12" v-else-if="order.order_type === enums.orderTypeEnum.PICK_UP">
+            <div class="col-12" v-if="order.order_type === enums.orderTypeEnum.PICK_UP">
                 <div class="db-card">
                     <div class="db-card-header">
                         <h3 class="db-card-title">
@@ -385,6 +390,7 @@ import activityEnum from "../../../enums/modules/activityEnum";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
+import { addressKindTitleKey, getDisplayOrderAddresses } from "../../../utils/orderAddresses";
 
 export default {
     name: "OnlineOrderShowComponent",
@@ -425,6 +431,9 @@ export default {
         },
         orderAddress: function () {
             return this.$store.getters['onlineOrder/orderAddress'];
+        },
+        displayAddresses: function () {
+            return getDisplayOrderAddresses(this.orderAddress, addressTypeEnum);
         },
         outletAddress: function () {
             return this.$store.getters['onlineOrder/outletAddress'];
@@ -510,6 +519,9 @@ export default {
         });
     },
     methods: {
+        addressTitle: function (kind) {
+            return this.$t(addressKindTitleKey(kind));
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

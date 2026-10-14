@@ -1,0 +1,1 @@
+import{_ as e}from"./appZone-EfPWCCbt.js";import{f as r,g as n,l as t}from"./vendor-C4tK8qSi.js";const c={name:"CurrencyComponent"};function s(p,a,_,m,f,u){const o=r("router-view");return n(),t(o)}const C=e(c,[["render",s]]);export{C as default};
