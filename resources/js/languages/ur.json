@@ -112,9 +112,11 @@
         "facebook_capi": "Facebook CAPI",
         "intelligence": "Analytics",
         "intelligence_analytics": "Intelligence Keys",
-        "intelligence_dashboard": "Intelligence Dashboard"
+        "intelligence_dashboard": "Intelligence Dashboard",
+        "postex_cod": "PostEx COD"
     },
     "label": {
+        "postex_auto_sync_status": "Auto-sync PostEx order status",
         "version": "Version",
         "google_status": "Google Status",
         "google_client_secret": "Google Client Secret",
@@ -916,6 +918,7 @@
         "something_wrong": "Something Wrong."
     },
     "message": {
+        "postex_auto_sync_help": "Har 15 minute PostEx tracking pull karke shop order status update hota hai (Delivered / Returned / Expired, etc.).",
         "intelligence_analytics_help": "Store tracking keys configure karein. Public key storefront par tracker.js use karta hai.",
         "public_key_readonly_hint": "Purani pk_ key paste karein ya Regenerate se nayi keys banayein.",
         "add": "Add",

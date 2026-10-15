@@ -112,6 +112,29 @@
                             </div>
                         </div>
 
+                        <div class="form-col-12">
+                            <label class="db-field-title">{{ $t("label.postex_auto_sync_status") }}</label>
+                            <p class="text-sm text-gray-500 mb-2">{{ $t("message.postex_auto_sync_help") }}</p>
+                            <div class="db-field-radio-group">
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input type="radio" v-model="form.postex_auto_sync_status" id="postex_sync_yes"
+                                            :value="enums.activityEnum.ENABLE" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="postex_sync_yes" class="db-field-label">{{ $t('label.enable') }}</label>
+                                </div>
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input type="radio" v-model="form.postex_auto_sync_status" id="postex_sync_no"
+                                            :value="enums.activityEnum.DISABLE" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="postex_sync_no" class="db-field-label">{{ $t('label.disable') }}</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-col-12 flex flex-wrap gap-3">
                             <button type="button" @click="testConnection" :disabled="connectionLoading"
                                 class="db-btn py-2 text-white bg-gray-700">
@@ -189,6 +212,7 @@ export default {
                 postex_invoice_division: 1,
                 postex_booking_weight: "",
                 postex_auto_ship: null,
+                postex_auto_sync_status: null,
             },
             enums: { activityEnum },
             errors: {},
@@ -211,6 +235,7 @@ export default {
                     this.form.postex_invoice_division = Number(data.postex_invoice_division || 1);
                     this.form.postex_booking_weight = data.postex_booking_weight || "";
                     this.form.postex_auto_ship = Number(data.postex_auto_ship ?? activityEnum.DISABLE);
+                    this.form.postex_auto_sync_status = Number(data.postex_auto_sync_status ?? activityEnum.ENABLE);
                 })
                 .catch((err) => alertService.error(err))
                 .finally(() => {

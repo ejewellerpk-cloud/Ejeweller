@@ -95,9 +95,18 @@ class PostExApiClient
 
     public function trackBulkOrders(array $trackingNumbers): array
     {
-        return $this->decode($this->post('/order/v1/track-bulk-order', [
-            'trackingNumber' => array_values($trackingNumbers),
-        ]));
+        $numbers = array_values($trackingNumbers);
+
+        try {
+            return $this->decode($this->post('/order/v1/track-bulk-order', [
+                'trackingNumber' => $numbers,
+            ]));
+        } catch (PostExApiException) {
+            // Live API often expects TrackingNumbers as a query param (guide vs reality).
+            return $this->decode($this->get('/order/v1/track-bulk-order', [
+                'TrackingNumbers' => implode(',', $numbers),
+            ]));
+        }
     }
 
     public function getAirwayBill(array $trackingNumbers): Response

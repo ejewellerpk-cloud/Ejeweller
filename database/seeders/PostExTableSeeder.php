@@ -19,6 +19,7 @@ class PostExTableSeeder extends Seeder
             'postex_invoice_division'    => 1,
             'postex_booking_weight'      => '',
             'postex_auto_ship'           => Activity::DISABLE,
+            'postex_auto_sync_status'    => Activity::ENABLE,
         ]);
     }
 }

@@ -26,6 +26,7 @@ class PostExRequest extends FormRequest
             'postex_invoice_division'    => ['nullable', 'integer', 'min:1', 'max:99'],
             'postex_booking_weight'      => ['nullable', 'numeric', 'min:0'],
             'postex_auto_ship'           => ['nullable', 'numeric', Rule::in([Activity::ENABLE, Activity::DISABLE])],
+            'postex_auto_sync_status'    => ['nullable', 'numeric', Rule::in([Activity::ENABLE, Activity::DISABLE])],
         ];
     }
 

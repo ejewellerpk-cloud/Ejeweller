@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\PersonalAccessToken;
 use App\MediaLibrary\SafeFileManipulator;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
@@ -36,5 +37,17 @@ class AppServiceProvider extends ServiceProvider
             }
             @symlink($storageTarget, $storageLink);
         }
+
+        $this->app->booted(function () {
+            if (!$this->app->runningInConsole()) {
+                return;
+            }
+
+            /** @var Schedule $schedule */
+            $schedule = $this->app->make(Schedule::class);
+            $schedule->command('postex:sync-statuses')
+                ->everyFifteenMinutes()
+                ->withoutOverlapping(10);
+        });
     }
 }

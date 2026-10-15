@@ -541,6 +541,7 @@
         "postex_invoice_division": "Invoice Division",
         "postex_booking_weight": "Booking Weight (kg)",
         "postex_auto_ship": "Auto-book on order confirm",
+        "postex_auto_sync_status": "Auto-sync PostEx order status",
         "postex_pickup_addresses": "Merchant Pickup Addresses",
         "postex_tracking": "PostEx Tracking",
         "postex_shipment_status": "PostEx Status",
@@ -996,6 +997,7 @@
     "message": {
         "no_pickup_addresses": "No pickup addresses returned from PostEx.",
         "postex_booked": "Order booked with PostEx successfully.",
+        "postex_auto_sync_help": "Every 15 minutes, pull PostEx tracking and update shop order status (Delivered / Returned / Expired, etc.).",
         "intelligence_analytics_help": "Configure tracking keys for your store. The public key is used by tracker.js on the storefront.",
         "public_key_readonly_hint": "Paste an existing pk_ key or click Regenerate to create new keys.",
         "add": "Add",

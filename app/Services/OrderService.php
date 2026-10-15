@@ -480,6 +480,48 @@ class OrderService
         }
     }
 
+    /**
+     * Apply an order status change from an external system (e.g. PostEx sync).
+     * Skips FormRequest validation; still handles stock, cashback, and notifications.
+     *
+     * @throws Exception
+     */
+    public function applyExternalStatus(Order $order, int $status, ?string $reason = null): Order
+    {
+        try {
+            if ($status === OrderStatus::REJECTED || $status === OrderStatus::CANCELED) {
+                if ($reason) {
+                    $order->reason = $reason;
+                }
+
+                if ($order->transaction) {
+                    app(PaymentService::class)->cashBack(
+                        $order,
+                        'credit',
+                        rand(111111111111111, 99999999999999)
+                    );
+                }
+
+                $stocks = Stock::where(['model_type' => Order::class, 'model_id' => $order->id])->get();
+                foreach ($stocks as $stock) {
+                    $stock->status = Status::INACTIVE;
+                    $stock->save();
+                }
+            }
+
+            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $status]);
+            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $status]);
+            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $status]);
+            $order->status = $status;
+            $order->save();
+
+            return $order->fresh();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
     protected function autoBookPostExShipment(Order $order, int $status): void
     {
         if ($status !== OrderStatus::CONFIRMED || !empty($order->postex_tracking_number)) {

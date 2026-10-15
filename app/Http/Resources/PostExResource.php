@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\Activity;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PostExResource extends JsonResource
@@ -25,6 +26,7 @@ class PostExResource extends JsonResource
             'postex_invoice_division'    => (int) ($this->info['postex_invoice_division'] ?? 1),
             'postex_booking_weight'      => $this->info['postex_booking_weight'] ?? '',
             'postex_auto_ship'           => (int) ($this->info['postex_auto_ship'] ?? 10),
+            'postex_auto_sync_status'    => (int) ($this->info['postex_auto_sync_status'] ?? Activity::ENABLE),
         ];
     }
 }
