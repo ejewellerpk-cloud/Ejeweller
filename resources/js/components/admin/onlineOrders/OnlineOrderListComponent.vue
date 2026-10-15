@@ -172,7 +172,11 @@
                     v-for="order in orders"
                     :key="'card-' + order.id"
                     class="order-card rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm"
-                    :class="{ 'ring-2 ring-emerald-400/50 border-emerald-300 bg-emerald-50/40': selectedOrderIds.includes(order.id) }"
+                    :class="{
+                        'ring-2 ring-emerald-400/50 border-emerald-300 bg-emerald-50/40': selectedOrderIds.includes(order.id),
+                        'order-has-note border-amber-300 bg-amber-50/70 ring-1 ring-amber-200/80': hasCustomerNote(order) && !selectedOrderIds.includes(order.id),
+                        'order-has-note': hasCustomerNote(order) && selectedOrderIds.includes(order.id),
+                    }"
                 >
                     <div class="flex items-start gap-3">
                         <input
@@ -185,7 +189,17 @@
                         <div class="min-w-0 flex-1">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
-                                    <p class="font-bold text-heading text-sm truncate">{{ order.order_serial_no }}</p>
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <p class="font-bold text-heading text-sm truncate">{{ order.order_serial_no }}</p>
+                                        <span
+                                            v-if="hasCustomerNote(order)"
+                                            class="shrink-0 inline-flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                                            :title="order.note"
+                                        >
+                                            <i class="fa-solid fa-note-sticky"></i>
+                                            {{ $t('label.note') || 'Note' }}
+                                        </span>
+                                    </div>
                                     <p class="text-xs text-slate-500 mt-0.5 truncate">{{ order.user?.name || '—' }}</p>
                                 </div>
                                 <div class="relative shrink-0" v-if="permissionChecker('online-orders')">
@@ -256,6 +270,13 @@
                                         >
                                             <i class="lab lab-line-printer w-4"></i> {{ $t('button.print_shipping_slip') }}
                                         </button>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-indigo-700"
+                                            @click="runRowAction(() => openTrackOrder(order))"
+                                        >
+                                            <i class="fa-solid fa-location-dot w-4"></i> {{ $t('label.track_order') || 'Track Order' }}
+                                        </button>
                                         <router-link
                                             :to="{ name: 'admin.order.show', params: { id: order.id } }"
                                             class="order-menu-item text-slate-700"
@@ -306,6 +327,12 @@
                             >
                                 {{ $t('label.tracking_no') }}: {{ order.postex_tracking_number }}
                             </p>
+                            <p
+                                v-if="hasCustomerNote(order)"
+                                class="mt-2 text-[11px] text-amber-800 font-medium leading-snug line-clamp-2"
+                            >
+                                <i class="fa-solid fa-note-sticky mr-1 opacity-80"></i>{{ order.note }}
+                            </p>
                         </div>
                     </div>
                 </article>
@@ -346,7 +373,11 @@
                     <tbody class="db-table-body" v-if="orders.length > 0">
                         <tr
                             class="db-table-body-tr"
-                            :class="{ 'bg-emerald-50/60': selectedOrderIds.includes(order.id) }"
+                            :class="{
+                                'bg-emerald-50/60': selectedOrderIds.includes(order.id),
+                                'order-has-note bg-amber-50/80': hasCustomerNote(order) && !selectedOrderIds.includes(order.id),
+                                'order-has-note': hasCustomerNote(order) && selectedOrderIds.includes(order.id),
+                            }"
                             v-for="order in orders"
                             :key="order.id"
                         >
@@ -359,12 +390,29 @@
                                 />
                             </td>
                             <td class="db-table-body-td">
-                                <div class="font-semibold">{{ order.order_serial_no }}</div>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <div class="font-semibold">{{ order.order_serial_no }}</div>
+                                    <span
+                                        v-if="hasCustomerNote(order)"
+                                        class="inline-flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                                        :title="order.note"
+                                    >
+                                        <i class="fa-solid fa-note-sticky"></i>
+                                        {{ $t('label.note') || 'Note' }}
+                                    </span>
+                                </div>
                                 <div
                                     v-if="order.postex_tracking_number"
                                     class="mt-0.5 text-[11px] text-indigo-600 font-medium break-all"
                                 >
                                     {{ $t('label.tracking_no') }}: {{ order.postex_tracking_number }}
+                                </div>
+                                <div
+                                    v-if="hasCustomerNote(order)"
+                                    class="mt-0.5 text-[11px] text-amber-800 font-medium leading-snug line-clamp-2 max-w-xs"
+                                    :title="order.note"
+                                >
+                                    {{ order.note }}
                                 </div>
                             </td>
                             <td class="db-table-body-td">
@@ -460,6 +508,13 @@
                                             @click="runRowAction(() => printSingleSlip(order.id))"
                                         >
                                             <i class="lab lab-line-printer w-4"></i> {{ $t('button.print_shipping_slip') }}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="order-menu-item text-indigo-700"
+                                            @click="runRowAction(() => openTrackOrder(order))"
+                                        >
+                                            <i class="fa-solid fa-location-dot w-4"></i> {{ $t('label.track_order') || 'Track Order' }}
                                         </button>
                                         <router-link
                                             :to="{ name: 'admin.order.show', params: { id: order.id } }"
@@ -670,6 +725,9 @@ export default {
         canMarkPaid(order) {
             return this.orderPaymentInt(order) !== paymentStatusEnum.PAID;
         },
+        hasCustomerNote(order) {
+            return String(order?.note || '').trim() !== '';
+        },
         toggleActionMenu(orderId) {
             this.openActionMenuId = this.openActionMenuId === orderId ? null : orderId;
         },
@@ -681,6 +739,15 @@ export default {
             if (typeof fn === 'function') {
                 fn();
             }
+        },
+        openTrackOrder(order) {
+            const ref = String(order?.order_serial_no || order?.postex_tracking_number || '').trim();
+            if (!ref) {
+                alertService.error(this.$t('message.no_data_found') || 'Order reference not found');
+                return;
+            }
+            const base = String(ENV.API_URL || window.location.origin || '').replace(/\/$/, '');
+            window.open(`${base}/track-order?order=${encodeURIComponent(ref)}`, '_blank', 'noopener,noreferrer');
         },
         search: function () {
             this.list();
@@ -996,5 +1063,9 @@ export default {
 .order-action-menu {
     max-height: min(70vh, 360px);
     overflow-y: auto;
+}
+
+.order-has-note {
+    box-shadow: inset 3px 0 0 #f59e0b;
 }
 </style>
