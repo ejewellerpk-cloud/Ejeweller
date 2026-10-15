@@ -41,17 +41,15 @@ class NotificationAlertTableSeeder extends Seeder
     {
         foreach ($this->notificationAlerts['name'] as $key => $notificationAlert) {
             $language = str_replace(' ', '_', strtolower($notificationAlert));
-            $enabled  = $language === 'order_tracking_message' ? SwitchBox::ON : SwitchBox::OFF;
-
             NotificationAlert::create([
                 'name'                      => $notificationAlert,
                 'language'                  => $language,
                 'mail_message'              => $this->notificationAlerts['message'][$key],
                 'sms_message'               => $this->notificationAlerts['message'][$key],
                 'push_notification_message' => $this->notificationAlerts['message'][$key],
-                'mail'                      => $enabled,
+                'mail'                      => SwitchBox::ON,
                 'sms'                       => SwitchBox::OFF,
-                'push_notification'         => $enabled,
+                'push_notification'         => SwitchBox::ON,
             ]);
         }
     }

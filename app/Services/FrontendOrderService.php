@@ -121,13 +121,20 @@ class FrontendOrderService
                 $userId = auth('sanctum')->check() ? auth('sanctum')->user()->id : null;
                 if (!$userId && $request->guest_info) {
                     $guestInfo = json_decode($request->guest_info);
-                    $user = User::where('email', $guestInfo->email)->orWhere('phone', $guestInfo->phone)->first();
+                    $guestEmail = trim((string) ($guestInfo->email ?? ''));
+                    $guestPhone = trim((string) ($guestInfo->phone ?? ''));
+                    $user = $guestEmail !== ''
+                        ? User::where('email', $guestEmail)->first()
+                        : null;
+                    if (!$user && $guestPhone !== '') {
+                        $user = User::where('phone', $guestPhone)->first();
+                    }
                     if (!$user) {
                         $user = User::create([
                             'name'              => $guestInfo->full_name,
-                            'email'             => $guestInfo->email,
-                            'phone'             => $guestInfo->phone,
-                            'username'          => explode('@', $guestInfo->email)[0] . mt_rand(),
+                            'email'             => $guestEmail ?: null,
+                            'phone'             => $guestPhone ?: null,
+                            'username'          => explode('@', $guestEmail ?: ('guest' . mt_rand()))[0] . mt_rand(),
                             'password'          => bcrypt(Str::random(10)),
                             'email_verified_at' => now(),
                             'status'            => \App\Enums\Status::ACTIVE,
@@ -135,6 +142,12 @@ class FrontendOrderService
                             'is_guest'          => \App\Enums\Ask::YES,
                         ]);
                         $user->assignRole(\App\Enums\Role::CUSTOMER);
+                    } elseif ($guestEmail !== '' && blank($user->email) && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
+                        $user->email = $guestEmail;
+                        if (blank($user->name) && !blank($guestInfo->full_name ?? null)) {
+                            $user->name = $guestInfo->full_name;
+                        }
+                        $user->save();
                     }
                     $userId = $user->id;
                 }

@@ -98,7 +98,7 @@
                                     <img class="h-8 w-8 object-contain rounded-[6px] shadow-sm" :src="'/images/payment/easypaisa.png'" alt="EasyPaisa" loading="lazy" decoding="async" />
                                 </div>
                                 <span class="text-xs font-semibold text-heading text-center leading-tight">JazzCash / EasyPaisa</span>
-                                <span class="text-[10px] text-paragraph leading-none">1Bill via Swich</span>
+                                <span class="text-[10px] text-paragraph leading-none">Pay on this page</span>
                             </template>
                             <template v-else>
                                 <img class="h-6" :src="paymentGateway.image" alt="payment" loading="lazy" decoding="async" />
@@ -109,7 +109,17 @@
                 </div>
             </div>
 
-            <div class="max-lg:hidden flex items-center justify-between gap-5 mt-10">
+            <SwichOnPagePanel
+                v-if="isSwichPayment"
+                ref="swichPanel"
+                :amount="total"
+                :default-email="swichDefaultEmail"
+                :default-mobile="swichDefaultMobile"
+                @paid="onSwichPaid"
+                @failed="onSwichFailed"
+            />
+
+            <div class="max-lg:hidden flex items-center justify-between gap-5 mt-10" v-if="!swichWaiting">
                 <button type="button" @click.prevent="navigateBackToCart"
                              class="field-button w-fit font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
                     {{ $t('button.back_to_cart') }}
@@ -124,7 +134,7 @@
 
                 <button v-else @click.prevent="confirmOrder"
                     class="checkout-cta-glow-btn field-button w-fit font-semibold tracking-wide normal-case">
-                    <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
+                    <span class="relative z-[1]">{{ isSwichPayment ? 'Place order & pay' : $t('button.confirm_order') }}</span>
                 </button>
             </div>
         </div>
@@ -137,7 +147,7 @@
     </div>
 
     <!-- Mobile sticky confirm bar -->
-    <div class="lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
+    <div v-if="!swichWaiting" class="lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
         <div class="flex items-center gap-3">
             <div class="min-w-0 flex-1">
                 <p class="text-[10px] text-gray-400 font-bold uppercase leading-none mb-0.5">{{ $t('label.total') }}</p>
@@ -154,7 +164,7 @@
             </button>
             <button v-else type="button" @click.prevent="confirmOrder($event)"
                 class="checkout-cta-glow-btn field-button shrink-0 !w-auto px-5 font-semibold tracking-wide normal-case">
-                <span class="relative z-[1]">{{ $t('button.confirm_order') }}</span>
+                <span class="relative z-[1]">{{ isSwichPayment ? 'Place order & pay' : $t('button.confirm_order') }}</span>
             </button>
         </div>
     </div>
@@ -165,6 +175,7 @@ import orderTypeEnum from "../../../../enums/modules/orderTypeEnum";
 import AddressComponent from "./AddressComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
 import CouponComponent from "../CouponComponent.vue";
+import SwichOnPagePanel from "./SwichOnPagePanel.vue";
 import router from "../../../../router";
 import appService from "../../../../services/appService";
 import alertService from "../../../../services/alertService";
@@ -180,10 +191,11 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 import sourceEnum from "../../../../enums/modules/sourceEnum";
 import ENV from "../../../../config/env";
 import ActivityEnum from "../../../../enums/modules/activityEnum";
+import axios from "axios";
 
 export default {
     name: "CheckoutComponent",
-    components: {CouponComponent, SummeryComponent, AddressComponent, LoadingComponent},
+    components: {CouponComponent, SummeryComponent, AddressComponent, LoadingComponent, SwichOnPagePanel},
     inject: {
         promptAbandonedCheckoutLeave: {
             default: (next) => {
@@ -219,6 +231,8 @@ export default {
                 payment: false,
                 outlet: false,
             },
+            swichWaiting: false,
+            pendingSwichOrderId: null,
         }
     },
     computed: {
@@ -270,11 +284,27 @@ export default {
         showOnlinePaymentGateways: function () {
             return this.paymentGateways.length > 0;
         },
+        isSwichPayment: function () {
+            return this.paymentMethod?.slug === 'swich';
+        },
+        swichDefaultEmail: function () {
+            return this.getShippingAddress?.email || this.profile?.email || '';
+        },
+        swichDefaultMobile: function () {
+            return this.getShippingAddress?.phone || this.profile?.phone || '';
+        },
     },
     beforeRouteLeave(to, from, next) {
         if (from.path !== '/checkout/checkout') {
             next();
             return;
+        }
+        if (this.swichWaiting && to.name !== 'frontend.account.orderDetails') {
+            const leave = window.confirm('Payment in progress. Leave checkout?');
+            if (!leave) {
+                next(false);
+                return;
+            }
         }
         const goingToCart = to.name === 'frontend.checkout.cartList' || to.path === '/checkout/cart-list';
         const leavingCheckout = !to.path.startsWith('/checkout');
@@ -546,6 +576,7 @@ export default {
                         defaultPermission: orderResponse.data.data.guest_defaultPermission,
                         defaultMenu: orderResponse.data.data.guest_defaultMenu
                     });
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${orderResponse.data.data.guest_token}`;
                 }
 
                 let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
@@ -556,6 +587,23 @@ export default {
                         currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
                     });
                     this.$router.push({ name: 'frontend.account.orderDetails', params: { id: orderResponse.data.data.id }, query: { status: 'success' } });
+                } else if (paymentSlug === 'swich') {
+                    this.pendingSwichOrderId = orderResponse.data.data.id;
+                    this.swichWaiting = true;
+                    this.$nextTick(async () => {
+                        const panel = this.$refs.swichPanel;
+                        const ok = panel
+                            ? await panel.startForOrder(
+                                orderResponse.data.data.id,
+                                orderResponse.data.data.order_serial_no || ''
+                            )
+                            : false;
+                        if (!ok) {
+                            this.swichWaiting = false;
+                            this.confirmingOrder = false;
+                        }
+                        this.$nextTick(() => this.scrollToCheckoutSection('checkout-section-payment'));
+                    });
                 } else if (paymentSlug) {
                     window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;
                 } else {
@@ -580,7 +628,26 @@ export default {
                     alertService.error(err.response.data.message);
                 }
             });
-        }
+        },
+        onSwichPaid: function ({ orderId }) {
+            const id = orderId || this.pendingSwichOrderId;
+            this.swichWaiting = false;
+            this.confirmingOrder = false;
+            trackOrderCompletedOnce({
+                id,
+                total: this.total,
+                currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
+            });
+            this.$router.push({
+                name: 'frontend.account.orderDetails',
+                params: { id },
+                query: { status: 'success' },
+            });
+        },
+        onSwichFailed: function () {
+            this.swichWaiting = false;
+            this.confirmingOrder = false;
+        },
     }
 }
 </script>

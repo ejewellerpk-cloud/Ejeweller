@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PWAController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\CityController;
 use App\Http\Controllers\Admin\MailController;
+use App\Http\Controllers\Frontend\FrontendSwichPayinController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteController;
@@ -1071,10 +1072,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->group(function () {
         Route::post('/', [FrontendOrderController::class, 'store']);
         Route::post('/track-order', [TrackOrderController::class, 'track']);
+        Route::get('/swich/options', [FrontendSwichPayinController::class, 'options']);
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [FrontendOrderController::class, 'index']);
             Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
             Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
+            Route::post('/{order}/swich/start', [FrontendSwichPayinController::class, 'start']);
+            Route::post('/{order}/swich/initiate', [FrontendSwichPayinController::class, 'initiate']);
+            Route::get('/{order}/swich/status', [FrontendSwichPayinController::class, 'status']);
         });
     });
 

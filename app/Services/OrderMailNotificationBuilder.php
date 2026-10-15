@@ -23,19 +23,65 @@ class OrderMailNotificationBuilder
     {
         $this->orderId = $orderId;
         $this->status  = $status;
-        $this->order   = Order::find($orderId);
+        $this->order   = Order::with(['shippingAddress', 'user'])->find($orderId);
     }
 
     public function send(): void
     {
-        if (!blank($this->order)) {
-            $user = User::find($this->order->user_id);
-            if (!blank($user)) {
-                if ($user->email) {
-                    $this->message($user->name, $user->email, $this->status, $this->order->order_serial_no);
+        if (blank($this->order)) {
+            return;
+        }
+
+        $recipient = $this->resolveRecipient();
+        if (!$recipient) {
+            Log::info('Order mail skipped: no recipient email', [
+                'order_id' => $this->orderId,
+                'user_id'  => $this->order->user_id,
+                'status'   => $this->status,
+            ]);
+
+            return;
+        }
+
+        $this->message($recipient['name'], $recipient['email'], $this->status, $this->order->order_serial_no);
+    }
+
+    /**
+     * Prefer users.email, then shipping/billing address email on the order.
+     */
+    private function resolveRecipient(): ?array
+    {
+        $user = $this->order->user ?: User::find($this->order->user_id);
+        $name = $user?->name
+            ?: (string) ($this->order->shippingAddress?->full_name ?? 'Customer');
+
+        $billingEmail = $this->order->address()
+            ->where('address_type', \App\Enums\AddressType::BILLING)
+            ->value('email');
+
+        $candidates = [
+            $user?->email,
+            $this->order->shippingAddress?->email,
+            $billingEmail,
+        ];
+
+        foreach ($candidates as $email) {
+            $email = trim((string) $email);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                if ($user && blank($user->email)) {
+                    try {
+                        $user->email = $email;
+                        $user->save();
+                    } catch (Exception $e) {
+                        Log::info('Could not backfill user email for order mail: ' . $e->getMessage());
+                    }
                 }
+
+                return ['name' => $name, 'email' => $email];
             }
         }
+
+        return null;
     }
 
     private function message($name, $email, $status, $orderId): void
@@ -60,7 +106,10 @@ class OrderMailNotificationBuilder
         try {
             Mail::to($email)->send(new OrderMail($name, $orderId, $message));
         } catch (Exception $e) {
-            Log::info($e->getMessage());
+            Log::info('Order mail send failed: ' . $e->getMessage(), [
+                'order_id' => $this->orderId,
+                'email'    => $email,
+            ]);
         }
     }
 
@@ -69,6 +118,8 @@ class OrderMailNotificationBuilder
         $notificationAlert = NotificationAlert::where(['language' => 'order_pending_message'])->first();
         if ($notificationAlert && $notificationAlert->mail == SwitchBox::ON) {
             $this->mail($name, $email, $orderId, $notificationAlert->mail_message);
+        } else {
+            Log::info('Order pending mail skipped: alert off or missing', ['order_id' => $this->orderId]);
         }
     }
 

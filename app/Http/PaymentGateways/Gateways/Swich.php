@@ -51,13 +51,28 @@ class Swich extends PaymentAbstract
 
     public function payment($order, $request): mixed
     {
+        $started = $this->startCheckout($order, $request);
+        if (!($started['ok'] ?? false)) {
+            return $this->backToPayment($order, $started['message'] ?? trans('all.message.something_wrong'));
+        }
+
+        return redirect()->route('payment.swich.waiting', [
+            'order' => $order,
+        ]);
+    }
+
+    /**
+     * Create a pending Swich PayIn attempt without redirecting (for on-page checkout).
+     */
+    public function startCheckout(Order $order, mixed $request): array
+    {
         try {
             $method = $this->resolveMethod((string) ($request->swich_method ?? $request->swich_method_ui ?? ''));
             if ($method === null) {
                 $method = $this->ewalletEnabled() ? self::METHOD_JAZZCASH : ($this->billerEnabled() ? self::METHOD_BILLER : null);
             }
             if ($method === null) {
-                return $this->backToPayment($order, trans('all.message.swich_method_required'));
+                return ['ok' => false, 'message' => trans('all.message.swich_method_required')];
             }
 
             $msisdn = self::msisdnFromRequest($request, $order);
@@ -67,12 +82,12 @@ class Swich extends PaymentAbstract
                     'keys' => array_keys($request->all()),
                 ]);
 
-                return $this->backToPayment($order, trans('all.message.swich_msisdn_required'));
+                return ['ok' => false, 'message' => trans('all.message.swich_msisdn_required')];
             }
 
             $email = $this->resolveEmail($order, (string) ($request->swich_email ?? $request->email ?? ''));
             if ($email === '') {
-                return $this->backToPayment($order, trans('all.message.swich_email_required'));
+                return ['ok' => false, 'message' => trans('all.message.swich_email_required')];
             }
 
             $customerTransactionId = $this->makeCustomerTransactionId($order);
@@ -116,23 +131,31 @@ class Swich extends PaymentAbstract
                 'payload' => ['request' => $payload],
             ]);
 
-            return redirect()->route('payment.swich.waiting', [
-                'order' => $order,
-            ]);
+            return [
+                'ok' => true,
+                'order_id' => $order->id,
+                'method' => $method,
+                'msisdn' => $msisdn,
+                'amount' => $amount,
+            ];
         } catch (\Throwable $e) {
-            Log::error('Swich PayIn payment error', [
+            Log::error('Swich PayIn startCheckout error', [
                 'order_id' => $order->id,
                 'message' => $e->getMessage(),
             ]);
 
             $record = $this->latestRecord($order);
             if ($record) {
-                return redirect()->route('payment.swich.waiting', [
-                    'order' => $order,
-                ]);
+                return [
+                    'ok' => true,
+                    'order_id' => $order->id,
+                    'method' => $record->method,
+                    'msisdn' => $record->msisdn,
+                    'amount' => $record->amount,
+                ];
             }
 
-            return $this->backToPayment($order, trans('all.message.something_wrong'));
+            return ['ok' => false, 'message' => trans('all.message.something_wrong')];
         }
     }
 
