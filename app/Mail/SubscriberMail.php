@@ -12,12 +12,12 @@ class SubscriberMail extends Mailable
     use Queueable, SerializesModels, UsesProfessionalMailHeaders;
 
     public string $title;
-    public mixed $message;
+    public string $mailBody;
 
     public function __construct($title, $message)
     {
-        $this->title = $title;
-        $this->message = $message;
+        $this->title    = (string) $title;
+        $this->mailBody = (string) $message;
     }
 
     public function build()
@@ -31,7 +31,7 @@ class SubscriberMail extends Mailable
             ->text('emails.text.subscriber')
             ->with([
                 'title' => $this->title,
-                'message' => $this->message,
+                'mailBody' => $this->mailBody,
             ])
             ->applyProfessionalHeaders();
     }

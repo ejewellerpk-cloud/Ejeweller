@@ -13,13 +13,13 @@ class OrderMail extends Mailable
 
     public string $name;
     public string|int $orderId;
-    public mixed $message;
+    public string $mailBody;
 
     public function __construct($name, $orderId, $message)
     {
-        $this->name    = $name;
-        $this->orderId = $orderId;
-        $this->message = $message;
+        $this->name     = (string) $name;
+        $this->orderId  = $orderId;
+        $this->mailBody = (string) $message;
     }
 
     public function build()
@@ -33,7 +33,7 @@ class OrderMail extends Mailable
             ->with([
                 'name' => $this->name,
                 'orderId' => $this->orderId,
-                'message' => $this->message,
+                'mailBody' => $this->mailBody,
             ])
             ->applyProfessionalHeaders();
     }

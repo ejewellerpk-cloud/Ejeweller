@@ -19,7 +19,7 @@
         <tr>
             <td style="padding:22px 20px;">
                 <div style="font-size:15px;line-height:26px;color:#334155;">
-                    {!! nl2br(e($message)) !!}
+                    {!! nl2br(e($mailBody)) !!}
                 </div>
             </td>
         </tr>

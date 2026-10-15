@@ -17,7 +17,7 @@
 
     @include('emails.partials.info-box', [
         'title' => 'Order #' . $order->order_serial_no,
-        'body' => e($message),
+        'body' => e($mailBody),
     ])
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:20px 0;border:1px solid #e2e8f0;border-radius:6px;">

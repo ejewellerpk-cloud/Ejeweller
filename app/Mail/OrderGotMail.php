@@ -12,12 +12,12 @@ class OrderGotMail extends Mailable
     use Queueable, SerializesModels, UsesProfessionalMailHeaders;
 
     public object $order;
-    public mixed $message;
+    public string $mailBody;
 
     public function __construct($order, $message)
     {
-        $this->order = $order;
-        $this->message = $message;
+        $this->order    = $order;
+        $this->mailBody = (string) $message;
     }
 
     public function build()
@@ -30,7 +30,7 @@ class OrderGotMail extends Mailable
             ->text('emails.text.orderGot')
             ->with([
                 'order' => $this->order,
-                'message' => $this->message,
+                'mailBody' => $this->mailBody,
             ])
             ->applyProfessionalHeaders();
     }

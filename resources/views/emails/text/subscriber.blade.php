@@ -2,7 +2,7 @@ Hello,
 
 {{ $title }}
 
-{{ $message }}
+{{ $mailBody }}
 
 Thank you for staying connected with us.
 {{ config('app.name') }} Team

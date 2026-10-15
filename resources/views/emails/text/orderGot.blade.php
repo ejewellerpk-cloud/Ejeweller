@@ -1,7 +1,7 @@
 A new order has been placed on your store.
 
 Order #{{ $order->order_serial_no }}
-{{ $message }}
+{{ $mailBody }}
 
 Customer: {{ $order->user?->name ?? 'Guest' }}
 @if($order->user?->email)

@@ -17,7 +17,7 @@
 
     @include('emails.partials.info-box', [
         'title' => 'Order #' . $orderId,
-        'body' => e($message),
+        'body' => e($mailBody),
     ])
 
     <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">
