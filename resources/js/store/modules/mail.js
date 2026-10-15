@@ -36,6 +36,9 @@ export const mail = {
                 });
             });
         },
+        sendTest: function (context, payload) {
+            return axios.post("admin/setting/mail/test", payload);
+        },
     },
 
     mutations: {

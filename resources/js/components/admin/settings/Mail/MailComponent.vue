@@ -106,6 +106,42 @@
                     </div>
                 </div>
             </form>
+
+            <div class="mt-8 border-t border-slate-200 pt-6">
+                <h4 class="db-card-title mb-1">{{ $t("label.test_email") || "Test Email" }}</h4>
+                <p class="text-sm text-slate-500 mb-4">
+                    {{ $t("label.test_email_hint") || "Save mail settings first, then send a test message to verify SMTP." }}
+                </p>
+                <div class="form-row">
+                    <div class="form-col-12 sm:form-col-6">
+                        <label for="test_email" class="db-field-title required">
+                            {{ $t("label.email") || "Email" }}
+                        </label>
+                        <input
+                            v-model="testEmail"
+                            v-bind:class="testErrors.email ? 'invalid' : ''"
+                            type="email"
+                            id="test_email"
+                            class="db-field-control"
+                            placeholder="you@example.com"
+                        />
+                        <small class="db-field-alert" v-if="testErrors.email">
+                            {{ testErrors.email[0] }}
+                        </small>
+                    </div>
+                    <div class="form-col-12 flex items-end">
+                        <button
+                            type="button"
+                            class="db-btn text-white bg-gray-700"
+                            :disabled="testLoading"
+                            @click="sendTestEmail"
+                        >
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>{{ $t("button.send_test_email") || "Send Test Email" }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -140,10 +176,17 @@ export default {
                 mail_from_email: "",
             },
             errors: {},
+            testEmail: "",
+            testLoading: false,
+            testErrors: {},
         };
     },
     mounted() {
         try {
+            const authEmail = this.$store.getters["auth/authInfo"]?.email;
+            if (authEmail) {
+                this.testEmail = authEmail;
+            }
             this.loading.isActive = true;
             this.$store
                 .dispatch("mail/lists")
@@ -157,6 +200,9 @@ export default {
                         mail_from_name: res.data.data.mail_from_name,
                         mail_from_email: res.data.data.mail_from_email,
                     };
+                    if (!this.testEmail && res.data.data.mail_from_email) {
+                        this.testEmail = res.data.data.mail_from_email;
+                    }
                     this.loading.isActive = false;
                 })
                 .catch((err) => {
@@ -189,6 +235,31 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err);
             }
+        },
+        sendTestEmail: function () {
+            const email = String(this.testEmail || "").trim();
+            if (!email) {
+                this.testErrors = { email: ["Email is required."] };
+                return;
+            }
+            this.testErrors = {};
+            this.testLoading = true;
+            this.loading.isActive = true;
+            this.$store
+                .dispatch("mail/sendTest", { email })
+                .then((res) => {
+                    alertService.success(res.data?.message || "Test email sent successfully");
+                })
+                .catch((err) => {
+                    if (err.response?.data?.errors) {
+                        this.testErrors = err.response.data.errors;
+                    }
+                    alertService.error(err.response?.data?.message || err.message || "Failed to send test email");
+                })
+                .finally(() => {
+                    this.testLoading = false;
+                    this.loading.isActive = false;
+                });
         },
     },
 };

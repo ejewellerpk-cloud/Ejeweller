@@ -359,6 +359,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::prefix('mail')->name('mail.')->group(function () {
             Route::get('/', [MailController::class, 'index']);
             Route::match(['put', 'patch'], '/', [MailController::class, 'update']);
+            Route::post('/test', [MailController::class, 'test']);
         });
 
         Route::prefix('shipping-setup')->name('shipping-setup.')->group(function () {

@@ -6,6 +6,7 @@ use Exception;
 use App\Services\MailService;
 use App\Http\Requests\MailRequest;
 use App\Http\Resources\MailResource;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
 
@@ -22,8 +23,7 @@ class MailController extends AdminController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:settings', only: ['index']),
-            new Middleware('permission:settings', only: ['update']),
+            new Middleware('permission:settings', only: ['index', 'update', 'test']),
         ];
     }
 
@@ -40,6 +40,24 @@ class MailController extends AdminController implements HasMiddleware
     {
         try {
             return new MailResource($this->mailService->update($request));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function test(Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $validated = $request->validate([
+                'email' => ['required', 'email', 'max:255'],
+            ]);
+
+            $this->mailService->sendTest($validated['email']);
+
+            return response([
+                'status'  => true,
+                'message' => 'Test email sent successfully to ' . $validated['email'],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
