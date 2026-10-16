@@ -3,224 +3,257 @@
 
     <div class="col-12">
         <div class="db-card overflow-hidden">
-            <div class="db-card-header border-none !items-start sm:!items-center gap-3">
-                <div class="min-w-0">
-                    <h3 class="db-card-title">{{ $t('menu.postex_shipments') || 'PostEx Shipments' }}</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">
-                        Order-wise bookings on PostEx — tap a status card to filter.
-                    </p>
-                </div>
-                <div class="db-card-filter !ml-auto flex flex-wrap gap-2">
-                    <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+            <div class="db-card-header border-none">
+                <h3 class="db-card-title">{{ $t('menu.postex_shipments') || 'PostEx Shipments' }}</h3>
+                <div class="db-card-filter flex flex-wrap items-center gap-2">
+                    <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5" @click.stop>
                         <button type="button"
                             class="px-3 py-1.5 text-xs font-semibold rounded-md transition"
                             :class="source === 'local' ? 'bg-white text-heading shadow-sm' : 'text-gray-500'"
-                            @click="switchSource('local')">
+                            @click.stop="switchSource('local')">
                             Booked here
                         </button>
                         <button type="button"
                             class="px-3 py-1.5 text-xs font-semibold rounded-md transition"
                             :class="source === 'live' ? 'bg-white text-heading shadow-sm' : 'text-gray-500'"
-                            @click="switchSource('live')">
+                            @click.stop="switchSource('live')">
                             PostEx live
                         </button>
                     </div>
-                    <button type="button" class="db-btn py-2 text-white bg-primary" :disabled="loading.isActive" @click="refreshAll">
+                    <button type="button" class="db-btn py-2 text-white bg-primary" :disabled="loading.isActive"
+                        @click.stop="refreshAll">
                         <i class="lab lab-line-refresh lab-font-size-16"></i>
-                        <span>{{ $t('button.refresh') || 'Refresh' }}</span>
+                        <span>{{ $t('button.refresh') }}</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="px-4 pb-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div>
+            <div class="px-4 pb-4" @click.stop>
+                <div class="row g-3">
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                         <label class="db-field-title after:hidden">{{ $t('label.search') || 'Search' }}</label>
                         <input v-model="filters.search" type="text" class="db-field-control"
-                            placeholder="Order #, tracking, name, phone, city"
-                            @keyup.enter="applyFilters" />
+                            placeholder="Order # / tracking / phone"
+                            @keyup.enter="applyFilters"
+                            @click.stop />
                     </div>
-                    <div>
-                        <label class="db-field-title after:hidden">From</label>
-                        <input v-model="filters.from_date" type="date" class="db-field-control" />
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3" @click.stop>
+                        <label class="db-field-title after:hidden">{{ $t('label.date') }}</label>
+                        <Datepicker
+                            hideInputIcon
+                            autoApply
+                            :enableTimePicker="false"
+                            utc="false"
+                            :range="true"
+                            v-model="modelValue"
+                            @update:modelValue="handleDate"
+                            @click.stop
+                        />
                     </div>
-                    <div>
-                        <label class="db-field-title after:hidden">To</label>
-                        <input v-model="filters.to_date" type="date" class="db-field-control" />
-                    </div>
-                    <div class="flex items-end gap-2">
-                        <button type="button" class="db-btn py-2 text-white bg-primary flex-1" @click="applyFilters">
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3 flex items-end gap-2">
+                        <button type="button" class="db-btn py-2 text-white bg-primary" @click.stop="applyFilters">
                             <i class="lab lab-line-search lab-font-size-16"></i>
                             <span>{{ $t('button.search') }}</span>
                         </button>
-                        <button type="button" class="db-btn py-2 text-white bg-gray-600" @click="clearFilters">
+                        <button type="button" class="db-btn py-2 text-white bg-gray-600" @click.stop="clearFilters">
                             <i class="lab lab-line-cross lab-font-size-22"></i>
+                            <span>{{ $t('button.clear') }}</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Status cards -->
+            <!-- Status filter cards -->
             <div class="px-4 pb-4">
-                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5">
                     <button type="button"
-                        class="text-left rounded-2xl border p-3.5 transition shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        :class="cardClass(null, activeStatus === null)"
-                        @click="selectStatus(null)">
-                        <div class="flex items-start justify-between gap-2">
-                            <span class="text-[11px] font-bold uppercase tracking-wide text-slate-500">All</span>
-                            <i class="fa-solid fa-layer-group text-slate-400"></i>
-                        </div>
-                        <p class="mt-2 text-2xl font-extrabold text-heading tabular-nums">{{ summary.total || 0 }}</p>
-                        <p class="mt-0.5 text-[11px] text-gray-500">Booked shipments</p>
+                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none"
+                        :class="cardClass(null, activeStatus === null && !activeLiveStatusId)"
+                        @click.stop="selectStatus(null)">
+                        <span class="text-[11px] font-bold uppercase tracking-wide text-slate-500">All</span>
+                        <p class="mt-1 text-xl font-extrabold text-heading tabular-nums">{{ summary.total || 0 }}</p>
                     </button>
 
                     <button type="button" v-for="card in statusCards" :key="card.key || card.id"
-                        class="text-left rounded-2xl border p-3.5 transition shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none"
                         :class="cardClass(card.tone, isCardActive(card))"
-                        @click="selectStatus(card)">
-                        <div class="flex items-start justify-between gap-2">
-                            <span class="text-[11px] font-bold uppercase tracking-wide truncate"
-                                :class="toneText(card.tone)">{{ card.label }}</span>
-                            <i class="fa-solid" :class="toneIcon(card.tone)"></i>
-                        </div>
-                        <p class="mt-2 text-2xl font-extrabold text-heading tabular-nums">
-                            {{ source === 'local' ? card.total : '—' }}
-                        </p>
-                        <p class="mt-0.5 text-[11px] text-gray-500">
-                            {{ source === 'live' ? 'Tap to load from PostEx' : 'Orders' }}
+                        @click.stop="selectStatus(card)">
+                        <span class="text-[11px] font-bold uppercase tracking-wide truncate block"
+                            :class="toneText(card.tone)">{{ card.label }}</span>
+                        <p class="mt-1 text-xl font-extrabold text-heading tabular-nums">
+                            {{ source === 'local' ? card.total : '·' }}
                         </p>
                     </button>
                 </div>
             </div>
 
-            <!-- Orders -->
-            <div class="px-4 pb-5">
+            <!-- Desktop table -->
+            <div class="db-table-responsive hidden md:block px-0">
+                <table class="db-table stripe">
+                    <thead class="db-table-head">
+                        <tr class="db-table-head-tr">
+                            <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.tracking_no') || 'Tracking' }}</th>
+                            <th class="db-table-head-th">{{ $t('label.customer') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.phone') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.city') || 'City' }}</th>
+                            <th class="db-table-head-th">{{ $t('label.amount') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.status') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.date') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="db-table-body" v-if="orders.length > 0">
+                        <tr class="db-table-body-tr" v-for="order in orders" :key="orderKey(order)">
+                            <td class="db-table-body-td font-semibold">
+                                {{ order.order_serial_no || order.order_ref || '—' }}
+                            </td>
+                            <td class="db-table-body-td break-all">
+                                {{ order.postex_tracking_number || order.tracking_number || '—' }}
+                            </td>
+                            <td class="db-table-body-td">
+                                {{ order.customer?.name || order.customer_name || '—' }}
+                            </td>
+                            <td class="db-table-body-td" dir="ltr">
+                                {{ order.customer?.phone || order.customer_phone || '—' }}
+                            </td>
+                            <td class="db-table-body-td">
+                                {{ order.customer?.city || order.customer_city || '—' }}
+                            </td>
+                            <td class="db-table-body-td">
+                                {{ order.total_currency_price || formatMoney(order.cod_amount) }}
+                            </td>
+                            <td class="db-table-body-td">
+                                <span class="db-table-badge capitalize"
+                                    :class="badgeClass(order.postex_status_tone || statusTone(order.status || order.postex_status))">
+                                    {{ order.postex_status || order.status || 'Unknown' }}
+                                </span>
+                            </td>
+                            <td class="db-table-body-td">
+                                {{ order.postex_booked_at || order.booking_date || order.order_datetime || '—' }}
+                            </td>
+                            <td class="db-table-body-td">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <router-link
+                                        v-if="order.id || order.local_order_id"
+                                        :to="{ name: 'admin.order.show', params: { id: order.id || order.local_order_id } }"
+                                        class="db-btn py-1 px-2 text-xs bg-gray-100 text-heading"
+                                        @click.stop>
+                                        {{ $t('button.view') }}
+                                    </router-link>
+                                    <a v-if="order.postex_tracking_number || order.tracking_number"
+                                        :href="'https://postex.pk/?tracking=' + encodeURIComponent(order.postex_tracking_number || order.tracking_number)"
+                                        target="_blank" rel="noopener"
+                                        class="db-btn py-1 px-2 text-xs bg-sky-50 text-sky-700"
+                                        @click.stop>
+                                        Track
+                                    </a>
+                                    <button v-if="source === 'local' && order.id" type="button"
+                                        class="db-btn py-1 px-2 text-xs bg-indigo-50 text-indigo-700 disabled:opacity-60"
+                                        :disabled="trackingId === order.id"
+                                        @click.stop="syncTrack(order)">
+                                        Sync
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="db-table-body" v-else>
+                        <tr class="db-table-body-tr">
+                            <td class="db-table-body-td text-center" colspan="9">
+                                <span class="d-block py-6 text-base">{{ $t('message.no_data_found') }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile cards -->
+            <div class="md:hidden px-4 pb-4 space-y-3">
                 <div v-if="!loading.isActive && orders.length === 0"
-                    class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-6 py-14 text-center">
-                    <i class="fa-solid fa-truck-fast text-3xl text-gray-300 mb-3"></i>
-                    <p class="text-sm font-semibold text-heading">No PostEx shipments found</p>
-                    <p class="text-xs text-gray-500 mt-1">
-                        {{ source === 'live'
-                            ? 'Pick a PostEx status card and date range, then search.'
-                            : 'Book orders from Online Orders to see them here.' }}
-                    </p>
+                    class="rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">
+                    {{ $t('message.no_data_found') }}
                 </div>
 
-                <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                    <article v-for="order in orders" :key="orderKey(order)"
-                        class="rounded-2xl border border-gray-100 bg-white p-4 shadow-[0_1px_8px_rgba(15,23,42,0.04)] hover:border-primary/25 transition">
-                        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
-                            <div class="min-w-0">
-                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                                    {{ order.order_serial_no || order.order_ref || 'Shipment' }}
-                                </p>
-                                <h4 class="text-base font-bold text-heading truncate">
-                                    {{ order.customer?.name || order.customer_name || '—' }}
-                                </h4>
-                            </div>
-                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold capitalize"
-                                :class="badgeClass(order.postex_status_tone || statusTone(order.status || order.postex_status))">
-                                {{ order.postex_status || order.status || 'Unknown' }}
-                            </span>
+                <article v-for="order in orders" :key="'m-' + orderKey(order)"
+                    class="rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-heading truncate">
+                                {{ order.order_serial_no || order.order_ref || 'Shipment' }}
+                            </p>
+                            <p class="text-xs text-gray-500 truncate">
+                                {{ order.customer?.name || order.customer_name || '—' }}
+                            </p>
                         </div>
+                        <span class="shrink-0 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold capitalize"
+                            :class="badgeClass(order.postex_status_tone || statusTone(order.status || order.postex_status))">
+                            {{ order.postex_status || order.status || 'Unknown' }}
+                        </span>
+                    </div>
 
-                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                            <div v-if="order.postex_tracking_number || order.tracking_number">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Tracking</dt>
-                                <dd class="font-semibold text-heading break-all">
-                                    {{ order.postex_tracking_number || order.tracking_number }}
-                                </dd>
-                            </div>
-                            <div v-if="order.total_currency_price || order.cod_amount != null">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Amount</dt>
-                                <dd class="font-semibold text-heading">
-                                    {{ order.total_currency_price || formatMoney(order.cod_amount) }}
-                                </dd>
-                            </div>
-                            <div v-if="order.customer?.phone || order.customer_phone">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Phone</dt>
-                                <dd class="font-medium text-heading">{{ order.customer?.phone || order.customer_phone }}</dd>
-                            </div>
-                            <div v-if="order.customer?.city || order.customer_city">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">City</dt>
-                                <dd class="font-medium text-heading">{{ order.customer?.city || order.customer_city }}</dd>
-                            </div>
-                            <div class="sm:col-span-2" v-if="order.customer?.address || order.customer_address">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Address</dt>
-                                <dd class="font-medium text-heading leading-snug">
-                                    {{ order.customer?.address || order.customer_address }}
-                                </dd>
-                            </div>
-                            <div v-if="order.postex_booked_at || order.booking_date">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Booked</dt>
-                                <dd class="font-medium text-heading">{{ order.postex_booked_at || order.booking_date }}</dd>
-                            </div>
-                            <div v-if="order.order_datetime">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Order date</dt>
-                                <dd class="font-medium text-heading">{{ order.order_datetime }}</dd>
-                            </div>
-                            <div v-if="order.payment_method_name">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Payment</dt>
-                                <dd class="font-medium text-heading">{{ order.payment_method_name }}</dd>
-                            </div>
-                            <div v-if="order.status_name">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Shop status</dt>
-                                <dd class="font-medium text-heading">{{ order.status_name }}</dd>
-                            </div>
-                            <div v-if="order.items_count != null">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Items</dt>
-                                <dd class="font-medium text-heading">{{ order.items_count }}</dd>
-                            </div>
-                            <div class="sm:col-span-2" v-if="order.note">
-                                <dt class="text-[10px] uppercase font-bold text-slate-400">Note</dt>
-                                <dd class="font-medium text-heading leading-snug">{{ order.note }}</dd>
-                            </div>
-                        </dl>
+                    <div class="space-y-1 text-xs text-heading">
+                        <p v-if="order.postex_tracking_number || order.tracking_number">
+                            <span class="text-gray-400">Tracking:</span>
+                            {{ order.postex_tracking_number || order.tracking_number }}
+                        </p>
+                        <p v-if="order.customer?.phone || order.customer_phone" dir="ltr">
+                            <span class="text-gray-400">Phone:</span>
+                            {{ order.customer?.phone || order.customer_phone }}
+                        </p>
+                        <p v-if="order.customer?.city || order.customer_city">
+                            <span class="text-gray-400">City:</span>
+                            {{ order.customer?.city || order.customer_city }}
+                        </p>
+                        <p>
+                            <span class="text-gray-400">Amount:</span>
+                            {{ order.total_currency_price || formatMoney(order.cod_amount) }}
+                        </p>
+                        <p v-if="order.postex_booked_at || order.booking_date">
+                            <span class="text-gray-400">Booked:</span>
+                            {{ order.postex_booked_at || order.booking_date }}
+                        </p>
+                    </div>
 
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <router-link
-                                v-if="order.id || order.local_order_id"
-                                :to="{ name: 'admin.order.show', params: { id: order.id || order.local_order_id } }"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-heading hover:border-primary hover:text-primary transition">
-                                <i class="fa-solid fa-eye"></i>
-                                View order
-                            </router-link>
-                            <a v-if="order.postex_tracking_number || order.tracking_number"
-                                :href="'https://postex.pk/?tracking=' + encodeURIComponent(order.postex_tracking_number || order.tracking_number)"
-                                target="_blank"
-                                rel="noopener"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition">
-                                <i class="fa-solid fa-location-dot"></i>
-                                Track
-                            </a>
-                            <button v-if="source === 'local' && order.id"
-                                type="button"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-60"
-                                :disabled="trackingId === order.id"
-                                @click="syncTrack(order)">
-                                <i class="fa-solid" :class="trackingId === order.id ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
-                                Sync status
-                            </button>
-                        </div>
-                    </article>
-                </div>
-
-                <div v-if="source === 'local' && meta.last_page > 1" class="mt-5 flex items-center justify-between gap-3">
-                    <p class="text-xs text-gray-500">
-                        Page {{ meta.current_page }} of {{ meta.last_page }} · {{ meta.total }} total
-                    </p>
-                    <div class="flex gap-2">
-                        <button type="button" class="db-btn py-1.5 px-3 text-sm bg-gray-100 text-heading disabled:opacity-50"
-                            :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">
-                            Prev
-                        </button>
-                        <button type="button" class="db-btn py-1.5 px-3 text-sm bg-gray-100 text-heading disabled:opacity-50"
-                            :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">
-                            Next
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <router-link
+                            v-if="order.id || order.local_order_id"
+                            :to="{ name: 'admin.order.show', params: { id: order.id || order.local_order_id } }"
+                            class="db-btn py-1.5 px-3 text-xs bg-gray-100 text-heading"
+                            @click.stop>
+                            {{ $t('button.view') }}
+                        </router-link>
+                        <a v-if="order.postex_tracking_number || order.tracking_number"
+                            :href="'https://postex.pk/?tracking=' + encodeURIComponent(order.postex_tracking_number || order.tracking_number)"
+                            target="_blank" rel="noopener"
+                            class="db-btn py-1.5 px-3 text-xs bg-sky-50 text-sky-700"
+                            @click.stop>
+                            Track
+                        </a>
+                        <button v-if="source === 'local' && order.id" type="button"
+                            class="db-btn py-1.5 px-3 text-xs bg-indigo-50 text-indigo-700 disabled:opacity-60"
+                            :disabled="trackingId === order.id"
+                            @click.stop="syncTrack(order)">
+                            Sync
                         </button>
                     </div>
+                </article>
+            </div>
+
+            <div v-if="source === 'local' && meta.last_page > 1"
+                class="px-4 pb-4 flex items-center justify-between gap-3">
+                <p class="text-xs text-gray-500">
+                    {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }}
+                </p>
+                <div class="flex gap-2">
+                    <button type="button" class="db-btn py-1.5 px-3 text-sm bg-gray-100 text-heading disabled:opacity-50"
+                        :disabled="meta.current_page <= 1" @click.stop="goPage(meta.current_page - 1)">
+                        Prev
+                    </button>
+                    <button type="button" class="db-btn py-1.5 px-3 text-sm bg-gray-100 text-heading disabled:opacity-50"
+                        :disabled="meta.current_page >= meta.last_page" @click.stop="goPage(meta.current_page + 1)">
+                        Next
+                    </button>
                 </div>
             </div>
         </div>
@@ -234,69 +267,75 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 
 const TONE_STYLES = {
     sky: {
-        idle: "border-sky-100 bg-gradient-to-br from-sky-50 to-white",
+        idle: "border-sky-100 bg-sky-50/60",
         active: "border-sky-400 ring-2 ring-sky-200 bg-sky-50",
         text: "text-sky-700",
         badge: "bg-sky-100 text-sky-800",
-        icon: "fa-bookmark text-sky-500",
     },
     indigo: {
-        idle: "border-indigo-100 bg-gradient-to-br from-indigo-50 to-white",
+        idle: "border-indigo-100 bg-indigo-50/60",
         active: "border-indigo-400 ring-2 ring-indigo-200 bg-indigo-50",
         text: "text-indigo-700",
         badge: "bg-indigo-100 text-indigo-800",
-        icon: "fa-warehouse text-indigo-500",
     },
     amber: {
-        idle: "border-amber-100 bg-gradient-to-br from-amber-50 to-white",
+        idle: "border-amber-100 bg-amber-50/60",
         active: "border-amber-400 ring-2 ring-amber-200 bg-amber-50",
         text: "text-amber-700",
         badge: "bg-amber-100 text-amber-800",
-        icon: "fa-truck text-amber-500",
     },
     emerald: {
-        idle: "border-emerald-100 bg-gradient-to-br from-emerald-50 to-white",
+        idle: "border-emerald-100 bg-emerald-50/60",
         active: "border-emerald-400 ring-2 ring-emerald-200 bg-emerald-50",
         text: "text-emerald-700",
         badge: "bg-emerald-100 text-emerald-800",
-        icon: "fa-circle-check text-emerald-500",
     },
     orange: {
-        idle: "border-orange-100 bg-gradient-to-br from-orange-50 to-white",
+        idle: "border-orange-100 bg-orange-50/60",
         active: "border-orange-400 ring-2 ring-orange-200 bg-orange-50",
         text: "text-orange-700",
         badge: "bg-orange-100 text-orange-800",
-        icon: "fa-rotate-left text-orange-500",
     },
     rose: {
-        idle: "border-rose-100 bg-gradient-to-br from-rose-50 to-white",
+        idle: "border-rose-100 bg-rose-50/60",
         active: "border-rose-400 ring-2 ring-rose-200 bg-rose-50",
         text: "text-rose-700",
         badge: "bg-rose-100 text-rose-800",
-        icon: "fa-ban text-rose-500",
     },
     slate: {
-        idle: "border-slate-200 bg-gradient-to-br from-slate-50 to-white",
+        idle: "border-slate-200 bg-slate-50/60",
         active: "border-slate-400 ring-2 ring-slate-200 bg-slate-50",
         text: "text-slate-700",
         badge: "bg-slate-100 text-slate-800",
-        icon: "fa-box text-slate-400",
     },
 };
 
-function defaultDateRange() {
+function toYmd(value) {
+    if (!value) {
+        return null;
+    }
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) {
+        return null;
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function defaultRange() {
     const to = new Date();
     const from = new Date();
     from.setDate(to.getDate() - 30);
-    const fmt = (d) => d.toISOString().slice(0, 10);
-    return { from_date: fmt(from), to_date: fmt(to) };
+    return [from, to];
 }
 
 export default {
     name: "PostExShipmentListComponent",
     components: { LoadingComponent },
     data() {
-        const range = defaultDateRange();
+        const range = defaultRange();
         return {
             loading: { isActive: false },
             source: "local",
@@ -308,9 +347,10 @@ export default {
             meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 },
             filters: {
                 search: "",
-                from_date: range.from_date,
-                to_date: range.to_date,
+                from_date: toYmd(range[0]),
+                to_date: toYmd(range[1]),
             },
+            modelValue: range,
             trackingId: null,
         };
     },
@@ -326,6 +366,15 @@ export default {
         this.refreshAll();
     },
     methods: {
+        handleDate(e) {
+            if (Array.isArray(e) && e[0] && e[1]) {
+                this.filters.from_date = toYmd(e[0]);
+                this.filters.to_date = toYmd(e[1]);
+            } else {
+                this.filters.from_date = null;
+                this.filters.to_date = null;
+            }
+        },
         switchSource(source) {
             if (this.source === source) {
                 return;
@@ -354,12 +403,17 @@ export default {
             } else if (this.activeLiveStatusId) {
                 this.loadLiveOrders();
             } else {
-                alertService.info("Select a PostEx status card first.");
+                alertService.info("Select a status card first.");
             }
         },
         clearFilters() {
-            const range = defaultDateRange();
-            this.filters = { search: "", from_date: range.from_date, to_date: range.to_date };
+            const range = defaultRange();
+            this.modelValue = range;
+            this.filters = {
+                search: "",
+                from_date: toYmd(range[0]),
+                to_date: toYmd(range[1]),
+            };
             this.activeStatus = null;
             this.activeLiveStatusId = null;
             this.refreshAll();
@@ -372,7 +426,6 @@ export default {
                     this.loadLocalOrders();
                 } else {
                     this.orders = [];
-                    this.summary = { ...this.summary, total: this.orders.length };
                 }
                 return;
             }
@@ -510,11 +563,7 @@ export default {
                         data.status ||
                         data.Status ||
                         null;
-                    if (status) {
-                        alertService.success("PostEx: " + status);
-                    } else {
-                        alertService.success(this.$t("message.success") || "Synced");
-                    }
+                    alertService.success(status ? "PostEx: " + status : (this.$t("message.success") || "Synced"));
                     this.loadSummary().then(() => this.loadLocalOrders(this.meta.current_page));
                 })
                 .catch((err) => {
@@ -542,9 +591,6 @@ export default {
         },
         toneText(toneName) {
             return this.tone(toneName).text;
-        },
-        toneIcon(toneName) {
-            return this.tone(toneName).icon;
         },
         badgeClass(toneName) {
             return this.tone(toneName).badge;
