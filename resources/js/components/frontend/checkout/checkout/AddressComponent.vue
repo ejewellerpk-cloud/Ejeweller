@@ -431,8 +431,8 @@ export default {
                 const statesRes = results[2];
                 const defaultCountry = (countryMeta && countryMeta.default_country) || this.defaultCheckoutCountry;
 
-                this.address.form.country = defaultCountry;
                 this.applyCountryMeta(countryMeta, statesRes);
+                this.applyDefaultCountry(defaultCountry, { loadStates: !statesRes?.data?.data?.length });
 
                 if (this.logged) {
                     // Address picker is ready — hide skeleton before form lookups finish.
@@ -458,6 +458,37 @@ export default {
             });
     },
     methods: {
+        matchCountryName(preferred) {
+            const wanted = String(preferred || this.defaultCheckoutCountry || "Pakistan").trim().toLowerCase();
+            const match = (this.countries || []).find(
+                (c) => String(c.name || "").trim().toLowerCase() === wanted
+            );
+            return match?.name || (preferred || this.defaultCheckoutCountry || "Pakistan");
+        },
+        applyDefaultCountry(preferred, { loadStates = false } = {}) {
+            const name = this.matchCountryName(preferred);
+            const assign = () => {
+                this.address.form.country = name;
+                if (loadStates) {
+                    this.$store
+                        .dispatch("frontendCountryStateCity/statesByCountry", name)
+                        .then((res) => {
+                            this.address.states = res.data.data || [];
+                        })
+                        .catch(() => {});
+                }
+                if (!this.logged && typeof this.method === "function") {
+                    this.method(this.address.form);
+                }
+            };
+            // vue-select often blanks if value is set before options exist — re-bind after options load.
+            if ((this.countries || []).length > 0) {
+                this.address.form.country = null;
+                this.$nextTick(assign);
+            } else {
+                assign();
+            }
+        },
         applyCountryMeta(countryMeta, statesRes) {
             if (statesRes?.data?.data) {
                 this.address.states = statesRes.data.data;
@@ -473,8 +504,17 @@ export default {
             return warmCheckoutAddressFormLookups(this.$store, { guest: !this.logged })
                 .then(([countryMeta, statesRes]) => {
                     const defaultCountry = (countryMeta && countryMeta.default_country) || this.defaultCheckoutCountry;
-                    this.address.form.country = this.address.form.country || defaultCountry;
                     this.applyCountryMeta(countryMeta, statesRes);
+                    // Only force default when guest form / empty country (don't override edit form).
+                    if (!this.logged || !this.address.form.country) {
+                        this.applyDefaultCountry(defaultCountry, {
+                            loadStates: !this.address.states?.length,
+                        });
+                    } else {
+                        this.applyDefaultCountry(this.address.form.country || defaultCountry, {
+                            loadStates: !this.address.states?.length,
+                        });
+                    }
                 })
                 .catch(() => {});
         },

@@ -65,20 +65,24 @@
             <div class="px-4 pb-4">
                 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5">
                     <button type="button"
-                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none"
-                        :class="cardClass(null, activeStatus === null && !activeLiveStatusId)"
+                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none shadow-sm"
+                        :class="cardClass('violet', activeStatus === null && !activeLiveStatusId)"
                         @click.stop="selectStatus(null)">
-                        <span class="text-[11px] font-bold uppercase tracking-wide text-slate-500">All</span>
-                        <p class="mt-1 text-xl font-extrabold text-heading tabular-nums">{{ summary.total || 0 }}</p>
+                        <span class="text-[11px] font-bold uppercase tracking-wide truncate block"
+                            :class="toneText('violet')">All</span>
+                        <p class="mt-1 text-xl font-extrabold tabular-nums" :class="toneText('violet')">
+                            {{ summary.total || 0 }}
+                        </p>
                     </button>
 
                     <button type="button" v-for="card in statusCards" :key="card.key || card.id"
-                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none"
-                        :class="cardClass(card.tone, isCardActive(card))"
+                        class="text-left rounded-xl border px-3 py-2.5 transition focus:outline-none shadow-sm"
+                        :class="cardClass(card.tone || statusTone(card.label), isCardActive(card))"
                         @click.stop="selectStatus(card)">
                         <span class="text-[11px] font-bold uppercase tracking-wide truncate block"
-                            :class="toneText(card.tone)">{{ card.label }}</span>
-                        <p class="mt-1 text-xl font-extrabold text-heading tabular-nums">
+                            :class="toneText(card.tone || statusTone(card.label))">{{ card.label }}</span>
+                        <p class="mt-1 text-xl font-extrabold tabular-nums"
+                            :class="toneText(card.tone || statusTone(card.label))">
                             {{ source === 'local' ? card.total : '·' }}
                         </p>
                     </button>
@@ -140,9 +144,9 @@
                                         {{ $t('button.view') }}
                                     </router-link>
                                     <a v-if="order.postex_tracking_number || order.tracking_number"
-                                        :href="'https://postex.pk/?tracking=' + encodeURIComponent(order.postex_tracking_number || order.tracking_number)"
+                                        :href="trackUrl(order)"
                                         target="_blank" rel="noopener"
-                                        class="db-btn py-1 px-2 text-xs bg-sky-50 text-sky-700"
+                                        class="db-btn py-1 px-2 text-xs bg-sky-100 text-sky-700"
                                         @click.stop>
                                         Track
                                     </a>
@@ -222,9 +226,9 @@
                             {{ $t('button.view') }}
                         </router-link>
                         <a v-if="order.postex_tracking_number || order.tracking_number"
-                            :href="'https://postex.pk/?tracking=' + encodeURIComponent(order.postex_tracking_number || order.tracking_number)"
+                            :href="trackUrl(order)"
                             target="_blank" rel="noopener"
-                            class="db-btn py-1.5 px-3 text-xs bg-sky-50 text-sky-700"
+                            class="db-btn py-1.5 px-3 text-xs bg-sky-100 text-sky-700"
                             @click.stop>
                             Track
                         </a>
@@ -267,46 +271,58 @@ import "@vuepic/vue-datepicker/dist/main.css";
 
 const TONE_STYLES = {
     sky: {
-        idle: "border-sky-100 bg-sky-50/60",
-        active: "border-sky-400 ring-2 ring-sky-200 bg-sky-50",
+        idle: "border-sky-300 bg-sky-100",
+        active: "border-sky-500 ring-2 ring-sky-300 bg-sky-200",
         text: "text-sky-700",
-        badge: "bg-sky-100 text-sky-800",
+        badge: "bg-sky-100 text-sky-700",
     },
     indigo: {
-        idle: "border-indigo-100 bg-indigo-50/60",
-        active: "border-indigo-400 ring-2 ring-indigo-200 bg-indigo-50",
+        idle: "border-indigo-300 bg-indigo-100",
+        active: "border-indigo-500 ring-2 ring-indigo-300 bg-indigo-200",
         text: "text-indigo-700",
-        badge: "bg-indigo-100 text-indigo-800",
+        badge: "bg-indigo-100 text-indigo-700",
+    },
+    violet: {
+        idle: "border-violet-300 bg-violet-100",
+        active: "border-violet-500 ring-2 ring-violet-300 bg-violet-200",
+        text: "text-violet-700",
+        badge: "bg-violet-100 text-violet-700",
     },
     amber: {
-        idle: "border-amber-100 bg-amber-50/60",
-        active: "border-amber-400 ring-2 ring-amber-200 bg-amber-50",
-        text: "text-amber-700",
-        badge: "bg-amber-100 text-amber-800",
+        idle: "border-amber-300 bg-amber-100",
+        active: "border-amber-500 ring-2 ring-amber-300 bg-amber-200",
+        text: "text-amber-600",
+        badge: "bg-amber-100 text-amber-600",
     },
     emerald: {
-        idle: "border-emerald-100 bg-emerald-50/60",
-        active: "border-emerald-400 ring-2 ring-emerald-200 bg-emerald-50",
+        idle: "border-emerald-300 bg-emerald-100",
+        active: "border-emerald-500 ring-2 ring-emerald-300 bg-emerald-200",
         text: "text-emerald-700",
-        badge: "bg-emerald-100 text-emerald-800",
+        badge: "bg-emerald-100 text-emerald-600",
     },
     orange: {
-        idle: "border-orange-100 bg-orange-50/60",
-        active: "border-orange-400 ring-2 ring-orange-200 bg-orange-50",
+        idle: "border-orange-300 bg-orange-100",
+        active: "border-orange-500 ring-2 ring-orange-300 bg-orange-200",
         text: "text-orange-700",
-        badge: "bg-orange-100 text-orange-800",
+        badge: "bg-orange-100 text-orange-700",
     },
     rose: {
-        idle: "border-rose-100 bg-rose-50/60",
-        active: "border-rose-400 ring-2 ring-rose-200 bg-rose-50",
+        idle: "border-rose-300 bg-rose-100",
+        active: "border-rose-500 ring-2 ring-rose-300 bg-rose-200",
         text: "text-rose-700",
-        badge: "bg-rose-100 text-rose-800",
+        badge: "bg-rose-100 text-rose-600",
+    },
+    cyan: {
+        idle: "border-cyan-300 bg-cyan-100",
+        active: "border-cyan-500 ring-2 ring-cyan-300 bg-cyan-200",
+        text: "text-cyan-700",
+        badge: "bg-cyan-100 text-cyan-700",
     },
     slate: {
-        idle: "border-slate-200 bg-slate-50/60",
-        active: "border-slate-400 ring-2 ring-slate-200 bg-slate-50",
+        idle: "border-slate-300 bg-slate-100",
+        active: "border-slate-500 ring-2 ring-slate-300 bg-slate-200",
         text: "text-slate-700",
-        badge: "bg-slate-100 text-slate-800",
+        badge: "bg-slate-100 text-slate-700",
     },
 };
 
@@ -576,6 +592,10 @@ export default {
         orderKey(order) {
             return order.id || order.tracking_number || order.postex_tracking_number || Math.random();
         },
+        trackUrl(order) {
+            const cn = order.postex_tracking_number || order.tracking_number || "";
+            return "https://postex.pk/tracking?cn=" + encodeURIComponent(cn);
+        },
         formatMoney(value) {
             if (value == null || value === "") {
                 return "—";
@@ -601,8 +621,10 @@ export default {
             if (key.includes("return")) return "orange";
             if (key.includes("cancel") || key.includes("expir") || key.includes("unassign")) return "rose";
             if (key.includes("out for delivery") || key.includes("attempt")) return "amber";
-            if (key.includes("warehouse") || key.includes("picked") || key.includes("en-route") || key.includes("en route")) return "indigo";
+            if (key.includes("transit") || key.includes("en-route") || key.includes("en route")) return "cyan";
+            if (key.includes("warehouse") || key.includes("picked") || key.includes("confirm")) return "indigo";
             if (key.includes("booked") && !key.includes("unbooked")) return "sky";
+            if (key.includes("pending") || key.includes("created") || key.includes("placed")) return "violet";
             return "slate";
         },
     },

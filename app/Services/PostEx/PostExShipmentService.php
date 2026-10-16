@@ -273,11 +273,17 @@ class PostExShipmentService
         if (str_contains($key, 'out for delivery') || str_contains($key, 'attempt')) {
             return 'amber';
         }
-        if (str_contains($key, 'warehouse') || str_contains($key, 'picked') || str_contains($key, 'en route') || str_contains($key, 'en-route')) {
+        if (str_contains($key, 'transit') || str_contains($key, 'en route') || str_contains($key, 'en-route')) {
+            return 'cyan';
+        }
+        if (str_contains($key, 'warehouse') || str_contains($key, 'picked') || str_contains($key, 'confirm')) {
             return 'indigo';
         }
         if (str_contains($key, 'booked') && !str_contains($key, 'unbooked')) {
             return 'sky';
+        }
+        if (str_contains($key, 'pending') || str_contains($key, 'created') || str_contains($key, 'placed')) {
+            return 'violet';
         }
 
         return 'slate';

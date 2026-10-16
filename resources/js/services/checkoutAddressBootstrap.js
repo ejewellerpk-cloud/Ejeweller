@@ -157,9 +157,10 @@ export function warmCheckoutAddressFormLookups(store, { guest = false } = {}) {
     formLookupsPromise = (async () => {
         const countryMeta = await ensureCountryBootstrap(store);
         const defaultCountry = countryMeta?.default_country || getDefaultCheckoutCountry(store);
+        // Always load countries so vue-select can bind the default (guest + add-address modal).
         const [statesRes, countries] = await Promise.all([
             ensureDefaultCountryStates(store, defaultCountry),
-            guest ? ensureCountries(store) : Promise.resolve(null),
+            ensureCountries(store),
         ]);
         return [countryMeta, statesRes, countries];
     })().catch((err) => {
@@ -217,7 +218,7 @@ export function prefetchCheckoutLists(store, { status } = {}) {
             Promise.resolve().then(() => warmCheckoutAddressFormLookups(store, { guest: false }))
         );
     } else {
-        tasks.push(ensureCountryBootstrap(store));
+        tasks.push(warmCheckoutAddressFormLookups(store, { guest: true }));
     }
 
     return Promise.allSettled(tasks);
