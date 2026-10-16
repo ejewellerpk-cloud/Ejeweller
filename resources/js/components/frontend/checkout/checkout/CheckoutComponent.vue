@@ -1,5 +1,18 @@
 <template>
-    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="checkout" />
+    <LoadingComponent v-if="loading.isActive && !confirmingOrder" :props="loading" skeleton="checkout" />
+
+    <div v-if="confirmingOrder"
+         class="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm"
+         role="alert"
+         aria-busy="true"
+         aria-live="assertive">
+        <div class="bg-white rounded-2xl px-8 py-6 shadow-xl flex flex-col items-center gap-3 max-w-xs mx-4">
+            <span class="inline-block h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></span>
+            <p class="text-sm font-semibold text-heading text-center">Placing your order...</p>
+            <p class="text-xs text-paragraph text-center">Please wait, do not close this page.</p>
+        </div>
+    </div>
+
     <div class="row pb-[11rem] lg:pb-0">
         <div class="col-12 lg:col-8">
             <div class="flex items-center rounded-2xl w-fit mb-6 text-focus bg-[#EAF6FF]" v-if="outlets && outlets.length > 0">
@@ -110,9 +123,9 @@
             </div>
 
             <SwichOnPagePanel
-                v-if="isSwichPayment"
+                v-if="isSwichPayment || swichWaiting"
                 ref="swichPanel"
-                :amount="total"
+                :amount="pendingOrderTotal || total"
                 :default-email="swichDefaultEmail"
                 :default-mobile="swichDefaultMobile"
                 @paid="onSwichPaid"
@@ -121,20 +134,27 @@
 
             <div class="max-lg:hidden flex items-center justify-between gap-5 mt-10" v-if="!swichWaiting">
                 <button type="button" @click.prevent="navigateBackToCart"
-                             class="field-button w-fit font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC]">
+                             :disabled="confirmingOrder"
+                             class="field-button w-fit font-semibold tracking-wide normal-case text-secondary bg-[#F7F7FC] disabled:opacity-60 disabled:cursor-not-allowed">
                     {{ $t('button.back_to_cart') }}
                 </button>
 
                 <button type="button" v-if="setting.whatsapp_status === ActivityEnum.ENABLE && setting.whatsapp_checkout_status === ActivityEnum.ENABLE"
-                    class="field-button w-fit font-semibold tracking-wide normal-case text-white bg-[#1AB759]"
+                    class="field-button w-fit font-semibold tracking-wide normal-case text-white bg-[#1AB759] disabled:opacity-70 disabled:cursor-not-allowed"
+                    :disabled="confirmingOrder"
                     @click.prevent="confirmOrder">
-                    <i class="lab lab-whatsapp text-sm"></i>
-                    {{ $t('button.proceed_to_whatsapp') }}
+                    <i v-if="confirmingOrder" class="fa-solid fa-spinner fa-spin text-sm"></i>
+                    <i v-else class="lab lab-whatsapp text-sm"></i>
+                    {{ confirmingOrder ? 'Placing order...' : $t('button.proceed_to_whatsapp') }}
                 </button>
 
-                <button v-else @click.prevent="confirmOrder"
-                    class="checkout-cta-glow-btn field-button w-fit font-semibold tracking-wide normal-case">
-                    <span class="relative z-[1]">{{ isSwichPayment ? 'Place order & pay' : $t('button.confirm_order') }}</span>
+                <button v-else type="button" @click.prevent="confirmOrder"
+                    :disabled="confirmingOrder"
+                    class="checkout-cta-glow-btn field-button w-fit font-semibold tracking-wide normal-case disabled:opacity-70 disabled:cursor-not-allowed">
+                    <span class="relative z-[1] inline-flex items-center gap-2">
+                        <i v-if="confirmingOrder" class="fa-solid fa-spinner fa-spin text-sm"></i>
+                        {{ confirmingOrder ? 'Placing order...' : (isSwichPayment ? 'Place order & pay' : $t('button.confirm_order')) }}
+                    </span>
                 </button>
             </div>
         </div>
@@ -147,7 +167,7 @@
     </div>
 
     <!-- Mobile sticky confirm bar -->
-    <div v-if="!swichWaiting" class="lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
+    <div v-if="!swichWaiting && !confirmingOrder" class="lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
         <div class="flex items-center gap-3">
             <div class="min-w-0 flex-1">
                 <p class="text-[10px] text-gray-400 font-bold uppercase leading-none mb-0.5">{{ $t('label.total') }}</p>
@@ -237,6 +257,7 @@ export default {
             },
             swichWaiting: false,
             pendingSwichOrderId: null,
+            pendingOrderTotal: 0,
         }
     },
     computed: {
@@ -301,6 +322,10 @@ export default {
     beforeRouteLeave(to, from, next) {
         if (from.path !== '/checkout/checkout') {
             next();
+            return;
+        }
+        if (this.confirmingOrder && to.name !== 'frontend.account.orderDetails') {
+            next(false);
             return;
         }
         if (this.swichWaiting && to.name !== 'frontend.account.orderDetails') {
@@ -534,14 +559,6 @@ export default {
             }
 
             this.confirmingOrder = true;
-            const submitButton = e && (e.currentTarget || e.target);
-            if (submitButton && submitButton.closest) {
-                const button = submitButton.tagName === 'BUTTON' ? submitButton : submitButton.closest('button');
-                if (button) {
-                    button.disabled = true;
-                }
-            }
-            this.loading.isActive = true;
 
             trackPaymentAttempted({
                 method: this.paymentMethod?.slug || this.paymentMethod?.name,
@@ -567,10 +584,7 @@ export default {
                 products: JSON.stringify(this.products)
             }
 
-            this.$store.dispatch('frontendOrder/save', this.form).then(orderResponse => {
-                this.loading.isActive = false;
-                this.confirmingOrder = false;
-                
+            this.$store.dispatch('frontendOrder/save', this.form).then(async (orderResponse) => {
                 if (orderResponse.data.data.guest_token) {
                     this.$store.commit('authLogin', {
                         token: orderResponse.data.data.guest_token,
@@ -583,15 +597,23 @@ export default {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${orderResponse.data.data.guest_token}`;
                 }
 
-                let paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
+                this.pendingOrderTotal = orderResponse.data.data.total ?? this.total;
+                const paymentSlug = Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.slug : '';
+
+                // Order created — clear cart so items don't remain after purchase
+                try {
+                    await this.$store.dispatch('frontendCart/resetCart');
+                } catch (e) { /* ignore */ }
+
                 if (orderResponse.data.data.is_cod) {
                     trackOrderCompletedOnce({
                         id: orderResponse.data.data.id,
-                        total: orderResponse.data.data.total ?? this.total,
+                        total: this.pendingOrderTotal,
                         currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
                     });
                     this.$router.push({ name: 'frontend.account.orderDetails', params: { id: orderResponse.data.data.id }, query: { status: 'success' } });
                 } else if (paymentSlug === 'swich') {
+                    this.confirmingOrder = false;
                     this.pendingSwichOrderId = orderResponse.data.data.id;
                     this.swichWaiting = true;
                     this.$nextTick(async () => {
@@ -611,35 +633,28 @@ export default {
                 } else if (paymentSlug) {
                     window.location.href = ENV.API_URL + "/payment/" + paymentSlug + "/pay/" + orderResponse.data.data.id;
                 } else {
+                    this.confirmingOrder = false;
                     alertService.error(this.$t('message.payment_method_required'));
                 }
             }).catch((err) => {
-                this.loading.isActive = false;
                 this.confirmingOrder = false;
-                const submitButton = e && (e.currentTarget || e.target);
-                if (submitButton && submitButton.closest) {
-                    const button = submitButton.tagName === 'BUTTON' ? submitButton : submitButton.closest('button');
-                    if (button) {
-                        button.disabled = false;
-                    }
-                }
                 const fieldErrors = err.response?.data?.errors;
                 if (fieldErrors && typeof fieldErrors === 'object') {
                     Object.values(fieldErrors).forEach((error) => {
                         alertService.error(Array.isArray(error) ? error[0] : error);
                     });
                 } else {
-                    alertService.error(err.response.data.message);
+                    alertService.error(err.response?.data?.message || this.$t('message.something_went_wrong') || 'Something went wrong');
                 }
             });
         },
         onSwichPaid: function ({ orderId }) {
             const id = orderId || this.pendingSwichOrderId;
             this.swichWaiting = false;
-            this.confirmingOrder = false;
+            this.confirmingOrder = true;
             trackOrderCompletedOnce({
                 id,
-                total: this.total,
+                total: this.pendingOrderTotal || this.total,
                 currency_code: window.FACEBOOK_PIXEL_CURRENCY || 'PKR',
             });
             this.$router.push({
