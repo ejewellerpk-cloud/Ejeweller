@@ -32,7 +32,6 @@ class AddressService
                 ->select([
                     'id',
                     'user_id',
-                    'address_type',
                     'full_name',
                     'email',
                     'country_code',
