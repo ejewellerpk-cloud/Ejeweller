@@ -7,8 +7,15 @@ Customer: {{ $order->user?->name ?? 'Guest' }}
 @if($order->user?->email)
 Email: {{ $order->user->email }}
 @endif
-@if($order->user?->phone)
-Phone: {{ $order->user->phone }}
+@php
+    $customerPhone = $order->shippingAddress?->phone ?: $order->user?->phone;
+    $customerPhoneCode = $order->shippingAddress?->country_code ?: $order->user?->country_code;
+    $customerPhoneLocal = $customerPhone
+        ? \App\Libraries\AppLibrary::localPhone($customerPhone, $customerPhoneCode)
+        : '';
+@endphp
+@if($customerPhoneLocal !== '')
+Phone: {{ $customerPhoneLocal }}
 @endif
 Total: {{ App\Libraries\AppLibrary::currencyAmountFormat($order->total) }}
 Payment: {{ $order->paymentMethod?->name ?? 'N/A' }}

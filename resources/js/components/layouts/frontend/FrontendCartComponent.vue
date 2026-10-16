@@ -19,8 +19,8 @@
                         class="flex items-start gap-3 pb-4 mb-4 border-b last:mb-0 last:pb-0 last:border-none border-gray-100">
                         <img :src="cart.image" alt="products" class="w-28 rounded-lg flex-shrink-0" />
 
-                        <div class="relative w-full overflow-hidden">
-                            <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1">
+                        <div class="relative w-full min-w-0">
+                            <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1 pr-1">
                                 {{ cart.name }}
                             </h4>
                             <div v-if="cart.variation_id > 0" class="flex flex-wrap mb-2">
@@ -53,11 +53,12 @@
                                         @click.prevent="quantityIncrement(index, cart)" type="button"
                                         class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
                                 </div>
-                                <button @click.prevent="removeProduct(index)"
-                                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white">
-                                    <i class="lab-line-trash text-sm"></i>
-                                    <span class="text-xs font-medium capitalize hidden sm:block">{{ $t('button.remove')
-                                        }}</span>
+                                <button type="button" @click.prevent="removeProduct(index)"
+                                    :aria-label="$t('button.remove') || 'Remove'"
+                                    :title="$t('button.remove') || 'Remove'"
+                                    class="shrink-0 inline-flex items-center justify-center gap-1.5 min-w-[2.25rem] h-9 px-2.5 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white active:scale-95">
+                                    <i class="lab-line-trash text-base leading-none"></i>
+                                    <span class="text-xs font-medium capitalize hidden sm:inline">{{ $t('button.remove') }}</span>
                                 </button>
                             </div>
 

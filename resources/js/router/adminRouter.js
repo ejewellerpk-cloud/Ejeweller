@@ -11,6 +11,7 @@ import customerRoutes from "./modules/customerRoutes";
 import damageRoutes from "./modules/damageRoutes";
 import employeeRoutes from "./modules/employeeRoutes";
 import onlineOrderRoutes from "./modules/onlineOrderRoutes";
+import postexShipmentRoutes from "./modules/postexShipmentRoutes";
 import mediaRoutes from "./modules/mediaRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import posRoutes from "./modules/posRoutes";
@@ -89,6 +90,7 @@ const routes = baseRoutes.concat(
     returnOrderRoutes,
     damageRoutes,
     onlineOrderRoutes,
+    postexShipmentRoutes,
     productsReportRoutes,
     posOrderRoutes,
     posRoutes,

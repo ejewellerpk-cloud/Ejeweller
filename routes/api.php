@@ -48,6 +48,7 @@ use App\Http\Controllers\Admin\WhatsappController;
 use App\Http\Controllers\Admin\PostExController;
 use App\Http\Controllers\Admin\PostExOrderController;
 use App\Http\Controllers\Admin\PostExOperationController;
+use App\Http\Controllers\Admin\PostExShipmentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CacheController;
 use App\Http\Controllers\Admin\OrderAreaController;
@@ -909,6 +910,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::put('/{order}/postex/cancel', [PostExOrderController::class, 'cancel']);
         Route::get('/{order}/postex/payment-status', [PostExOrderController::class, 'paymentStatus']);
         Route::get('/{order}/postex/airway-bill', [PostExOrderController::class, 'airwayBill']);
+    });
+
+    Route::prefix('postex-shipments')->name('postexShipments.')->group(function () {
+        Route::get('/summary', [PostExShipmentController::class, 'summary']);
+        Route::get('/', [PostExShipmentController::class, 'index']);
+        Route::get('/live-statuses', [PostExShipmentController::class, 'liveStatuses']);
+        Route::get('/live', [PostExShipmentController::class, 'liveIndex']);
     });
 
     Route::prefix('products-report')->name('products-report.')->group(function () {

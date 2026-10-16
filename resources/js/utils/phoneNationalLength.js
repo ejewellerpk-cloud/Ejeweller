@@ -3,7 +3,7 @@
  * Keys: ISO2 (PK) and/or calling code (+92).
  */
 const BY_ISO2 = {
-    PK: 10, // Pakistan
+    PK: 11, // Pakistan local: 03XXXXXXXXX (keep leading 0)
     IN: 10,
     BD: 10,
     US: 10,
@@ -55,7 +55,7 @@ const BY_ISO2 = {
 };
 
 const BY_CALLING_CODE = {
-    '+92': 10,
+    '+92': 11,
     '+91': 10,
     '+880': 10,
     '+1': 10,
@@ -142,9 +142,8 @@ function isPakistan({ callingCode = '', iso2 = '' } = {}) {
 }
 
 /**
- * Pakistan national mobiles are 10 digits (3XXXXXXXXX).
- * Users often type local 0-prefix (03…) or country code (92… / 0092…).
- * Strip those so the field only keeps the national number beside +92.
+ * Pakistan local mobiles are stored/shown as 03XXXXXXXXX (11 digits, keep leading 0).
+ * Users may type 03…, 3…, 92…, or 0092… — normalize to 03… without dropping the 0.
  */
 function normalizePakistanNationalDigits(digits) {
     let next = String(digits || '');
@@ -154,16 +153,21 @@ function normalizePakistanNationalDigits(digits) {
         next = next.slice(4);
     }
 
-    // Country code without +: 92XXXXXXXXXX (12+ digits typical)
-    if (next.startsWith('92') && next.length > 10) {
+    // Country code without +: 92XXXXXXXXXX
+    if (next.startsWith('92') && next.length >= 12) {
         next = next.slice(2);
-    } else if (next.startsWith('92') && next.length >= 2) {
-        // While typing 92… strip as soon as country code is entered
+    } else if (next.startsWith('92') && next.length > 2) {
+        // While typing 92… strip country code once more digits follow
         next = next.slice(2);
     }
 
-    // Local trunk prefix: 03XXXXXXXXX → 3XXXXXXXXX
-    while (next.startsWith('0')) {
+    // Ensure local trunk 0 for mobile numbers (3XXXXXXXXX → 03XXXXXXXXX)
+    if (next.startsWith('3') && !next.startsWith('03')) {
+        next = '0' + next;
+    }
+
+    // Collapse accidental 00… but keep a single leading 0
+    while (next.startsWith('00')) {
         next = next.slice(1);
     }
 

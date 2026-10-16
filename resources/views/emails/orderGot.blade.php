@@ -39,10 +39,19 @@
                         <td style="padding:6px 0;font-size:14px;line-height:20px;color:#0f172a;">{{ $order->user->email }}</td>
                     </tr>
                     @endif
-                    @if($order->user?->phone)
+                    @php
+                        $customerPhone = $order->shippingAddress?->phone
+                            ?: $order->user?->phone;
+                        $customerPhoneCode = $order->shippingAddress?->country_code
+                            ?: $order->user?->country_code;
+                        $customerPhoneLocal = $customerPhone
+                            ? \App\Libraries\AppLibrary::localPhone($customerPhone, $customerPhoneCode)
+                            : '';
+                    @endphp
+                    @if($customerPhoneLocal !== '')
                     <tr>
                         <td style="padding:6px 0;font-size:14px;line-height:20px;color:#64748b;">Phone</td>
-                        <td style="padding:6px 0;font-size:14px;line-height:20px;color:#0f172a;">{{ $order->user->phone }}</td>
+                        <td style="padding:6px 0;font-size:14px;line-height:20px;color:#0f172a;">{{ $customerPhoneLocal }}</td>
                     </tr>
                     @endif
                     <tr>

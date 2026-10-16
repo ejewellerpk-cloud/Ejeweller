@@ -19,8 +19,8 @@
                              class="w-full h-full object-cover transition-opacity duration-300 relative z-10" />
                     </div>
 
-                    <div class="relative w-full overflow-hidden">
-                        <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1">
+                    <div class="relative w-full min-w-0">
+                        <h4 class="font-semibold capitalize whitespace-nowrap overflow-hidden text-ellipsis mb-1 pr-1">
                             {{ cart.name }}
                         </h4>
 
@@ -91,14 +91,17 @@
                                 </button>
                             </div>
 
-                            <!-- REMOVE BUTTON -->
+                            <!-- REMOVE BUTTON (visible on mobile + desktop) -->
                             <button
+                                type="button"
                                 @click.prevent="removeProduct(index)"
-                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white">
+                                :aria-label="$t('button.remove') || 'Remove'"
+                                :title="$t('button.remove') || 'Remove'"
+                                class="shrink-0 inline-flex items-center justify-center gap-1.5 min-w-[2.25rem] h-9 px-2.5 rounded-full bg-[#FFF4F4] text-[#E93C3C] transition-all duration-300 hover:bg-[#E93C3C] hover:text-white active:scale-95">
 
-                                <i class="lab-line-trash text-sm"></i>
+                                <i class="lab-line-trash text-base leading-none"></i>
 
-                                <span class="text-xs font-medium capitalize hidden sm:block">
+                                <span class="text-xs font-medium capitalize sm:inline hidden">
                                     {{ $t('button.remove') }}
                                 </span>
                             </button>

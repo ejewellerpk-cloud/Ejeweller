@@ -163,6 +163,8 @@ class AppLibrary
                     $permissionUrl = 'settings';
                 } elseif (in_array($permissionUrl, ['product-categories', 'product-brands', 'product-attributes', 'units', 'taxes'], true)) {
                     $permissionUrl = 'settings';
+                } elseif ($permissionUrl === 'postex-shipments') {
+                    $permissionUrl = 'online-orders';
                 }
 
                 if (isset($permissions[$permissionUrl]) && !$permissions[$permissionUrl]['access']) {
@@ -254,6 +256,39 @@ class AppLibrary
             return env('CURRENCY_SYMBOL') . number_format($amount, (int)env('CURRENCY_DECIMAL_POINT'), '.', '');
         }
         return number_format($amount, (int)env('CURRENCY_DECIMAL_POINT'), '.', '') . env('CURRENCY_SYMBOL');
+    }
+
+    /**
+     * Display phone in local Pakistan format (03XXXXXXXXX) — keep leading 0.
+     * Accepts national (3… / 03…) or country-prefixed (92… / +92…) values.
+     */
+    public static function localPhone(?string $phone, ?string $countryCode = null): string
+    {
+        $raw = trim((string) $phone);
+        if ($raw === '') {
+            return '';
+        }
+
+        $combined = preg_replace('/\D+/', '', (string) $countryCode . $raw) ?? '';
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+
+        if (preg_match('/(?:92)?0?(3\d{9})$/', $combined, $matches)) {
+            return '0' . $matches[1];
+        }
+
+        if (preg_match('/^03\d{9}$/', $digits)) {
+            return $digits;
+        }
+
+        if (preg_match('/^3\d{9}$/', $digits)) {
+            return '0' . $digits;
+        }
+
+        if (preg_match('/^92(3\d{9})$/', $digits, $matches)) {
+            return '0' . $matches[1];
+        }
+
+        return $raw;
     }
 
     public static function flatAmountFormat($amount): string
