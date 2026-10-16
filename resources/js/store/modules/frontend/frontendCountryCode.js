@@ -3,7 +3,8 @@ import axios from "axios";
 export const frontendCountryCode = {
     namespaced: true,
     state: {
-        show: [],
+        lists: [],
+        show: {},
     },
 
     getters: {

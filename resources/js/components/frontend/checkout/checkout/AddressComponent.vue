@@ -26,7 +26,7 @@
         </div>
         <div v-if="logged" class="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4">
             <div :class="Object.keys(selectedAddress).length > 0 && address.id === selectedAddress.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-[#F7F7F7] bg-[#F7F7F7]'"
-                @click.prevent="activeAddress(address)" v-for="address in addresses" :key="address"
+                @click.prevent="activeAddress(address)" v-for="address in addresses" :key="address.id"
                 class="py-3 px-4 rounded-lg cursor-pointer border transition-all duration-300">
                 <span class="text-base font-medium capitalize mb-1">{{ address.full_name }}</span>
                 <span v-if="address.phone" class="block text-sm leading-6">{{
@@ -318,6 +318,7 @@ import EmailSuggestInput from "../../components/EmailSuggestInput.vue";
 import {
     bootstrapCheckoutAddress,
     getDefaultCheckoutCountry,
+    warmCheckoutAddressFormLookups,
 } from "../../../../services/checkoutAddressBootstrap";
 import {
     getPhoneDigitLimit,
@@ -428,23 +429,14 @@ export default {
                 const addresses = results[0] || [];
                 const countryMeta = results[1] || {};
                 const statesRes = results[2];
-                const defaultCountry = countryMeta.default_country || this.defaultCheckoutCountry;
+                const defaultCountry = (countryMeta && countryMeta.default_country) || this.defaultCheckoutCountry;
 
                 this.address.form.country = defaultCountry;
-
-                if (statesRes?.data?.data) {
-                    this.address.states = statesRes.data.data;
-                }
-
-                if (countryMeta.calling_code) {
-                    this.address.form.country_code = countryMeta.calling_code;
-                    this.address.calling_code = countryMeta.calling_code;
-                    this.address.flag = countryMeta.flag_emoji || "";
-                }
-
-                this.refreshPhoneDigitLimit();
+                this.applyCountryMeta(countryMeta, statesRes);
 
                 if (this.logged) {
+                    // Address picker is ready — hide skeleton before form lookups finish.
+                    this.loading.isActive = false;
                     if (this.slug === "shipping" && Object.keys(this.selectedAddress).length === 0) {
                         const defaultAddress = this.pickDefaultAddress(
                             addresses.length ? addresses : this.$store.getters["frontendAddress/lists"]
@@ -453,16 +445,39 @@ export default {
                             this.activeAddress(defaultAddress);
                         }
                     }
+                    // Apply default country/flag/states when background warm finishes.
+                    this.ensureFormLookups();
                 } else {
+                    this.refreshPhoneDigitLimit();
                     this.method(this.address.form);
+                    this.loading.isActive = false;
                 }
             })
-            .catch(() => {})
-            .finally(() => {
+            .catch(() => {
                 this.loading.isActive = false;
             });
     },
     methods: {
+        applyCountryMeta(countryMeta, statesRes) {
+            if (statesRes?.data?.data) {
+                this.address.states = statesRes.data.data;
+            }
+            if (countryMeta?.calling_code) {
+                this.address.form.country_code = countryMeta.calling_code;
+                this.address.calling_code = countryMeta.calling_code;
+                this.address.flag = countryMeta.flag_emoji || "";
+            }
+            this.refreshPhoneDigitLimit();
+        },
+        ensureFormLookups() {
+            return warmCheckoutAddressFormLookups(this.$store, { guest: !this.logged })
+                .then(([countryMeta, statesRes]) => {
+                    const defaultCountry = (countryMeta && countryMeta.default_country) || this.defaultCheckoutCountry;
+                    this.address.form.country = this.address.form.country || defaultCountry;
+                    this.applyCountryMeta(countryMeta, statesRes);
+                })
+                .catch(() => {});
+        },
         pickDefaultAddress: function (list) {
             if (!list || list.length === 0) {
                 return null;
@@ -503,7 +518,9 @@ export default {
             this.method(address);
         },
         showTarget: function (targetID, addClass) {
-            targetService.showTarget(targetID, addClass);
+            this.ensureFormLookups().finally(() => {
+                targetService.showTarget(targetID, addClass);
+            });
         },
         callCountry: function () {
             this.$store.dispatch('frontendCountryStateCity/countries');
@@ -603,21 +620,21 @@ export default {
             if (Object.keys(this.selectedAddress).length > 0) {
                 targetService.showTarget(this.slug + '-address-modal', 'modal-active');
                 this.loading.isActive = true;
-                this.$store.dispatch("frontendAddress/edit", address.id).then(async (res) => {
-                    this.loading.isActive = false;
+                this.$store.dispatch("frontendAddress/edit", address.id).then(async () => {
+                    await this.ensureFormLookups();
 
                     if (address.state !== "") {
                         await this.$store.dispatch('frontendCountryStateCity/statesByCountry', address.country)
                             .then((res) => {
                                 this.address.states = res.data.data;
-                            })
+                            });
                         await this.$store.dispatch('frontendCountryStateCity/citiesByState', {
                             state: address.state,
                             country: address.country
                         })
                             .then((res) => {
                                 this.address.cities = res.data.data;
-                            })
+                            });
 
                         if (address.city === "") {
                             this.address.form.city = null;
@@ -626,7 +643,7 @@ export default {
                         await this.$store.dispatch('frontendCountryStateCity/statesByCountry', address.country)
                             .then((res) => {
                                 this.address.states = res.data.data;
-                            })
+                            });
                         this.address.form.state = null;
                         this.address.form.city = null;
                     }
@@ -651,14 +668,19 @@ export default {
                         this.address.form.city = null;
                     }
 
+                    this.refreshPhoneDigitLimit();
+
                     this.$store.dispatch('frontendCountryCode/callingCode', address.country_code).then(res => {
-                        this.address.flag = res.data.data.flag_emoji;
+                        if (res?.data?.data?.flag_emoji) {
+                            this.address.flag = res.data.data.flag_emoji;
+                        }
                         this.loading.isActive = false;
-                    }).catch((err) => {
+                    }).catch(() => {
                         this.loading.isActive = false;
                     });
                 }).catch((err) => {
-                    alertService.error(err.response.data.message);
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || err);
                 });
             }
         }

@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Dipokhalder\Settings\Facades\Settings;
 
@@ -16,6 +17,7 @@ use Dipokhalder\Settings\Facades\Settings;
 
 class CountryStateCityService
 {
+    private const CACHE_TTL_SECONDS = 3600;
 
     /**
      * @throws Exception
@@ -23,7 +25,9 @@ class CountryStateCityService
     public function countries()
     {
         try {
-            return Country::where('status', Status::ACTIVE)->orderBy('name', 'asc')->get();
+            return Cache::remember('frontend_countries_active_v1', self::CACHE_TTL_SECONDS, function () {
+                return Country::where('status', Status::ACTIVE)->orderBy('name', 'asc')->get();
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -32,12 +36,20 @@ class CountryStateCityService
 
     public function statesByCountry($country_name)
     {
-        $country  = Country::where('name', '=', $country_name)->first();
-        if (!$country) {
-            return [];
-        }
+        $cacheKey = 'frontend_states_by_country_v1:' . md5(strtolower(trim((string) $country_name)));
+
         try {
-            return State::where('country_id', $country->id)->where('status', Status::ACTIVE)->orderBy('name', 'asc')->get();
+            return Cache::remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($country_name) {
+                $country = Country::where('name', '=', $country_name)->first();
+                if (!$country) {
+                    return [];
+                }
+
+                return State::where('country_id', $country->id)
+                    ->where('status', Status::ACTIVE)
+                    ->orderBy('name', 'asc')
+                    ->get();
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -79,7 +91,10 @@ class CountryStateCityService
         }
 
         try {
-            return City::where('state_id', $state->id)->where('status', Status::ACTIVE)->orderBy('name', 'asc')->get();
+            $cacheKey = 'frontend_cities_by_state_v1:' . $state->id;
+            return Cache::remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($state) {
+                return City::where('state_id', $state->id)->where('status', Status::ACTIVE)->orderBy('name', 'asc')->get();
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

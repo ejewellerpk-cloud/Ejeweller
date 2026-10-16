@@ -58,7 +58,19 @@ export const frontendAddress = {
                     url = `/frontend/address/${this.state["frontendAddress"].temp.temp_id}`;
                 }
                 method(url, payload.form).then(res => {
-                    context.dispatch('lists', {search: payload.search}).then().catch();
+                    const saved = res?.data?.data;
+                    if (saved && saved.id != null) {
+                        const lists = Array.isArray(context.state.lists) ? [...context.state.lists] : [];
+                        const idx = lists.findIndex((a) => a.id === saved.id);
+                        if (idx >= 0) {
+                            lists.splice(idx, 1, saved);
+                        } else {
+                            lists.push(saved);
+                        }
+                        context.commit("lists", lists);
+                    } else if (payload.search) {
+                        context.dispatch("lists", { search: payload.search }).then().catch();
+                    }
                     context.commit('reset');
                     resolve(res);
                 }).catch((err) => {
@@ -72,7 +84,9 @@ export const frontendAddress = {
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.delete(`frontend/address/${payload.id}`).then((res) => {
-                    context.dispatch('lists', {search: payload.search}).then().catch();
+                    const lists = (Array.isArray(context.state.lists) ? context.state.lists : [])
+                        .filter((a) => a.id !== payload.id);
+                    context.commit("lists", lists);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

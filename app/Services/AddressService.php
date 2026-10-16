@@ -28,15 +28,33 @@ class AddressService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return Address::where('user_id', auth()->user()->id)->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->addressFilter)) {
-                        $query->where($key, 'like', '%' . $request . '%');
+            return Address::query()
+                ->select([
+                    'id',
+                    'user_id',
+                    'address_type',
+                    'full_name',
+                    'email',
+                    'country_code',
+                    'phone',
+                    'address',
+                    'country',
+                    'state',
+                    'city',
+                    'zip_code',
+                    'latitude',
+                    'longitude',
+                ])
+                ->where('user_id', auth()->user()->id)
+                ->where(function ($query) use ($requests) {
+                    foreach ($requests as $key => $request) {
+                        if (in_array($key, $this->addressFilter)) {
+                            $query->where($key, 'like', '%' . $request . '%');
+                        }
                     }
-                }
-            })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+                })
+                ->orderBy($orderColumn, $orderType)
+                ->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

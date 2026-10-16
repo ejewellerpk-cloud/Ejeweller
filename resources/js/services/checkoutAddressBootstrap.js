@@ -3,10 +3,13 @@
  */
 
 let addressListsPromise = null;
+let addressListsFetched = false;
 let countryBootstrapPromise = null;
 let defaultCountryStatesPromise = null;
 let defaultCountryStatesKey = null;
 let countriesPromise = null;
+let formLookupsPromise = null;
+let formLookupsGuest = null;
 
 function hasSetting(store) {
     const setting = store.getters["frontendSetting/lists"];
@@ -19,13 +22,23 @@ export function getDefaultCheckoutCountry(store) {
     return name || "Pakistan";
 }
 
+export function invalidateAddressListsCache() {
+    addressListsPromise = null;
+    addressListsFetched = false;
+}
+
 export function ensureAddressLists(store) {
     if (!store.getters.authStatus) {
         return Promise.resolve([]);
     }
 
+    if (addressListsFetched) {
+        return Promise.resolve(store.getters["frontendAddress/lists"] || []);
+    }
+
     const existing = store.getters["frontendAddress/lists"];
     if (existing && existing.length > 0) {
+        addressListsFetched = true;
         return Promise.resolve(existing);
     }
 
@@ -38,7 +51,10 @@ export function ensureAddressLists(store) {
                     order_type: "asc",
                 },
             })
-            .then((res) => res.data.data)
+            .then((res) => {
+                addressListsFetched = true;
+                return res.data.data;
+            })
             .catch((err) => {
                 addressListsPromise = null;
                 throw err;
@@ -128,8 +144,46 @@ export function ensureCountries(store) {
     return countriesPromise;
 }
 
+/**
+ * Warm country-code + states in background (do not block address picker).
+ * Shares one in-flight promise across shipping/billing mounts.
+ */
+export function warmCheckoutAddressFormLookups(store, { guest = false } = {}) {
+    if (formLookupsPromise && formLookupsGuest === guest) {
+        return formLookupsPromise;
+    }
+
+    formLookupsGuest = guest;
+    formLookupsPromise = (async () => {
+        const countryMeta = await ensureCountryBootstrap(store);
+        const defaultCountry = countryMeta?.default_country || getDefaultCheckoutCountry(store);
+        const [statesRes, countries] = await Promise.all([
+            ensureDefaultCountryStates(store, defaultCountry),
+            guest ? ensureCountries(store) : Promise.resolve(null),
+        ]);
+        return [countryMeta, statesRes, countries];
+    })().catch((err) => {
+        formLookupsPromise = null;
+        formLookupsGuest = null;
+        throw err;
+    });
+
+    return formLookupsPromise;
+}
+
+/**
+ * Logged-in: only wait for addresses (picker). Guest: full form data.
+ * Heavy country-code/states warm in background for logged-in users.
+ */
 export function bootstrapCheckoutAddress(store, { guest = false } = {}) {
     return (async () => {
+        if (!guest) {
+            const addresses = await ensureAddressLists(store);
+            // Do not await — address cards should paint immediately.
+            warmCheckoutAddressFormLookups(store, { guest: false }).catch(() => {});
+            return [addresses, null, null, null];
+        }
+
         const [addresses, countryMeta] = await Promise.all([
             ensureAddressLists(store),
             ensureCountryBootstrap(store),
@@ -137,10 +191,9 @@ export function bootstrapCheckoutAddress(store, { guest = false } = {}) {
 
         const defaultCountry = countryMeta?.default_country || getDefaultCheckoutCountry(store);
 
-        // States + guest countries are independent — fetch in parallel
         const [statesRes, countries] = await Promise.all([
             ensureDefaultCountryStates(store, defaultCountry),
-            guest ? ensureCountries(store) : Promise.resolve(null),
+            ensureCountries(store),
         ]);
 
         return [addresses, countryMeta, statesRes, countries];
@@ -154,11 +207,17 @@ export function prefetchCheckoutLists(store, { status } = {}) {
         store.dispatch("frontendOrderArea/lists"),
         store.dispatch("frontendPaymentGateway/lists", status != null ? { status } : { status: 5 }),
         store.dispatch("frontendOutlet/lists", status != null ? { status } : { status: 5 }),
-        ensureCountryBootstrap(store),
     ];
 
     if (store.getters.authStatus) {
-        tasks.push(ensureAddressLists(store));
+        // Addresses first — most important for next screen.
+        tasks.unshift(ensureAddressLists(store));
+        // Country codes are heavy; warm after a tick so cart stays snappy.
+        tasks.push(
+            Promise.resolve().then(() => warmCheckoutAddressFormLookups(store, { guest: false }))
+        );
+    } else {
+        tasks.push(ensureCountryBootstrap(store));
     }
 
     return Promise.allSettled(tasks);

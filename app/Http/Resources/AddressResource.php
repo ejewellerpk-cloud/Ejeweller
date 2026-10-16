@@ -18,7 +18,6 @@ class AddressResource extends JsonResource
         return [
             "id"           => $this->id,
             "user_id"      => $this->user_id,
-            "address_type" => $this->address_type,
             "full_name"    => $this->full_name,
             "email"        => $this->email === null ? '' : $this->email,
             "country_code" => $this->country_code,

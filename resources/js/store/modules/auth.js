@@ -1,6 +1,7 @@
 import axios from 'axios'
 import alertService from "../../services/alertService";
 import { identifyAnalyticsUser } from "../../services/analyticsEcommerceBridge";
+import { invalidateAddressListsCache } from "../../services/checkoutAddressBootstrap";
 
 function onAuthLogin(commit, data) {
     commit('authLogin', data);
@@ -140,6 +141,8 @@ export const auth = {
                     axios.post('auth/logout').then((res) => {
                         localStorage.removeItem('fcm_web_token');
                         context.commit('authLogout');
+                        invalidateAddressListsCache();
+                        context.commit('frontendAddress/lists', [], { root: true });
                         alertService.success("Logged out successfully!");
                         resolve(res);
                     }).catch((err) => {
@@ -253,6 +256,8 @@ export const auth = {
         },
         loginDataReset: function (context) {
             context.commit('authLogout');
+            invalidateAddressListsCache();
+            context.commit('frontendAddress/lists', [], { root: true });
         },
         reset: function (context) {
             context.commit('reset');
