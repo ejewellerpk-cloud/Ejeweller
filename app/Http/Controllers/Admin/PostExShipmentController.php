@@ -18,7 +18,7 @@ class PostExShipmentController extends AdminController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:online-orders', only: [
+            new Middleware('permission:postex-shipments', only: [
                 'summary',
                 'index',
                 'liveStatuses',

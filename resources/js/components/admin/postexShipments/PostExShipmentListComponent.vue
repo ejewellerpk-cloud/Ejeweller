@@ -2,7 +2,7 @@
     <LoadingComponent :props="loading" />
 
     <div class="col-12">
-        <div class="db-card overflow-hidden">
+        <div class="db-card">
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.postex_shipments') || 'PostEx Shipments' }}</h3>
                 <div class="db-card-filter flex flex-wrap items-center gap-2">
@@ -28,16 +28,15 @@
                 </div>
             </div>
 
-            <div class="px-4 pb-4" @click.stop>
+            <div class="px-4 pb-4">
                 <div class="row g-3">
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                         <label class="db-field-title after:hidden">{{ $t('label.search') || 'Search' }}</label>
                         <input v-model="filters.search" type="text" class="db-field-control"
                             placeholder="Order # / tracking / phone"
-                            @keyup.enter="applyFilters"
-                            @click.stop />
+                            @keyup.enter="applyFilters" />
                     </div>
-                    <div class="col-12 sm:col-6 md:col-4 xl:col-3" @click.stop>
+                    <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                         <label class="db-field-title after:hidden">{{ $t('label.date') }}</label>
                         <Datepicker
                             hideInputIcon
@@ -47,7 +46,6 @@
                             :range="true"
                             v-model="modelValue"
                             @update:modelValue="handleDate"
-                            @click.stop
                         />
                     </div>
                     <div class="col-12 sm:col-6 md:col-4 xl:col-3 flex items-end gap-2">
@@ -264,6 +262,8 @@
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import LoadingComponent from "../components/LoadingComponent.vue";
+import Datepicker from "@vuepic/vue-datepicker";
+import "@vuepic/vue-datepicker/dist/main.css";
 
 const TONE_STYLES = {
     sky: {
@@ -333,7 +333,7 @@ function defaultRange() {
 
 export default {
     name: "PostExShipmentListComponent",
-    components: { LoadingComponent },
+    components: { LoadingComponent, Datepicker },
     data() {
         const range = defaultRange();
         return {

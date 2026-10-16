@@ -48,6 +48,16 @@ class MenuTableSeeder extends Seeder
                 'updated_at' => now()
             ],
             [
+                'name'       => 'PostEx Shipments',
+                'language'   => 'postex_shipments',
+                'url'        => 'postex-shipments',
+                'icon'       => 'lab lab-line-truck-check',
+                'priority'   => 31,
+                'status'     => 1,
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
                 'name'       => 'Catalog',
                 'language'   => 'catalog',
                 'url'        => '#',

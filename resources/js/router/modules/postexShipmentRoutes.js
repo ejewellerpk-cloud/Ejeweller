@@ -12,7 +12,7 @@ export default [
         meta: {
             isFrontend: false,
             auth: true,
-            permissionUrl: "online-orders",
+            permissionUrl: "postex-shipments",
             breadcrumb: "postex_shipments",
         },
         children: [
@@ -23,7 +23,7 @@ export default [
                 meta: {
                     isFrontend: false,
                     auth: true,
-                    permissionUrl: "online-orders",
+                    permissionUrl: "postex-shipments",
                     breadcrumb: "",
                 },
             },

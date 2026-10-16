@@ -191,6 +191,14 @@ class PermissionTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'title'      => 'PostEx Shipments',
+                'name'       => 'postex-shipments',
+                'guard_name' => 'sanctum',
+                'url'        => 'postex-shipments',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'title'      => 'WhatsApp Order',
                 'name'       => 'whatsapp-order',
                 'guard_name' => 'sanctum',

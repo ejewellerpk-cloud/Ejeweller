@@ -30,6 +30,7 @@ class RolePermissionTableSeeder extends Seeder
                 ['name' => 'pos'],
                 ['name' => 'pos-orders'],
                 ['name' => 'online-orders'],
+                ['name' => 'postex-shipments'],
                 ['name' => 'whatsapp-order'],
                 ['name' => 'whatsapp-orders'],
                 ['name' => 'push-notifications'],

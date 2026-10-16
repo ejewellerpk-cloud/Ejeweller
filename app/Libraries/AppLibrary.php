@@ -163,8 +163,6 @@ class AppLibrary
                     $permissionUrl = 'settings';
                 } elseif (in_array($permissionUrl, ['product-categories', 'product-brands', 'product-attributes', 'units', 'taxes'], true)) {
                     $permissionUrl = 'settings';
-                } elseif ($permissionUrl === 'postex-shipments') {
-                    $permissionUrl = 'online-orders';
                 }
 
                 if (isset($permissions[$permissionUrl]) && !$permissions[$permissionUrl]['access']) {
