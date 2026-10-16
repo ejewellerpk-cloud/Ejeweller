@@ -4,7 +4,7 @@
         <div class="db-card overflow-hidden">
             <div class="db-card-header border-none">
                 <div>
-                    <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
+                <h3 class="db-card-title">{{ $t('menu.online_orders') }}</h3>
                     <p class="text-xs text-gray-500 mt-0.5 hidden sm:block">
                         {{ $t('message.bulk_orders_hint') || 'Select orders to confirm, ship, print, mark paid, or delete in one go.' }}
                     </p>
@@ -145,7 +145,7 @@
                             <label for="searchStartDate" class="db-field-title after:hidden">
                                 {{ $t('label.date') }}
                             </label>
-                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false" 
                                 @update:modelValue="handleDate" v-model="modelValue" :range="true">
                             </Datepicker>
                         </div>
@@ -243,6 +243,15 @@
                                             @click="runRowAction(() => rowSetStatus(order, enums.orderStatusEnum.DELIVERED))"
                                         >
                                             <i class="fa-solid fa-box-open w-4"></i> {{ $t('label.delivered') }}
+                                        </button>
+                                        <button
+                                            v-if="canCancel(order)"
+                                            type="button"
+                                            class="order-menu-item text-amber-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => openCancelModal(order))"
+                                        >
+                                            <i class="fa-solid fa-ban w-4"></i> {{ $t('label.canceled') }}
                                         </button>
                                         <button
                                             v-if="canBookPostEx(order)"
@@ -484,6 +493,15 @@
                                             <i class="fa-solid fa-box-open w-4"></i> {{ $t('label.delivered') }}
                                         </button>
                                         <button
+                                            v-if="canCancel(order)"
+                                            type="button"
+                                            class="order-menu-item text-amber-700"
+                                            :disabled="bulkBusy"
+                                            @click="runRowAction(() => openCancelModal(order))"
+                                        >
+                                            <i class="fa-solid fa-ban w-4"></i> {{ $t('label.canceled') }}
+                                        </button>
+                                        <button
                                             v-if="canBookPostEx(order)"
                                             type="button"
                                             class="order-menu-item text-indigo-700"
@@ -562,6 +580,7 @@
     </div>
 
     <OnlineOrderShippingSlipPrintComponent ref="shippingSlipPrint" />
+    <OnlineOrderCancelModal ref="cancelModal" @done="onCancelModalDone" />
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
@@ -584,6 +603,7 @@ import "@vuepic/vue-datepicker/dist/main.css";
 import ENV from "../../../config/env";
 import axios from "axios";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
+import OnlineOrderCancelModal from "./OnlineOrderCancelModal.vue";
 
 export default {
     name: "OnlineOrderListComponent",
@@ -598,7 +618,8 @@ export default {
         PrintComponent,
         ExcelComponent,
         Datepicker,
-        OnlineOrderShippingSlipPrintComponent
+        OnlineOrderShippingSlipPrintComponent,
+        OnlineOrderCancelModal,
     },
     data() {
         return {
@@ -716,6 +737,12 @@ export default {
         canDeliver(order) {
             return this.orderStatusInt(order) === orderStatusEnum.ON_THE_WAY;
         },
+        canCancel(order) {
+            const status = this.orderStatusInt(order);
+            return status !== orderStatusEnum.CANCELED
+                && status !== orderStatusEnum.REJECTED
+                && status !== orderStatusEnum.DELIVERED;
+        },
         canBookPostEx(order) {
             const status = this.orderStatusInt(order);
             return !order?.postex_tracking_number
@@ -724,6 +751,12 @@ export default {
         },
         canMarkPaid(order) {
             return this.orderPaymentInt(order) !== paymentStatusEnum.PAID;
+        },
+        openCancelModal(order) {
+            this.$refs.cancelModal?.open(order);
+        },
+        onCancelModalDone() {
+            this.list(this.props.search.page);
         },
         hasCustomerNote(order) {
             return String(order?.note || '').trim() !== '';
@@ -818,7 +851,11 @@ export default {
             if (!order?.id || !status) {
                 return;
             }
-            const needsReason = status === orderStatusEnum.CANCELED || status === orderStatusEnum.REJECTED;
+            if (status === orderStatusEnum.CANCELED) {
+                this.openCancelModal(order);
+                return;
+            }
+            const needsReason = status === orderStatusEnum.REJECTED;
             let reason = null;
             if (needsReason) {
                 reason = window.prompt(this.$t('label.reason') || 'Reason');
@@ -929,6 +966,14 @@ export default {
                 return;
             }
 
+            if (status === orderStatusEnum.CANCELED && this.selectedOrderIds.length === 1) {
+                const order = this.orders.find((o) => o.id === this.selectedOrderIds[0]);
+                if (order) {
+                    this.openCancelModal(order);
+                    return;
+                }
+            }
+
             const needsReason = status === orderStatusEnum.CANCELED || status === orderStatusEnum.REJECTED;
             let reason = null;
             if (needsReason) {
@@ -940,6 +985,29 @@ export default {
                 reason = String(reason).trim();
             }
 
+            const selected = this.orders.filter((o) => this.selectedOrderIds.includes(o.id));
+            const deliveryRisk = selected.filter((o) =>
+                this.orderStatusInt(o) === orderStatusEnum.ON_THE_WAY || !!o.postex_tracking_number
+            );
+            const postExIds = selected.filter((o) => o.postex_tracking_number).map((o) => o.id);
+
+            if (status === orderStatusEnum.CANCELED && deliveryRisk.length > 0) {
+                const warn = this.$t('message.cancel_delivery_warning_body')
+                    || 'Some selected orders may already be out for delivery / booked on PostEx. Shop cancel will not stop the courier unless you also cancel PostEx.';
+                if (!window.confirm(warn + `\n\n(${deliveryRisk.length} at-risk order(s))`)) {
+                    return;
+                }
+            }
+
+            let alsoCancelPostEx = false;
+            if (status === orderStatusEnum.CANCELED && postExIds.length > 0) {
+                alsoCancelPostEx = window.confirm(
+                    (this.$t('message.bulk_also_cancel_postex')
+                        || 'Also cancel PostEx for booked shipments?')
+                    + `\n(${postExIds.length} PostEx shipment(s))`
+                );
+            }
+
             appService.submitConfirmation().then(() => {
                 this.bulkBusy = true;
                 this.loading.isActive = true;
@@ -947,7 +1015,16 @@ export default {
                     ids: this.selectedOrderIds,
                     status: status,
                     reason: reason,
-                }).then((res) => {
+                }).then(async (res) => {
+                    if (alsoCancelPostEx && postExIds.length) {
+                        for (const id of postExIds) {
+                            try {
+                                await axios.put(`admin/online-order/${id}/postex/cancel`);
+                            } catch (e) {
+                                // continue; show aggregate below
+                            }
+                        }
+                    }
                     this.handleBulkResult(res, 'Updated');
                 }).catch((err) => {
                     alertService.error(err?.response?.data?.message || err?.message || this.$t('message.something_wrong'));

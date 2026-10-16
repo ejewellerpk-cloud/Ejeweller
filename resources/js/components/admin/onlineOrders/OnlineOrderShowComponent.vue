@@ -93,6 +93,12 @@
                             class="lab lab-line-chevron-down lab-font-size-16 absolute top-1/2 right-3.5 -translate-y-1/2 text-primary"></i>
                     </div>
 
+                    <button type="button" @click="openCancelModal"
+                        class="flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-[#FB4E4E]">
+                        <i class="lab lab-fill-close-circle"></i>
+                        <span class="text-sm capitalize text-white">{{ $t('label.canceled') || 'Cancel' }}</span>
+                    </button>
+
                     <OnlineOrderReceiptComponent :order="order" :orderProducts="orderProducts" :orderUser="orderUser"
                         :orderAddress="orderAddress" />
                     <button
@@ -108,6 +114,16 @@
 
                 <div class="flex flex-wrap gap-3"
                     v-else-if="order.id && (order.status === enums.orderStatusEnum.REJECTED || order.status === enums.orderStatusEnum.CANCELED)">
+                    <button
+                        v-if="order.postex_tracking_number && !isPostExAlreadyCancelled"
+                        type="button"
+                        :disabled="postexLoading"
+                        @click="cancelPostEx"
+                        class="flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-rose-600"
+                    >
+                        <i class="fa-solid fa-truck"></i>
+                        <span class="text-sm capitalize text-white">{{ $t('button.cancel_postex') || 'Cancel PostEx' }}</span>
+                    </button>
                     <button
                         type="button"
                         :disabled="slipPrintLoading"
@@ -203,6 +219,21 @@
                         <h3 class="db-card-title">{{ $t('menu.postex_cod') }}</h3>
                     </div>
                     <div class="db-card-body space-y-3">
+                        <div v-if="orderCanceledWithActivePostEx"
+                            class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <p class="font-semibold mb-1">
+                                {{ $t('message.order_canceled_postex_active_title')
+                                    || 'Order is canceled, but PostEx may still be active' }}
+                            </p>
+                            <p class="leading-relaxed mb-3">
+                                {{ $t('message.order_canceled_postex_active_body')
+                                    || 'Cancel PostEx as well if the parcel should not continue with the courier.' }}
+                            </p>
+                            <button type="button" :disabled="postexLoading" @click="cancelPostEx"
+                                class="db-btn py-2 text-white bg-rose-600">
+                                {{ $t('button.cancel_postex') }}
+                            </button>
+                        </div>
                         <div v-if="order.postex_tracking_number" class="text-sm space-y-1">
                             <p>
                                 <span class="font-medium">{{ $t('label.postex_tracking') }}:</span>
@@ -238,7 +269,8 @@
                                 class="db-btn py-2 text-white bg-gray-500">
                                 {{ $t('button.postex_payment_status') }}
                             </button>
-                            <button v-if="order.postex_tracking_number" type="button" :disabled="postexLoading"
+                            <button v-if="order.postex_tracking_number && !isPostExAlreadyCancelled" type="button"
+                                :disabled="postexLoading"
                                 @click="cancelPostEx"
                                 class="db-btn py-2 text-white bg-[#FB4E4E]">
                                 {{ $t('button.cancel_postex') }}
@@ -375,6 +407,7 @@
     </div>
 
     <OnlineOrderShippingSlipPrintComponent ref="shippingSlipPrint" />
+    <OnlineOrderCancelModal ref="cancelModal" @done="onCancelModalDone" />
 </template>
 
 <script>
@@ -390,6 +423,7 @@ import activityEnum from "../../../enums/modules/activityEnum";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
 import OnlineOrderShippingSlipPrintComponent from "./OnlineOrderShippingSlipPrintComponent.vue";
+import OnlineOrderCancelModal from "./OnlineOrderCancelModal.vue";
 import { addressKindTitleKey, getDisplayOrderAddresses } from "../../../utils/orderAddresses";
 
 export default {
@@ -397,6 +431,7 @@ export default {
     components: {
         OnlineOrderReceiptComponent,
         OnlineOrderShippingSlipPrintComponent,
+        OnlineOrderCancelModal,
         LoadingComponent,
         OnlineOrderReasonComponent
     },
@@ -500,7 +535,16 @@ export default {
                     [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
                     [orderTypeEnum.PICK_UP]: this.$t("label.pick_up")
                 }
-        }
+        },
+        isPostExAlreadyCancelled: function () {
+            const s = String(this.order?.postex_status || "").toLowerCase();
+            return s.includes("cancel");
+        },
+        orderCanceledWithActivePostEx: function () {
+            const canceled = this.order?.status === orderStatusEnum.CANCELED
+                || this.order?.status === orderStatusEnum.REJECTED;
+            return canceled && !!this.order?.postex_tracking_number && !this.isPostExAlreadyCancelled;
+        },
     },
     mounted() {
         this.loading.isActive = true;
@@ -545,6 +589,20 @@ export default {
                 this.slipPrintLoading = false;
                 this.loading.isActive = false;
             }
+        },
+        openCancelModal: function () {
+            this.$refs.cancelModal?.open(this.order);
+        },
+        onCancelModalDone: function () {
+            this.loading.isActive = true;
+            this.$store.dispatch("onlineOrder/show", this.$route.params.id)
+                .then((res) => {
+                    this.order_status = res.data.data.status;
+                    this.payment_status = res.data.data.payment_status;
+                })
+                .finally(() => {
+                    this.loading.isActive = false;
+                });
         },
         changeStatus: function (status) {
             appService.acceptOrder().then((res) => {
