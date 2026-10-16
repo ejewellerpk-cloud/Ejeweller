@@ -140,6 +140,8 @@ import CouponComponent from "../CouponComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
 import CartTrustBadgesComponent from "../CartTrustBadgesComponent.vue";
 import { shouldShowSocialProof, socialProofTextForItem } from "../../../../utils/socialProof";
+import { prefetchCheckoutLists } from "../../../../services/checkoutAddressBootstrap";
+import statusEnum from "../../../../enums/modules/statusEnum";
 
 export default {
     name: "CartListComponent",
@@ -163,6 +165,16 @@ export default {
 
         carts() {
             return this.$store.getters['frontendCart/lists'];
+        }
+    },
+
+    mounted() {
+        // Warm checkout APIs while shopper is still on cart
+        const run = () => prefetchCheckoutLists(this.$store, { status: statusEnum.ACTIVE });
+        if (typeof requestIdleCallback === "function") {
+            requestIdleCallback(run, { timeout: 2000 });
+        } else {
+            setTimeout(run, 300);
         }
     },
 

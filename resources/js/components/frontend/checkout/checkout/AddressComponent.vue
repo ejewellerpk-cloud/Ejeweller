@@ -1,7 +1,13 @@
 <template>
-    <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="account" />
     <div v-if="show" :id="'checkout-section-' + slug"
         :class="highlightInvalid ? 'mb-6 rounded-2xl shadow-card ring-2 ring-red-500 ring-offset-2 transition-shadow' : 'mb-6 rounded-2xl shadow-card'">
+        <div v-if="loading.isActive" class="p-4 space-y-3 animate-pulse" aria-busy="true">
+            <div class="h-5 w-40 bg-gray-100 rounded"></div>
+            <div class="h-24 bg-gray-50 rounded-xl border border-gray-100"></div>
+            <div class="h-10 bg-gray-50 rounded-lg"></div>
+            <div class="h-10 bg-gray-50 rounded-lg"></div>
+        </div>
+        <template v-else>
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
             <h4 class="font-bold capitalize">{{ title }}</h4>
             <div v-if="logged" class="flex flex-wrap items-center gap-4">
@@ -144,6 +150,7 @@
                 </div>
             </form>
         </div>
+        </template>
     </div>
 
     <div :id="slug + '-address-modal'"
@@ -307,7 +314,6 @@ import orderTypeEnum from "../../../../enums/modules/orderTypeEnum";
 import appService from "../../../../services/appService";
 import targetService from "../../../../services/targetService";
 import alertService from "../../../../services/alertService";
-import LoadingComponent from "../../components/LoadingComponent.vue";
 import EmailSuggestInput from "../../components/EmailSuggestInput.vue";
 import {
     bootstrapCheckoutAddress,
@@ -363,10 +369,10 @@ export default {
             activeAddressId: null,
             errors: {},
             phoneDigitLimit: DEFAULT_PHONE_DIGIT_LIMIT,
+            guestFormSyncTimer: null,
         }
     },
     components: {
-        LoadingComponent,
         EmailSuggestInput,
     },
     computed: {
@@ -390,9 +396,15 @@ export default {
         'address.form': {
             deep: true,
             handler() {
-                if (!this.logged && typeof this.method === 'function') {
-                    this.method(this.address.form);
+                if (this.logged || typeof this.method !== 'function') {
+                    return;
                 }
+                if (this.guestFormSyncTimer) {
+                    clearTimeout(this.guestFormSyncTimer);
+                }
+                this.guestFormSyncTimer = setTimeout(() => {
+                    this.method(this.address.form);
+                }, 200);
             },
         },
         'address.form.country'(countryName) {
@@ -401,6 +413,12 @@ export default {
         'address.form.country_code'() {
             this.refreshPhoneDigitLimit();
         },
+    },
+    beforeUnmount() {
+        if (this.guestFormSyncTimer) {
+            clearTimeout(this.guestFormSyncTimer);
+            this.guestFormSyncTimer = null;
+        }
     },
     mounted() {
         this.loading.isActive = true;

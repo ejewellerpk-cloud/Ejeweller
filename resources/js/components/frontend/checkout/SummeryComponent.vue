@@ -6,7 +6,7 @@
 
         <ul v-if="cartItems.length > 0" class="flex flex-col gap-3 p-4 border-b border-[#EFF0F6] max-h-52 overflow-y-auto thin-scrolling">
             <li v-for="(item, index) in cartItems" :key="index" class="flex items-start gap-2.5">
-                <img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-50 border border-gray-100" />
+                <img :src="item.image" :alt="item.name" loading="lazy" decoding="async" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-50 border border-gray-100" />
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold capitalize leading-tight line-clamp-2">{{ item.name }}</p>
                     <p v-if="item.variation_id > 0" class="text-[11px] text-gray-500 truncate">{{ item.variation_names }}</p>

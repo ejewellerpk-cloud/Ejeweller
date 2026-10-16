@@ -55,16 +55,15 @@ export function ensureCountryBootstrap(store) {
 
     countryBootstrapPromise = (async () => {
         const codes = store.getters["frontendCountryCode/lists"];
-        if (!codes || codes.length === 0) {
-            await store.dispatch("frontendCountryCode/lists");
-        }
+        const needCodes = !codes || codes.length === 0;
+        const needSettings = !hasSetting(store);
 
-        let setting = store.getters["frontendSetting/lists"];
-        if (!hasSetting(store)) {
-            const settingRes = await store.dispatch("frontendSetting/lists");
-            setting = settingRes.data.data;
-        }
+        await Promise.all([
+            needCodes ? store.dispatch("frontendCountryCode/lists") : Promise.resolve(),
+            needSettings ? store.dispatch("frontendSetting/lists") : Promise.resolve(),
+        ]);
 
+        const setting = store.getters["frontendSetting/lists"];
         const companyCode = setting?.company_country_code;
         if (companyCode) {
             const show = store.getters["frontendCountryCode/show"];
@@ -137,9 +136,30 @@ export function bootstrapCheckoutAddress(store, { guest = false } = {}) {
         ]);
 
         const defaultCountry = countryMeta?.default_country || getDefaultCheckoutCountry(store);
-        const statesRes = await ensureDefaultCountryStates(store, defaultCountry);
-        const countries = guest ? await ensureCountries(store) : null;
+
+        // States + guest countries are independent — fetch in parallel
+        const [statesRes, countries] = await Promise.all([
+            ensureDefaultCountryStates(store, defaultCountry),
+            guest ? ensureCountries(store) : Promise.resolve(null),
+        ]);
 
         return [addresses, countryMeta, statesRes, countries];
     })();
+}
+
+/** Prefetch checkout lists from cart step so /checkout/checkout hits cache. */
+export function prefetchCheckoutLists(store, { status } = {}) {
+    const tasks = [
+        store.dispatch("frontendSetting/lists"),
+        store.dispatch("frontendOrderArea/lists"),
+        store.dispatch("frontendPaymentGateway/lists", status != null ? { status } : { status: 5 }),
+        store.dispatch("frontendOutlet/lists", status != null ? { status } : { status: 5 }),
+        ensureCountryBootstrap(store),
+    ];
+
+    if (store.getters.authStatus) {
+        tasks.push(ensureAddressLists(store));
+    }
+
+    return Promise.allSettled(tasks);
 }

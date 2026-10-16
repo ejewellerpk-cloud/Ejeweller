@@ -1,6 +1,9 @@
 import axios from "axios";
 import appService from "../../../services/appService";
 
+let pendingLists = null;
+let pendingKey = null;
+
 export const frontendOutlet = {
     namespaced: true,
     state: {
@@ -21,7 +24,23 @@ export const frontendOutlet = {
     },
     actions: {
         lists: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            const cacheKey = payload ? appService.requestHandler(payload) : "";
+
+            if (Array.isArray(context.state.lists) && context.state.lists.length > 0) {
+                return Promise.resolve({
+                    data: {
+                        data: context.state.lists,
+                        meta: context.state.page,
+                    },
+                });
+            }
+
+            if (pendingLists && pendingKey === cacheKey) {
+                return pendingLists;
+            }
+
+            pendingKey = cacheKey;
+            pendingLists = new Promise((resolve, reject) => {
                 let url = "frontend/outlet";
                 if (payload) {
                     url = url + appService.requestHandler(payload);
@@ -33,8 +52,13 @@ export const frontendOutlet = {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
+                }).finally(() => {
+                    pendingLists = null;
+                    pendingKey = null;
                 });
             });
+
+            return pendingLists;
         }
     },
     mutations: {

@@ -175,7 +175,7 @@ import orderTypeEnum from "../../../../enums/modules/orderTypeEnum";
 import AddressComponent from "./AddressComponent.vue";
 import SummeryComponent from "../SummeryComponent.vue";
 import CouponComponent from "../CouponComponent.vue";
-import SwichOnPagePanel from "./SwichOnPagePanel.vue";
+import { defineAsyncComponent } from "vue";
 import router from "../../../../router";
 import appService from "../../../../services/appService";
 import alertService from "../../../../services/alertService";
@@ -192,6 +192,10 @@ import sourceEnum from "../../../../enums/modules/sourceEnum";
 import ENV from "../../../../config/env";
 import ActivityEnum from "../../../../enums/modules/activityEnum";
 import axios from "axios";
+
+const SwichOnPagePanel = defineAsyncComponent(() =>
+    import("./SwichOnPagePanel.vue")
+);
 
 export default {
     name: "CheckoutComponent",

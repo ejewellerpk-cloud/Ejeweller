@@ -1,6 +1,8 @@
 import axios from "axios";
 import appService from "../../../services/appService";
 
+let pendingLists = null;
+
 export const frontendOrderArea = {
     namespaced: true,
     state: {
@@ -13,7 +15,15 @@ export const frontendOrderArea = {
     },
     actions: {
         lists: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            if (Array.isArray(context.state.lists) && context.state.lists.length > 0 && !payload) {
+                return Promise.resolve({ data: { data: context.state.lists } });
+            }
+
+            if (pendingLists && !payload) {
+                return pendingLists;
+            }
+
+            pendingLists = new Promise((resolve, reject) => {
                 let url = "frontend/order-area";
                 if (payload) {
                     url = url + appService.requestHandler(payload);
@@ -23,8 +33,12 @@ export const frontendOrderArea = {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
+                }).finally(() => {
+                    pendingLists = null;
                 });
             });
+
+            return pendingLists;
         }
     },
     mutations: {
