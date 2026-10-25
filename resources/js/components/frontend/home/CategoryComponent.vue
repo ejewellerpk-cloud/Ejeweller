@@ -3,18 +3,18 @@
     <section v-else-if="categories.length > 0" class="sm:mb-10">
         <div class="container">
             <h2 class="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">{{ $t('label.browse_by_categories')}}</h2>
-            <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" :loop="true" :navigation="true" :modules="modules" class="navigate-swiper homepage-touch-swiper" :breakpoints="breakpoints">
-                <SwiperSlide v-for="category in categories" :key="category.id" class="mobile:!w-24 h-auto">
+            <Swiper dir="ltr" v-bind="rowTouch" :speed="rowSpeed" :loop="categories.length > 6" :navigation="true" :modules="modules" class="navigate-swiper homepage-touch-swiper" :breakpoints="breakpoints">
+                <SwiperSlide v-for="(category, index) in categories" :key="category.id" class="mobile:!w-24 h-auto">
                     <router-link :to="{name: 'frontend.product', query:{ category: category.slug}}"
                                  class="category-card w-full h-full flex flex-col items-center gap-2 sm:gap-3 group">
-                        <div class="category-card__media w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-all duration-300 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
-                            <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full h-full object-cover block" :src="category.thumb" :alt="category.name" width="252" height="252" loading="lazy" decoding="async"
+                        <div class="category-card__media w-full aspect-square rounded-2xl overflow-hidden bg-[#fafafa] border border-gray-100 transition-shadow duration-200 group-hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:border-primary/20">
+                            <img v-if="category.thumb && !category.thumb.includes('default/category')" class="w-full h-full object-cover block" :src="category.thumb" :alt="category.name" width="252" height="252" :loading="index < 4 ? 'eager' : 'lazy'" decoding="async"
                                 @error="$event.target.src=$store.getters['frontendSetting/lists'].theme_logo; $event.target.classList.remove('object-cover'); $event.target.classList.add('object-contain', 'bg-white', 'p-4')">
                             <div v-else class="w-full h-full flex items-center justify-center bg-gray-50/50">
                                 <img :src="$store.getters['frontendSetting/lists'].theme_logo" alt="" width="126" height="126" loading="lazy" decoding="async" class="w-1/2 h-1/2 object-contain opacity-40">
                             </div>
                         </div>
-                        <span class="category-card__label text-xs sm:text-sm md:text-base font-bold capitalize text-center leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-primary transition-colors px-1">
+                        <span class="category-card__label text-xs sm:text-sm md:text-base font-bold capitalize text-center leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-primary transition-colors duration-200 px-1">
                             {{ category.name }}
                         </span>
                     </router-link>
@@ -26,11 +26,10 @@
 
 <script>
 
-import {Navigation, Pagination, Autoplay} from 'swiper/modules';
+import { Navigation } from 'swiper/modules';
 import {Swiper, SwiperSlide} from 'swiper/vue';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import statusEnum from "../../../enums/modules/statusEnum";
 import LoadingComponent from "../components/LoadingComponent";
 import { homepageRowSwiperProps, HOMEPAGE_ROW_SWIPER_SPEED } from '../../../utils/homepageSwiper';
@@ -45,7 +44,7 @@ export default {
     },
     setup() {
         return {
-            modules: [Navigation, Pagination, Autoplay],
+            modules: [Navigation],
             rowTouch: homepageRowSwiperProps,
             rowSpeed: HOMEPAGE_ROW_SWIPER_SPEED,
         }
@@ -89,6 +88,14 @@ export default {
         }).catch(() => {
             this.loading.isActive = false;
         });
+    },
+    // Prefetch may finish before mount — clear skeleton if data already landed
+    watch: {
+        categories(list) {
+            if (list?.length) {
+                this.loading.isActive = false;
+            }
+        },
     },
 }
 </script>

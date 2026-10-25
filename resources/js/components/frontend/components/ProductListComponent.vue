@@ -294,7 +294,15 @@ export default {
         };
     },
     props: {
-        "products": "object",
+        products: {
+            type: Array,
+            default: () => [],
+        },
+        /** Homepage/listing: cover only — no nested media Swiper/video (Shopify-style lightness). */
+        lite: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -483,6 +491,9 @@ export default {
             });
         },
         hasMediaSlider(product) {
+            if (this.lite) {
+                return false;
+            }
             return this.getCardMediaSlides(product).length > 1;
         },
         productRoute(product) {

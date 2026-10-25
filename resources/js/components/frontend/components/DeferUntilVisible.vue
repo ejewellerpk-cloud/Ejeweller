@@ -1,7 +1,7 @@
 <template>
-    <div ref="root">
+    <div ref="root" class="homepage-deferred-section">
         <slot v-if="visible" />
-        <div v-else :style="placeholderStyle" aria-hidden="true"></div>
+        <div v-else class="homepage-deferred-placeholder" :style="placeholderStyle" aria-hidden="true"></div>
     </div>
 </template>
 

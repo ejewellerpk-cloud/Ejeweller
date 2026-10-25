@@ -3,8 +3,8 @@
  * Vertical page scroll stays native; horizontal swipes move carousels smoothly on mobile.
  */
 
-export const HOMEPAGE_ROW_SWIPER_SPEED = 550;
-export const HOMEPAGE_HERO_SWIPER_SPEED = 600;
+export const HOMEPAGE_ROW_SWIPER_SPEED = 420;
+export const HOMEPAGE_HERO_SWIPER_SPEED = 480;
 
 const scrollFriendlyTouch = {
     followFinger: true,
@@ -14,9 +14,9 @@ const scrollFriendlyTouch = {
     touchStartPreventDefault: false,
     passiveListeners: true,
     touchReleaseOnEdges: true,
-    resistanceRatio: 0.82,
+    resistanceRatio: 0.75,
     longSwipes: true,
-    longSwipesMs: 250,
+    longSwipesMs: 220,
     shortSwipes: true,
     preventInteractionOnTransition: false,
     simulateTouch: true,
@@ -41,4 +41,3 @@ export const homepageHeroSwiperProps = {
     touchAngle: 55,
     threshold: 10,
 };
-

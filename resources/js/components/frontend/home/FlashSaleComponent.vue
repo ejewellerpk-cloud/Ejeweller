@@ -12,7 +12,7 @@
                     </router-link>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-6">
-                    <ProductListComponent v-if="products.length > 0" :products="products"/>
+                    <ProductListComponent v-if="products.length > 0" :products="products" :lite="true"/>
                 </div>
             </div>
         </section>

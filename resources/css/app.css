@@ -703,14 +703,80 @@
         -webkit-tap-highlight-color: transparent;
     }
 
-    .homepage-touch-swiper :deep(.swiper-wrapper),
-    .product-section-swiper :deep(.swiper-wrapper),
-    .reviews-swiper :deep(.swiper-wrapper) {
-        will-change: transform;
+    /* Avoid perpetual will-change (keeps layers in GPU memory = jank on long pages) */
+    .homepage-touch-swiper .swiper-wrapper,
+    .product-section-swiper .swiper-wrapper,
+    .reviews-swiper .swiper-wrapper {
+        will-change: auto;
     }
 
     .product-section-slider-container {
         touch-action: pan-y pinch-zoom;
+    }
+
+    /* Shopify-style: skip paint work for off-screen homepage blocks */
+    .homepage-deferred-section {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 240px;
+    }
+
+    .homepage-section-block {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 320px;
+    }
+
+    /* Native product rail — smoother than nested Swiper on mobile */
+    .homepage-product-rail {
+        display: flex;
+        gap: 0.375rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        padding-bottom: 0.25rem;
+        touch-action: pan-x pan-y;
+    }
+
+    .homepage-product-rail::-webkit-scrollbar {
+        display: none;
+    }
+
+    .homepage-product-rail__item {
+        flex: 0 0 48%;
+        max-width: 48%;
+        scroll-snap-align: start;
+        scroll-snap-stop: normal;
+    }
+
+    @media (min-width: 640px) {
+        .homepage-product-rail {
+            gap: 1.25rem;
+        }
+
+        .homepage-product-rail__item {
+            flex-basis: calc((100% - 1.25rem) / 2);
+            max-width: calc((100% - 1.25rem) / 2);
+        }
+    }
+
+    @media (min-width: 768px) {
+        .homepage-product-rail__item {
+            flex-basis: calc((100% - 2.5rem) / 3);
+            max-width: calc((100% - 2.5rem) / 3);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .homepage-product-rail {
+            gap: 1.5rem;
+        }
+
+        .homepage-product-rail__item {
+            flex-basis: calc((100% - 4.5rem) / 4);
+            max-width: calc((100% - 4.5rem) / 4);
+        }
     }
 
     /* iPhone / notch safe areas */
