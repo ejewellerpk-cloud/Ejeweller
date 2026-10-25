@@ -12,29 +12,32 @@
                 </div>
             </div>
             <div class="db-card-body">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-                    <apexchart v-if="options" :options="options" :series="options.series"></apexchart>
-                    <ul class="flex flex-col gap-8 w-full sm:w-36">
-                        <li class="w-full">
-                            <span class="block capitalize mb-1 text-heading">
-                                {{ $t("label.delivered") }} ({{ delivered }}%)
-                            </span>
-                            <span class="block w-full h-2 rounded bg-[#FD8B0E]"></span>
-                        </li>
-                        <li class="w-full">
-                            <span class="block capitalize mb-1 text-heading">
-                                {{ $t("label.canceled") }} ({{ canceled }}%)
-                            </span>
-                            <span class="block w-full h-2 rounded bg-[#A953FF]"></span>
-                        </li>
-                        <li class="w-full">
-                            <span class="block capitalize mb-1 text-heading">
-                                {{ $t("label.rejected") }} ({{ rejected }}%)
-                            </span>
-                            <span class="block w-full h-2 rounded bg-[#FB4E4E]"></span>
-                        </li>
-                    </ul>
-                </div>
+                <ul class="flex flex-col gap-8 w-full max-w-md">
+                    <li class="w-full">
+                        <span class="block capitalize mb-1 text-heading">
+                            {{ $t("label.delivered") }} ({{ delivered }}%)
+                        </span>
+                        <span class="block w-full h-2 rounded bg-slate-100 overflow-hidden">
+                            <span class="block h-full rounded bg-[#FD8B0E]" :style="{ width: delivered + '%' }"></span>
+                        </span>
+                    </li>
+                    <li class="w-full">
+                        <span class="block capitalize mb-1 text-heading">
+                            {{ $t("label.canceled") }} ({{ canceled }}%)
+                        </span>
+                        <span class="block w-full h-2 rounded bg-slate-100 overflow-hidden">
+                            <span class="block h-full rounded bg-[#A953FF]" :style="{ width: canceled + '%' }"></span>
+                        </span>
+                    </li>
+                    <li class="w-full">
+                        <span class="block capitalize mb-1 text-heading">
+                            {{ $t("label.rejected") }} ({{ rejected }}%)
+                        </span>
+                        <span class="block w-full h-2 rounded bg-slate-100 overflow-hidden">
+                            <span class="block h-full rounded bg-[#FB4E4E]" :style="{ width: rejected + '%' }"></span>
+                        </span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -44,6 +47,7 @@
 import LoadingComponent from "../components/LoadingComponent";
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
+
 export default {
     name: "OrderSummaryComponent",
     components: { LoadingComponent, Datepicker },
@@ -54,11 +58,10 @@ export default {
             },
             first_date: null,
             last_date: null,
-            delivered: null,
-            canceled: null,
-            rejected: null,
+            delivered: 0,
+            canceled: 0,
+            rejected: 0,
             modelValue: null,
-            options: null
         };
     },
     mounted() {
@@ -81,48 +84,11 @@ export default {
                 this.delivered = res.data.data.delivered;
                 this.canceled = res.data.data.canceled;
                 this.rejected = res.data.data.rejected;
-
-                this.options = {
-                    series: [parseInt(this.delivered), parseInt(this.canceled), parseInt(this.rejected)],
-                    chart: {
-                        height: 320,
-                        type: 'radialBar',
-                    },
-                    plotOptions: {
-                        radialBar: {
-                            hollow: { size: '25%' },
-                            track: { margin: 10 },
-                            dataLabels: {
-                                name: {
-                                    fontSize: '14px',
-                                    fontFamily: 'inherit',
-                                },
-                                value: {
-                                    fontSize: '14px',
-                                    fontFamily: 'inherit',
-                                    fontWeight: 'bold',
-                                    color: '#1F1F39',
-                                    offsetY: 5,
-                                },
-                                total: {
-                                    show: true,
-                                    label: this.$t('label.total'),
-                                    formatter: function (w) {
-                                        return w.config.series.reduce((a, b) => a + b, 0);
-                                    }
-                                }
-                            }
-                        },
-                    },
-                    stroke: { lineCap: 'round' },
-                    colors: ['#FD8B0E', '#A953FF', '#FB4E4E'],
-                    labels: [this.$t('label.delivered'), this.$t('label.canceled'), this.$t('label.rejected')],
-                };
                 this.loading.isActive = false;
-            }).catch((err) => {
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         },
     },
-}
+};
 </script>

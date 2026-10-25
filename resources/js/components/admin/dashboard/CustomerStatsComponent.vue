@@ -12,7 +12,16 @@
                 </div>
             </div>
             <div class="db-card-body">
-                <apexchart height="270" v-if="options" :options="options" :series="options.series"></apexchart>
+                <ul v-if="bars.length" class="space-y-3">
+                    <li v-for="(bar, index) in bars" :key="index" class="flex items-center gap-3">
+                        <span class="w-16 shrink-0 text-xs text-slate-500 truncate" :title="bar.label">{{ bar.label }}</span>
+                        <span class="flex-1 h-2.5 rounded bg-slate-100 overflow-hidden">
+                            <span class="block h-full rounded bg-[#567DFF]" :style="{ width: bar.width + '%' }"></span>
+                        </span>
+                        <span class="w-10 shrink-0 text-right text-xs font-semibold text-heading">{{ bar.value }}</span>
+                    </li>
+                </ul>
+                <p v-else class="text-sm text-slate-400">{{ $t('message.no_data_found') || 'No data found' }}</p>
             </div>
         </div>
     </div>
@@ -22,6 +31,7 @@
 import LoadingComponent from "../components/LoadingComponent";
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
+
 export default {
     name: "CustomerStatsComponent",
     components: { LoadingComponent, Datepicker },
@@ -32,9 +42,8 @@ export default {
             },
             first_date: null,
             last_date: null,
-            range: true,
             modelValue: null,
-            options: null
+            bars: [],
         };
     },
     mounted() {
@@ -56,52 +65,21 @@ export default {
             this.loading.isActive = true;
 
             this.$store.dispatch("dashboard/customerStates", date).then((res) => {
-                this.options = {
-                    series: [{
-                        name: this.$t('menu.customers'),
-                        data: res.data.data.total_customers,
-                    }],
-                    chart: {
-                        type: 'bar',
-                        height: 276,
-                        parentHeightOffset: 0,
-                        zoom: { enabled: false },
-                        toolbar: { show: false },
-                    },
-                    plotOptions: {
-                        bar: {
-                            horizontal: false,
-                            columnWidth: '40%',
-                            endingShape: 'rounded'
-                        },
-                    },
-                    stroke: {
-                        show: true,
-                        width: 2,
-                        colors: ['#567DFF']
-                    },
-                    xaxis: {
-                        categories: res.data.data.times,
-                    },
-                    fill: {
-                        opacity: 1
-                    },
-                    tooltip: {
-                        style: {
-                            fontSize: '14px',
-                            fontFamily: 'inherit',
-                        }
-                    },
-                    colors: ['#567DFF'],
-                    grid: { show: false, },
-                    yaxis: { show: false },
-                    dataLabels: { enabled: false },
-                };
+                const values = Array.isArray(res.data.data.total_customers)
+                    ? res.data.data.total_customers.map((v) => Number(v) || 0)
+                    : [];
+                const labels = Array.isArray(res.data.data.times) ? res.data.data.times : [];
+                const max = Math.max(...values, 1);
+                this.bars = values.map((value, index) => ({
+                    value,
+                    label: labels[index] ?? String(index + 1),
+                    width: Math.max(2, Math.round((value / max) * 100)),
+                }));
                 this.loading.isActive = false;
-            }).catch((err) => {
+            }).catch(() => {
                 this.loading.isActive = false;
             });
         },
     },
-}
+};
 </script>
