@@ -1,4 +1,20 @@
 <template>
+    <Teleport to="#flash-sale-topbar-slot">
+        <div
+            v-if="product && product.flash_sale && flashSaleTimeLeft"
+            id="frontend-flash-sale-topbar"
+            class="flash-sale-topbar w-full z-40 relative text-center text-white bg-[#E11D48] py-1.5 px-3"
+        >
+            <p class="flash-sale-topbar-text m-0 text-[12px] sm:text-sm font-semibold tracking-wide">
+                <i class="fa-solid fa-bolt mr-1"></i>
+                Flash Sale ends in
+                <span class="font-bold tabular-nums">
+                    {{ flashSaleTimeLeft.days }}d {{ flashSaleTimeLeft.hours }}h {{ flashSaleTimeLeft.minutes }}m {{ flashSaleTimeLeft.seconds }}s
+                </span>
+            </p>
+        </div>
+    </Teleport>
+
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
     <section v-else class="mb-12 sm:mb-6">
         <div class="container">
@@ -216,35 +232,6 @@
                         <i class="fa-solid fa-fire text-red-500 text-xs"></i>
                         <span>{{ socialProofText(product.in_baskets, product.bought_last_24_hours) }}</span>
                     </p>
-
-                    <!-- Flash Sale Countdown Timer -->
-                    <div v-if="product.flash_sale && flashSaleTimeLeft" class="pdp-flash-sale mb-6 sm:mb-2.5 p-4 sm:p-2.5 rounded-xl sm:rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-3 sm:gap-2">
-                            <i class="fa-solid fa-bolt text-2xl sm:text-base animate-pulse text-yellow-300"></i>
-                            <div>
-                                <h3 class="font-black text-lg sm:text-sm leading-none tracking-tight">Flash Sale Ends In</h3>
-                                <p class="text-xs sm:text-[11px] font-medium text-red-100 mt-1 sm:mt-0.5 leading-tight">Don't miss out on this offer!</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2 sm:gap-1.5 text-center">
-                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.days }}</span>
-                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Days</span>
-                            </div>
-                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.hours }}</span>
-                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Hrs</span>
-                            </div>
-                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.minutes }}</span>
-                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Min</span>
-                            </div>
-                            <div class="pdp-flash-unit bg-white/20 rounded-lg sm:rounded-md p-2 sm:p-1.5 min-w-[50px] sm:min-w-[38px] backdrop-blur-sm border border-white/30">
-                                <span class="pdp-flash-num block text-xl sm:text-sm font-black leading-none">{{ flashSaleTimeLeft.seconds }}</span>
-                                <span class="text-[10px] sm:text-[9px] uppercase font-bold tracking-wider mt-1 sm:mt-0.5 block opacity-80">Sec</span>
-                            </div>
-                        </div>
-                    </div>
 
                     <h2 class="pdp-title text-2xl sm:text-xl lg:text-2xl font-bold capitalize text-heading mb-3 sm:mb-1.5 leading-snug">{{ product.name }}</h2>
 
@@ -1104,6 +1091,7 @@ export default {
         this.scheduleEngagementWidgets();
     },
     beforeUnmount() {
+        this.stopFlashSaleTimer();
         if (this.tickerInterval) {
             clearInterval(this.tickerInterval);
         }
@@ -2837,33 +2825,21 @@ body.image-preview-open .product-image-preview-modal {
         line-height: 1.3 !important;
     }
 
-    .pdp-flash-sale {
-        margin-bottom: 0.625rem !important;
-        padding: 0.625rem 0.75rem !important;
-        border-radius: 0.5rem !important;
-        gap: 0.5rem !important;
-    }
+}
+</style>
 
-    .pdp-flash-sale i.fa-bolt {
-        font-size: 1rem !important;
-    }
+<style>
+.flash-sale-topbar-text {
+    animation: flash-sale-blink 1s step-start infinite;
+}
 
-    .pdp-flash-sale h3 {
-        font-size: 0.875rem !important;
+@keyframes flash-sale-blink {
+    0%,
+    100% {
+        opacity: 1;
     }
-
-    .pdp-flash-sale p {
-        font-size: 0.6875rem !important;
-        margin-top: 0.125rem !important;
-    }
-
-    .pdp-flash-sale .pdp-flash-unit {
-        min-width: 2.35rem !important;
-        padding: 0.35rem !important;
-    }
-
-    .pdp-flash-sale .pdp-flash-num {
-        font-size: 0.875rem !important;
+    50% {
+        opacity: 0.35;
     }
 }
 </style>

@@ -1,4 +1,7 @@
 <template>
+    <!-- Product flash-sale countdown teleports here -->
+    <div id="flash-sale-topbar-slot"></div>
+
     <div v-if="setting.top_bar_status === 'active' && $route.name === 'frontend.home' && topBarTitles.length > 0" 
          id="frontend-top-bar"
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
@@ -452,6 +455,10 @@ export default {
             const topBar = document.getElementById('frontend-top-bar');
             if (topBar && typeof ResizeObserver !== 'undefined') {
                 headerResizeObserver?.observe(topBar);
+            }
+            const flashSlot = document.getElementById('flash-sale-topbar-slot');
+            if (flashSlot && typeof ResizeObserver !== 'undefined') {
+                headerResizeObserver?.observe(flashSlot);
             }
         });
 
