@@ -165,7 +165,7 @@
     @media (min-width: 640px) {
         .modal-active > div { @apply !my-5 }
     }
-    .canvas-active { @apply !opacity-100 !visible }
+    .canvas-active { @apply !opacity-100 !visible pointer-events-auto }
     .canvas-active > div { @apply !translate-x-0 }
 
     .search-active {
@@ -1028,6 +1028,7 @@
         max-height: 0;
         overflow: hidden;
         opacity: 0;
+        pointer-events: none;
         transition: max-height 0.28s ease, opacity 0.2s ease, margin 0.2s ease;
         @apply flex flex-col gap-0.5 ltr:pl-2 rtl:pr-2 ltr:ml-3 rtl:mr-3 ltr:border-l-2 rtl:border-r-2 border-slate-200/90
     }
@@ -1035,7 +1036,34 @@
     .db-sidebar-nav-dropdown.is-open {
         max-height: 40rem;
         opacity: 1;
+        pointer-events: auto;
         @apply mt-1 mb-2
+    }
+
+    /*
+     * Page loaders use vue-element-loading at z-index 3000 / position:fixed and were
+     * covering the whole viewport — including the admin sidebar (z-50). That made
+     * sidebar clicks feel dead until the API finished. Keep chrome clickable.
+     */
+    .db-main .velmld-overlay.velmld-full-screen {
+        z-index: 40;
+        top: 3.75rem;
+    }
+
+    @media (min-width: 1024px) {
+        html:not([dir="rtl"]) .db-main .velmld-overlay.velmld-full-screen {
+            left: 272px;
+        }
+
+        html[dir="rtl"] .db-main .velmld-overlay.velmld-full-screen {
+            right: 272px;
+            left: 0;
+        }
+
+        .db-main.expand .velmld-overlay.velmld-full-screen {
+            left: 0;
+            right: 0;
+        }
     }
 
     .db-sidebar-nav-dropdown .db-sidebar-nav-menu {
@@ -1240,6 +1268,35 @@
 
     .backdrop.active {
         @apply visible opacity-100
+    }
+
+    /*
+     * Admin page loaders (vue-element-loading) use position:fixed + z-index:3000.
+     * The sidebar is only z-50, so every list/show mount that sets loading.isActive
+     * was swallowing sidebar clicks until the API finished — felt like laggy nav.
+     * Keep the spinner visible over main content; never capture pointer events.
+     */
+    .velmld-overlay.velmld-full-screen {
+        pointer-events: none;
+    }
+
+    @media (min-width: 1024px) {
+        .velmld-overlay.velmld-full-screen {
+            top: 3.75rem;
+            left: 272px;
+            right: 0;
+            bottom: 0;
+        }
+
+        [dir="rtl"] .velmld-overlay.velmld-full-screen {
+            left: 0;
+            right: 272px;
+        }
+
+        body:has(.db-main.expand) .velmld-overlay.velmld-full-screen {
+            left: 0;
+            right: 0;
+        }
     }
 
     /* BUTTON */

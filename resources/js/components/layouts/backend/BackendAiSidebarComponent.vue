@@ -1,5 +1,4 @@
 <template>
-    <LoadingContentComponent :props="loading"/>
     <div v-if="status" class="ai-move" @click.prevent="openCanvas('ai-sidebar')">
         <span class="mb-1">
             <i class="lab-fill-ai lab-font-size-24 text-[#8B5CF6]"></i>
@@ -10,7 +9,7 @@
         </span>
     </div>
 
-    <div v-if="status" id="ai-sidebar" @click="closeBackdrop" class="fixed inset-0 z-50 invisible transition-all duration-500 opacity-0 bg-black/50">
+    <div v-if="status" id="ai-sidebar" @click="closeBackdrop" class="fixed inset-0 z-50 invisible pointer-events-none transition-all duration-500 opacity-0 bg-black/50">
         <div class="flex flex-col w-full max-w-xl transition-all duration-300 bg-white shadow-2xl h-dvh ms-auto ltr:translate-x-full rtl:-translate-x-full">
             <div class="z-10 flex items-center justify-between flex-shrink-0 p-6 bg-white border-b border-slate-100">
                 <h3 class="text-xl font-bold text-slate-800">{{ $t('label.ai_assistant') }}</h3>
@@ -53,22 +52,14 @@
 </template>
 
 <script>
-import LoadingContentComponent from "../../admin/components/LoadingContentComponent.vue";
 import {useCanvas} from "../../../composables/canvas.js";
 import alertService from "../../../services/alertService.js";
 
 
 export default {
     name: "BackendAiSidebarComponent",
-    components: {LoadingContentComponent},
     data() {
         return {
-            loading: {
-                isActive: false
-            },
-            loadingComponent: {
-                isActive: false
-            },
             messages: [],
             chatInput: "",
             chatInputItem: "",
@@ -87,24 +78,19 @@ export default {
     },
     methods: {
         loadHistory: function () {
+            // Silent background fetch — never cover .db-main / sidebar with a loader.
             this.$store.dispatch('ai/fetchStatus').then((res) => {
                 if(res.data.data) {
-                    this.loading.isActive = true;
                     this.$store.dispatch('ai/fetchChatHistory').then((res) => {
-                        this.loading.isActive = false;
                         if (res.data.data && res.data.data.length > 0) {
                             this.messages = res.data.data;
                         }
                         this.$nextTick(() => {
                             this.scrollToBottom();
                         });
-                    }).catch((err) => {
-                        this.loading.isActive = false;
-                    });
+                    }).catch(() => {});
                 }
-            }).catch((err) => {
-                alertService.error(this.$t('message.something_wrong'));
-            });
+            }).catch(() => {});
         },
         sendMessage: function () {
             this.$nextTick(() => {

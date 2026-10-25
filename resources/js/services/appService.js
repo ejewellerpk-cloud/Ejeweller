@@ -251,18 +251,23 @@ export default {
     },
 
     permissionChecker: function (permissionName) {
-        let i,
-            permissions = store.getters.authPermission;
-        for (i = 0; i < permissions.length; i++) {
-            if (
-                typeof permissions[i].name !== "undefined" &&
-                permissions[i].name
-            ) {
-                if (permissions[i].name === permissionName) {
-                    return permissions[i].access;
+        const permissions = store.getters.authPermission;
+        if (!permissions || !permissions.length) {
+            return;
+        }
+        // Cache name→access map; rebuild only when the permission array identity changes.
+        if (this._permissionMapSource !== permissions) {
+            const map = new Map();
+            for (let i = 0; i < permissions.length; i++) {
+                const perm = permissions[i];
+                if (perm && typeof perm.name === "string" && perm.name) {
+                    map.set(perm.name, perm.access);
                 }
             }
+            this._permissionMapSource = permissions;
+            this._permissionMap = map;
         }
+        return this._permissionMap.get(permissionName);
     },
 
     formDataShow: function (formData) {

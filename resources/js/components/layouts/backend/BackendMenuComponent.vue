@@ -30,9 +30,12 @@
                             <li
                                 v-if="!isSectionTitle(menu) && menu.url && menu.url !== '#'"
                                 class="db-sidebar-nav-item"
-                                @click="onNavClick"
                             >
-                                <router-link :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                                <router-link
+                                    :to="'/admin/' + menu.url"
+                                    class="db-sidebar-nav-menu"
+                                    @click="onNavClick"
+                                >
                                     <i class="text-sm" :class="menu.icon"></i>
                                     <span class="text-base flex-auto">{{ menuTitle(menu) }}</span>
                                 </router-link>
@@ -41,9 +44,12 @@
                                 v-for="(child, childIndex) in menu.children"
                                 :key="menuKey(child, childIndex)"
                                 class="db-sidebar-nav-item"
-                                @click="onNavClick"
                             >
-                                <router-link :to="'/admin/' + child.url" class="db-sidebar-nav-menu">
+                                <router-link
+                                    :to="'/admin/' + child.url"
+                                    class="db-sidebar-nav-menu"
+                                    @click="onNavClick"
+                                >
                                     <i class="text-sm" :class="child.icon"></i>
                                     <span class="text-base flex-auto">{{ menuTitle(child) }}</span>
                                 </router-link>
@@ -55,9 +61,12 @@
                     <li
                         v-else
                         class="db-sidebar-nav-item"
-                        @click="onNavClick"
                     >
-                        <router-link :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                        <router-link
+                            :to="'/admin/' + menu.url"
+                            class="db-sidebar-nav-menu"
+                            @click="onNavClick"
+                        >
                             <i class="text-sm" :class="menu.icon"></i>
                             <span class="text-base flex-auto">{{ menuTitle(menu) }}</span>
                         </router-link>
@@ -67,8 +76,12 @@
 
             <!-- Static Media Menu -->
             <ul class="db-sidebar-nav-list db-sidebar-nav-list--footer">
-                <li class="db-sidebar-nav-item" @click="onNavClick">
-                    <router-link :to="{ name: 'admin.media' }" class="db-sidebar-nav-menu">
+                <li class="db-sidebar-nav-item">
+                    <router-link
+                        :to="{ name: 'admin.media' }"
+                        class="db-sidebar-nav-menu"
+                        @click="onNavClick"
+                    >
                         <i class="fa-solid fa-photo-film text-sm"></i>
                         <span class="text-base flex-auto">Media Manager</span>
                     </router-link>
@@ -137,20 +150,27 @@ export default {
             return (menu?.children || []).some((child) => child?.url && path.includes('/admin/' + child.url));
         },
         expandActiveGroups() {
+            let changed = false;
             const next = { ...this.openGroups };
             (this.menus || []).forEach((menu, index) => {
                 if (!this.hasChildren(menu)) {
                     return;
                 }
                 const key = this.menuKey(menu, index);
-                if (this.groupHasActiveRoute(menu)) {
+                if (this.groupHasActiveRoute(menu) && !next[key]) {
                     next[key] = true;
+                    changed = true;
                 }
             });
-            this.openGroups = next;
+            if (changed) {
+                this.openGroups = next;
+            }
         },
         onNavClick() {
-            this.closeSidebar();
+            // Desktop sidebar stays open; only close the mobile drawer.
+            if (!appService.isAdminDesktopLayout()) {
+                this.closeSidebar();
+            }
         },
         closeSidebar() {
             return appService.closeSidebar();
