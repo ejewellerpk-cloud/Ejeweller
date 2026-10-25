@@ -418,11 +418,21 @@
                         <label for="site_default_checkout_country" class="db-field-title required">
                             {{ $t("label.default_checkout_country") }}
                         </label>
-                        <vue-select class="db-field-control f-b-custom-select" id="site_default_checkout_country"
+                        <vue-select
+                            :key="'checkout-country-' + countries.length + '-' + form.site_default_checkout_country"
+                            class="db-field-control f-b-custom-select"
+                            id="site_default_checkout_country"
                             v-bind:class="errors.site_default_checkout_country ? 'is-invalid' : ''"
-                            v-model="form.site_default_checkout_country" :options="countries" label-by="name"
-                            value-by="name" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
-                            placeholder="--" search-placeholder="--" />
+                            v-model="form.site_default_checkout_country"
+                            :options="countries"
+                            label-by="name"
+                            value-by="name"
+                            :closeOnSelect="true"
+                            :searchable="true"
+                            :clearOnClose="true"
+                            placeholder="--"
+                            search-placeholder="--"
+                        />
                         <small class="db-field-alert" v-if="errors.site_default_checkout_country">
                             {{ errors.site_default_checkout_country[0] }}
                         </small>
@@ -647,6 +657,13 @@ export default {
         onlyNumber(e) {
             return appService.onlyNumber(e);
         },
+        normalizeCheckoutCountry(value) {
+            if (value && typeof value === 'object') {
+                value = value.$value || value.name || '';
+            }
+            const name = String(value || '').trim();
+            return name || 'Pakistan';
+        },
         load: async function () {
             try {
                 this.loading.isActive = true;
@@ -713,7 +730,7 @@ export default {
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_guest_checkout: res.data.data.site_guest_checkout,
-                    site_default_checkout_country: res.data.data.site_default_checkout_country || 'Pakistan',
+                    site_default_checkout_country: this.normalizeCheckoutCountry(res.data.data.site_default_checkout_country),
                     site_homepage_theme: res.data.data.site_homepage_theme || 'default',
                     site_show_stock_out: res.data.data.site_show_stock_out !== null && res.data.data.site_show_stock_out !== undefined
                         ? Number(res.data.data.site_show_stock_out)
@@ -734,9 +751,18 @@ export default {
                     alertService.error(this.$t("message.app_debug_disabled"));
                 }
                 this.loading.isActive = true;
+                this.form.site_default_checkout_country = this.normalizeCheckoutCountry(
+                    this.form.site_default_checkout_country
+                );
                 this.$store.dispatch("site/save", this.form).then((res) => {
                     this.loading.isActive = false;
                     alertService.successFlip(res.config.method === "put" ?? 0, this.$t("menu.site"));
+                    // Prefer API response so the select keeps the saved country without a blank flash.
+                    if (res?.data?.data) {
+                        this.form.site_default_checkout_country = this.normalizeCheckoutCountry(
+                            res.data.data.site_default_checkout_country
+                        );
+                    }
                     this.list();
                     this.$store.dispatch('frontendSetting/lists').then().catch();
                     this.errors = {};

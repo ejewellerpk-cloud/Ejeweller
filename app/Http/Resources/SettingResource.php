@@ -43,7 +43,7 @@ class SettingResource extends JsonResource
             'shipping_setup_flat_rate_wise_cost'    => $this->info['shipping_setup_flat_rate_wise_cost'],
             'shipping_setup_area_wise_default_cost' => $this->info['shipping_setup_area_wise_default_cost'],
             'site_guest_checkout'                   => $this->info['site_guest_checkout'] ?? 10,
-            'site_default_checkout_country'         => $this->info['site_default_checkout_country'] ?? 'Pakistan',
+            'site_default_checkout_country'         => $this->stringSetting($this->info['site_default_checkout_country'] ?? null, 'Pakistan'),
             'theme_logo'                            => $this->themeImage('theme_logo')->logo,
             'theme_footer_logo'                     => $this->themeImage('theme_footer_logo')->footerLogo,
             'theme_favicon_logo'                    => $this->themeImage('theme_favicon_logo')->faviconLogo,
@@ -100,5 +100,19 @@ class SettingResource extends JsonResource
     public function themeImage($key)
     {
         return ThemeSetting::where(['key' => $key])->first();
+    }
+
+    private function stringSetting(mixed $value, string $default = ''): string
+    {
+        if (is_array($value)) {
+            $value = $value['$value'] ?? $value['name'] ?? null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+            return $value !== '' ? $value : $default;
+        }
+
+        return $default;
     }
 }

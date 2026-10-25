@@ -47,7 +47,7 @@ class SiteResource extends JsonResource
             "site_cash_on_delivery"                      => $this->info['site_cash_on_delivery'],
             "site_is_return_product_price_add_to_credit" => $this->info['site_is_return_product_price_add_to_credit'] ?? null,
             "site_guest_checkout"                        => $this->info['site_guest_checkout'] ?? 10,
-            "site_default_checkout_country"              => $this->info['site_default_checkout_country'] ?? 'Pakistan',
+            "site_default_checkout_country"              => $this->stringSetting($this->info['site_default_checkout_country'] ?? null, 'Pakistan'),
             "site_whatsapp_status"                       => $this->info['site_whatsapp_status'] ?? 10,
             "site_facebook_pixel_id"                     => $this->info['site_facebook_pixel_id'] ?? '',
             "site_facebook_capi_token"                   => $this->info['site_facebook_capi_token'] ?? '',
@@ -56,5 +56,19 @@ class SiteResource extends JsonResource
             "site_show_stock_out"                        => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,
             "site_abandoned_cart_reminder"               => isset($this->info['site_abandoned_cart_reminder']) ? (int) $this->info['site_abandoned_cart_reminder'] : \App\Enums\Activity::ENABLE,
         ];
+    }
+
+    private function stringSetting(mixed $value, string $default = ''): string
+    {
+        if (is_array($value)) {
+            $value = $value['$value'] ?? $value['name'] ?? null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+            return $value !== '' ? $value : $default;
+        }
+
+        return $default;
     }
 }

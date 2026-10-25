@@ -49,37 +49,19 @@ class SiteService
             $data = $request->validated();
             $data['site_default_currency_symbol'] = $currency_symbol;
             $data['site_app_debug'] = $app_debug;
-            
-            // Ensure newly added keys exist in DB so the package can update them
-            // Ensure newly added keys exist in DB and update them manually
-            $newKeys = ['site_facebook_pixel_id', 'site_facebook_capi_token', 'site_facebook_capi_status', 'site_homepage_theme', 'site_show_stock_out', 'site_abandoned_cart_reminder', 'site_default_checkout_country'];
-            foreach ($newKeys as $key) {
-                if (array_key_exists($key, $data)) {
-                    $exists = \Illuminate\Support\Facades\DB::table(config('settings.repositories.database.table', 'settings'))
-                        ->where('group', 'site')
-                        ->where('key', $key)
-                        ->exists();
-                        
-                    if (!$exists) {
-                        \Illuminate\Support\Facades\DB::table(config('settings.repositories.database.table', 'settings'))->insert([
-                            'group' => 'site',
-                            'key' => $key,
-                            'payload' => json_encode($data[$key]),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    } else {
-                        \Illuminate\Support\Facades\DB::table(config('settings.repositories.database.table', 'settings'))
-                            ->where('group', 'site')
-                            ->where('key', $key)
-                            ->update([
-                                'payload' => json_encode($data[$key]),
-                                'updated_at' => now(),
-                            ]);
-                    }
+
+            // Normalize checkout country to a plain string (vue-select can send odd shapes).
+            if (array_key_exists('site_default_checkout_country', $data)) {
+                $country = $data['site_default_checkout_country'];
+                if (is_array($country)) {
+                    $country = $country['$value'] ?? $country['name'] ?? null;
                 }
+                $country = is_string($country) ? trim($country) : '';
+                $data['site_default_checkout_country'] = $country !== '' ? $country : 'Pakistan';
             }
 
+            // Always write via the settings package so payload stays {$value,$cast}.
+            // Raw json_encode() broke reads/display for newer keys like checkout country.
             Settings::group('site')->set($data);
             SettingService::clearCache();
 
