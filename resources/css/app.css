@@ -1040,32 +1040,6 @@
         @apply mt-1 mb-2
     }
 
-    /*
-     * Page loaders use vue-element-loading at z-index 3000 / position:fixed and were
-     * covering the whole viewport — including the admin sidebar (z-50). That made
-     * sidebar clicks feel dead until the API finished. Keep chrome clickable.
-     */
-    .db-main .velmld-overlay.velmld-full-screen {
-        z-index: 40;
-        top: 3.75rem;
-    }
-
-    @media (min-width: 1024px) {
-        html:not([dir="rtl"]) .db-main .velmld-overlay.velmld-full-screen {
-            left: 272px;
-        }
-
-        html[dir="rtl"] .db-main .velmld-overlay.velmld-full-screen {
-            right: 272px;
-            left: 0;
-        }
-
-        .db-main.expand .velmld-overlay.velmld-full-screen {
-            left: 0;
-            right: 0;
-        }
-    }
-
     .db-sidebar-nav-dropdown .db-sidebar-nav-menu {
         @apply py-2 text-[13px]
     }
@@ -1274,15 +1248,16 @@
      * Admin page loaders (vue-element-loading) use position:fixed + z-index:3000.
      * The sidebar is only z-50, so every list/show mount that sets loading.isActive
      * was swallowing sidebar clicks until the API finished — felt like laggy nav.
-     * Keep the spinner visible over main content; never capture pointer events.
+     * Keep the spinner over main content only; never capture pointer events.
      */
     .velmld-overlay.velmld-full-screen {
         pointer-events: none;
+        z-index: 40;
+        top: 3.75rem;
     }
 
     @media (min-width: 1024px) {
         .velmld-overlay.velmld-full-screen {
-            top: 3.75rem;
             left: 272px;
             right: 0;
             bottom: 0;
@@ -1293,7 +1268,9 @@
             right: 272px;
         }
 
-        body:has(.db-main.expand) .velmld-overlay.velmld-full-screen {
+        body:has(.db-main.expand) .velmld-overlay.velmld-full-screen,
+        .db-main.expand ~ * .velmld-overlay.velmld-full-screen,
+        .db-main.expand .velmld-overlay.velmld-full-screen {
             left: 0;
             right: 0;
         }

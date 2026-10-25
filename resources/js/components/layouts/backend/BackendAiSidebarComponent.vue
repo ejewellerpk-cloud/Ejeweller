@@ -74,7 +74,10 @@ export default {
         }
     },
     mounted() {
-        this.loadHistory();
+        // Defer off first paint so boot APIs do not compete with sidebar navigation.
+        window.setTimeout(() => {
+            this.loadHistory();
+        }, 1500);
     },
     methods: {
         loadHistory: function () {

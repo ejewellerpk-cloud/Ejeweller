@@ -10,9 +10,12 @@ bindAppRouter(router);
 
 createShopApp(AdminShell, router, {
     store,
-    registerPlugins: async (app) => {
-        const { default: VueApexCharts } = await import("vue3-apexcharts");
-        app.use(VueApexCharts);
+    registerPlugins: (app) => {
+        // Do not await — ~1MB charts must not block AdminShell / sidebar mount.
+        // Dashboard apexchart nodes are gated on API `options`, so registration usually wins the race.
+        import("vue3-apexcharts").then(({ default: VueApexCharts }) => {
+            app.use(VueApexCharts);
+        });
     },
 }).then(() => {
     if (store.getters.authPermission?.length) {

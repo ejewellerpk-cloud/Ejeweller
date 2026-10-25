@@ -156,13 +156,10 @@
 <script>
 
 import activityEnum from "../../../enums/modules/activityEnum";
-import _ from "lodash";
 import alertService from "../../../services/alertService";
 import targetService from "../../../services/targetService";
 import appService from "../../../services/appService";
 import env from "../../../config/env";
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import axios from 'axios';
 import statusEnum from "../../../enums/modules/statusEnum";
 
@@ -249,8 +246,32 @@ export default {
             }).catch();
         });
 
+        // Defer FCM off the critical admin shell path (dynamic import, not eager firebase bundle).
         window.setTimeout(() => {
-            if (this.$store.getters.authStatus && this.setting.notification_fcm_api_key && this.setting.notification_fcm_auth_domain && this.setting.notification_fcm_project_id && this.setting.notification_fcm_storage_bucket && this.setting.notification_fcm_messaging_sender_id && this.setting.notification_fcm_app_id && this.setting.notification_fcm_measurement_id) {
+            this.initFirebaseMessaging();
+        }, 5000);
+    },
+    methods: {
+        async initFirebaseMessaging() {
+            if (
+                !this.$store.getters.authStatus ||
+                !this.setting.notification_fcm_api_key ||
+                !this.setting.notification_fcm_auth_domain ||
+                !this.setting.notification_fcm_project_id ||
+                !this.setting.notification_fcm_storage_bucket ||
+                !this.setting.notification_fcm_messaging_sender_id ||
+                !this.setting.notification_fcm_app_id ||
+                !this.setting.notification_fcm_measurement_id
+            ) {
+                return;
+            }
+
+            try {
+                const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
+                    import("firebase/app"),
+                    import("firebase/messaging"),
+                ]);
+
                 initializeApp({
                     apiKey: this.setting.notification_fcm_api_key,
                     authDomain: this.setting.notification_fcm_auth_domain,
@@ -258,56 +279,59 @@ export default {
                     storageBucket: this.setting.notification_fcm_storage_bucket,
                     messagingSenderId: this.setting.notification_fcm_messaging_sender_id,
                     appId: this.setting.notification_fcm_app_id,
-                    measurementId: this.setting.notification_fcm_measurement_id
+                    measurementId: this.setting.notification_fcm_measurement_id,
                 });
                 const messaging = getMessaging();
 
-                Notification.requestPermission().then((permission) => {
-                    if (permission === 'granted') {
-                        getToken(messaging, { vapidKey: this.setting.notification_fcm_public_vapid_key }).then((currentToken) => {
-                            if (currentToken) {
-                                localStorage.setItem('fcm_web_token', currentToken);
-                                axios.post('/frontend/device-token/web', {
-                                    token: currentToken,
-                                    platform: 'web',
-                                    device_id: appService.fcmDeviceId(),
-                                    device_name: appService.fcmDeviceName(),
-                                }).then().catch((error) => {
-                                    // Network/HTTP2 failures have no response — never read .data blindly
-                                    const status = error?.response?.status;
-                                    const message = error?.response?.data?.message;
-                                    if (status === 401 || message === 'Unauthenticated.') {
-                                        this.$store.dispatch('loginDataReset');
-                                    }
-                                });
-                            }
-                        }).catch();
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    try {
+                        const currentToken = await getToken(messaging, {
+                            vapidKey: this.setting.notification_fcm_public_vapid_key,
+                        });
+                        if (currentToken) {
+                            localStorage.setItem("fcm_web_token", currentToken);
+                            axios.post("/frontend/device-token/web", {
+                                token: currentToken,
+                                platform: "web",
+                                device_id: appService.fcmDeviceId(),
+                                device_name: appService.fcmDeviceName(),
+                            }).catch((error) => {
+                                const status = error?.response?.status;
+                                const message = error?.response?.data?.message;
+                                if (status === 401 || message === "Unauthenticated.") {
+                                    this.$store.dispatch("loginDataReset");
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        // Token fetch failures are non-fatal for admin UI.
                     }
-                });
+                }
 
                 onMessage(messaging, (payload) => {
                     const title = payload?.notification?.title;
                     const body = payload?.notification?.body;
                     if (title) {
                         new Notification(title, {
-                            body: body || '',
-                            icon: '/images/required/firebase-logo.png'
+                            body: body || "",
+                            icon: "/images/required/firebase-logo.png",
                         });
                     }
 
-                    if (payload?.data?.topicName === 'new-order-found' && this.orderNotification.permission) {
+                    if (payload?.data?.topicName === "new-order-found" && this.orderNotification.permission) {
                         this.orderNotificationStatus = true;
-                        this.orderNotificationMessage = body || '';
+                        this.orderNotificationMessage = body || "";
                         if (this.setting?.notification_audio) {
                             const audio = new Audio(this.setting.notification_audio);
                             audio.play().catch(() => {});
                         }
                     }
                 });
+            } catch (e) {
+                // Firebase optional — never block admin nav.
             }
-        }, 5000);
-    },
-    methods: {
+        },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
         },
@@ -329,29 +353,23 @@ export default {
             }).catch();
         },
         posPermissionCheck: function () {
-            const permissions = this.$store.getters.authPermission;
-            if (permissions.length > 0) {
-                _.forEach(permissions, (permission) => {
-                    if (permission.name === 'pos') {
-                        if (permission.access === true) {
-                            this.pos.permission = true;
-                            this.pos.url = permission.url;
-                        }
-                    }
-                });
+            const permissions = this.$store.getters.authPermission || [];
+            for (const permission of permissions) {
+                if (permission.name === "pos" && permission.access === true) {
+                    this.pos.permission = true;
+                    this.pos.url = permission.url;
+                    break;
+                }
             }
         },
         orderPermissionCheck: function () {
-            const permissions = this.$store.getters.authPermission;
-            if (permissions.length > 0) {
-                _.forEach(permissions, (permission) => {
-                    if (permission.name === 'online-orders') {
-                        if (permission.access === true) {
-                            this.orderNotification.permission = true;
-                            this.orderNotification.url = permission.url;
-                        }
-                    }
-                });
+            const permissions = this.$store.getters.authPermission || [];
+            for (const permission of permissions) {
+                if (permission.name === "online-orders" && permission.access === true) {
+                    this.orderNotification.permission = true;
+                    this.orderNotification.url = permission.url;
+                    break;
+                }
             }
         },
         closeOrderNotificationModal: function (id, cClass) {

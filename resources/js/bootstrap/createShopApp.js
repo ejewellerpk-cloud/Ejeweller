@@ -39,17 +39,34 @@ function configureAxios(router, store) {
 
     axios.defaults.baseURL = API_URL + "/api";
 
+    // Avoid JSON.parse(localStorage) on every request — admin pages fire many APIs per navigation.
+    let cachedVuexRaw = null;
+    let cachedVuex = null;
+
     axios.interceptors.request.use(
         (config) => {
             config.headers["x-api-key"] = API_KEY;
-            if (localStorage.getItem("vuex")) {
-                const vuex = JSON.parse(localStorage.getItem("vuex"));
-                const token = vuex.auth.authToken;
-                config.headers["Authorization"] = token ? `Bearer ${token}` : "";
-
-                if (vuex.globalState) {
+            const raw = localStorage.getItem("vuex");
+            if (raw) {
+                if (raw !== cachedVuexRaw) {
+                    cachedVuexRaw = raw;
+                    try {
+                        cachedVuex = JSON.parse(raw);
+                    } catch (e) {
+                        cachedVuex = null;
+                    }
+                }
+                const vuex = cachedVuex;
+                if (vuex?.auth) {
+                    const token = vuex.auth.authToken;
+                    config.headers["Authorization"] = token ? `Bearer ${token}` : "";
+                }
+                if (vuex?.globalState?.lists?.language_code) {
                     config.headers["x-localization"] = vuex.globalState.lists.language_code;
                 }
+            } else {
+                cachedVuexRaw = null;
+                cachedVuex = null;
             }
             return config;
         },
