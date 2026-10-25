@@ -699,17 +699,19 @@
                 <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
                 <span class="text-[10px] min-[375px]:text-xs font-black uppercase tracking-wide">{{ $t("button.buy_now") || 'Buy Now' }}</span>
             </button>
-            <button
-                v-if="showWhatsAppOrder"
-                @click.prevent="orderOnWhatsApp"
-                type="button"
-                class="h-10 w-10 shrink-0 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white flex items-center justify-center active:scale-[0.98] transition-all duration-300 shadow-[0_4px_12px_rgba(37,211,102,0.35)]"
-                :aria-label="$t('label.whatsapp')"
-            >
-                <i class="fa-brands fa-whatsapp text-lg"></i>
-            </button>
         </div>
     </div>
+
+    <!-- Mobile: WhatsApp outside sticky bar — right edge, mid-screen thumb reach -->
+    <button
+        v-if="showWhatsAppOrder"
+        @click.prevent="orderOnWhatsApp"
+        type="button"
+        class="pdp-whatsapp-fab sm:hidden fixed right-3 top-1/2 -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1ebd5a] text-white flex items-center justify-center active:scale-95 transition-transform duration-200 shadow-[0_4px_18px_rgba(37,211,102,0.45)]"
+        :aria-label="$t('label.whatsapp')"
+    >
+        <i class="fa-brands fa-whatsapp text-3xl leading-none"></i>
+    </button>
 
     <!-- Stunning Premium Social Sharing Modal -->
     <div id="shareModal" class="modal flex items-center">
@@ -2784,10 +2786,11 @@ body.image-preview-open .product-image-preview-modal {
     touch-action: manipulation;
 }
 
-@media (max-width: 640px) {
-    .whatsapp-btn {
-        bottom: 168px !important;
-    }
+body.media-lightbox-open .pdp-whatsapp-fab,
+body.image-preview-open .pdp-whatsapp-fab,
+body.cart-canvas-open .pdp-whatsapp-fab {
+    display: none !important;
+    pointer-events: none !important;
 }
 
 /* Desktop-only PDP denser layout (mobile unchanged).
