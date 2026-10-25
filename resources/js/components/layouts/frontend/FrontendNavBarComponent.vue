@@ -1,8 +1,19 @@
 <template>
-    <!-- Product flash-sale countdown teleports here -->
-    <div id="flash-sale-topbar-slot"></div>
+    <div
+        v-if="flashSaleTopBar.visible"
+        id="frontend-flash-sale-topbar"
+        class="flash-sale-topbar w-full z-40 relative text-center text-white bg-[#E11D48] py-1.5 px-3"
+    >
+        <p class="flash-sale-topbar-text m-0 text-[12px] sm:text-sm font-semibold tracking-wide">
+            <i class="fa-solid fa-bolt mr-1"></i>
+            Flash Sale ends in
+            <span class="font-bold tabular-nums">
+                {{ flashSaleTopBar.days }}d {{ flashSaleTopBar.hours }}h {{ flashSaleTopBar.minutes }}m {{ flashSaleTopBar.seconds }}s
+            </span>
+        </p>
+    </div>
 
-    <div v-if="setting.top_bar_status === 'active' && $route.name === 'frontend.home' && topBarTitles.length > 0" 
+    <div v-else-if="setting.top_bar_status === 'active' && $route.name === 'frontend.home' && topBarTitles.length > 0" 
          id="frontend-top-bar"
          :style="{ backgroundColor: setting.top_bar_bg_color || '#ff5c00', color: setting.top_bar_text_color || '#ffffff' }" 
          class="w-full py-2 z-40 relative min-h-[40px] overflow-hidden">
@@ -407,6 +418,7 @@ import axios from 'axios';
 import {useCanvas} from "../../../composables/canvas";
 import { onInstantAction, onInstantNavigate } from "../../../utils/instantTap";
 import { loadLocaleMessages } from "../../../i18n";
+import { flashSaleTopBar } from "../../../services/flashSaleTopBar";
 
 
 export default {
@@ -452,13 +464,10 @@ export default {
                 headerResizeObserver.observe(header);
             }
 
-            const topBar = document.getElementById('frontend-top-bar');
+            const topBar = document.getElementById('frontend-top-bar')
+                || document.getElementById('frontend-flash-sale-topbar');
             if (topBar && typeof ResizeObserver !== 'undefined') {
                 headerResizeObserver?.observe(topBar);
-            }
-            const flashSlot = document.getElementById('flash-sale-topbar-slot');
-            if (flashSlot && typeof ResizeObserver !== 'undefined') {
-                headerResizeObserver?.observe(flashSlot);
             }
         });
 
@@ -470,7 +479,8 @@ export default {
 
         return {
             isSticky,
-            openCanvas
+            openCanvas,
+            flashSaleTopBar,
         }
     },
     data() {
@@ -854,5 +864,21 @@ export default {
 
 .mobile-header-badge {
     transform: translateY(1px);
+}
+</style>
+
+<style>
+.flash-sale-topbar-text {
+    animation: flash-sale-blink 1s step-start infinite;
+}
+
+@keyframes flash-sale-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
 }
 </style>

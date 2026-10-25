@@ -1,20 +1,4 @@
 <template>
-    <Teleport to="#flash-sale-topbar-slot">
-        <div
-            v-if="product && product.flash_sale && flashSaleTimeLeft"
-            id="frontend-flash-sale-topbar"
-            class="flash-sale-topbar w-full z-40 relative text-center text-white bg-[#E11D48] py-1.5 px-3"
-        >
-            <p class="flash-sale-topbar-text m-0 text-[12px] sm:text-sm font-semibold tracking-wide">
-                <i class="fa-solid fa-bolt mr-1"></i>
-                Flash Sale ends in
-                <span class="font-bold tabular-nums">
-                    {{ flashSaleTimeLeft.days }}d {{ flashSaleTimeLeft.hours }}h {{ flashSaleTimeLeft.minutes }}m {{ flashSaleTimeLeft.seconds }}s
-                </span>
-            </p>
-        </div>
-    </Teleport>
-
     <LoadingComponent v-if="loading.isActive" :props="loading" skeleton="product-detail" />
     <section v-else class="mb-12 sm:mb-6">
         <div class="container">
@@ -785,6 +769,7 @@ import router from "../../../router";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
+import { setFlashSaleTopBar, clearFlashSaleTopBar } from "../../../services/flashSaleTopBar";
 import { useHead } from '@vueuse/head';
 import { pixelService } from "../../../services/pixelService";
 import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
@@ -1191,29 +1176,32 @@ export default {
                 clearInterval(this.flashSaleInterval);
                 this.flashSaleInterval = null;
             }
+            this.flashSaleTimeLeft = null;
+            clearFlashSaleTopBar();
         },
         startFlashSaleTimer(endDate) {
             this.stopFlashSaleTimer();
             const end = new Date(endDate).getTime();
-            
+
             const updateTimer = () => {
                 const now = new Date().getTime();
                 const distance = end - now;
-                
+
                 if (distance < 0) {
-                    this.flashSaleTimeLeft = null;
                     this.stopFlashSaleTimer();
                     return;
                 }
-                
-                this.flashSaleTimeLeft = {
+
+                const timeLeft = {
                     days: Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0'),
                     hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0'),
                     minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0'),
                     seconds: Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0')
                 };
+                this.flashSaleTimeLeft = timeLeft;
+                setFlashSaleTopBar(timeLeft);
             };
-            
+
             updateTimer();
             this.flashSaleInterval = setInterval(updateTimer, 1000);
         },
@@ -2825,21 +2813,5 @@ body.image-preview-open .product-image-preview-modal {
         line-height: 1.3 !important;
     }
 
-}
-</style>
-
-<style>
-.flash-sale-topbar-text {
-    animation: flash-sale-blink 1s step-start infinite;
-}
-
-@keyframes flash-sale-blink {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.35;
-    }
 }
 </style>
