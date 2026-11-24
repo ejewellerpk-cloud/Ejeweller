@@ -104,8 +104,9 @@
         </div>
         <div class="db-card-body space-y-4">
             <p class="text-sm text-gray-500">
-                Copy this <strong>Connect key</strong> (<code>sz1.…</code>) → Analytics → Connect → login.
-                <span class="text-amber-700"> Public (<code>pk_</code>) / Secret (<code>sk_</code>) keys yahan kaam nahi karti.</span>
+                Ek dafa <strong>Connect key</strong> (<code>sz1.…</code>) copy karke Analytics → Connect mein paste karein.
+                Yeh key stable hai — har baar nahi badlegi (jab tak shop URL / license key change na ho).
+                <span class="text-amber-700"> Public (<code>pk_</code>) / Secret (<code>sk_</code>) yahan kaam nahi karti.</span>
             </p>
 
             <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
@@ -122,6 +123,7 @@
                 </div>
                 <p class="text-xs text-gray-500">
                     Shop: <code>{{ connection.api_url || '—' }}</code>
+                    <span class="text-emerald-700 block mt-1">Same key bar bar copy kar sakte ho — naya generate karne ki zaroorat nahi.</span>
                     <span v-if="connection.connection_code && !connection.has_license_key" class="text-amber-600 block mt-1">
                         Shop server pe <code>VITE_API_KEY</code> set karein (license) — warna Analytics login fail hoga.
                     </span>

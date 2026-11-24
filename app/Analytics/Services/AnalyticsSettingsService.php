@@ -244,6 +244,8 @@ class AnalyticsSettingsService
 
     /**
      * One-click pack for the React Analytics dashboard (admin only).
+     * Stable while APP_URL + VITE_API_KEY stay the same — no rotating timestamp
+     * (that made the connect key look “new” every page load).
      */
     public function connectionPack(?string $dashboardUrl = null): array
     {
@@ -255,7 +257,6 @@ class AnalyticsSettingsService
             'v' => 1,
             'shop' => $apiUrl,
             'key' => $licenseKey,
-            'at' => now()->getTimestamp(),
         ];
 
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -273,6 +274,7 @@ class AnalyticsSettingsService
             'dashboard_url' => $dashboard !== '' ? $dashboard : null,
             'open_url' => $openUrl,
             'has_license_key' => $licenseKey !== '',
+            'is_stable' => true,
         ];
     }
 
