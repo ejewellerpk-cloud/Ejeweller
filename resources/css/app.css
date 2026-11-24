@@ -568,14 +568,14 @@
         z-index: 60;
     }
 
-    /* Invisible bridge into the header so mouse can leave the button sideways/down without dropping hover */
+    /* Hit bridge into the header so pointer can move from Categories into the panel */
     .header-category-mega.is-open::before {
         content: '';
         position: absolute;
         left: 0;
         right: 0;
         bottom: 100%;
-        height: 2.5rem;
+        height: 4rem;
     }
 
     .header-category-mega__layout {

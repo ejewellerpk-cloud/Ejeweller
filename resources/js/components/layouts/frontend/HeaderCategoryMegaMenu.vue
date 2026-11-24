@@ -180,8 +180,8 @@ export default {
                 this.setParentActive(this.categories[0]);
             }
         },
-        onMegaLeave() {
-            this.$emit('request-close');
+        onMegaLeave(event) {
+            this.$emit('request-close', event);
         },
         isParentActive(category) {
             const current = this.activeParentSlug || this.categories[0]?.slug;

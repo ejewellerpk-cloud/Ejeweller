@@ -145,7 +145,7 @@
                             class="header-nav-item header-nav-item--categories"
                             :class="{ 'is-open': categoriesMenuOpen }"
                             @mouseenter="openCategoriesMenu"
-                            @mouseleave="scheduleCloseCategoriesMenu"
+                            @mouseleave="onCategoriesPointerLeave"
                         >
                             <button
                                 type="button"
@@ -159,7 +159,7 @@
                                 :categories="categories"
                                 :open="categoriesMenuOpen"
                                 @keep-open="openCategoriesMenu"
-                                @request-close="scheduleCloseCategoriesMenu"
+                                @request-close="onCategoriesPointerLeave"
                             />
                         </li>
 
@@ -518,7 +518,6 @@ export default {
             },
             searchProduct: "",
             categoriesMenuOpen: false,
-            categoriesMenuCloseTimer: null,
             orderNotificationStatus: false,
             orderNotificationMessage: "",
             orderNotification: {
@@ -640,9 +639,6 @@ export default {
             });
         }
     },
-    beforeUnmount() {
-        this.clearCategoriesMenuTimer();
-    },
     methods: {
         onNavTap(event, navigate) {
             onInstantNavigate(event, navigate);
@@ -650,26 +646,25 @@ export default {
         onActionTap(event, action) {
             onInstantAction(event, action);
         },
-        clearCategoriesMenuTimer() {
-            if (this.categoriesMenuCloseTimer) {
-                clearTimeout(this.categoriesMenuCloseTimer);
-                this.categoriesMenuCloseTimer = null;
-            }
-        },
         openCategoriesMenu() {
-            this.clearCategoriesMenuTimer();
             this.categoriesMenuOpen = true;
         },
-        scheduleCloseCategoriesMenu() {
-            this.clearCategoriesMenuTimer();
-            // Delay so mouse can travel from the button into the mega panel without closing.
-            this.categoriesMenuCloseTimer = setTimeout(() => {
-                this.categoriesMenuOpen = false;
-                this.categoriesMenuCloseTimer = null;
-            }, 220);
+        /** Close immediately when pointer leaves trigger + mega (not when moving between them). */
+        onCategoriesPointerLeave(event) {
+            const related = event?.relatedTarget || null;
+            if (related && related.nodeType === 1) {
+                const root = this.$el?.querySelector?.('.header-nav-item--categories');
+                if (root && root.contains(related)) {
+                    return;
+                }
+                const mega = this.$el?.querySelector?.('.header-category-mega');
+                if (mega && mega.contains(related)) {
+                    return;
+                }
+            }
+            this.categoriesMenuOpen = false;
         },
         toggleCategoriesMenu() {
-            this.clearCategoriesMenuTimer();
             this.categoriesMenuOpen = !this.categoriesMenuOpen;
         },
         openMobileSidebar() {
