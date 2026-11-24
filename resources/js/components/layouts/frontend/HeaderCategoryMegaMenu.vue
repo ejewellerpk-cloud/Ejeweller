@@ -1,8 +1,10 @@
 <template>
     <div
-        class="header-category-mega fixed left-0 z-[60] w-full origin-top scale-y-0 transition-all duration-300"
+        class="header-category-mega fixed left-0 z-[60] w-full origin-top transition-all duration-300"
+        :class="{ 'is-open': open, 'scale-y-0': !open, 'scale-y-100': open }"
         style="top: var(--frontend-header-bottom, 4rem);"
         @mouseenter="onMegaEnter"
+        @mouseleave="onMegaLeave"
     >
         <div class="container">
             <div class="header-category-mega__shell w-full rounded-b-2xl shadow-paper bg-white overflow-hidden">
@@ -111,7 +113,12 @@ export default {
             type: Array,
             required: true,
         },
+        open: {
+            type: Boolean,
+            default: false,
+        },
     },
+    emits: ['keep-open', 'request-close'],
     data() {
         return {
             activeParentSlug: null,
@@ -168,9 +175,13 @@ export default {
     },
     methods: {
         onMegaEnter() {
+            this.$emit('keep-open');
             if (!this.activeParentSlug && this.categories.length) {
                 this.setParentActive(this.categories[0]);
             }
+        },
+        onMegaLeave() {
+            this.$emit('request-close');
         },
         isParentActive(category) {
             const current = this.activeParentSlug || this.categories[0]?.slug;

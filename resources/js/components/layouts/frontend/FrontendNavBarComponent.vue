@@ -141,11 +141,26 @@
                             </router-link>
                         </li>
 
-                        <li class="header-nav-item header-nav-item--categories">
-                            <button type="button" class="header-nav-menu down-arrow">
+                        <li
+                            class="header-nav-item header-nav-item--categories"
+                            :class="{ 'is-open': categoriesMenuOpen }"
+                            @mouseenter="openCategoriesMenu"
+                            @mouseleave="scheduleCloseCategoriesMenu"
+                        >
+                            <button
+                                type="button"
+                                class="header-nav-menu down-arrow"
+                                :aria-expanded="categoriesMenuOpen ? 'true' : 'false'"
+                                @click.prevent="toggleCategoriesMenu"
+                            >
                                 {{ $t('label.categories') }}
                             </button>
-                            <HeaderCategoryMegaMenu :categories="categories" />
+                            <HeaderCategoryMegaMenu
+                                :categories="categories"
+                                :open="categoriesMenuOpen"
+                                @keep-open="openCategoriesMenu"
+                                @request-close="scheduleCloseCategoriesMenu"
+                            />
                         </li>
 
                         <li class="header-nav-item">
@@ -502,6 +517,8 @@ export default {
                 status: statusEnum.ACTIVE
             },
             searchProduct: "",
+            categoriesMenuOpen: false,
+            categoriesMenuCloseTimer: null,
             orderNotificationStatus: false,
             orderNotificationMessage: "",
             orderNotification: {
@@ -623,12 +640,37 @@ export default {
             });
         }
     },
+    beforeUnmount() {
+        this.clearCategoriesMenuTimer();
+    },
     methods: {
         onNavTap(event, navigate) {
             onInstantNavigate(event, navigate);
         },
         onActionTap(event, action) {
             onInstantAction(event, action);
+        },
+        clearCategoriesMenuTimer() {
+            if (this.categoriesMenuCloseTimer) {
+                clearTimeout(this.categoriesMenuCloseTimer);
+                this.categoriesMenuCloseTimer = null;
+            }
+        },
+        openCategoriesMenu() {
+            this.clearCategoriesMenuTimer();
+            this.categoriesMenuOpen = true;
+        },
+        scheduleCloseCategoriesMenu() {
+            this.clearCategoriesMenuTimer();
+            // Delay so mouse can travel from the button into the mega panel without closing.
+            this.categoriesMenuCloseTimer = setTimeout(() => {
+                this.categoriesMenuOpen = false;
+                this.categoriesMenuCloseTimer = null;
+            }, 220);
+        },
+        toggleCategoriesMenu() {
+            this.clearCategoriesMenuTimer();
+            this.categoriesMenuOpen = !this.categoriesMenuOpen;
         },
         openMobileSidebar() {
             targetService.showTarget('mobile-sidebar-canvas', 'canvas-active');

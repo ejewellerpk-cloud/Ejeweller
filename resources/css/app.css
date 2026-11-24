@@ -560,10 +560,22 @@
         z-index: 60;
     }
 
-    .header-nav-item--categories:hover > .header-category-mega,
-    .header-category-mega:hover {
+    /* Stay open via JS `.is-open` (not pure :hover) so the gap under the nav
+       does not close the panel before the pointer reaches it. */
+    .header-nav-item--categories.is-open > .header-category-mega,
+    .header-category-mega.is-open {
         @apply scale-y-100 pointer-events-auto;
         z-index: 60;
+    }
+
+    /* Invisible bridge into the header so mouse can leave the button sideways/down without dropping hover */
+    .header-category-mega.is-open::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 100%;
+        height: 2.5rem;
     }
 
     .header-category-mega__layout {
@@ -818,7 +830,7 @@
         z-index: 40;
     }
 
-    .frontend-main-header .header-nav-item--categories:hover,
+    .frontend-main-header .header-nav-item--categories.is-open,
     .frontend-main-header .header-nav-item--categories:focus-within {
         z-index: 60;
     }
