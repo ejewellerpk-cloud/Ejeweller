@@ -454,27 +454,111 @@ class EnterpriseGrowthService
             return [];
         }
 
-        return AnalyticsEvent::query()
+        $checkoutSignals = AnalyticsEvent::query()
             ->where('site_id', $siteId)
             ->whereIn('event_name', ['checkout_abandoned', 'checkout_started'])
             ->orderByDesc('occurred_at')
             ->limit($limit)
             ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'user_id', 'revenue', 'properties'])
-            ->map(function ($e) {
-                $props = is_array($e->properties) ? $e->properties : (json_decode($e->properties ?? '{}', true) ?: []);
-
-                return [
-                    'id' => $e->id,
-                    'event' => $e->event_name,
-                    'occurred_at' => $e->occurred_at?->toIso8601String(),
-                    'page_url' => $e->page_url,
-                    'user_id' => $e->user_id,
-                    'visitor_id' => $e->visitor_id,
-                    'value' => (float) ($e->revenue ?: ($props['cart_total'] ?? $props['value'] ?? 0)),
-                    'email' => $props['email'] ?? null,
-                ];
-            })
+            ->map(fn ($e) => $this->mapAbandonRow($e))
             ->all();
+
+        // Live "add to cart" without a later order should appear here too —
+        // previously only checkout_abandoned showed, so cart-only drops were invisible.
+        $cartSignals = $this->recentUnresolvedCartAdds($siteId, $limit);
+
+        return collect($checkoutSignals)
+            ->concat($cartSignals)
+            ->sortByDesc(fn ($row) => $row['occurred_at'] ?? '')
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Latest add_to_cart per visitor with no order_placed afterwards.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function recentUnresolvedCartAdds(int $siteId, int $limit): array
+    {
+        $since = now()->subDays(14);
+
+        $adds = AnalyticsEvent::query()
+            ->where('site_id', $siteId)
+            ->where('event_name', 'add_to_cart')
+            ->where('occurred_at', '>=', $since)
+            ->orderByDesc('occurred_at')
+            ->limit(max(50, $limit * 8))
+            ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'user_id', 'session_id', 'revenue', 'properties', 'product_id']);
+
+        if ($adds->isEmpty()) {
+            return [];
+        }
+
+        $seenVisitors = [];
+        $rows = [];
+
+        foreach ($adds as $event) {
+            $visitorKey = $event->visitor_id
+                ?: ($event->user_id ? 'u:' . $event->user_id : null)
+                ?: ($event->session_id ? 's:' . $event->session_id : 'e:' . $event->id);
+
+            if (isset($seenVisitors[$visitorKey])) {
+                continue;
+            }
+            $seenVisitors[$visitorKey] = true;
+
+            $orderedAfter = AnalyticsEvent::query()
+                ->where('site_id', $siteId)
+                ->where('event_name', 'order_placed')
+                ->where('occurred_at', '>=', $event->occurred_at)
+                ->when(
+                    $event->visitor_id,
+                    fn ($q) => $q->where('visitor_id', $event->visitor_id),
+                    fn ($q) => $event->user_id
+                        ? $q->where('user_id', $event->user_id)
+                        : ($event->session_id
+                            ? $q->where('session_id', $event->session_id)
+                            : $q->whereRaw('1 = 0'))
+                )
+                ->exists();
+
+            if ($orderedAfter) {
+                continue;
+            }
+
+            $row = $this->mapAbandonRow($event);
+            $row['event'] = 'cart_abandoned';
+            $row['id'] = 'cart-' . $event->id;
+            $rows[] = $row;
+
+            if (count($rows) >= $limit) {
+                break;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapAbandonRow(AnalyticsEvent $e): array
+    {
+        $props = is_array($e->properties) ? $e->properties : (json_decode($e->properties ?? '{}', true) ?: []);
+
+        return [
+            'id' => $e->id,
+            'event' => $e->event_name,
+            'occurred_at' => $e->occurred_at?->toIso8601String(),
+            'page_url' => $e->page_url,
+            'user_id' => $e->user_id,
+            'visitor_id' => $e->visitor_id,
+            'value' => (float) ($e->revenue ?: ($props['cart_total'] ?? $props['value'] ?? 0)),
+            'email' => $props['email'] ?? null,
+            'product_id' => $e->product_id ?? ($props['product_id'] ?? null),
+        ];
     }
 
     private function estimateRecoverableValue(int $siteId, string $from, string $to): float
