@@ -17,6 +17,7 @@ use App\Http\Requests\ProductCategoryRequest;
 class ProductCategoryService
 {
     private const CATEGORY_TREE_CACHE_KEY = 'product_categories_tree';
+    public const CATEGORY_DESCENDANT_IDS_VERSION_KEY = 'category_descendant_ids_version';
 
     protected array $productCateFilter = [
         'name',
@@ -199,5 +200,10 @@ class ProductCategoryService
     private function forgetCategoryTreeCache(): void
     {
         Cache::forget(self::CATEGORY_TREE_CACHE_KEY);
+        Cache::put(
+            self::CATEGORY_DESCENDANT_IDS_VERSION_KEY,
+            (int) Cache::get(self::CATEGORY_DESCENDANT_IDS_VERSION_KEY, 1) + 1,
+            86400 * 30
+        );
     }
 }

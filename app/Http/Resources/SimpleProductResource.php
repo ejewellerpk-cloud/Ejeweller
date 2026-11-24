@@ -18,7 +18,11 @@ class SimpleProductResource extends JsonResource
      */
     public function toArray($request)
     {
-        $price = count($this->variations) > 0 ? $this->variation_price : $this->selling_price;
+        $variationCount = (int) ($this->variations_count
+            ?? ($this->relationLoaded('variations') ? $this->variations->count() : 0));
+        $price = $variationCount > 0
+            ? ($this->variation_price ?: $this->selling_price)
+            : $this->selling_price;
         $discount = (double) $this->discount;
         $isOffer = AppLibrary::isProductOfferActive($discount, $this->offer_start_date, $this->offer_end_date);
         $offerPrice = AppLibrary::productOfferPrice((float) $price, $discount, $this->offer_start_date, $this->offer_end_date);
@@ -26,12 +30,10 @@ class SimpleProductResource extends JsonResource
             'id'                => $this->id,
             'created_at'        => $this->created_at ? $this->created_at->toIso8601String() : null,
             'use_random_sale'   => (int)$this->use_random_sale,
-            'actual_sales'      => (int) abs($this->product_orders_sum_quantity ?? $this->productOrders()->sum('quantity')),
-            'in_baskets'            => (int) ($this->cart_trackers_count ?? $this->cartTrackers()->count()),
-            'bought_last_24_hours'  => (int) abs(
-                $this->product_orders_last_day_sum_quantity
-                    ?? $this->productOrders()->where('created_at', '>=', now()->subDay())->sum('quantity')
-            ),
+            // Prefer eager aggregates — never fall back to per-row queries (N+1).
+            'actual_sales'      => (int) abs($this->product_orders_sum_quantity ?? 0),
+            'in_baskets'            => (int) ($this->cart_trackers_count ?? 0),
+            'bought_last_24_hours'  => (int) abs($this->product_orders_last_day_sum_quantity ?? 0),
             'name'              => $this->name,
             'slug'              => $this->slug,
             'currency_price'    => AppLibrary::currencyAmountFormat($price),
@@ -47,7 +49,9 @@ class SimpleProductResource extends JsonResource
             'old_price'         => (double) $price,
             'stock'             => (int) $this->stock,
             'maximum_purchase_quantity' => (int) $this->maximum_purchase_quantity,
-            'taxes'             => ProductTaxResource::collection($this->taxes),
+            'taxes'             => $this->relationLoaded('taxes')
+                ? ProductTaxResource::collection($this->taxes)
+                : [],
             'shipping'          => [
                 'shipping_type'  => $this->shipping_type,
                 'shipping_cost'  => (double) $this->shipping_cost,
@@ -59,8 +63,10 @@ class SimpleProductResource extends JsonResource
                 ? round((float) $this->rating_star / (int) $this->rating_star_count, 1)
                 : null,
             'wishlist'          => (bool)$this->wishlist,
-            'variation_count'   => (int) count($this->variations),
-            'videos'            => ProductVideoResource::collection($this->videos),
+            'variation_count'   => $variationCount,
+            'videos'            => $this->relationLoaded('videos')
+                ? ProductVideoResource::collection($this->videos)
+                : [],
         ];
     }
 }

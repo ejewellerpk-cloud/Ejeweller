@@ -1,5 +1,6 @@
 import axios from "axios";
 import appService from "../../../services/appService";
+import { coalesceInflight, inflateRequestKey } from "../../utils/coalesceInflight";
 
 let categoryWiseProductsSeq = 0;
 
@@ -178,36 +179,42 @@ export const frontendProduct = {
             });
         },
         popularProducts: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            const key = inflateRequestKey("frontendProduct/popularProducts", payload);
+            return coalesceInflight(key, () => new Promise((resolve, reject) => {
                 let url = `frontend/product/popular-products`;
                 if (payload) {
                     url = url + appService.requestHandler(payload);
                 }
                 axios.get(url, payload).then((res) => {
-                    context.commit("popularProducts", res.data.data);
+                    const limit = Number(payload?.rand) > 0 ? Number(payload.rand) : 0;
+                    const rows = Array.isArray(res.data.data) ? res.data.data : [];
+                    context.commit("popularProducts", limit > 0 ? rows.slice(0, limit) : rows);
                     context.commit("popularProductPage", res.data.meta);
                     context.commit("popularProductPagination", res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
                 });
-            });
+            }));
         },
         flashSaleProducts: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            const key = inflateRequestKey("frontendProduct/flashSaleProducts", payload);
+            return coalesceInflight(key, () => new Promise((resolve, reject) => {
                 let url = `frontend/product/flash-sale-products`;
                 if (payload) {
                     url = url + appService.requestHandler(payload);
                 }
                 axios.get(url, payload).then((res) => {
-                    context.commit("flashSaleProducts", res.data.data);
+                    const limit = Number(payload?.rand) > 0 ? Number(payload.rand) : 0;
+                    const rows = Array.isArray(res.data.data) ? res.data.data : [];
+                    context.commit("flashSaleProducts", limit > 0 ? rows.slice(0, limit) : rows);
                     context.commit("flashSaleProductPage", res.data.meta);
                     context.commit("flashSaleProductPagination", res.data);
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
                 });
-            });
+            }));
         },
         offerProducts: function (context, payload) {
             return new Promise((resolve, reject) => {

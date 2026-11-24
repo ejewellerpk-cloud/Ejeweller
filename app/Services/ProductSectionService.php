@@ -15,9 +15,9 @@ use App\Libraries\QueryExceptionLibrary;
 
 class ProductSectionService
 {
-    public const HOME_SECTIONS_CACHE_PREFIX = 'product_sections_v3';
+    public const HOME_SECTIONS_CACHE_PREFIX = 'product_sections_v4';
 
-    private const HOME_SECTIONS_VERSION_KEY = 'product_sections_v3_version';
+    private const HOME_SECTIONS_VERSION_KEY = 'product_sections_v4_version';
 
     protected array $productCateFilter = [
         'name',
@@ -127,20 +127,22 @@ class ProductSectionService
         try {
             return Cache::remember($this->homeSectionsCacheKey(), 3600, function () {
                 return ProductSection::select('product_sections.id', 'product_sections.name', 'product_sections.slug', 'product_sections.status')->with(['products' => function ($query) {
-                    $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.created_at', 'products.use_random_sale')
+                    $query->select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.created_at', 'products.use_random_sale', 'products.shipping_type', 'products.shipping_cost', 'products.is_product_quantity_multiply')
                         ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
                         ->withReviewRating()
                         ->withSum('productStocks', 'quantity')
                         ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
                         ->withCount('cartTrackers')
+                        ->withCount('variations')
                         ->withSum(
                             ['productOrders as product_orders_last_day_sum_quantity' => fn($q) => $q->where('created_at', '>=', now()->subDay())],
                             'quantity'
                         )
-                        ->with('media', 'variations', 'reviews')
+                        ->with('media', 'taxes')
                         ->active('products.status')
                         ->whereNull('deleted_at')
-                        ->inRandomOrder();
+                        ->inRandomOrder()
+                        ->limit(8);
                 }])->active('product_sections.status')->orderBy('id', 'asc')->get()->map(function ($query) {
                     $query->setRelation('products', $query->products->take(8));
                     return $query;

@@ -20,6 +20,7 @@ use App\Models\ProductVariation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\ProductRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Models\ProductAttributeOption;
@@ -396,15 +397,21 @@ class ProductService
             $orderType   = $request->get('order_type') ?? 'desc';
             $rand        = $request->get('rand', 0) > 0 ? $request->get('rand') : 0;
 
-            return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
+            return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale', 'products.shipping_type', 'products.shipping_cost', 'products.is_product_quantity_multiply', 'products.created_at')
                 ->withReviewRating()
                 ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
+                ->withCount('cartTrackers')
+                ->withSum(
+                    ['productOrders as product_orders_last_day_sum_quantity' => fn ($q) => $q->where('created_at', '>=', now()->subDay())],
+                    'quantity'
+                )
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with('media', 'videos', 'variations', 'taxes')
+                ->with('media', 'taxes')
+                ->withCount('variations')
                 ->withCount('orderCountable')
                 ->where(['status' => Status::ACTIVE])
-                ->inRandomOrder()
+                ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
                 ->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -861,17 +868,23 @@ class ProductService
             $orderType   = $request->get('order_type') ?? 'desc';
             $rand        = $request->get('rand', 0) > 0 ? $request->get('rand') : 0;
 
-            return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale')
+            return Product::select('products.id', 'products.name', 'products.sku', 'products.slug', 'products.selling_price', 'products.variation_price', 'products.add_to_flash_sale', 'products.offer_start_date', 'products.offer_end_date', 'products.discount', 'products.status', 'products.show_stock_out', 'products.can_purchasable', 'products.maximum_purchase_quantity', 'products.use_random_sale', 'products.shipping_type', 'products.shipping_cost', 'products.is_product_quantity_multiply', 'products.created_at')
                 ->withReviewRating()
                 ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
+                ->withCount('cartTrackers')
+                ->withSum(
+                    ['productOrders as product_orders_last_day_sum_quantity' => fn ($q) => $q->where('created_at', '>=', now()->subDay())],
+                    'quantity'
+                )
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with('media', 'videos', 'variations', 'reviews', 'taxes')
+                ->with('media', 'taxes')
+                ->withCount('variations')
                 ->active('products.status')
                 ->where('products.add_to_flash_sale', Ask::YES)
                 ->where('products.offer_start_date', '<=', $now)
                 ->where('products.offer_end_date', '>=', $now)
-                ->inRandomOrder()
+                ->randAndLimitOrOrderBy($rand, $orderColumn, $orderType)
                 ->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -972,10 +985,20 @@ class ProductService
             $categoryIds = collect();
 
             if ($product->product_category_id) {
-                $category = ProductCategory::find($product->product_category_id);
-                if ($category) {
-                    $categoryIds = $category->descendantsAndSelf->pluck('id');
-                }
+                $descendantVersion = (int) Cache::get(ProductCategoryService::CATEGORY_DESCENDANT_IDS_VERSION_KEY, 1);
+                $categoryIds = Cache::remember(
+                    'category_descendant_ids:v' . $descendantVersion . ':' . $product->product_category_id,
+                    3600,
+                    function () use ($product) {
+                        $category = ProductCategory::find($product->product_category_id);
+                        if (!$category) {
+                            return [];
+                        }
+
+                        return $category->descendantsAndSelf->pluck('id')->all();
+                    }
+                );
+                $categoryIds = collect($categoryIds);
             }
 
             $select = [
@@ -994,13 +1017,24 @@ class ProductService
                 'products.can_purchasable',
                 'products.maximum_purchase_quantity',
                 'products.use_random_sale',
+                'products.shipping_type',
+                'products.shipping_cost',
+                'products.is_product_quantity_multiply',
+                'products.created_at',
             ];
 
             $baseQuery = fn () => Product::select($select)
                 ->withReviewRating()
+                ->withSum('productStocks', 'quantity')
                 ->withSum(['productOrders as product_orders_sum_quantity'], 'quantity')
+                ->withCount('cartTrackers')
+                ->withSum(
+                    ['productOrders as product_orders_last_day_sum_quantity' => fn ($q) => $q->where('created_at', '>=', now()->subDay())],
+                    'quantity'
+                )
                 ->with(['wishlist' => fn ($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with('media', 'videos', 'variations', 'taxes')
+                ->with('media', 'taxes')
+                ->withCount('variations')
                 ->withCount('orderCountable')
                 ->where(['status' => Status::ACTIVE]);
 

@@ -4,28 +4,28 @@
         <SliderComponent />
         <!-- Categories sit under hero — mount immediately for Shopify-like first paint -->
         <CategoryComponent />
-        <DeferUntilVisible class="homepage-deferred-section" min-height="120px" root-margin="320px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="120px" root-margin="160px 0px">
             <PromotionComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="280px" root-margin="280px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="280px" root-margin="140px 0px">
             <ProductSectionComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="280px" root-margin="240px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="280px" root-margin="120px 0px">
             <MostPopularComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="200px" root-margin="200px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="200px" root-margin="100px 0px">
             <FlashSaleComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="160px" root-margin="160px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="160px" root-margin="80px 0px">
             <ProductBrandComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="160px" root-margin="120px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="160px" root-margin="80px 0px">
             <OutletComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="200px" root-margin="120px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="200px" root-margin="80px 0px">
             <HomeReviewsComponent />
         </DeferUntilVisible>
-        <DeferUntilVisible class="homepage-deferred-section" min-height="120px" root-margin="80px 0px">
+        <DeferUntilVisible class="homepage-deferred-section" min-height="120px" root-margin="60px 0px">
             <BenefitComponent />
         </DeferUntilVisible>
     </div>

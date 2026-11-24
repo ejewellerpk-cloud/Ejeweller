@@ -110,19 +110,20 @@ class ProductVariationService
     public function initialVariation(Product $product)
     {
         try {
-            $variations = $product->variations;
-            if (count($variations)) {
-                $variations = $product->variations()
-                    ->with(['productAttribute:id,name', 'productAttributeOption:id,name', 'product:id,offer_start_date,offer_end_date,discount,show_stock_out,can_purchasable,maximum_purchase_quantity'])
-                    ->get();
+            $variations = $product->variations()
+                ->with([
+                    'productAttribute:id,name',
+                    'productAttributeOption:id,name',
+                    'product:id,offer_start_date,offer_end_date,discount,show_stock_out,can_purchasable,maximum_purchase_quantity',
+                ])
+                ->withSum('stockItems', 'quantity')
+                ->get();
 
-                $variations->each(function ($variation) {
-                    $variation->stock_items_sum_quantity = $variation->stockItems()->selectRaw('SUM(quantity) as stock_items_sum_quantity')->value('stock_items_sum_quantity');
-                });
-
-                return $variations->groupBy('product_attribute_id')->first();
+            if ($variations->isEmpty()) {
+                return $variations;
             }
-            return $variations;
+
+            return $variations->groupBy('product_attribute_id')->first() ?? collect();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -147,7 +148,16 @@ class ProductVariationService
      */
     public function allVariation(Product $product)
     {
-        return ProductVariation::tree()->depthFirst()->where('product_id', $product->id)->withSum('stockItems', 'quantity')->get()->toTree();
+        return ProductVariation::tree()->depthFirst()
+            ->where('product_id', $product->id)
+            ->with([
+                'productAttribute:id,name',
+                'productAttributeOption:id,name',
+                'product:id,offer_start_date,offer_end_date,discount,show_stock_out,can_purchasable,maximum_purchase_quantity',
+            ])
+            ->withSum('stockItems', 'quantity')
+            ->get()
+            ->toTree();
     }
 
     /**

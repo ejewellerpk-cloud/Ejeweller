@@ -20,15 +20,12 @@
                             </router-link>
                         </div>
 
-                        <!-- Native scroll-snap rail — lighter & smoother than nested Swipers on mobile -->
+                        <!-- One list root (contents) → rail CSS sizes each .product-card -->
                         <div class="homepage-product-rail">
-                            <div
-                                v-for="product in sectionProducts(productSection)"
-                                :key="product.id"
-                                class="homepage-product-rail__item"
-                            >
-                                <ProductListComponent :products="[product]" :lite="true" />
-                            </div>
+                            <ProductListComponent
+                                :products="sectionProducts(productSection)"
+                                :lite="true"
+                            />
                         </div>
                     </div>
                 </section>
@@ -134,16 +131,25 @@ export default {
 
             const promoPromise = this.promotions.length > 0
                 ? Promise.resolve()
-                : this.$store.dispatch("frontendPromotion/lists", {
-                    paginate: 0,
-                    order_column: "id",
-                    order_type: "asc",
-                    type: promotionTypeEnum.BIG,
-                    status: statusEnum.ACTIVE,
-                    vuex: false
-                }).then(res => {
-                    this.promotions = res.data.data;
-                });
+                : (() => {
+                    // Prefer BIG promos already in Vuex from homepage prefetch (avoids 2nd HTTP).
+                    const cached = (this.$store.getters["frontendPromotion/lists"] || [])
+                        .filter((p) => Number(p.type) === promotionTypeEnum.BIG);
+                    if (cached.length > 0) {
+                        this.promotions = cached;
+                        return Promise.resolve();
+                    }
+                    return this.$store.dispatch("frontendPromotion/lists", {
+                        paginate: 0,
+                        order_column: "id",
+                        order_type: "asc",
+                        type: promotionTypeEnum.BIG,
+                        status: statusEnum.ACTIVE,
+                        vuex: false
+                    }).then(res => {
+                        this.promotions = res.data.data;
+                    });
+                })();
 
             Promise.all([sectionPromise, promoPromise]).finally(() => {
                 this.loading.isActive = false;

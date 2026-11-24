@@ -43,7 +43,7 @@
                             :key="copy + '-' + product.id + '-' + index"
                             class="related-marquee-item"
                         >
-                            <ProductListComponent :products="[product]" />
+                            <ProductListComponent :products="[product]" :lite="true" />
                         </div>
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                     :aria-label="$t('label.related_products')"
                 >
                     <SwiperSlide v-for="product in products" :key="product.id">
-                        <ProductListComponent :products="[product]" />
+                        <ProductListComponent :products="[product]" :lite="true" />
                     </SwiperSlide>
                 </Swiper>
             </div>
@@ -256,7 +256,7 @@ export default {
             this.$store
                 .dispatch("frontendProduct/relatedProducts", {
                     slug: this.productSlug,
-                    limit: 32,
+                    limit: 16,
                 })
                 .then((res) => {
                     this.products = res.data.data || [];

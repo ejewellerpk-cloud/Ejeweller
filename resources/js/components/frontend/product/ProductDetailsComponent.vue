@@ -59,8 +59,18 @@
                                     </div>
                                 </template>
                                 <template v-else-if="media.type === 'video'">
-                                    <iframe v-if="isEmbedVideo(media)"
+                                    <iframe v-if="isEmbedVideo(media) && mainSwiperActiveIndex === index"
                                         :src="formatVideoLink(media.data)" class="w-full h-full pointer-events-none" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                                    <div v-else-if="isEmbedVideo(media)" class="relative w-full h-full bg-black flex items-center justify-center">
+                                        <img
+                                            :src="getVideoPoster(media) || product.cover || product.image"
+                                            alt="video preview"
+                                            class="w-full h-full object-cover absolute inset-0"
+                                            loading="lazy"
+                                            decoding="async"
+                                        />
+                                        <i class="fa-solid fa-play text-white text-3xl relative z-[1]"></i>
+                                    </div>
                                     <div v-else class="relative w-full h-full bg-black">
                                         <img
                                             :src="getVideoPoster(media)"
@@ -2016,21 +2026,40 @@ export default {
         requestProductShow: function (token, useTrashed) {
             const action = useTrashed ? 'frontendProduct/showWithTrashed' : 'frontendProduct/show';
             const slug = this.props.search.slug;
+            let servedFromCache = false;
 
             if (!useTrashed) {
                 const cached = this.readProductCache(slug);
                 if (cached) {
+                    servedFromCache = true;
                     this.commitShowPayload(cached);
                     this.handleShowSuccess({ data: { data: cached } }, token);
                 }
             }
 
             this.$store.dispatch(action, this.props.search).then((res) => {
+                if (token !== this.loadToken) {
+                    return;
+                }
+
                 if (useTrashed) {
                     this.commitShowPayload(res.data.data);
-                } else {
-                    this.writeProductCache(slug, res.data.data);
+                    this.handleShowSuccess(res, token);
+                    return;
                 }
+
+                this.writeProductCache(slug, res.data.data);
+
+                // Soft refresh after cache paint: update stock/price/SEO without
+                // re-firing variations, pixel, or recently-viewed (already scheduled).
+                if (servedFromCache) {
+                    this.commitShowPayload(res.data.data);
+                    this.applyProductFromShowResponse(res.data.data);
+                    this.applyProductSeo(res.data.data);
+                    this.loading.isActive = false;
+                    return;
+                }
+
                 this.handleShowSuccess(res, token);
             }).catch((err) => {
                 if (token !== this.loadToken) {

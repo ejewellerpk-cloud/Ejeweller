@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../../services/appService";
+import { coalesceInflight, inflateRequestKey } from "../../utils/coalesceInflight";
 
 
 export const frontendPromotion = {
@@ -30,20 +31,21 @@ export const frontendPromotion = {
     },
     actions: {
         lists: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            const key = inflateRequestKey("frontendPromotion/lists", payload);
+            return coalesceInflight(key, () => new Promise((resolve, reject) => {
                 let url = 'frontend/promotion';
                 if (payload) {
                     url = url + appService.requestHandler(payload);
                 }
                 axios.get(url).then((res) => {
-                    if(typeof payload.vuex === "undefined" || payload.vuex === true) {
+                    if(typeof payload?.vuex === "undefined" || payload?.vuex === true) {
                         context.commit('lists', res.data.data);
                     }
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
                 });
-            });
+            }));
         },
         show: function (context, payload) {
             return new Promise((resolve, reject) => {

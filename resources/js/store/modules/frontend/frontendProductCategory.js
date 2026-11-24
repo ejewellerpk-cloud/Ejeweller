@@ -1,5 +1,6 @@
 import axios from "axios";
 import appService from "../../../services/appService";
+import { coalesceInflight, inflateRequestKey } from "../../utils/coalesceInflight";
 
 export const frontendProductCategory = {
     namespaced: true,
@@ -42,7 +43,8 @@ export const frontendProductCategory = {
             });
         },
         lists: function (context, payload) {
-            return new Promise((resolve, reject) => {
+            const key = inflateRequestKey("frontendProductCategory/lists", payload);
+            return coalesceInflight(key, () => new Promise((resolve, reject) => {
                 let url = "frontend/product-category";
                 if (payload) {
                     url = url + appService.requestHandler(payload);
@@ -53,7 +55,7 @@ export const frontendProductCategory = {
                 }).catch((err) => {
                     reject(err);
                 });
-            });
+            }));
         }
     },
     mutations: {
