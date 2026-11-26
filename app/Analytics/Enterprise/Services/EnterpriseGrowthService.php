@@ -607,6 +607,7 @@ class EnterpriseGrowthService
         }
 
         $tz = config('app.timezone', 'UTC');
+        // Group by raw column for MySQL ONLY_FULL_GROUP_BY, normalize empty → direct in PHP.
         $rows = DB::table('analytics_events as e')
             ->join('analytics_sessions as s', 's.id', '=', 'e.session_id')
             ->where('e.site_id', $siteId)
@@ -616,17 +617,18 @@ class EnterpriseGrowthService
                 Carbon::parse($to, $tz)->endOfDay(),
             ])
             ->select(
-                DB::raw("COALESCE(NULLIF(s.source, ''), 'direct') as source"),
+                's.source',
                 DB::raw('SUM(COALESCE(e.revenue, 0)) as revenue'),
                 DB::raw('COUNT(*) as orders')
             )
-            ->groupBy(DB::raw("COALESCE(NULLIF(s.source, ''), 'direct')"))
+            ->groupBy('s.source')
             ->get();
 
         $out = [];
         foreach ($rows as $row) {
-            $out[$row->source] = (float) $row->revenue;
-            $out[$row->source . '__orders'] = (int) $row->orders;
+            $source = trim((string) ($row->source ?? '')) !== '' ? (string) $row->source : 'direct';
+            $out[$source] = ($out[$source] ?? 0) + (float) $row->revenue;
+            $out[$source . '__orders'] = ($out[$source . '__orders'] ?? 0) + (int) $row->orders;
         }
 
         return $out;
