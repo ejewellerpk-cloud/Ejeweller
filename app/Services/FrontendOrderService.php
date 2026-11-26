@@ -21,6 +21,9 @@ use App\Events\SendOrderSms;
 use App\Models\OrderAddress;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
+use App\Events\SendOrderGotMail;
+use App\Events\SendOrderGotSms;
+use App\Events\SendOrderGotPush;
 use App\Models\ProductVariation;
 use App\Models\OrderOutletAddress;
 use App\Models\CapturePaymentNotification;
@@ -41,6 +44,7 @@ use Dipokhalder\Settings\Facades\Settings;
 
 class FrontendOrderService
 {
+    // FbCapiService resolved via app() inside afterResponse callbacks.
 
     public object $order;
     protected array $frontendOrderFilter = [
@@ -347,25 +351,23 @@ class FrontendOrderService
                 }
             });
 
-            try {
-                app(\App\Services\FbCapiService::class)->sendPurchaseEvent($this->order);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('FB CAPI Dispatch Error: ' . $e->getMessage());
-            }
+            // Never block the checkout HTTP response on SMTP / SMS / FCM / Facebook CAPI.
+            // QUEUE_CONNECTION=sync would otherwise run all of these inline before the user sees success.
+            $orderId = (int) $this->order->id;
+            dispatch(function () use ($orderId) {
+                try {
+                    $order = Order::find($orderId);
+                    if ($order) {
+                        app(\App\Services\FbCapiService::class)->sendPurchaseEvent($order);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('FB CAPI Dispatch Error: ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             if ($isCod) {
-                try {
-                    SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-                    SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-                    SendOrderPush::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-
-                    \App\Events\SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
-                    \App\Events\SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
-                    \App\Events\SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Order Notification Dispatch Error: ' . $e->getMessage());
-                }
-                $this->order->is_cod = true; // Add flag for frontend
+                $this->dispatchOrderNotificationsAfterResponse($orderId, OrderStatus::PENDING, true);
+                $this->order->is_cod = true;
                 app(ProductSectionService::class)->clearHomeSectionsCache();
             }
 
@@ -411,9 +413,7 @@ class FrontendOrderService
                                 rand(111111111111111, 99999999999999)
                             );
                         }
-                        SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                        SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                        SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+                        $this->dispatchOrderNotificationsAfterResponse((int) $order->id, $request->status, false);
 
                         $stocks = Stock::where(['model_type' => Order::class, 'model_id' => $order->id])->get();
                         foreach ($stocks as $stock) {
@@ -431,6 +431,28 @@ class FrontendOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Fire mail/SMS/push after the HTTP response so order placement stays fast.
+     */
+    private function dispatchOrderNotificationsAfterResponse(int $orderId, mixed $status, bool $includeGotNotifications): void
+    {
+        dispatch(function () use ($orderId, $status, $includeGotNotifications) {
+            try {
+                SendOrderMail::dispatch(['order_id' => $orderId, 'status' => $status]);
+                SendOrderSms::dispatch(['order_id' => $orderId, 'status' => $status]);
+                SendOrderPush::dispatch(['order_id' => $orderId, 'status' => $status]);
+
+                if ($includeGotNotifications) {
+                    SendOrderGotMail::dispatch(['order_id' => $orderId]);
+                    SendOrderGotSms::dispatch(['order_id' => $orderId]);
+                    SendOrderGotPush::dispatch(['order_id' => $orderId]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Order Notification Dispatch Error: ' . $e->getMessage());
+            }
+        })->afterResponse();
     }
 
     private function abandonUnpaidCheckoutOrders(int $userId): void

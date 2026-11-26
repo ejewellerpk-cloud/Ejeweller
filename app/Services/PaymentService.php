@@ -73,13 +73,19 @@ class PaymentService
                 Stock::where(['model_id' => $order->id, 'model_type' => Order::class, 'status' => Status::INACTIVE])?->update(['status' => Status::ACTIVE]);
                 app(ProductSectionService::class)->clearHomeSectionsCache();
 
-                SendOrderMail::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-                SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-                SendOrderPush::dispatch(['order_id' => $order->id, 'status' => OrderStatus::PENDING]);
-
-                SendOrderGotMail::dispatch(['order_id' => $order->id]);
-                SendOrderGotSms::dispatch(['order_id' => $order->id]);
-                SendOrderGotPush::dispatch(['order_id' => $order->id]);
+                $orderId = (int) $order->id;
+                dispatch(function () use ($orderId) {
+                    try {
+                        SendOrderMail::dispatch(['order_id' => $orderId, 'status' => OrderStatus::PENDING]);
+                        SendOrderSms::dispatch(['order_id' => $orderId, 'status' => OrderStatus::PENDING]);
+                        SendOrderPush::dispatch(['order_id' => $orderId, 'status' => OrderStatus::PENDING]);
+                        SendOrderGotMail::dispatch(['order_id' => $orderId]);
+                        SendOrderGotSms::dispatch(['order_id' => $orderId]);
+                        SendOrderGotPush::dispatch(['order_id' => $orderId]);
+                    } catch (\Exception $e) {
+                        Log::error('Payment notification dispatch error: ' . $e->getMessage());
+                    }
+                })->afterResponse();
             });
             return $this->transaction;
         } catch (Exception $exception) {
