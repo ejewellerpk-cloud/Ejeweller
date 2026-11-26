@@ -459,7 +459,7 @@ class EnterpriseGrowthService
             ->whereIn('event_name', ['checkout_abandoned', 'checkout_started'])
             ->orderByDesc('occurred_at')
             ->limit($limit)
-            ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'user_id', 'revenue', 'properties'])
+            ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'session_id', 'revenue', 'properties', 'product_id'])
             ->map(fn ($e) => $this->mapAbandonRow($e))
             ->all();
 
@@ -490,7 +490,7 @@ class EnterpriseGrowthService
             ->where('occurred_at', '>=', $since)
             ->orderByDesc('occurred_at')
             ->limit(max(50, $limit * 8))
-            ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'user_id', 'session_id', 'revenue', 'properties', 'product_id']);
+            ->get(['id', 'event_name', 'occurred_at', 'page_url', 'visitor_id', 'session_id', 'revenue', 'properties', 'product_id']);
 
         if ($adds->isEmpty()) {
             return [];
@@ -501,8 +501,8 @@ class EnterpriseGrowthService
 
         foreach ($adds as $event) {
             $visitorKey = $event->visitor_id
-                ?: ($event->user_id ? 'u:' . $event->user_id : null)
-                ?: ($event->session_id ? 's:' . $event->session_id : 'e:' . $event->id);
+                ? 'v:' . $event->visitor_id
+                : ($event->session_id ? 's:' . $event->session_id : 'e:' . $event->id);
 
             if (isset($seenVisitors[$visitorKey])) {
                 continue;
@@ -516,11 +516,9 @@ class EnterpriseGrowthService
                 ->when(
                     $event->visitor_id,
                     fn ($q) => $q->where('visitor_id', $event->visitor_id),
-                    fn ($q) => $event->user_id
-                        ? $q->where('user_id', $event->user_id)
-                        : ($event->session_id
-                            ? $q->where('session_id', $event->session_id)
-                            : $q->whereRaw('1 = 0'))
+                    fn ($q) => $event->session_id
+                        ? $q->where('session_id', $event->session_id)
+                        : $q->whereRaw('1 = 0')
                 )
                 ->exists();
 
@@ -547,13 +545,18 @@ class EnterpriseGrowthService
     private function mapAbandonRow(AnalyticsEvent $e): array
     {
         $props = is_array($e->properties) ? $e->properties : (json_decode($e->properties ?? '{}', true) ?: []);
+        $userId = $props['user_id'] ?? null;
+
+        if (!$userId && $e->visitor_id && AnalyticsSchema::hasTable('analytics_visitors')) {
+            $userId = DB::table('analytics_visitors')->where('id', $e->visitor_id)->value('user_id');
+        }
 
         return [
             'id' => $e->id,
             'event' => $e->event_name,
             'occurred_at' => $e->occurred_at?->toIso8601String(),
             'page_url' => $e->page_url,
-            'user_id' => $e->user_id,
+            'user_id' => $userId ? (int) $userId : null,
             'visitor_id' => $e->visitor_id,
             'value' => (float) ($e->revenue ?: ($props['cart_total'] ?? $props['value'] ?? 0)),
             'email' => $props['email'] ?? null,

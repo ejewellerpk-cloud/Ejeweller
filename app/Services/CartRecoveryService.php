@@ -64,7 +64,11 @@ class CartRecoveryService
             $props = is_array($event->properties) ? $event->properties : (json_decode($event->properties ?? '{}', true) ?: []);
             $email = $props['email'] ?? null;
             $phone = $props['phone'] ?? null;
-            $userId = $event->user_id;
+            $userId = $props['user_id'] ?? null;
+
+            if (!$userId && $event->visitor_id) {
+                $userId = DB::table('analytics_visitors')->where('id', $event->visitor_id)->value('user_id');
+            }
 
             if (!$email && $userId) {
                 $email = DB::table('users')->where('id', $userId)->value('email');
