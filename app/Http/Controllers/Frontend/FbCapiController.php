@@ -19,24 +19,28 @@ class FbCapiController extends Controller
     {
         $eventName = $request->input('event_name');
         $customData = $request->input('custom_data', []);
-        
+
         $userData = [];
         if (auth('sanctum')->check()) {
             $user = auth('sanctum')->user();
             $userData['email'] = $user->email;
             $userData['phone'] = $user->phone;
-            $nameParts = explode(' ', $user->name);
-            $userData['first_name'] = $nameParts[0];
+            $nameParts = explode(' ', (string) $user->name);
+            $userData['first_name'] = $nameParts[0] ?? null;
             if (count($nameParts) > 1) {
                 $userData['last_name'] = end($nameParts);
             }
-        } else if ($request->input('user_data')) {
-            $userData = $request->input('user_data');
+        }
+
+        $incoming = $request->input('user_data', []);
+        if (is_array($incoming)) {
+            $userData = array_merge($userData, array_filter($incoming));
         }
 
         $eventId = $request->input('event_id');
+        $eventSourceUrl = $request->input('event_source_url');
 
-        $this->fbCapiService->dispatchEvent($eventName, $userData, $customData, $eventId);
+        $this->fbCapiService->dispatchEvent($eventName, $userData, $customData, $eventId, $eventSourceUrl);
 
         return response()->json(['status' => 'success']);
     }

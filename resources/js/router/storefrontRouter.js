@@ -55,6 +55,17 @@ export function createStorefrontRouter(store) {
 
     router.afterEach(() => {
         window.scrollTo(0, 0);
+        const user = store.getters.authInfo;
+        if (user?.email || user?.phone) {
+            const parts = String(user.name || '').trim().split(/\s+/);
+            pixelService.setUserData({
+                email: user.email,
+                phone: user.phone,
+                first_name: parts[0] || '',
+                last_name: parts.slice(1).join(' ') || '',
+                user_id: user.id,
+            });
+        }
         pixelService.trackPageView();
     });
 

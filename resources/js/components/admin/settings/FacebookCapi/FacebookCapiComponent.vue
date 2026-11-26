@@ -49,6 +49,24 @@
                         </div>
                     </div>
 
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="site_meta_ad_account_id">
+                            Meta Ad Account ID (optional)
+                        </label>
+                        <input v-model="form.site_meta_ad_account_id" type="text" id="site_meta_ad_account_id"
+                            class="db-field-control" placeholder="act_123456789" />
+                        <small class="text-gray-500">For Custom Audience sync from Campaigns → Audiences</small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="site_meta_marketing_token">
+                            Meta Marketing API Token (optional)
+                        </label>
+                        <input v-model="form.site_meta_marketing_token" type="text" id="site_meta_marketing_token"
+                            class="db-field-control" />
+                        <small class="text-gray-500">Needs ads_management permission. CSV export works without this.</small>
+                    </div>
+
                     <div class="form-col-12">
                         <button type="submit" class="text-white db-btn bg-primary">
                             <i class="lab lab-fill-save"></i>
@@ -99,6 +117,8 @@ export default {
                 site_facebook_pixel_id: null,
                 site_facebook_capi_token: null,
                 site_facebook_capi_status: null,
+                site_meta_ad_account_id: null,
+                site_meta_marketing_token: null,
                 site_guest_checkout: null,
             },
             enums: {
@@ -138,6 +158,8 @@ export default {
                     site_facebook_pixel_id: res.data.data.site_facebook_pixel_id,
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
+                    site_meta_ad_account_id: res.data.data.site_meta_ad_account_id,
+                    site_meta_marketing_token: res.data.data.site_meta_marketing_token,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                 }
                 this.loading.isActive = false;

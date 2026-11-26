@@ -12,26 +12,25 @@ class FbCapiService
         return $data ? hash('sha256', trim(strtolower($data))) : null;
     }
 
-    public function dispatchEvent($eventName, $userData, $customData = [], $eventId = null)
+    public function dispatchEvent($eventName, $userData, $customData = [], $eventId = null, $eventSourceUrl = null)
     {
-        // Standard user data formatting
         $formattedUserData = [
             'client_ip_address' => Request::ip(),
             'client_user_agent' => Request::header('User-Agent'),
         ];
 
-        if (!empty($userData['email'])) {
-            $formattedUserData['em'] = $this->hashData($userData['email']);
+        if (!empty($userData['email']) || !empty($userData['em'])) {
+            $formattedUserData['em'] = $this->hashData($userData['email'] ?? $userData['em']);
         }
-        if (!empty($userData['phone'])) {
-            // Phone should ideally contain country code and only digits
-            $formattedUserData['ph'] = $this->hashData(preg_replace('/[^0-9]/', '', $userData['phone']));
+        if (!empty($userData['phone']) || !empty($userData['ph'])) {
+            $phone = $userData['phone'] ?? $userData['ph'];
+            $formattedUserData['ph'] = $this->hashData(preg_replace('/[^0-9]/', '', (string) $phone));
         }
-        if (!empty($userData['first_name'])) {
-            $formattedUserData['fn'] = $this->hashData($userData['first_name']);
+        if (!empty($userData['first_name']) || !empty($userData['fn'])) {
+            $formattedUserData['fn'] = $this->hashData($userData['first_name'] ?? $userData['fn']);
         }
-        if (!empty($userData['last_name'])) {
-            $formattedUserData['ln'] = $this->hashData($userData['last_name']);
+        if (!empty($userData['last_name']) || !empty($userData['ln'])) {
+            $formattedUserData['ln'] = $this->hashData($userData['last_name'] ?? $userData['ln']);
         }
         if (!empty($userData['city'])) {
             $formattedUserData['ct'] = $this->hashData($userData['city']);
@@ -42,16 +41,18 @@ class FbCapiService
         if (!empty($userData['country'])) {
             $formattedUserData['country'] = $this->hashData($userData['country']);
         }
+        if (!empty($userData['external_id']) || !empty($userData['user_id'])) {
+            $formattedUserData['external_id'] = $this->hashData((string) ($userData['external_id'] ?? $userData['user_id']));
+        }
 
         $eventData = [
-            'event_source_url' => Request::url(),
+            'event_source_url' => $eventSourceUrl ?: (Request::header('Referer') ?: Request::url()),
         ];
-        
+
         if ($eventId) {
             $eventData['event_id'] = $eventId;
         }
 
-        // Dispatch Job
         SendFbCapiEvent::dispatch($eventName, $eventData, $formattedUserData, $customData);
     }
 

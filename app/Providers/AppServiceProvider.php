@@ -48,6 +48,10 @@ class AppServiceProvider extends ServiceProvider
             $schedule->command('postex:sync-statuses')
                 ->everyFifteenMinutes()
                 ->withoutOverlapping(10);
+
+            $schedule->command('campaigns:process-recovery --enqueue')
+                ->everyThirtyMinutes()
+                ->withoutOverlapping(15);
         });
     }
 }
