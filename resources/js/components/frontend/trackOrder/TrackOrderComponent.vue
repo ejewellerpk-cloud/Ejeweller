@@ -1,14 +1,14 @@
 <template>
-    <section class="py-12 bg-gray-50 min-h-screen">
+    <section class="track-order-page py-10 sm:py-12 bg-gray-50 min-h-[70vh]">
         <div class="container max-w-4xl mx-auto px-4">
-            <div class="text-center mb-10">
+            <div class="text-center mb-8 sm:mb-10">
                 <h1 class="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">Track Your Order</h1>
                 <p class="text-gray-500 max-w-lg mx-auto">
                     Enter your Order ID or PostEx tracking number to see where your package is.
                 </p>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 mb-8" v-if="!orderDetails">
+            <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-10 mb-8" v-if="!orderDetails">
                 <form @submit.prevent="submitTracking">
                     <div class="max-w-md mx-auto mb-8 space-y-4">
                         <div>
@@ -18,7 +18,7 @@
                             <input
                                 v-model="form.order_serial_no"
                                 type="text"
-                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                                 placeholder="e.g. ORD-12345 or PostEx tracking #"
                                 required
                             >
@@ -30,7 +30,7 @@
                             <input
                                 v-model="form.phone"
                                 type="tel"
-                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                                 placeholder="Order phone number"
                                 required
                             >
@@ -41,7 +41,7 @@
                         <button
                             type="submit"
                             :disabled="loading"
-                            class="px-8 py-3.5 bg-primary text-white rounded-full font-black text-lg shadow-[0_8px_16px_rgba(var(--primary-color-rgb),0.3)] hover:shadow-[0_12px_24px_rgba(var(--primary-color-rgb),0.4)] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+                            class="px-8 py-3.5 bg-primary text-white rounded-full font-black text-lg flex items-center gap-2 disabled:opacity-60"
                         >
                             <span v-if="!loading">Track Order</span>
                             <span v-else>
@@ -53,13 +53,13 @@
                 </form>
             </div>
 
-            <div v-else class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10">
+            <div v-else class="bg-white rounded-3xl border border-gray-100 p-6 md:p-10">
                 <div class="flex flex-wrap justify-between items-start gap-4 border-b border-gray-100 pb-6 mb-8">
                     <div>
                         <button
                             type="button"
                             @click="resetForm"
-                            class="text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-2 mb-2"
+                            class="text-sm font-bold text-gray-500 hover:text-primary flex items-center gap-2 mb-2"
                         >
                             <i class="fa-solid fa-arrow-left"></i> Track Another Order
                         </button>
@@ -77,7 +77,7 @@
                 </div>
 
                 <!-- PostEx courier live tracking -->
-                <div v-if="postexTracking" class="mb-10 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/50 p-5 sm:p-6">
+                <div v-if="postexTracking" class="mb-10 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
                         <div>
                             <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-500 mb-1">Courier Tracking</p>

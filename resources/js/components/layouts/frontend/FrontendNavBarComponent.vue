@@ -38,8 +38,8 @@
 
     <header
         id="frontend-main-header"
-        class="frontend-main-header relative z-50 overflow-visible max-lg:sticky max-lg:top-0 w-full mb-5 sm:mb-8 shadow-xs bg-white"
-        :class="isSticky === true ? 'lg:fixed lg:top-0 lg:left-0 lg:right-0' : ''">
+        class="frontend-main-header sticky top-0 z-50 overflow-visible w-full mb-5 sm:mb-8 shadow-xs bg-white"
+        :class="isScrolled ? 'frontend-main-header--scrolled' : ''">
         <div class="container py-3 px-3 sm:py-3.5 sm:px-4 lg:py-0 overflow-visible">
             <div class="flex items-center justify-between gap-3 sm:gap-5 overflow-visible">
                 <!--  Logo & Mobile Responsive Start -->
@@ -440,7 +440,8 @@ export default {
     name: "FrontendNavbarComponent",
     components: { HeaderCategoryMegaMenu },
     setup() {
-        const isSticky = ref();
+        // CSS sticky keeps the header in flow — avoids the old lg:fixed jump/jitter on laptop scroll.
+        const isScrolled = ref(false);
         const {openCanvas} = useCanvas();
 
         const syncLayoutOffsets = () => {
@@ -457,17 +458,24 @@ export default {
         };
 
         let headerResizeObserver = null;
+        let scrollRaf = 0;
+
+        const onWindowScroll = () => {
+            if (scrollRaf) {
+                return;
+            }
+            scrollRaf = window.requestAnimationFrame(() => {
+                scrollRaf = 0;
+                const next = window.scrollY > 8;
+                if (isScrolled.value !== next) {
+                    isScrolled.value = next;
+                }
+            });
+        };
 
         onMounted(() => {
-            window.addEventListener('scroll', function () {
-                let windowScroll = this.scrollY;
-                if (windowScroll > 0) {
-                    isSticky.value = true;
-                } else {
-                    isSticky.value = false;
-                }
-                syncLayoutOffsets();
-            });
+            window.addEventListener('scroll', onWindowScroll, { passive: true });
+            onWindowScroll();
 
             syncLayoutOffsets();
             window.addEventListener('resize', syncLayoutOffsets);
@@ -487,13 +495,17 @@ export default {
         });
 
         onBeforeUnmount(() => {
+            window.removeEventListener('scroll', onWindowScroll);
             window.removeEventListener('resize', syncLayoutOffsets);
             window.removeEventListener('orientationchange', syncLayoutOffsets);
+            if (scrollRaf) {
+                window.cancelAnimationFrame(scrollRaf);
+            }
             headerResizeObserver?.disconnect();
         });
 
         return {
-            isSticky,
+            isScrolled,
             openCanvas,
             flashSaleTopBar,
         }

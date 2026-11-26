@@ -808,19 +808,20 @@
     }
 
     .frontend-main-header {
-        position: relative;
+        position: sticky;
+        top: 0;
         z-index: 50;
         overflow: visible;
         padding-top: var(--safe-top);
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
+        /* Stay composited without creating a containing-block trap for descendants */
+        backface-visibility: hidden;
+        transition: box-shadow 160ms ease;
     }
 
-    @media (max-width: 1023px) {
-        .frontend-main-header {
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-        }
+    .frontend-main-header--scrolled {
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
 
     /* Keep nav/mega above search + account icons in the header flex row */
