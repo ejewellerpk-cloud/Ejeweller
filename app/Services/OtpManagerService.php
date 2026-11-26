@@ -39,18 +39,7 @@ class OtpManagerService
                 $otp->delete();
             }
 
-            if (
-                OtpType::SMS == Settings::group('otp')->get('otp_type') || OtpType::BOTH == Settings::group('otp')->get(
-                    'otp_type'
-                )
-            ) {
-                $token = rand(
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit') - 1),
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit')) - 1
-                );
-            } else {
-                $token = rand(pow(10, 4 - 1), pow(10, 4) - 1);
-            }
+            $token = $this->generateOtpToken();
 
             $otp = Otp::create([
                 'phone' => $request->phone,
@@ -86,18 +75,7 @@ class OtpManagerService
                 $otp->delete();
             }
 
-            if (
-                OtpType::EMAIL == Settings::group('otp')->get('otp_type') || OtpType::BOTH == Settings::group('otp')->get(
-                    'otp_type'
-                )
-            ) {
-                $token = rand(
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit') - 1),
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit')) - 1
-                );
-            } else {
-                $token = rand(pow(10, 4 - 1), pow(10, 4) - 1);
-            }
+            $token = $this->generateOtpToken();
 
             $password_reset = DB::table('password_reset_tokens')->insert([
                 'email' => $request->post('email'),
@@ -130,18 +108,7 @@ class OtpManagerService
                 $otp->delete();
             }
 
-            if (
-                OtpType::EMAIL == Settings::group('otp')->get('otp_type') || OtpType::BOTH == Settings::group('otp')->get(
-                    'otp_type'
-                )
-            ) {
-                $token = rand(
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit') - 1),
-                    pow(10, (int) Settings::group('otp')->get('otp_digit_limit')) - 1
-                );
-            } else {
-                $token = rand(pow(10, 4 - 1), pow(10, 4) - 1);
-            }
+            $token = $this->generateOtpToken();
 
             $password_reset = DB::table('password_reset_tokens')->insert([
                 'email' => $request->post('email'),
@@ -207,6 +174,11 @@ class OtpManagerService
                 ['token', $request->post('token')],
             ]);
             if ($verify->exists()) {
+                $difference = Carbon::now()->diffInSeconds($verify->first()->created_at);
+                if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
+                    throw new Exception(trans('all.message.code_is_expired'), 422);
+                }
+
                 DB::table('password_reset_tokens')->where([
                     ['email', $request->post('email')],
                     ['token', $request->post('token')],
@@ -220,5 +192,82 @@ class OtpManagerService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Password reset must only proceed after a verified, non-expired email OTP.
+     *
+     * @throws Exception
+     */
+    public function assertEmailResetVerified(string $email): void
+    {
+        if (env('DEMO') == "True" || env('DEMO') == "TRUE" || env('DEMO') == "true" || env('DEMO') == 1) {
+            return;
+        }
+
+        $row = DB::table('password_reset_tokens')->where('email', $email)->first();
+        if (!$row || (int) $row->is_verified !== Ask::YES) {
+            throw new Exception(trans('all.message.code_is_invalid'), 422);
+        }
+
+        $difference = Carbon::now()->diffInSeconds($row->created_at);
+        if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
+            throw new Exception(trans('all.message.code_is_expired'), 422);
+        }
+    }
+
+    /**
+     * Password reset must only proceed after a verified, non-expired phone OTP.
+     *
+     * @throws Exception
+     */
+    public function assertPhoneResetVerified(string $phone, string $countryCode): void
+    {
+        if (env('DEMO') == "True" || env('DEMO') == "TRUE" || env('DEMO') == "true" || env('DEMO') == 1) {
+            return;
+        }
+
+        $row = DB::table('otps')->where([
+            ['phone', $phone],
+            ['code', $countryCode],
+        ])->orderByDesc('id')->first();
+
+        if (!$row || (int) $row->is_verified !== Ask::YES) {
+            throw new Exception(trans('all.message.code_is_invalid'), 422);
+        }
+
+        $difference = Carbon::now()->diffInSeconds($row->created_at);
+        if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
+            throw new Exception(trans('all.message.code_is_expired'), 422);
+        }
+    }
+
+    public function consumeEmailReset(string $email): void
+    {
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+    }
+
+    public function consumePhoneReset(string $phone, string $countryCode): void
+    {
+        DB::table('otps')->where([
+            ['phone', $phone],
+            ['code', $countryCode],
+        ])->delete();
+    }
+
+    protected function generateOtpToken(): int
+    {
+        $digits = (int) Settings::group('otp')->get('otp_digit_limit');
+        if ($digits < 4) {
+            $digits = 4;
+        }
+        if ($digits > 8) {
+            $digits = 8;
+        }
+
+        $min = 10 ** ($digits - 1);
+        $max = (10 ** $digits) - 1;
+
+        return random_int($min, $max);
     }
 }

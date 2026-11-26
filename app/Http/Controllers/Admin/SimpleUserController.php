@@ -6,21 +6,24 @@ use Exception;
 use App\Services\SimpleUserService;
 use App\Http\Resources\SimpleUserResource;
 use App\Http\Requests\PaginateRequest;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class SimpleUserController extends AdminController
+class SimpleUserController extends AdminController implements HasMiddleware
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-
     private SimpleUserService $simpleUserService;
 
     public function __construct(SimpleUserService $simpleUserService)
     {
         parent::__construct();
         $this->simpleUserService = $simpleUserService;
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:customers|administrators|employees|online-orders|pos'),
+        ];
     }
 
     public function index(PaginateRequest $request)

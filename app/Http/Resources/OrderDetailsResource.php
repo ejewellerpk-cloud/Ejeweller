@@ -17,22 +17,34 @@ class OrderDetailsResource extends JsonResource
     public function toArray($request): array
     {
         $guestPayload = [];
-        if ($request->isMethod('post') && !auth('sanctum')->check()) {
+        // Only auto-login freshly created guest customers on order create — never staff,
+        // never registered accounts, and never via track-order / unrelated POSTs.
+        if (
+            $request->isMethod('post')
+            && !auth('sanctum')->check()
+            && $request->has('guest_info')
+            && $request->has('products')
+        ) {
             $user = $this->user;
-            if ($user) {
+            if (
+                $user
+                && (int) $user->is_guest === \App\Enums\Ask::YES
+                && $user->hasRole(\App\Enums\Role::CUSTOMER)
+            ) {
                 $token = app(\App\Services\AuthTokenService::class)->issueToken($user, $request);
-                
-                $menuService = app(\App\Services\MenuService::class);
+
+                $menuService       = app(\App\Services\MenuService::class);
                 $permissionService = app(\App\Services\PermissionService::class);
-                
-                $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($user->roles[0], $user));
+                $role              = $user->roles[0];
+
+                $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($role, $user));
                 $defaultPermission = AppLibrary::defaultPermission($permission);
-                $defaultMenu       = (object)AppLibrary::defaultMenu($menuService->menu($user->roles[0]), $defaultPermission);
-                
+                $defaultMenu       = (object) AppLibrary::defaultMenu($menuService->menu($role), $defaultPermission);
+
                 $guestPayload = [
                     'guest_token'             => $token,
                     'guest_user'              => new \App\Http\Resources\UserResource($user),
-                    'guest_menu'              => \App\Http\Resources\MenuResource::collection(collect($menuService->menu($user->roles[0]))),
+                    'guest_menu'              => \App\Http\Resources\MenuResource::collection(collect($menuService->menu($role))),
                     'guest_permission'        => $permission,
                     'guest_defaultPermission' => $defaultPermission,
                     'guest_defaultMenu'       => $defaultMenu,

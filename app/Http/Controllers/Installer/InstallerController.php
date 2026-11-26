@@ -29,6 +29,7 @@ class InstallerController extends Controller
 
         if (file_exists(storage_path('installed'))) {
             Redirect::to(env('APP_URL'))->send();
+            exit;
         }
     }
 

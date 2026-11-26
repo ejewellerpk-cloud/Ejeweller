@@ -6,15 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Services\MediaAssetService;
 use App\Services\WebpImageService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-class MediaController extends Controller
+class MediaController extends Controller implements HasMiddleware
 {
     public function __construct(
         private readonly WebpImageService $webpImageService,
         private readonly MediaAssetService $mediaAssetService
     ) {}
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:products|products_create|products_edit|settings|pos'),
+        ];
+    }
 
     public function index(Request $request)
     {
@@ -30,7 +39,7 @@ class MediaController extends Controller
             $files = [];
         }
 
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         $files = array_values(array_filter($files, function ($file) use ($imageExtensions) {
             $isImage = in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $imageExtensions);
             $isConversion = str_contains($file, '/conversions/') || str_contains($file, '/responsive-images/');
@@ -102,13 +111,15 @@ class MediaController extends Controller
 
         foreach ($files as $file) {
             $extension = strtolower($file->getClientOriginalExtension());
-            $isSvg = $extension === 'svg';
+            if ($extension === 'svg' || str_contains(strtolower((string) $file->getMimeType()), 'svg')) {
+                return response()->json(['error' => 'SVG uploads are not allowed.'], 422);
+            }
             $isWebp = $extension === 'webp';
 
-            if ($isSvg || $isWebp) {
+            if ($isWebp) {
                 $filename = time() . '-' . uniqid('', true) . '.' . $extension;
                 $path = $file->storeAs($folder, $filename, 'public');
-                $mimetype = $isSvg ? 'image/svg+xml' : 'image/webp';
+                $mimetype = 'image/webp';
             } else {
                 $tempPath = $file->getRealPath();
                 $webpPath = $this->webpImageService->prepareUploadFile($tempPath);
@@ -154,9 +165,23 @@ class MediaController extends Controller
         $url = $request->input('url');
         $folder = $this->mediaAssetService->normalizeFolder($request->get('folder'));
 
+        $parts = parse_url($url);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host   = strtolower((string) ($parts['host'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '' || in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            return response()->json(['error' => 'URL host is not allowed'], 422);
+        }
+        $resolvedIps = gethostbynamel($host) ?: [];
+        foreach ($resolvedIps as $ip) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return response()->json(['error' => 'URL host is not allowed'], 422);
+            }
+        }
+
         try {
             $response = Http::timeout(30)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Shopperzz/1.0)'])
+                ->withOptions(['allow_redirects' => ['max' => 3]])
                 ->get($url);
 
             if (!$response->successful()) {
@@ -174,20 +199,23 @@ class MediaController extends Controller
                 return response()->json(['error' => 'URL must point to an image file'], 422);
             }
 
+            if ($mime === 'image/svg+xml') {
+                return response()->json(['error' => 'SVG imports are not allowed.'], 422);
+            }
+
             $extension = match ($mime) {
                 'image/jpeg' => 'jpg',
                 'image/png' => 'png',
                 'image/gif' => 'gif',
                 'image/webp' => 'webp',
-                'image/svg+xml' => 'svg',
                 default => 'jpg',
             };
 
-            if ($extension === 'svg' || $extension === 'webp') {
+            if ($extension === 'webp') {
                 $filename = time() . '-' . uniqid('', true) . '.' . $extension;
                 $path = $folder . '/' . $filename;
                 Storage::disk('public')->put($path, $body);
-                $mimetype = $extension === 'svg' ? 'image/svg+xml' : 'image/webp';
+                $mimetype = 'image/webp';
             } else {
                 $tempFile = tempnam(sys_get_temp_dir(), 'img_url_');
                 file_put_contents($tempFile, $body);

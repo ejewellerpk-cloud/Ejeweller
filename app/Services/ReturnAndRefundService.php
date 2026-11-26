@@ -7,6 +7,7 @@ use App\Enums\Ask;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\ReturnAndRefund;
+use App\Enums\OrderStatus;
 use App\Enums\ReturnOrderStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -85,11 +86,20 @@ class ReturnAndRefundService
     public function store(ReturnAndRefundRequest $request): object
     {
         try {
+            $order = Order::findOrFail($request->order_id);
+
+            // SECURITY: only the order owner may request a return, and only for delivered orders.
+            if (!Auth::check() || (int) $order->user_id !== (int) Auth::id()) {
+                throw new Exception(trans('all.message.something_wrong'), 403);
+            }
+            if ((int) $order->status !== OrderStatus::DELIVERED) {
+                throw new Exception('Only delivered orders can be returned.', 422);
+            }
+
             $returnAndRefund = ReturnAndRefund::where('order_id', $request->order_id)->first();
             if ($returnAndRefund) {
                 throw new Exception(trans('all.message.return_request_exist'), 422);
             } else {
-                $order = Order::findOrFail($request->order_id);
                 DB::transaction(function () use ($request, $order) {
                     $this->returnAndRefund = ReturnAndRefund::create([
                         'return_reason_id' => $request->return_reason_id,
@@ -175,15 +185,33 @@ class ReturnAndRefundService
                 }
             }
 
-            $order = Order::findOrFail($returnAndRefund->order_id);
-            if ($order->payment_method !== 1 && Settings::group('site')->get('site_is_return_product_price_add_to_credit') === Ask::YES) {
-                $user          = User::findOrFail($returnAndRefund->user_id);
-                $user->balance += $returnAndRefund?->returnProducts->sum('return_price');
-                $user->save();
-            }
+            $previousStatus = (int) $returnAndRefund->status;
+            $newStatus      = (int) $request->status;
 
-            $returnAndRefund->status = $request->status;
-            $returnAndRefund->save();
+            DB::transaction(function () use ($returnAndRefund, $previousStatus, $newStatus, $request) {
+                // Re-read under lock so concurrent ACCEPT requests cannot both credit the wallet.
+                $locked = ReturnAndRefund::where('id', $returnAndRefund->id)->lockForUpdate()->first();
+                if ($locked) {
+                    $previousStatus = (int) $locked->status;
+                }
+
+                // Credit the wallet exactly once: only on the transition TO accept (not accept -> accept).
+                $creditNow = $newStatus === ReturnOrderStatus::ACCEPT
+                    && $previousStatus !== ReturnOrderStatus::ACCEPT;
+
+                if ($creditNow) {
+                    $order = Order::findOrFail($returnAndRefund->order_id);
+                    if ($order->payment_method !== 1 && Settings::group('site')->get('site_is_return_product_price_add_to_credit') === Ask::YES) {
+                        $user          = User::findOrFail($returnAndRefund->user_id);
+                        $user->balance += $returnAndRefund?->returnProducts->sum('return_price');
+                        $user->save();
+                    }
+                }
+
+                $returnAndRefund->status = $request->status;
+                $returnAndRefund->save();
+            });
+
             return $returnAndRefund;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

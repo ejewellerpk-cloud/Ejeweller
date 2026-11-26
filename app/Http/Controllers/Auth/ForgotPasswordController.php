@@ -64,25 +64,18 @@ class ForgotPasswordController extends Controller
         $verifyEmail = User::where('email', $request->post('email'))->exists();
         $verifyPhone = User::where(['phone' => $request->post('phone'), 'country_code' => $request->post('country_code')])->exists();
 
-        if ($verifyEmail  && $request->post('email')) {
+        // Password reset always requires OTP verification (never skip).
+        if ($verifyEmail && $request->post('email')) {
             try {
-                if (Settings::group('site')->get('site_email_verification') == Activity::ENABLE && $request->post('email')) {
-                    $this->otpManagerService->resetOtpEmail($request);
-                    return response(['status' => true, 'message' => trans("all.message.check_your_email_for_code")]);
-                } else {
-                    return response(['status' => true, 'message' => trans("all.message.user_verify_success")]);
-                }
+                $this->otpManagerService->resetOtpEmail($request);
+                return response(['status' => true, 'message' => trans("all.message.check_your_email_for_code")]);
             } catch (Exception $exception) {
                 return response(['status' => false, 'message' => [trans('all.message.token_created_fail')]], 422);
             }
         } else if ($verifyPhone && $request->post('phone')) {
             try {
-                if (Settings::group('site')->get('site_phone_verification') == Activity::ENABLE && $request->post('country_code') && $request->post('phone')) {
-                    $this->otpManagerService->otpPhone($request);
-                    return response(['status' => true, 'message' => trans("all.message.check_your_phone_for_code")]);
-                } else {
-                    return response(['status' => true, 'message' => trans("all.message.user_verify_success")]);
-                }
+                $this->otpManagerService->otpPhone($request);
+                return response(['status' => true, 'message' => trans("all.message.check_your_phone_for_code")]);
             } catch (Exception $exception) {
                 return response(['status' => false, 'message' => [trans('all.message.token_created_fail')]], 422);
             }
@@ -196,57 +189,67 @@ class ForgotPasswordController extends Controller
             'password_confirmation' => 'required|string|min:6',
         ]);
 
-
         if ($validator->fails()) {
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
-        $userCheckByEmail = User::where('email', $request->post('email'))->first();
-        $userCheckByPhone = User::where(['phone' => $request->post('phone'), 'country_code' => $request->post('country_code')])->first();
-
-        if ($userCheckByEmail && $request->post('email')) {
-            $userCheckByEmail->update([
-                'password' => Hash::make($request->post('password'))
-            ]);
-
-            Auth::guard('web')->loginUsingId($userCheckByEmail->id);
-            $this->token = $this->authTokenService->issueToken($userCheckByEmail, $request, $request->input('device_name'));
-            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByEmail->roles[0], $userCheckByEmail));
-            $defaultPermission = AppLibrary::defaultPermission($permission);
-            $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByEmail->roles[0]), $defaultPermission);
+        try {
+            if ($request->post('email')) {
+                $this->otpManagerService->assertEmailResetVerified($request->post('email'));
+            } else {
+                $this->otpManagerService->assertPhoneResetVerified(
+                    $request->post('phone'),
+                    $request->post('country_code')
+                );
+            }
+        } catch (Exception $exception) {
             return new JsonResponse([
-                'status'            => true,
-                'message'           => trans("all.message.reset_successfully"),
-                'token'             => $this->token,
-                'user'              => new UserResource($userCheckByEmail),
-                'menu'              => MenuResource::collection(collect($this->menuService->menu($userCheckByEmail->roles[0]))),
-                'permission'        => $permission,
-                'defaultPermission' => $defaultPermission,
-                'defaultMenu'       => $defaultMenu,
-            ], 201);
-        } else if ($userCheckByPhone && $request->post('phone') && $request->post('country_code')) {
-            $userCheckByPhone->update([
-                'password' => Hash::make($request->post('password'))
-            ]);
-            Auth::guard('web')->loginUsingId($userCheckByPhone->id);
-            $this->token = $this->authTokenService->issueToken($userCheckByPhone, $request, $request->input('device_name'));
-            $permission        = PermissionResource::collection($this->permissionService->permission($userCheckByPhone->roles[0], $userCheckByPhone));
-            $defaultPermission = AppLibrary::defaultPermission($permission);
-            $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($userCheckByPhone->roles[0]), $defaultPermission);
-            return new JsonResponse([
-                'status'            => true,
-                'message'           => trans("all.message.reset_successfully"),
-                'token'             => $this->token,
-                'user'              => new UserResource($userCheckByPhone),
-                'menu'              => MenuResource::collection(collect($this->menuService->menu($userCheckByPhone->roles[0]))),
-                'permission'        => $permission,
-                'defaultPermission' => $defaultPermission,
-                'defaultMenu'       => $defaultMenu,
-            ], 201);
-        } else {
+                'errors' => ['message' => [$exception->getMessage()]]
+            ], 422);
+        }
+
+        $userCheckByEmail = $request->post('email')
+            ? User::where('email', $request->post('email'))->first()
+            : null;
+        $userCheckByPhone = ($request->post('phone') && $request->post('country_code'))
+            ? User::where(['phone' => $request->post('phone'), 'country_code' => $request->post('country_code')])->first()
+            : null;
+
+        $user = $userCheckByEmail ?: $userCheckByPhone;
+        if (!$user) {
             return new JsonResponse([
                 'errors' => ['message' => [trans('all.message.user_does_not_exist')]]
             ], 422);
         }
+
+        $user->update([
+            'password' => Hash::make($request->post('password'))
+        ]);
+
+        // Invalidate prior sessions/tokens after password change.
+        $user->tokens()->delete();
+
+        if ($request->post('email')) {
+            $this->otpManagerService->consumeEmailReset($request->post('email'));
+        } else {
+            $this->otpManagerService->consumePhoneReset($request->post('phone'), $request->post('country_code'));
+        }
+
+        Auth::guard('web')->loginUsingId($user->id);
+        $this->token       = $this->authTokenService->issueToken($user, $request, $request->input('device_name'));
+        $permission        = PermissionResource::collection($this->permissionService->permission($user->roles[0], $user));
+        $defaultPermission = AppLibrary::defaultPermission($permission);
+        $defaultMenu       = (object) AppLibrary::defaultMenu($this->menuService->menu($user->roles[0]), $defaultPermission);
+
+        return new JsonResponse([
+            'status'            => true,
+            'message'           => trans("all.message.reset_successfully"),
+            'token'             => $this->token,
+            'user'              => new UserResource($user),
+            'menu'              => MenuResource::collection(collect($this->menuService->menu($user->roles[0]))),
+            'permission'        => $permission,
+            'defaultPermission' => $defaultPermission,
+            'defaultMenu'       => $defaultMenu,
+        ], 201);
     }
 }

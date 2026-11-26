@@ -159,13 +159,13 @@ Route::match(['get', 'post'], '/login', function () {
 Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed']);
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::post('/login/otp-send', [LoginController::class, 'otpSend']);
-    Route::post('/login/otp-verify', [LoginController::class, 'otpVerify']);
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/login/otp-send', [LoginController::class, 'otpSend'])->middleware('throttle:5,1');
+    Route::post('/login/otp-verify', [LoginController::class, 'otpVerify'])->middleware('throttle:10,1');
     Route::get('/login/{provider}', [SocialLoginController::class, 'socialLogin'])->name('socialLogin');
-    Route::post('/login/{provider}', [SocialLoginController::class, 'verifySocialLogin'])->name('verifySocialLogin');
+    Route::post('/login/{provider}', [SocialLoginController::class, 'verifySocialLogin'])->name('verifySocialLogin')->middleware('throttle:10,1');
 
-    Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
+    Route::prefix('forgot-password')->name('forgot-password.')->middleware('throttle:5,1')->group(function () {
         Route::post('/', [ForgotPasswordController::class, 'forgotPassword']);
         Route::post('/otp-phone', [ForgotPasswordController::class, 'otpPhone']);
         Route::post('/otp-email', [ForgotPasswordController::class, 'otpEmail']);
@@ -174,7 +174,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
     });
 
-    Route::prefix('signup')->name('signup.')->group(function () {
+    Route::prefix('signup')->name('signup.')->middleware('throttle:5,1')->group(function () {
         Route::post('/otp-phone', [SignupController::class, 'otpPhone']);
         Route::post('/otp-email', [SignupController::class, 'otpEmail']);
         Route::post('/verify-phone', [SignupController::class, 'verifyPhone']);
@@ -245,7 +245,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/active-users', [DashboardController::class, 'activeUsers']);
     });
 
-    Route::prefix('intelligence')->name('intelligence.')->group(function () {
+    Route::prefix('intelligence')->name('intelligence.')->middleware(['permission:intelligence'])->group(function () {
         Route::get('/sites', [IntelligenceDashboardController::class, 'sites']);
         Route::get('/overview', [IntelligenceDashboardController::class, 'overview']);
         Route::get('/daily-series', [IntelligenceDashboardController::class, 'dailySeries']);
@@ -1079,7 +1079,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::prefix('order')->name('order.')->group(function () {
         Route::post('/', [FrontendOrderController::class, 'store']);
-        Route::post('/track-order', [TrackOrderController::class, 'track']);
+        Route::post('/track-order', [TrackOrderController::class, 'track'])->middleware('throttle:10,1');
         Route::get('/swich/options', [FrontendSwichPayinController::class, 'options']);
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [FrontendOrderController::class, 'index']);

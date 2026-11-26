@@ -69,6 +69,18 @@ class PaymentController extends Controller
 
     public function payment(Order $order, PaymentRequest $request)
     {
+        // Store-credit / wallet payments debit a user balance: only the order owner may use them.
+        if (in_array(strtolower((string) $request->paymentMethod), ['credit', 'wallet'], true)) {
+            $authUser = auth('sanctum')->user() ?? auth()->user();
+            if (!$authUser || (int) $order->user_id !== (int) $authUser->id) {
+                abort(403, 'Unauthorized.');
+            }
+        }
+
+        if ((int) $order->payment_status === PaymentStatus::PAID) {
+            return redirect()->route('payment.successful', ['order' => $order]);
+        }
+
         if ($this->paymentManagerService->gateway($request->paymentMethod)->status()) {
             $className = 'App\\Http\\PaymentGateways\\PaymentRequests\\' . ucfirst($request->paymentMethod);
             $gateway   = new $className;
@@ -90,7 +102,17 @@ class PaymentController extends Controller
 
     public function success(PaymentGateway $paymentGateway, Order $order, Request $request)
     {
-        return $this->paymentManagerService->gateway($paymentGateway->slug)->success($order, $request);
+        // Already paid: never re-run gateway success (prevents double wallet debit / duplicate notifications).
+        if ((int) $order->payment_status === PaymentStatus::PAID) {
+            return redirect()->route('payment.successful', ['order' => $order]);
+        }
+
+        $gateway = $this->paymentManagerService->gateway($paymentGateway->slug);
+        if (!$gateway->status()) {
+            abort(403, trans('all.message.payment_gateway_disable'));
+        }
+
+        return $gateway->success($order, $request);
     }
 
     public function fail(PaymentGateway $paymentGateway, Order $order, Request $request)

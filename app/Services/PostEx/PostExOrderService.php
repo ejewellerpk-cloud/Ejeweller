@@ -242,7 +242,8 @@ class PostExOrderService
 
         $payload = [
             'orderRefNumber'  => (string) $order->order_serial_no,
-            'invoicePayment'  => (string) $order->total,
+            // Prepaid orders must not be collected as COD by the courier.
+            'invoicePayment'  => (int) $order->payment_status === \App\Enums\PaymentStatus::PAID ? '0' : (string) $order->total,
             'orderDetail'     => $this->buildOrderDetail($order),
             'customerName'    => (string) $address->full_name,
             'customerPhone'   => $this->normalizePhone((string) $address->phone, (string) $address->country_code),

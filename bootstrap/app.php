@@ -137,7 +137,9 @@ return Application::configure(basePath: dirname(__DIR__))
                     return new JsonResponse(
                         [
                             'success' => false,
-                            'message' => $e->getMessage()
+                            'message' => config('app.debug')
+                                ? $e->getMessage()
+                                : 'A database error occurred. Please try again.'
                         ],
                         422
                     );

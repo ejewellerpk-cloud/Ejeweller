@@ -31,17 +31,17 @@
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-primary/70 mb-1.5">{{ $t('label.order_status') }}</p>
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize" :class="orderStatusClass(order.status)">
-                            {{ enums.orderStatusEnumArray[order.status] }}
-                        </span>
+                                {{ enums.orderStatusEnumArray[order.status] }}
+                            </span>
                         <span
                             class="inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize"
                             :class="enums.paymentStatusEnum.PAID === order.payment_status ? 'text-[#0F7A3F] bg-[#D9F7E6]' : 'text-[#B42318] bg-[#FEE4E2]'"
                         >
-                            {{ enums.paymentStatusEnumArray[order.payment_status] }}
-                        </span>
+                                {{ enums.paymentStatusEnumArray[order.payment_status] }}
+                            </span>
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize bg-[#E8F1FF] text-[#175CD3]">
                             {{ enums.orderTypeEnumArray[order.order_type] }}
-                        </span>
+                            </span>
                     </div>
                 </div>
                 <div class="text-left sm:text-right rounded-xl bg-white/80 border border-primary/10 px-4 py-3">
@@ -106,10 +106,10 @@
                         <hr :class="{ '!bg-success': track.step <= order.status }" class="block border-none w-full h-1 rounded-xl bg-gray-200" />
                         <span class="absolute top-9 left-1/2 -translate-x-1/2 w-16 sm:w-20 text-[10px] sm:text-xs leading-[14px] text-center capitalize text-text">
                             {{ track.title }}
-                        </span>
-                    </li>
-                </ul>
-            </div>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
 
             <div
                 v-if="order.status !== enums.orderStatusEnum.CANCELED && order.status !== enums.orderStatusEnum.REJECTED && order.order_type === enums.orderTypeEnum.PICK_UP"
@@ -129,10 +129,10 @@
                         <hr :class="{ '!bg-success': track.step <= order.status }" class="block border-none w-full h-1 rounded-xl bg-gray-200" />
                         <span class="absolute top-9 left-1/2 -translate-x-1/2 w-16 sm:w-20 text-[10px] sm:text-xs leading-[14px] text-center capitalize text-text">
                             {{ track.title }}
-                        </span>
-                    </li>
-                </ul>
-            </div>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
 
             <div
                 v-if="order.status === enums.orderStatusEnum.CANCELED || order.status === enums.orderStatusEnum.REJECTED"
@@ -153,12 +153,12 @@
                         <h3 class="text-sm font-bold text-[#3538CD] capitalize flex items-center gap-2">
                             <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#3538CD] text-white text-xs">
                                 <i class="fa-solid fa-bag-shopping"></i>
-                            </span>
+                                        </span>
                             {{ $t('label.order_summary') }}
                         </h3>
                         <span class="text-xs font-semibold text-[#3538CD]/bg-[#EEF4FF] px-2.5 py-1 rounded-full">
                             {{ orderProducts.length }} {{ $t('label.product') }}
-                        </span>
+                                        </span>
                     </div>
 
                     <ul class="divide-y divide-indigo-50">
@@ -467,8 +467,8 @@
                                 <i class="fa-brands fa-whatsapp"></i>
                                 WhatsApp
                             </a>
-                        </div>
                     </div>
+                </div>
                 </section>
             </div>
         </div>
@@ -487,11 +487,11 @@
                 type="button"
                 class="px-5 py-3 capitalize rounded-full whitespace-nowrap text-center text-sm font-semibold border border-danger text-danger bg-white hover:bg-red-50 transition"
             >
-                {{ $t('button.cancel_order') }}
-            </button>
+            {{ $t('button.cancel_order') }}
+        </button>
             <router-link
                 v-if="order.status === enums.orderStatusEnum.DELIVERED && order.return_and_refund"
-                :to="{ name: 'frontend.account.returnOrder.request', params: { id: order.id } }"
+            :to="{ name: 'frontend.account.returnOrder.request', params: { id: order.id } }"
                 class="px-5 py-3 capitalize rounded-full whitespace-nowrap text-center text-sm font-semibold border border-danger text-danger bg-white hover:bg-red-50 transition"
             >
                 {{ $t('button.return_request') }}

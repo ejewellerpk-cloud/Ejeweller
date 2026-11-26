@@ -10,17 +10,31 @@
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10 mb-8" v-if="!orderDetails">
                 <form @submit.prevent="submitTracking">
-                    <div class="max-w-md mx-auto mb-8">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            Order ID / Tracking No <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            v-model="form.order_serial_no"
-                            type="text"
-                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                            placeholder="e.g. ORD-12345 or PostEx tracking #"
-                            required
-                        >
+                    <div class="max-w-md mx-auto mb-8 space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Order ID / Tracking No <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="form.order_serial_no"
+                                type="text"
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                placeholder="e.g. ORD-12345 or PostEx tracking #"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Phone number <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="form.phone"
+                                type="tel"
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                placeholder="Order phone number"
+                                required
+                            >
+                        </div>
                     </div>
 
                     <div class="flex justify-center">
@@ -183,6 +197,7 @@ export default {
             loading: false,
             form: {
                 order_serial_no: "",
+                phone: "",
             },
             orderDetails: null,
             placeholderImage: '/images/default/product/thumb.png',
@@ -214,28 +229,40 @@ export default {
         const prefill = String(this.$route.query.order || this.$route.query.order_serial_no || '').trim();
         if (prefill) {
             this.form.order_serial_no = prefill;
-            this.submitTracking();
+        }
+        const phonePrefill = String(this.$route.query.phone || '').trim();
+        if (phonePrefill) {
+            this.form.phone = phonePrefill;
         }
     },
     methods: {
         submitTracking() {
             const orderId = (this.form.order_serial_no || '').trim();
+            const phone = (this.form.phone || '').trim();
             if (!orderId) {
                 alertService.error('Please enter your Order ID or tracking number.');
                 return;
             }
+            if (!phone) {
+                alertService.error('Please enter the phone number used on the order.');
+                return;
+            }
             this.loading = true;
-            axios.post('/frontend/order/track-order', { order_serial_no: orderId }).then((res) => {
+            axios.post('/frontend/order/track-order', {
+                order_serial_no: orderId,
+                phone,
+            }).then((res) => {
                 this.orderDetails = res.data?.data || res.data;
                 this.loading = false;
             }).catch((err) => {
                 this.loading = false;
-                alertService.error(err.response?.data?.message || 'Order not found. Please check your Order ID / tracking number.');
+                alertService.error(err.response?.data?.message || 'Order not found. Please check your details.');
             });
         },
         resetForm() {
             this.orderDetails = null;
             this.form.order_serial_no = "";
+            this.form.phone = "";
         },
         getStatusColor(status) {
             const statusMap = {

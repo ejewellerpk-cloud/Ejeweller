@@ -6,9 +6,18 @@ use Exception;
 use App\Services\SettingService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CacheController extends AdminController
+class CacheController extends AdminController implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:settings'),
+        ];
+    }
+
     public function clear()
     {
         try {

@@ -1,0 +1,234 @@
+{
+  "audit_meta": {
+    "project": "shopperzz",
+    "audit_date": "2026-10-01",
+    "mode": "read-only-forensic",
+    "verdict_local_malware": "not_found",
+    "verdict_overall_compromise": "inconclusive",
+    "notes": "No classic webshell/obfuscation in local tree. Critical auth and mail-abuse vulnerabilities present. Hosting-side compromise not verifiable from repository."
+  },
+  "suspicious_file_paths": [
+    {
+      "path": "app/Http/Controllers/Auth/ForgotPasswordController.php",
+      "severity": "CRITICAL",
+      "reason": "resetPassword updates password and issues token without OTP verification",
+      "lines": "189-250"
+    },
+    {
+      "path": "app/Services/OtpManagerService.php",
+      "severity": "HIGH",
+      "reason": "OTP email dispatch without application rate limiting",
+      "lines": "75-160"
+    },
+    {
+      "path": "public/link_storage.php",
+      "severity": "MEDIUM",
+      "reason": "Unauthenticated public utility to create/remove storage symlink"
+    },
+    {
+      "path": "app/Services/LanguageService.php",
+      "severity": "MEDIUM",
+      "reason": "file_put_contents using request-controlled x_language_file_path",
+      "lines": "198-214"
+    },
+    {
+      "path": "public.zip",
+      "severity": "MEDIUM",
+      "reason": "Large archive in project root; potential exposure if web-accessible",
+      "sha256": "6CE8BAAFEEF1A516F6B50B811A1E5EDD4F2B9A2EB5C58E17D80DD1B3CF41CAFF",
+      "size_bytes": 155787943
+    },
+    {
+      "path": "storage/app/public/.htaccess",
+      "severity": "MEDIUM",
+      "reason": "No PHP execution denial for uploaded content"
+    },
+    {
+      "path": "bootstrap/app.php",
+      "severity": "MEDIUM",
+      "reason": "QueryException message returned to client",
+      "lines": "136-143"
+    },
+    {
+      "path": "app/Http/Controllers/Admin/MediaController.php",
+      "severity": "HIGH",
+      "reason": "Media upload/delete under admin prefix with auth:sanctum only; allows SVG"
+    },
+    {
+      "path": "app/Providers/EventServiceProvider.php",
+      "severity": "MEDIUM",
+      "reason": "Present but not registered in bootstrap/providers.php; mail listener wiring uncertain"
+    }
+  ],
+  "index_files_reviewed": [
+    {
+      "path": "public/index.php",
+      "assessment": "legitimate_laravel_front_controller",
+      "malicious": false
+    },
+    {
+      "path": "index.php",
+      "assessment": "legitimate_shared_hosting_fallback",
+      "git_commit": "d9991b040592e1d99d00ab606fff38004faaa938",
+      "malicious": false
+    }
+  ],
+  "suspicious_routes": [
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password/reset-password",
+      "severity": "CRITICAL",
+      "abuse": "account_takeover_without_otp"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password/otp-email",
+      "severity": "HIGH",
+      "abuse": "unauthenticated_email_flood"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password/",
+      "severity": "HIGH",
+      "abuse": "unauthenticated_email_flood_when_verification_enabled"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup/otp-email",
+      "severity": "HIGH",
+      "abuse": "unauthenticated_email_flood"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login/otp-send",
+      "severity": "MEDIUM",
+      "abuse": "possible_otp_mail_sms_abuse"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/media-library",
+      "severity": "HIGH",
+      "abuse": "upload_by_any_authenticated_user_if_no_controller_permission"
+    },
+    {
+      "method": "GET",
+      "path": "/link_storage.php",
+      "severity": "MEDIUM",
+      "abuse": "public_storage_symlink_tool"
+    }
+  ],
+  "suspicious_php_functions_in_app_context": [
+    {
+      "function": "file_put_contents",
+      "path": "app/Services/LanguageService.php",
+      "note": "path partly attacker-influenced via request field"
+    },
+    {
+      "function": "symlink/unlink/rename",
+      "path": "public/link_storage.php",
+      "note": "filesystem mutation without auth"
+    },
+    {
+      "function": "Mail::to / Mail::bcc / Mail::raw",
+      "paths": [
+        "app/Listeners/SendEmailCodeNotification.php",
+        "app/Listeners/SendVerifyEmailCodeNotification.php",
+        "app/Services/OrderMailNotificationBuilder.php",
+        "app/Services/OrderGotMailNotificationBuilder.php",
+        "app/Services/SubscriberService.php",
+        "app/Analytics/Http/Controllers/Admin/IntelligenceAdvancedController.php"
+      ],
+      "note": "legitimate mailers; OTP routes enable abuse"
+    }
+  ],
+  "malware_pattern_scan": {
+    "eval": "not_found_in_app_public_bootstrap",
+    "base64_decode": "not_found_in_app_public_bootstrap",
+    "gzinflate": "not_found_in_app_public_bootstrap",
+    "shell_exec": "not_found_in_app_public_bootstrap",
+    "passthru": "not_found_in_app_public_bootstrap",
+    "assert": "not_found_in_app_public_bootstrap",
+    "create_function": "not_found_in_app_public_bootstrap"
+  },
+  "suspicious_domains": [],
+  "suspicious_urls": [],
+  "suspicious_ip_addresses": [],
+  "suspicious_filenames": [
+    "link_storage.php",
+    "public.zip"
+  ],
+  "hashes": [
+    {
+      "path": "public.zip",
+      "algorithm": "SHA256",
+      "value": "6CE8BAAFEEF1A516F6B50B811A1E5EDD4F2B9A2EB5C58E17D80DD1B3CF41CAFF"
+    }
+  ],
+  "dependency_risks": [
+    {
+      "name": "kingflamez/laravelrave",
+      "constraint": "dev-master",
+      "severity": "MEDIUM",
+      "reason": "unstable branch pin"
+    },
+    {
+      "name": "dipesh79/laravel-phonepe",
+      "constraint": "*",
+      "severity": "MEDIUM",
+      "reason": "unpinned version"
+    },
+    {
+      "name": "nyawach/laravel-pesapal",
+      "constraint": "*",
+      "severity": "MEDIUM",
+      "reason": "unpinned version"
+    },
+    {
+      "name": "obydul/laraskrill",
+      "constraint": "*",
+      "severity": "MEDIUM",
+      "reason": "unpinned version"
+    },
+    {
+      "name": "websocket-driver",
+      "severity": "HIGH",
+      "reason": "npm audit critical advisories (transitive); GHSA-mp7j-qc5w-4988 / GHSA-xv26-6w52-cph6",
+      "source": "npm audit --omit=dev"
+    },
+    {
+      "name": "npm_audit_summary",
+      "severity": "MEDIUM",
+      "reason": "27 vulnerabilities (4 low, 14 moderate, 7 high, 2 critical) — CVEs, not malware indicators",
+      "source": "npm audit --omit=dev"
+    }
+  ],
+  "composer_audit": {
+    "status": "unavailable",
+    "reason": "composer binary not on PATH"
+  },
+  "email_abuse_indicators": {
+    "likely_app_sources": [
+      "POST /api/auth/forgot-password/otp-email",
+      "POST /api/auth/signup/otp-email",
+      "POST /api/auth/forgot-password/"
+    ],
+    "rate_limiting_observed": false,
+    "hosting_smtp_abuse_possible": true
+  },
+  "htaccess_iocs": {
+    "auto_prepend_file": false,
+    "auto_append_file": false,
+    "external_redirects": false,
+    "ua_cloaking": false
+  },
+  "items_not_verifiable_locally": [
+    "cPanel/DirectAdmin login history",
+    "FTP/SSH account compromise",
+    "Live cron jobs",
+    "SMTP relay logs",
+    "Production document root contents vs git",
+    "Server-level .user.ini auto_prepend",
+    "Other sites on same hosting account",
+    "Production access logs"
+  ]
+}

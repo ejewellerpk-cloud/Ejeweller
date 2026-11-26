@@ -31,6 +31,8 @@ class LanguageController extends AdminController implements HasMiddleware
             new Middleware('permission:settings', only: ['store']),
             new Middleware('permission:settings', only: ['update']),
             new Middleware('permission:settings', only: ['destroy']),
+            new Middleware('permission:settings', only: ['fileList']),
+            new Middleware('permission:settings', only: ['fileText']),
             new Middleware('permission:settings', only: ['fileTextStore']),
         ];
     }
@@ -94,14 +96,7 @@ class LanguageController extends AdminController implements HasMiddleware
     public function fileText(LanguageFileTextGetRequest $request)
     {
         try {
-            $explodeName = explode('.', $request->name);
-            if ($explodeName > 0) {
-                if ($explodeName[1] == 'json') {
-                    $this->languageService->fileText($request);
-                } else {
-                    return $this->languageService->fileText($request);
-                }
-            }
+            return response()->json($this->languageService->fileText($request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

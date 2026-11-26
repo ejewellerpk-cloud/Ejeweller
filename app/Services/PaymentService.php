@@ -33,7 +33,29 @@ class PaymentService
     {
         try {
             DB::transaction(function () use ($order, $gatewaySlug, $transactionNo) {
+                // Serialize concurrent callbacks / double submits for the same order.
+                $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->first();
+
                 $transaction = Transaction::where(['order_id' => $order->id])->first();
+
+                // Idempotency: already paid -> return existing transaction, no re-activation / notifications.
+                if ($lockedOrder && (int) $lockedOrder->payment_status === PaymentStatus::PAID) {
+                    $order->payment_status = PaymentStatus::PAID;
+                    $order->active         = $lockedOrder->active;
+                    if (!$transaction) {
+                        $transaction = Transaction::create([
+                            'order_id'       => $order->id,
+                            'transaction_no' => $transactionNo,
+                            'amount'         => $lockedOrder->total,
+                            'payment_method' => $gatewaySlug,
+                            'sign'           => '+',
+                            'type'           => 'payment'
+                        ]);
+                    }
+                    $this->transaction = $transaction;
+                    return;
+                }
+
                 if (!$transaction) {
                     $transaction = Transaction::create([
                         'order_id'       => $order->id,

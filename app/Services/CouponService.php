@@ -205,9 +205,15 @@ class CouponService
                     throw new Exception(trans('all.message.minimum_order_amount') . AppLibrary::convertAmountFormat($coupon->minimum_order), 422);
                 } else {
                     if (strtotime($coupon->end_date) >= strtotime(Carbon::now())) {
-                        $ordered_coupon_count = OrderCoupon::where(['user_id' => auth()->user()->id, 'coupon_id' => $coupon->id])->count();
-                        if ($coupon->limit_per_user <= $ordered_coupon_count) {
-                            throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
+                        $userId = auth('sanctum')->id() ?? auth()->id();
+                        if ($userId && (int) $coupon->limit_per_user > 0) {
+                            $ordered_coupon_count = OrderCoupon::where([
+                                'user_id'   => $userId,
+                                'coupon_id' => $coupon->id,
+                            ])->count();
+                            if ($coupon->limit_per_user <= $ordered_coupon_count) {
+                                throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
+                            }
                         }
                         return $coupon;
                     } else {

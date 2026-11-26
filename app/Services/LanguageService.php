@@ -178,18 +178,28 @@ class LanguageService
     }
 
 
+    /**
+     * Safely read language file contents (JSON or PHP lang arrays). Never include/executes paths.
+     *
+     * @throws Exception
+     */
     public function fileText(LanguageFileTextGetRequest $request)
     {
-        if (file_exists($request->path)) {
-            $explodeName = explode('.', $request->name);
-            if ($explodeName > 0) {
-                if ($explodeName[1] == 'json') {
-                    include($request->path);
-                } else {
-                    return include($request->path);
-                }
-            }
+        $path = $this->assertSafeLanguagePath((string) $request->path);
+        $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        if ($ext === 'json') {
+            $raw = file_get_contents($path);
+            return json_decode($raw, true) ?? [];
         }
+
+        if ($ext === 'php') {
+            // Load as data only — no include of attacker-controlled paths outside allowlist.
+            $data = include $path;
+            return is_array($data) ? $data : [];
+        }
+
+        throw new Exception('Unsupported language file type.', 422);
     }
 
     /**
@@ -198,8 +208,12 @@ class LanguageService
     public function fileTextStore(Request $request): void
     {
         try {
-            $file = fopen($request->x_language_file_path, "rw");
-            $fileContent = file_get_contents($request->x_language_file_path);
+            $path        = $this->assertSafeLanguagePath((string) $request->x_language_file_path);
+            $fileContent = file_get_contents($path);
+            if ($fileContent === false) {
+                throw new Exception('Unable to read language file.', 422);
+            }
+
             foreach ($request->all() as $key => $value) {
                 if ($key != 'x_language_file_path' && $key != 'x_language_file_name') {
                     $key = str_replace('_', ' ', $key);
@@ -211,11 +225,47 @@ class LanguageService
                 }
             }
 
-            file_put_contents($request->x_language_file_path, $fileContent);
-            fclose($file);
+            file_put_contents($path, $fileContent);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Only allow language files under lang/{code}/ or resources/js/languages/.
+     *
+     * @throws Exception
+     */
+    protected function assertSafeLanguagePath(string $path): string
+    {
+        $real = realpath($path);
+        if ($real === false || !is_file($real)) {
+            throw new Exception('Language file not found.', 422);
+        }
+
+        $allowedRoots = array_filter([
+            realpath(base_path('lang')),
+            realpath(base_path('resources/js/languages')),
+        ]);
+
+        $ok = false;
+        foreach ($allowedRoots as $root) {
+            if ($root && str_starts_with($real, $root . DIRECTORY_SEPARATOR)) {
+                $ok = true;
+                break;
+            }
+        }
+
+        if (!$ok) {
+            throw new Exception('Invalid language file path.', 422);
+        }
+
+        $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['php', 'json'], true)) {
+            throw new Exception('Unsupported language file type.', 422);
+        }
+
+        return $real;
     }
 }

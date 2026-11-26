@@ -552,7 +552,7 @@
                                                 @click="runRowAction(() => destroy(order.id))"
                                             >
                                                 <i class="fa-regular fa-trash-can w-4"></i> {{ $t('button.delete') || 'Delete' }}
-                                            </button>
+                                    </button>
                                         </div>
                                     </div>
                                 </div>

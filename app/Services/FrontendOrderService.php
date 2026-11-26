@@ -129,12 +129,34 @@ class FrontendOrderService
                     if (!$user && $guestPhone !== '') {
                         $user = User::where('phone', $guestPhone)->first();
                     }
+
+                    // SECURITY: only ever attach a guest order to an existing *Customer* account.
+                    // If the email/phone belongs to staff (Admin/Manager/...), create a separate guest
+                    // customer instead and do not reuse/modify the staff account.
+                    $staffCollision = false;
+                    if ($user && !$user->hasRole(\App\Enums\Role::CUSTOMER)) {
+                        $staffCollision = true;
+                        $user           = null;
+                    }
+
                     if (!$user) {
+                        // users.email / users.phone are unique: when they collide with a staff
+                        // account the new guest keeps contact details on the order address only.
+                        $newEmail = $guestEmail ?: null;
+                        $newPhone = $guestPhone ?: null;
+                        if ($staffCollision) {
+                            if ($newEmail && User::where('email', $newEmail)->exists()) {
+                                $newEmail = null;
+                            }
+                            if ($newPhone && User::where('phone', $newPhone)->exists()) {
+                                $newPhone = null;
+                            }
+                        }
                         $user = User::create([
                             'name'              => $guestInfo->full_name,
-                            'email'             => $guestEmail ?: null,
-                            'phone'             => $guestPhone ?: null,
-                            'username'          => explode('@', $guestEmail ?: ('guest' . mt_rand()))[0] . mt_rand(),
+                            'email'             => $newEmail,
+                            'phone'             => $newPhone,
+                            'username'          => explode('@', $newEmail ?: ('guest' . mt_rand()))[0] . mt_rand(),
                             'password'          => bcrypt(Str::random(10)),
                             'email_verified_at' => now(),
                             'status'            => \App\Enums\Status::ACTIVE,
@@ -152,54 +174,67 @@ class FrontendOrderService
                     $userId = $user->id;
                 }
 
-                $this->order = Order::create(
-                    $request->validated() + [
-                        'user_id'        => $userId,
-                        'status'         => OrderStatus::PENDING,
-                        'payment_status' => PaymentStatus::UNPAID,
-                        'order_datetime' => date('Y-m-d H:i:s'),
-                        'active'         => Ask::YES
-                    ]
+                // Server-side pricing: never trust client prices/totals/discount/tax/shipping.
+                $pricing = app(OrderPricingService::class)->calculate(
+                    [
+                        'products'    => $request->products,
+                        'coupon_id'   => $request->coupon_id,
+                        'order_type'  => $request->order_type,
+                        'shipping_id' => $request->shipping_id,
+                        'billing_id'  => $request->billing_id,
+                        'guest_info'  => $request->guest_info,
+                    ],
+                    $userId ? (int) $userId : null
                 );
 
-                $products = json_decode($request->products);
-                if (!blank($products)) {
-                    foreach ($products as $product) {
-                        $stockId = Stock::create([
-                            'product_id'      => $product->product_id,
-                            'model_type'      => Order::class,
-                            'model_id'        => $this->order->id,
-                            'item_type'       => $product->variation_id > 0 ? ProductVariation::class : Product::class,
-                            'item_id'         => $product->variation_id > 0 ? $product->variation_id : $product->product_id,
-                            'variation_names' => $product->variation_names,
-                            'sku'             => $product->sku ?? null,
-                            'price'           => $product->price,
-                            'quantity'        => -$product->quantity,
-                            'discount'        => $product->discount,
-                            'tax'             => number_format($product->total_tax, (int)env('CURRENCY_DECIMAL_POINT'), '.', ''),
-                            'subtotal'        => $product->subtotal,
-                            'total'           => $product->total,
-                            'status'          => $isCod ? Status::ACTIVE : Status::INACTIVE,
-                        ]);
-                        if ($product->taxes) {
-                            $j               = 0;
-                            $productTaxArray = [];
-                            foreach ($product->taxes as $tax) {
-                                $productTaxArray[$j] = [
-                                    'stock_id'   => $stockId->id,
-                                    'product_id' => $product->product_id,
-                                    'tax_id'     => $tax->id,
-                                    'name'       => $tax->name,
-                                    'code'       => $tax->code,
-                                    'tax_rate'   => $tax->tax_rate,
-                                    'tax_amount' => $tax->tax_amount,
-                                    'created_at' => now(),
-                                    'updated_at' => now()
-                                ];
-                                $j++;
-                            }
-                            StockTax::insert($productTaxArray);
+                $this->order = Order::create(
+                    array_merge($request->validated(), [
+                        'subtotal'        => $pricing['subtotal'],
+                        'discount'        => $pricing['discount'],
+                        'tax'             => $pricing['tax'],
+                        'shipping_charge' => $pricing['shipping_charge'],
+                        'total'           => $pricing['total'],
+                        'user_id'         => $userId,
+                        'status'          => OrderStatus::PENDING,
+                        'payment_status'  => PaymentStatus::UNPAID,
+                        'order_datetime'  => date('Y-m-d H:i:s'),
+                        'active'          => Ask::YES
+                    ])
+                );
+
+                foreach ($pricing['products'] as $product) {
+                    $stockId = Stock::create([
+                        'product_id'      => $product['product_id'],
+                        'model_type'      => Order::class,
+                        'model_id'        => $this->order->id,
+                        'item_type'       => $product['variation_id'] > 0 ? ProductVariation::class : Product::class,
+                        'item_id'         => $product['variation_id'] > 0 ? $product['variation_id'] : $product['product_id'],
+                        'variation_names' => $product['variation_names'],
+                        'sku'             => $product['sku'] ?? null,
+                        'price'           => $product['price'],
+                        'quantity'        => -$product['quantity'],
+                        'discount'        => $product['discount'],
+                        'tax'             => number_format($product['total_tax'], (int)env('CURRENCY_DECIMAL_POINT'), '.', ''),
+                        'subtotal'        => $product['subtotal'],
+                        'total'           => $product['total'],
+                        'status'          => $isCod ? Status::ACTIVE : Status::INACTIVE,
+                    ]);
+                    if (!empty($product['taxes'])) {
+                        $productTaxArray = [];
+                        foreach ($product['taxes'] as $tax) {
+                            $productTaxArray[] = [
+                                'stock_id'   => $stockId->id,
+                                'product_id' => $product['product_id'],
+                                'tax_id'     => $tax['id'],
+                                'name'       => $tax['name'],
+                                'code'       => $tax['code'],
+                                'tax_rate'   => $tax['tax_rate'],
+                                'tax_amount' => $tax['tax_amount'],
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ];
                         }
+                        StockTax::insert($productTaxArray);
                     }
                 }
 
@@ -302,12 +337,12 @@ class FrontendOrderService
                     }
                 }
 
-                if ($request->coupon_id > 0) {
+                if (!empty($pricing['coupon_id'])) {
                     OrderCoupon::create([
                         'order_id'  => $this->order->id,
-                        'coupon_id' => $request->coupon_id,
+                        'coupon_id' => $pricing['coupon_id'],
                         'user_id'   => $userId,
-                        'discount'  => $request->discount
+                        'discount'  => $pricing['discount']
                     ]);
                 }
             });
