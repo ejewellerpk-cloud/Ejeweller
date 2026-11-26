@@ -49,6 +49,7 @@ use App\Http\Controllers\Admin\PostExController;
 use App\Http\Controllers\Admin\PostExOrderController;
 use App\Http\Controllers\Admin\PostExOperationController;
 use App\Http\Controllers\Admin\PostExShipmentController;
+use App\Http\Controllers\Admin\MarketingCampaignController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CacheController;
 use App\Http\Controllers\Admin\OrderAreaController;
@@ -243,6 +244,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/top-customers', [DashboardController::class, 'topCustomers']);
         Route::get('/top-products', [DashboardController::class, 'topProducts']);
         Route::get('/active-users', [DashboardController::class, 'activeUsers']);
+        Route::get('/low-stock', [DashboardController::class, 'lowStock']);
     });
 
     Route::prefix('intelligence')->name('intelligence.')->middleware(['permission:intelligence'])->group(function () {
@@ -868,6 +870,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/show/{productReview}', [ReviewController::class, 'show']);
         Route::post('/upload-image/{productReview}', [ReviewController::class, 'uploadImage']);
         Route::get('/delete-image/{productReview}/{index}', [ReviewController::class, 'deleteImage']);
+        Route::post('/change-status/{productReview}', [ReviewController::class, 'changeStatus']);
         Route::match(['post', 'put', 'patch'], '/{productReview}', [ReviewController::class, 'update']);
         Route::delete('/{productReview}', [ReviewController::class, 'destroy']);
     });
@@ -917,6 +920,25 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/', [PostExShipmentController::class, 'index']);
         Route::get('/live-statuses', [PostExShipmentController::class, 'liveStatuses']);
         Route::get('/live', [PostExShipmentController::class, 'liveIndex']);
+    });
+
+    Route::prefix('campaigns')->name('campaigns.')->group(function () {
+        Route::get('/performance', [MarketingCampaignController::class, 'performance']);
+        Route::get('/attribution', [MarketingCampaignController::class, 'attribution']);
+        Route::get('/catalog', [MarketingCampaignController::class, 'catalog']);
+        Route::get('/audiences', [MarketingCampaignController::class, 'audiences']);
+        Route::get('/audiences/export', [MarketingCampaignController::class, 'exportAudienceCsv']);
+        Route::post('/audiences/sync', [MarketingCampaignController::class, 'syncAudience']);
+        Route::get('/recovery', [MarketingCampaignController::class, 'recoveryOverview']);
+        Route::post('/recovery/enqueue', [MarketingCampaignController::class, 'recoveryEnqueue']);
+        Route::post('/recovery/process', [MarketingCampaignController::class, 'recoveryProcess']);
+        Route::get('/', [MarketingCampaignController::class, 'index']);
+        Route::post('/', [MarketingCampaignController::class, 'store']);
+        Route::get('/{campaign}', [MarketingCampaignController::class, 'show']);
+        Route::match(['put', 'patch', 'post'], '/{campaign}', [MarketingCampaignController::class, 'update']);
+        Route::delete('/{campaign}', [MarketingCampaignController::class, 'destroy']);
+        Route::post('/{campaign}/spends', [MarketingCampaignController::class, 'addSpend']);
+        Route::delete('/spends/{spend}', [MarketingCampaignController::class, 'deleteSpend']);
     });
 
     Route::prefix('products-report')->name('products-report.')->group(function () {

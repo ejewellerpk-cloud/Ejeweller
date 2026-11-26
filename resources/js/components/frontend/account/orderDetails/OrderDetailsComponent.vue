@@ -48,6 +48,14 @@
                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{{ $t('label.total') }}</p>
                     <p class="text-2xl font-extrabold text-heading">{{ order.total_currency_price }}</p>
                     <p class="mt-0.5 text-xs text-text">{{ orderProducts.length }} {{ $t('label.product') }}</p>
+                    <button
+                        v-if="canRetryPayment"
+                        type="button"
+                        class="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition"
+                        @click="retryPayment"
+                    >
+                        Complete payment
+                    </button>
                 </div>
             </div>
 
@@ -626,6 +634,15 @@ export default {
             const timeline = this.order?.order_timeline;
             return Array.isArray(timeline) ? timeline : [];
         },
+        canRetryPayment: function () {
+            const slug = this.order?.payment_method_slug;
+            if (!slug || slug === 'cashondelivery' || slug === 'credit') {
+                return false;
+            }
+            return Number(this.order?.payment_status) === paymentStatusEnum.UNPAID
+                && Number(this.order?.status) !== orderStatusEnum.CANCELED
+                && Number(this.order?.status) !== orderStatusEnum.REJECTED;
+        },
         showTrackingId: function () {
             // Show as soon as PostEx (or any) tracking id is assigned — no status gate.
             return String(this.order?.postex_tracking_number || '').trim() !== '';
@@ -682,6 +699,18 @@ export default {
         },
         showTarget: function (id, cClass) {
             targetService.showTarget(id, cClass);
+        },
+        retryPayment: function () {
+            const slug = this.order?.payment_method_slug;
+            const id = this.order?.id;
+            if (!slug || !id) {
+                return;
+            }
+            if (slug === 'swich') {
+                this.$router.push({ name: 'frontend.checkout.checkout' });
+                return;
+            }
+            window.location.href = `${env.API_URL}/payment/${slug}/pay/${id}`;
         },
         copyTrackingId: function () {
             const tracking = String(this.order?.postex_tracking_number || '').trim();

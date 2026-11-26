@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\OrderStatusRequest;
+use App\Libraries\AppLibrary;
 use App\Libraries\QueryExceptionLibrary;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -43,9 +44,7 @@ use Spatie\Permission\Models\Role;
 use Dipokhalder\Settings\Facades\Settings;
 
 class FrontendOrderService
-{
-    // FbCapiService resolved via app() inside afterResponse callbacks.
-
+{ 
     public object $order;
     protected array $frontendOrderFilter = [
         'order_serial_no',
@@ -112,7 +111,16 @@ class FrontendOrderService
             $paymentGateway = PaymentGateway::find($request->payment_method);
             $isCod = $paymentGateway && $paymentGateway->slug === 'cashondelivery';
 
-            DB::transaction(function () use ($request, $isCod) {
+            $idempotencyKey = trim((string) $request->input('idempotency_key', ''));
+            if ($idempotencyKey !== '') {
+                $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    $existing->is_cod = $isCod;
+                    return $existing;
+                }
+            }
+
+            DB::transaction(function () use ($request, $isCod, $idempotencyKey) {
                 if (auth('sanctum')->check()) {
                     $this->abandonUnpaidCheckoutOrders((int) auth('sanctum')->user()->id);
                 }
@@ -181,30 +189,41 @@ class FrontendOrderService
                 // Server-side pricing: never trust client prices/totals/discount/tax/shipping.
                 $pricing = app(OrderPricingService::class)->calculate(
                     [
-                        'products'    => $request->products,
-                        'coupon_id'   => $request->coupon_id,
-                        'order_type'  => $request->order_type,
-                        'shipping_id' => $request->shipping_id,
-                        'billing_id'  => $request->billing_id,
-                        'guest_info'  => $request->guest_info,
+                        'products'       => $request->products,
+                        'coupon_id'      => $request->coupon_id,
+                        'order_type'     => $request->order_type,
+                        'shipping_id'    => $request->shipping_id,
+                        'billing_id'     => $request->billing_id,
+                        'guest_info'     => $request->guest_info,
+                        'payment_method' => $request->payment_method,
                     ],
                     $userId ? (int) $userId : null
                 );
 
-                $this->order = Order::create(
-                    array_merge($request->validated(), [
-                        'subtotal'        => $pricing['subtotal'],
-                        'discount'        => $pricing['discount'],
-                        'tax'             => $pricing['tax'],
-                        'shipping_charge' => $pricing['shipping_charge'],
-                        'total'           => $pricing['total'],
-                        'user_id'         => $userId,
-                        'status'          => OrderStatus::PENDING,
-                        'payment_status'  => PaymentStatus::UNPAID,
-                        'order_datetime'  => date('Y-m-d H:i:s'),
-                        'active'          => Ask::YES
-                    ])
-                );
+                if ($isCod) {
+                    $this->assertCodLimits((float) $pricing['total']);
+                }
+
+                $payload = array_merge($request->validated(), [
+                    'subtotal'        => $pricing['subtotal'],
+                    'discount'        => $pricing['discount'],
+                    'tax'             => $pricing['tax'],
+                    'shipping_charge' => $pricing['shipping_charge'],
+                    'total'           => $pricing['total'],
+                    'user_id'         => $userId,
+                    'status'          => OrderStatus::PENDING,
+                    'payment_status'  => PaymentStatus::UNPAID,
+                    'order_datetime'  => date('Y-m-d H:i:s'),
+                    'active'          => Ask::YES,
+                ]);
+
+                if ($idempotencyKey !== '') {
+                    $payload['idempotency_key'] = $idempotencyKey;
+                } else {
+                    unset($payload['idempotency_key']);
+                }
+
+                $this->order = Order::create($payload);
 
                 foreach ($pricing['products'] as $product) {
                     $stockId = Stock::create([
@@ -457,14 +476,12 @@ class FrontendOrderService
 
     private function abandonUnpaidCheckoutOrders(int $userId): void
     {
+        // Drop unpaid online-payment drafts when the customer starts a fresh checkout.
         $orders = Order::where('user_id', $userId)
             ->where('payment_status', PaymentStatus::UNPAID)
             ->where('status', OrderStatus::PENDING)
-            ->where(function ($query) {
-                $query->where('active', Status::INACTIVE)
-                    ->orWhereHas('paymentMethod', function ($payment) {
-                        $payment->where('slug', 'swich');
-                    });
+            ->whereHas('paymentMethod', function ($payment) {
+                $payment->where('slug', '!=', 'cashondelivery');
             })
             ->get();
 
@@ -482,6 +499,29 @@ class FrontendOrderService
             }
 
             $this->deleteDraftCheckoutOrder($order);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function assertCodLimits(float $total): void
+    {
+        $min = (float) (Settings::group('site')->get('site_cod_min_order') ?? 0);
+        $max = (float) (Settings::group('site')->get('site_cod_max_order') ?? 0);
+
+        if ($min > 0 && $total < $min) {
+            throw new Exception(
+                'Cash on delivery requires a minimum order of ' . AppLibrary::currencyAmountFormat($min) . '.',
+                422
+            );
+        }
+
+        if ($max > 0 && $total > $max) {
+            throw new Exception(
+                'Cash on delivery is limited to orders up to ' . AppLibrary::currencyAmountFormat($max) . '.',
+                422
+            );
         }
     }
 

@@ -9,6 +9,7 @@ use App\Services\ReviewService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ChangeImageRequest;
+use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\AdminProductReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\ReviewDetailsResource;
@@ -37,6 +38,7 @@ class ReviewController extends AdminController implements HasMiddleware
             new Middleware('permission:reviews', only: ['deleteImage']),
             new Middleware('permission:reviews', only: ['update']),
             new Middleware('permission:reviews', only: ['destroy']),
+            new Middleware('permission:reviews', only: ['changeStatus']),
         ];
     }
 
@@ -110,6 +112,17 @@ class ReviewController extends AdminController implements HasMiddleware
             $this->reviewService->destroy($productReview);
 
             return response('', 202);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function changeStatus(
+        ProductReview $productReview,
+        OrderStatusRequest $request
+    ): \Illuminate\Foundation\Application|\Illuminate\Http\Response|ProductReviewResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        try {
+            return new ProductReviewResource($this->reviewService->changeStatus($productReview, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

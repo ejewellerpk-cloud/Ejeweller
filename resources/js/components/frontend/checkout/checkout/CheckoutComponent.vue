@@ -88,9 +88,13 @@
                     <div v-if="Object.keys(cashOnDelivery).length > 0 && Number(setting.site_cash_on_delivery) === ActivityEnum.ENABLE"
                         @click.prevent="selectPaymentMethod(cashOnDelivery)"
                         :class="Object.keys(paymentMethod).length > 0 && cashOnDelivery.id === paymentMethod.id ? 'border-primary/50 bg-[#FFF4F1]' : 'border-white bg-white'"
-                        class="flex flex-col items-center justify-center gap-2.5 py-4 rounded-lg shadow-xs cursor-pointer border">
+                        class="flex flex-col items-center justify-center gap-2.5 py-4 px-2 rounded-lg shadow-xs cursor-pointer border min-h-[108px]">
                         <img class="h-6" :src="cashOnDelivery.image" alt="payment" loading="lazy" decoding="async" />
                         <span class="text-xs font-medium">{{ cashOnDelivery.name }}</span>
+                        <span class="text-[10px] text-paragraph leading-tight text-center">Pay when delivered</span>
+                        <span v-if="Number(setting.site_cod_fee) > 0" class="text-[10px] text-heading font-semibold leading-none">
+                            +{{ currencyFormat(setting.site_cod_fee, setting.site_digit_after_decimal_point, setting.site_default_currency_symbol, setting.site_currency_position) }} fee
+                        </span>
                     </div>
 
                     <div v-if="profile.balance >= total && credit.id" @click.prevent="selectPaymentMethod(credit)"
@@ -235,6 +239,7 @@ export default {
                 isActive: false
             },
             confirmingOrder: false,
+            checkoutIdempotencyKey: null,
             enums : {
                 statusEnum: statusEnum
             },
@@ -537,6 +542,22 @@ export default {
 
             if (Object.keys(this.paymentMethod).length === 0) {
                 markInvalid('payment', 'checkout-section-payment', this.$t('message.payment_method_required'));
+            } else if (this.paymentMethod?.slug === 'cashondelivery') {
+                const codMin = Number(this.setting.site_cod_min_order || 0);
+                const codMax = Number(this.setting.site_cod_max_order || 0);
+                if (codMin > 0 && Number(this.total) < codMin) {
+                    markInvalid(
+                        'payment',
+                        'checkout-section-payment',
+                        `Cash on delivery requires a minimum order of ${this.currencyFormat(codMin, this.setting.site_digit_after_decimal_point, this.setting.site_default_currency_symbol, this.setting.site_currency_position)}.`
+                    );
+                } else if (codMax > 0 && Number(this.total) > codMax) {
+                    markInvalid(
+                        'payment',
+                        'checkout-section-payment',
+                        `Cash on delivery is limited to orders up to ${this.currencyFormat(codMax, this.setting.site_digit_after_decimal_point, this.setting.site_default_currency_symbol, this.setting.site_currency_position)}.`
+                    );
+                }
             }
 
             if (firstSectionId) {
@@ -560,6 +581,12 @@ export default {
 
             this.confirmingOrder = true;
 
+            if (!this.checkoutIdempotencyKey) {
+                this.checkoutIdempotencyKey = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                    ? window.crypto.randomUUID()
+                    : (`ck_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`);
+            }
+
             trackPaymentAttempted({
                 method: this.paymentMethod?.slug || this.paymentMethod?.name,
                 total: this.total,
@@ -581,7 +608,8 @@ export default {
                 source: sourceEnum.WEB,
                 payment_method: Object.keys(this.paymentMethod).length > 0 ? this.paymentMethod.id : 0,
                 note: this.orderNote,
-                products: JSON.stringify(this.products)
+                products: JSON.stringify(this.products),
+                idempotency_key: this.checkoutIdempotencyKey,
             }
 
             this.$store.dispatch('frontendOrder/save', this.form).then(async (orderResponse) => {

@@ -40,7 +40,8 @@ class OrderRequest extends FormRequest
             'source'          => ['required', 'numeric'],
             'payment_method'  => ['required', 'numeric'],
             'note'            => ['nullable', 'string', 'max:500'],
-            'products'        => ['required', 'json', new ValidJsonOrder]
+            'products'        => ['required', 'json', new ValidJsonOrder],
+            'idempotency_key' => ['nullable', 'string', 'max:64'],
         ];
     }
 

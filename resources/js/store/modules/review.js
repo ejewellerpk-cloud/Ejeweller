@@ -137,6 +137,18 @@ export const review = {
                     });
             });
         },
+        changeStatus: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post(`admin/reviews/change-status/${payload.id}`, { status: payload.status })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios

@@ -68,6 +68,7 @@ class OrderDetailsResource extends JsonResource
             'order_datetime'                 => AppLibrary::datetime($this->order_datetime),
             'payment_method'                 => $this->payment_method,
             'payment_method_name'            => $this->swichMethodLabel() ?: $this->paymentMethod?->name,
+            'payment_method_slug'            => $this->paymentMethod?->slug,
             'payment_status'                 => $this->payment_status,
             'payment_status_label'           => $this->paymentStatusLabel(),
             'swich_payin'                    => $this->swichPayinSummary(),

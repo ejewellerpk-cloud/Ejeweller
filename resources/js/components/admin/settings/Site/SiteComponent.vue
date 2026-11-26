@@ -216,6 +216,34 @@
                         </small>
                     </div>
 
+                    <div class="form-col-12 sm:form-col-4">
+                        <label class="db-field-title" for="site_cod_min_order">COD min order (0 = none)</label>
+                        <input v-on:keypress="floatNumber($event)" v-model="form.site_cod_min_order"
+                            v-bind:class="errors.site_cod_min_order ? 'invalid' : ''" type="text"
+                            id="site_cod_min_order" class="db-field-control">
+                        <small class="db-field-alert" v-if="errors.site_cod_min_order">
+                            {{ errors.site_cod_min_order[0] }}
+                        </small>
+                    </div>
+                    <div class="form-col-12 sm:form-col-4">
+                        <label class="db-field-title" for="site_cod_max_order">COD max order (0 = none)</label>
+                        <input v-on:keypress="floatNumber($event)" v-model="form.site_cod_max_order"
+                            v-bind:class="errors.site_cod_max_order ? 'invalid' : ''" type="text"
+                            id="site_cod_max_order" class="db-field-control">
+                        <small class="db-field-alert" v-if="errors.site_cod_max_order">
+                            {{ errors.site_cod_max_order[0] }}
+                        </small>
+                    </div>
+                    <div class="form-col-12 sm:form-col-4">
+                        <label class="db-field-title" for="site_cod_fee">COD fee</label>
+                        <input v-on:keypress="floatNumber($event)" v-model="form.site_cod_fee"
+                            v-bind:class="errors.site_cod_fee ? 'invalid' : ''" type="text"
+                            id="site_cod_fee" class="db-field-control">
+                        <small class="db-field-alert" v-if="errors.site_cod_fee">
+                            {{ errors.site_cod_fee[0] }}
+                        </small>
+                    </div>
+
                     <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title required" for="yes">{{
                             $t("label.is_return_product_price_add_to_credit") }}</label>
@@ -593,6 +621,9 @@ export default {
                 site_phone_verification: null,
                 site_digit_after_decimal_point: null,
                 site_cash_on_delivery: null,
+                site_cod_min_order: 0,
+                site_cod_max_order: 0,
+                site_cod_fee: 0,
                 site_android_app_link: null,
                 site_ios_app_link: null,
                 site_copyright: null,
@@ -719,6 +750,9 @@ export default {
                     site_phone_verification: res.data.data.site_phone_verification,
                     site_digit_after_decimal_point: res.data.data.site_digit_after_decimal_point,
                     site_cash_on_delivery: res.data.data.site_cash_on_delivery,
+                    site_cod_min_order: res.data.data.site_cod_min_order ?? 0,
+                    site_cod_max_order: res.data.data.site_cod_max_order ?? 0,
+                    site_cod_fee: res.data.data.site_cod_fee ?? 0,
                     site_android_app_link: res.data.data.site_android_app_link,
                     site_ios_app_link: res.data.data.site_ios_app_link,
                     site_copyright: res.data.data.site_copyright,

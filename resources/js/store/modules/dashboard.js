@@ -15,7 +15,8 @@ export const dashboard = {
         featuredItems: [],
         topProducts: [],
         topCustomers: [],
-        activeUsers: {}
+        activeUsers: {},
+        lowStock: []
     },
 
     getters: {
@@ -54,6 +55,9 @@ export const dashboard = {
         },
         activeUsers: function (state) {
             return state.activeUsers;
+        },
+        lowStock: function (state) {
+            return state.lowStock;
         }
     },
 
@@ -208,6 +212,19 @@ export const dashboard = {
                         reject(err);
                     });
             });
+        },
+        lowStock: function (context) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .get("admin/dashboard/low-stock")
+                    .then((res) => {
+                        context.commit("lowStock", res.data.data);
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
         }
     },
 
@@ -247,6 +264,9 @@ export const dashboard = {
         },
         activeUsers: function (state, payload) {
             state.activeUsers = payload;
+        },
+        lowStock: function (state, payload) {
+            state.lowStock = payload;
         }
     },
 };

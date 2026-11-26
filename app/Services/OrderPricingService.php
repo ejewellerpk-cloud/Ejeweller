@@ -16,6 +16,7 @@ use App\Models\OrderCoupon;
 use App\Enums\DiscountType;
 use App\Enums\ShippingMethod;
 use App\Libraries\AppLibrary;
+use App\Models\PaymentGateway;
 use App\Models\ProductVariation;
 use Dipokhalder\Settings\Facades\Settings;
 
@@ -36,7 +37,7 @@ class OrderPricingService
     /**
      * @param array    $data   products (json string|array), coupon_id, order_type, shipping_id, billing_id, guest_info (json string|array)
      * @param int|null $userId authenticated / resolved guest user id (used for coupon per-user limit & address ownership)
-     * @return array{products: array, subtotal: float, discount: float, tax: float, shipping_charge: float, total: float, coupon_id: int|null}
+     * @return array{products: array, subtotal: float, discount: float, tax: float, shipping_charge: float, total: float, coupon_id: int|null, cod_fee: float}
      * @throws Exception
      */
     public function calculate(array $data, ?int $userId = null): array
@@ -203,6 +204,18 @@ class OrderPricingService
             $shippingCharge = $this->shippingCharge($resolved, $data, $userId);
         }
 
+        $codFee = 0.0;
+        $paymentMethodId = (int) ($data['payment_method'] ?? 0);
+        if ($paymentMethodId > 0) {
+            $gateway = PaymentGateway::find($paymentMethodId);
+            if ($gateway && $gateway->slug === 'cashondelivery') {
+                $codFee = max(0, (float) (Settings::group('site')->get('site_cod_fee') ?? 0));
+            }
+        }
+
+        // COD fee is folded into shipping_charge so existing order columns stay compatible.
+        $shippingCharge = round($shippingCharge + $codFee, $this->decimals);
+
         $total = round($subtotal - $discount + $taxTotal + $shippingCharge, $this->decimals);
         if ($total < 0) {
             $total = 0.0;
@@ -222,6 +235,7 @@ class OrderPricingService
             'shipping_charge' => $shippingCharge,
             'total'           => $total,
             'coupon_id'       => $couponId > 0 ? $couponId : null,
+            'cod_fee'         => $codFee,
         ];
     }
 

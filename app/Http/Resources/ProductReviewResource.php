@@ -27,9 +27,11 @@ class ProductReviewResource extends JsonResource
                 'name' => $this->product?->name,
                 'slug' => $this->product?->slug,
             ]),
-            "star"       => $this->star,
-            "review"     => $this->review,
-            "images"     => $this->images,
+            "star"                 => $this->star,
+            "review"               => $this->review,
+            "images"               => $this->images,
+            "status"               => (int) ($this->status ?? \App\Enums\ReviewStatus::APPROVED),
+            "is_verified_purchase" => (int) ($this->is_verified_purchase ?? \App\Enums\Ask::NO),
             "date" => $this->created_at ? AppLibrary::date($this->created_at, 'd M Y') : ''
         ];
     }

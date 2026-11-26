@@ -96,13 +96,17 @@
             ? $seoDescription
             : ($siteName . ' — Shop authentic jewelry online with secure checkout and fast delivery across Pakistan.');
     @endphp
+    <link rel="canonical" href="{{ $canonicalUrl ?? url()->current() }}">
+    @if(!empty($seoKeywords))
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
     @if(!empty($seoTitle))
         <title>{{ $seoTitle }} - {{ $siteName }}</title>
         <meta name="description" content="{{ $seoDescription ?: $defaultSeoDescription }}">
         <meta property="og:title" content="{{ $seoTitle }}">
         <meta property="og:description" content="{{ $seoDescription ?: $defaultSeoDescription }}">
         <meta property="og:image" content="{{ $seoImage }}">
-        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:url" content="{{ $canonicalUrl ?? url()->current() }}">
         <meta property="og:type" content="product">
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="{{ $seoTitle }}">
@@ -114,10 +118,14 @@
         <meta property="og:title" content="{{ $siteName }}">
         <meta property="og:description" content="{{ $defaultSeoDescription }}">
         <meta property="og:type" content="website">
-        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:url" content="{{ $canonicalUrl ?? url()->current() }}">
         <meta name="twitter:card" content="summary">
         <meta name="twitter:title" content="{{ $siteName }}">
         <meta name="twitter:description" content="{{ $defaultSeoDescription }}">
+    @endif
+
+    @if (!empty($jsonLd) && is_array($jsonLd))
+        <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endif
 
     @if (!empty($isHomepage) && !empty($heroPreloadImage))

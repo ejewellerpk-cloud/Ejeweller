@@ -23,6 +23,7 @@
     <OrderStatisticsComponent />
     <!--========ORDER STATISTIC END=============-->
     <div class="row">
+        <LowStockAlertComponent />
         <!--========SALES SUMMARY START=============-->
         <SalesSummaryComponent />
         <!--========SALES SUMMARY END=============-->
@@ -54,6 +55,7 @@ import OrderSummaryComponent from "./OrderSummaryComponent";
 import CustomerStatsComponent from "./CustomerStatsComponent";
 import TopCustomersComponent from "./TopCustomersComponent";
 import TopProductsComponent from "./TopProductsComponent";
+import LowStockAlertComponent from "./LowStockAlertComponent";
 import ENV from "../../../config/env";
 
 export default {
@@ -67,6 +69,7 @@ export default {
         CustomerStatsComponent,
         TopCustomersComponent,
         TopProductsComponent,
+        LowStockAlertComponent,
     },
     data() {
         return {

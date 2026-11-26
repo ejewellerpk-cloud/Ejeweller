@@ -16,14 +16,16 @@ class ReviewResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            "id"            => $this->id,
-            "user_id"       => $this->user_id,
-            "user_name"     => $this->user?->name,
-            "product_id"    => $this->product_id,
-            "product_name"  => $this->product?->name,
-            "star"          => $this->star,
-            "review"        => $this->review,
-            "images"        => $this->images,
-        ]; 
+            "id"                   => $this->id,
+            "user_id"              => $this->user_id,
+            "user_name"            => $this->user?->name,
+            "product_id"           => $this->product_id,
+            "product_name"         => $this->product?->name,
+            "star"                 => $this->star,
+            "review"               => $this->review,
+            "images"               => $this->images,
+            "status"               => (int) ($this->status ?? \App\Enums\ReviewStatus::APPROVED),
+            "is_verified_purchase" => (int) ($this->is_verified_purchase ?? \App\Enums\Ask::NO),
+        ];
     }
 }

@@ -13,6 +13,7 @@ class Order extends Model
     protected $table = "orders";
     protected $fillable = [
         'order_serial_no',
+        'idempotency_key',
         'user_id',
         'tax',
         'discount',
@@ -39,6 +40,7 @@ class Order extends Model
     protected $casts = [
         'id'                  => 'integer',
         'order_serial_no'     => 'string',
+        'idempotency_key'     => 'string',
         'user_id'             => 'integer',
         'tax'                 => 'decimal:6',
         'discount'            => 'decimal:6',

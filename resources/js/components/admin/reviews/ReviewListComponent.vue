@@ -70,6 +70,7 @@
                             <th class="db-table-head-th">{{ $t('label.review') }}</th>
                             <th class="db-table-head-th">{{ $t('label.product') }}</th>
                             <th class="db-table-head-th">{{ $t('label.customer') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.status') }}</th>
                             <th v-if="permissionChecker('reviews')" class="db-table-head-th hidden-print">{{
                                 $t('label.action') }}</th>
                         </tr>
@@ -84,9 +85,35 @@
                             </td>
                             <td class="db-table-body-td"> <span v-html="textShortener(review.review)"></span></td>
                             <td class="db-table-body-td">{{ review.product_name }}</td>
-                            <td class="db-table-body-td">{{ review.user_name }}</td>
+                            <td class="db-table-body-td">
+                                {{ review.user_name }}
+                                <span
+                                    v-if="Number(review.is_verified_purchase) === 5"
+                                    class="ml-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[#D9F7E6] text-[#0F7A3F]"
+                                >Verified</span>
+                            </td>
+                            <td class="db-table-body-td">
+                                <span
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize"
+                                    :class="reviewStatusClass(review.status)"
+                                >
+                                    {{ reviewStatusLabel(review.status) }}
+                                </span>
+                            </td>
                             <td class="db-table-body-td hidden-print" v-if="permissionChecker('reviews')">
-                                <div class="flex justify-start items-center gap-1.5">
+                                <div class="flex justify-start items-center gap-1.5 flex-wrap">
+                                    <button
+                                        v-if="Number(review.status) !== reviewStatusEnum.APPROVED"
+                                        type="button"
+                                        class="db-btn py-1 px-2 text-white bg-[#0F7A3F] text-xs"
+                                        @click="changeStatus(review.id, reviewStatusEnum.APPROVED)"
+                                    >Approve</button>
+                                    <button
+                                        v-if="Number(review.status) !== reviewStatusEnum.REJECTED"
+                                        type="button"
+                                        class="db-btn py-1 px-2 text-white bg-[#B42318] text-xs"
+                                        @click="changeStatus(review.id, reviewStatusEnum.REJECTED)"
+                                    >Reject</button>
                                     <SmIconViewComponent :link="'admin.review.show'" :id="review.id" />
                                     <SmIconSidebarModalEditComponent @click="edit(review)" />
                                     <SmIconDeleteComponent @click="destroy(review.id)" />
@@ -128,6 +155,8 @@
 import starRating from "vue-star-rating";
 import ENV from "../../../config/env";
 import statusEnum from "../../../enums/modules/statusEnum";
+import reviewStatusEnum from "../../../enums/modules/reviewStatusEnum";
+import askEnum from "../../../enums/modules/askEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import LoadingComponent from "../components/LoadingComponent";
@@ -179,6 +208,7 @@ export default {
                     order_type: 'desc',
                     user_id: null,
                     product_id: null,
+                    status: null,
                 }
             },
             productSearch: {
@@ -186,7 +216,9 @@ export default {
                 page: 1,
                 order_column: 'id',
             },
-            ENV: ENV
+            ENV: ENV,
+            reviewStatusEnum: reviewStatusEnum,
+            askEnum: askEnum,
         }
     },
     mounted() {
@@ -251,8 +283,38 @@ export default {
                 order_type: 'desc',
                 user_id: null,
                 product_id: null,
-            },
-                this.list();
+                status: null,
+            };
+            this.list();
+        },
+        reviewStatusLabel: function (status) {
+            const map = {
+                [reviewStatusEnum.PENDING]: 'Pending',
+                [reviewStatusEnum.APPROVED]: 'Approved',
+                [reviewStatusEnum.REJECTED]: 'Rejected',
+            };
+            return map[Number(status)] || 'Pending';
+        },
+        reviewStatusClass: function (status) {
+            const value = Number(status);
+            if (value === reviewStatusEnum.APPROVED) {
+                return 'text-[#0F7A3F] bg-[#D9F7E6]';
+            }
+            if (value === reviewStatusEnum.REJECTED) {
+                return 'text-[#B42318] bg-[#FEE4E2]';
+            }
+            return 'text-[#B54708] bg-[#FEF0C7]';
+        },
+        changeStatus: function (id, status) {
+            this.loading.isActive = true;
+            this.$store.dispatch('review/changeStatus', { id, status }).then(() => {
+                this.loading.isActive = false;
+                alertService.success(status === reviewStatusEnum.APPROVED ? 'Review approved' : 'Review rejected');
+                this.list(this.props.search.page);
+            }).catch((err) => {
+                this.loading.isActive = false;
+                alertService.error(err.response?.data?.message || 'Unable to update review status');
+            });
         },
         xls: function () {
             this.loading.isActive = true;

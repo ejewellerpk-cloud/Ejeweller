@@ -12,13 +12,15 @@ class ProductReview extends Model implements HasMedia
 {
     use InteractsWithMedia;
     protected $table    = "product_reviews";
-    protected $fillable = ['user_id', 'product_id', 'star', 'review'];
+    protected $fillable = ['user_id', 'product_id', 'star', 'review', 'status', 'is_verified_purchase'];
     protected $casts    = [
-        'id'         => 'integer',
-        'user_id'    => 'integer',
-        'product_id' => 'integer',
-        'star'       => 'integer',
-        'review'     => 'string',
+        'id'                   => 'integer',
+        'user_id'              => 'integer',
+        'product_id'           => 'integer',
+        'star'                 => 'integer',
+        'review'               => 'string',
+        'status'               => 'integer',
+        'is_verified_purchase' => 'integer',
     ];
 
     public function getImagesAttribute(): array

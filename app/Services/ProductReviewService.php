@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use Exception;
+use App\Enums\Ask;
+use App\Enums\OrderStatus;
+use App\Enums\ReviewStatus;
+use App\Models\Order;
 use App\Models\ProductReview;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +26,15 @@ class ProductReviewService
     {
         try {
             DB::transaction(function () use ($request) {
-                $this->productReview = ProductReview::create($request->validated() + ['user_id' => Auth::user()->id]);
+                $userId    = Auth::user()->id;
+                $productId = (int) $request->product_id;
+                $verified  = $this->hasVerifiedPurchase($userId, $productId) ? Ask::YES : Ask::NO;
+
+                $this->productReview = ProductReview::create($request->validated() + [
+                    'user_id'              => $userId,
+                    'status'               => ReviewStatus::PENDING,
+                    'is_verified_purchase' => $verified,
+                ]);
 
                 if ($request->images) {
                     foreach ($request->images as $image) {
@@ -95,5 +107,16 @@ class ProductReviewService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function hasVerifiedPurchase(int $userId, int $productId): bool
+    {
+        return Order::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED])
+            ->whereHas('orderProducts', function ($query) use ($productId) {
+                $query->where('product_id', $productId);
+            })
+            ->exists();
     }
 }

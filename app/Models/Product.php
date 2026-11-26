@@ -291,7 +291,8 @@ class Product extends Model implements HasMedia
 
     public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(ProductReview::class, 'product_id', 'id');
+        return $this->hasMany(ProductReview::class, 'product_id', 'id')
+            ->where('status', \App\Enums\ReviewStatus::APPROVED);
     }
 
     public function videos(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -306,8 +307,14 @@ class Product extends Model implements HasMedia
 
     public function scopeWithReviewRating($query)
     {
-        $reviewsStar      = ProductReview::selectRaw('sum(star)')->whereColumn('product_id', 'products.id')->getQuery();
-        $reviewsStarCount = ProductReview::selectRaw('count(product_id)')->whereColumn('product_id', 'products.id')->getQuery();
+        $reviewsStar      = ProductReview::selectRaw('sum(star)')
+            ->whereColumn('product_id', 'products.id')
+            ->where('status', \App\Enums\ReviewStatus::APPROVED)
+            ->getQuery();
+        $reviewsStarCount = ProductReview::selectRaw('count(product_id)')
+            ->whereColumn('product_id', 'products.id')
+            ->where('status', \App\Enums\ReviewStatus::APPROVED)
+            ->getQuery();
         $base             = $query->getQuery();
         if (is_null($base->columns)) {
             $query->select([$base->from . '.*']);

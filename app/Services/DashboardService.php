@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Enums\Ask;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\Status;
 use Illuminate\Http\Request;
 use App\Libraries\AppLibrary;
 use App\Enums\Role as EnumRole;
@@ -205,6 +206,37 @@ class DashboardService
     {
         try {
             return Product::count();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    public function lowStockProducts(): array
+    {
+        try {
+            return Product::query()
+                ->where('status', Status::ACTIVE)
+                ->withSum('stockItems as stock_qty', 'quantity')
+                ->orderBy('stock_qty')
+                ->limit(100)
+                ->get(['id', 'name', 'sku', 'low_stock_quantity_warning'])
+                ->filter(function (Product $product) {
+                    $stock     = (int) ($product->stock_qty ?? 0);
+                    $threshold = max(1, (int) ($product->low_stock_quantity_warning ?: 10));
+
+                    return $stock <= $threshold;
+                })
+                ->take(20)
+                ->values()
+                ->map(fn (Product $product) => [
+                    'product_id' => $product->id,
+                    'name'       => $product->name,
+                    'sku'        => $product->sku,
+                    'stock'      => (int) ($product->stock_qty ?? 0),
+                    'threshold'  => (int) ($product->low_stock_quantity_warning ?? 5),
+                ])
+                ->all();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

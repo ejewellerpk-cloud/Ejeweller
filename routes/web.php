@@ -5,6 +5,8 @@ use App\Http\Controllers\Frontend\RootController;
 use App\Http\Controllers\Frontend\PaymentController;
 use App\Http\Controllers\Frontend\SwichPayinController;
 use App\Http\Controllers\Frontend\ManifestController;
+use App\Http\Controllers\Frontend\SitemapController;
+use App\Http\Controllers\Frontend\MetaCatalogFeedController;
 use App\Http\Controllers\Installer\InstallerController;
 
 /*
@@ -50,4 +52,8 @@ Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(fun
 });
 
 Route::get('/manifest.json',[ManifestController::class, 'show'])->middleware(['installed'])->name('laravelpwa.manifest');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->middleware(['installed'])->name('sitemap');
+Route::get('/feeds/meta-catalog.csv', [MetaCatalogFeedController::class, 'csv'])
+    ->middleware(['installed'])
+    ->name('feeds.metaCatalog');
 Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);

@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use Exception;
+use App\Enums\Ask;
+use App\Enums\ReviewStatus;
 use App\Http\Requests\AdminProductReviewRequest;
 use App\Http\Requests\ChangeImageRequest;
+use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Models\ProductReview;
@@ -20,6 +23,7 @@ class ReviewService
         'user_id',
         'product_id',
         'star',
+        'status',
         'except'
     ];
 
@@ -50,7 +54,7 @@ class ReviewService
                                 $query->where($key, $request);
                             } else if ($key == "product_id") {
                                 $query->where($key, $request);
-                            } else if ($key == "star") {
+                            } else if ($key == "star" || $key == "status") {
                                 $query->where($key, $request);
                             } else {
                                 $query->where($key, 'like', '%' . $request . '%');
@@ -72,6 +76,7 @@ class ReviewService
     {
         try {
             $query = ProductReview::with(['user.addresses', 'product:id,name,slug'])
+                ->where('status', ReviewStatus::APPROVED)
                 ->whereIn('star', [4, 5])
                 ->whereHas('product', fn ($query) => $query->where('status', \App\Enums\Status::ACTIVE))
                 ->orderBy('star', 'desc')
@@ -113,7 +118,10 @@ class ReviewService
                     'product_id',
                     'star',
                     'review',
-                ]));
+                ]) + [
+                    'status'               => ReviewStatus::APPROVED,
+                    'is_verified_purchase' => Ask::NO,
+                ]);
 
                 $images = $request->file('images', []);
                 foreach ($images as $image) {
@@ -208,6 +216,27 @@ class ReviewService
             });
         } catch (Exception $exception) {
             DB::rollBack();
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function changeStatus(ProductReview $productReview, OrderStatusRequest $request): ProductReview
+    {
+        try {
+            $status = (int) $request->status;
+            if (!in_array($status, [ReviewStatus::PENDING, ReviewStatus::APPROVED, ReviewStatus::REJECTED], true)) {
+                throw new Exception('Invalid review status.', 422);
+            }
+
+            $productReview->status = $status;
+            $productReview->save();
+
+            return $productReview->load(['product', 'user']);
+        } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }

@@ -42,7 +42,8 @@ class DashboardController extends AdminController implements HasMiddleware
                 'totalOrders',
                 'totalCustomers',
                 'totalProducts',
-                'activeUsers'
+                'activeUsers',
+                'lowStock',
             ]),
         ];
     }
@@ -169,6 +170,18 @@ class DashboardController extends AdminController implements HasMiddleware
                     'active_customers' => $customers,
                     'total_active' => count($activeUsers)
                 ]
+            ]);
+        } catch (Exception $exception) {
+            return response()->json(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function lowStock(): \Illuminate\Http\JsonResponse
+    {
+        try {
+            return response()->json([
+                'status' => true,
+                'data'   => $this->dashboardService->lowStockProducts(),
             ]);
         } catch (Exception $exception) {
             return response()->json(['status' => false, 'message' => $exception->getMessage()], 422);
