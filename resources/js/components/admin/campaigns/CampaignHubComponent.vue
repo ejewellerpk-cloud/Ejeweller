@@ -3,14 +3,18 @@
 
     <div class="col-12">
         <div class="db-card">
-            <div class="db-card-header border-none flex flex-wrap items-center justify-between gap-3">
-                <div>
+            <div class="db-card-header border-none flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="min-w-0">
                     <h3 class="db-card-title">{{ $t('menu.campaigns') || 'Campaigns' }}</h3>
                     <p class="text-sm text-gray-500 mt-1">Meta / Google ads tracking, ROAS, recovery & catalog</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <input type="date" v-model="from" class="db-field-control !w-auto" @change="refreshActive" />
-                    <input type="date" v-model="to" class="db-field-control !w-auto" @change="refreshActive" />
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <input type="date" v-model="from"
+                        class="db-field-control relative w-full sm:w-[9.5rem] shrink-0"
+                        @change="refreshActive" />
+                    <input type="date" v-model="to"
+                        class="db-field-control relative w-full sm:w-[9.5rem] shrink-0"
+                        @change="refreshActive" />
                 </div>
             </div>
 
@@ -248,129 +252,157 @@
     </div>
 
     <!-- Create / Edit drawer -->
-    <div v-if="drawerOpen" class="fixed inset-0 z-50 bg-black/50" @click.self="closeDrawer">
-        <div class="w-full max-w-xl h-screen overflow-y-auto bg-white ms-auto p-5">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold">{{ form.id ? 'Edit campaign' : 'New campaign' }}</h3>
-                <button type="button" class="fa-solid fa-xmark" @click="closeDrawer"></button>
+    <div v-if="drawerOpen" id="campaign-sidebar" class="fixed inset-0 z-50 bg-black/50" @click.self="closeDrawer">
+        <div
+            class="w-full max-w-xl h-[100dvh] max-h-screen overflow-x-hidden overflow-y-auto thin-scrolling bg-white ms-auto shadow-xl">
+            <div class="drawer-header sticky top-0 z-10 bg-white">
+                <h3 class="drawer-title">{{ form.id ? 'Edit campaign' : 'New campaign' }}</h3>
+                <button type="button" class="fa-solid fa-xmark close-btn" aria-label="Close" @click="closeDrawer"></button>
             </div>
-            <form @submit.prevent="saveCampaign" class="space-y-3">
-                <div>
-                    <label class="db-field-title required">Name</label>
-                    <input v-model="form.name" class="db-field-control" required />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">Channel</label>
-                        <select v-model="form.channel" class="db-field-control">
-                            <option value="meta">Meta (Facebook/IG)</option>
-                            <option value="google">Google Ads</option>
-                            <option value="tiktok">TikTok</option>
-                            <option value="other">Other</option>
-                        </select>
+            <div class="drawer-body">
+                <form @submit.prevent="saveCampaign">
+                    <div class="form-row">
+                        <div class="form-col-12">
+                            <label class="db-field-title required" for="campaign_name">Name</label>
+                            <input id="campaign_name" v-model="form.name" class="db-field-control" required />
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_channel">Channel</label>
+                            <select id="campaign_channel" v-model="form.channel" class="db-field-control">
+                                <option value="meta">Meta (Facebook/IG)</option>
+                                <option value="google">Google Ads</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_objective">Objective</label>
+                            <select id="campaign_objective" v-model="form.objective" class="db-field-control">
+                                <option value="conversions">Conversions</option>
+                                <option value="traffic">Traffic</option>
+                                <option value="awareness">Awareness</option>
+                                <option value="catalog">Catalog sales</option>
+                            </select>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_status">Status</label>
+                            <select id="campaign_status" v-model="form.status" class="db-field-control">
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="paused">Paused</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_landing">Landing path</label>
+                            <input id="campaign_landing" v-model="form.landing_path" class="db-field-control" placeholder="/" />
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_utm_source">utm_source</label>
+                            <input id="campaign_utm_source" v-model="form.utm_source" class="db-field-control" />
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_utm_medium">utm_medium</label>
+                            <input id="campaign_utm_medium" v-model="form.utm_medium" class="db-field-control" />
+                        </div>
+
+                        <div class="form-col-12">
+                            <label class="db-field-title" for="campaign_utm_campaign">utm_campaign (auto if empty)</label>
+                            <input id="campaign_utm_campaign" v-model="form.utm_campaign" class="db-field-control" />
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_utm_content">utm_content</label>
+                            <input id="campaign_utm_content" v-model="form.utm_content" class="db-field-control" />
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_utm_term">utm_term</label>
+                            <input id="campaign_utm_term" v-model="form.utm_term" class="db-field-control" />
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_daily_budget">Daily budget</label>
+                            <input id="campaign_daily_budget" v-model="form.daily_budget" type="number" min="0" step="0.01"
+                                class="db-field-control" />
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_total_budget">Total budget</label>
+                            <input id="campaign_total_budget" v-model="form.total_budget" type="number" min="0" step="0.01"
+                                class="db-field-control" />
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_starts_at">Starts</label>
+                            <input id="campaign_starts_at" v-model="form.starts_at" type="date"
+                                class="db-field-control relative" />
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title" for="campaign_ends_at">Ends</label>
+                            <input id="campaign_ends_at" v-model="form.ends_at" type="date"
+                                class="db-field-control relative" />
+                        </div>
+
+                        <div class="form-col-12">
+                            <label class="db-field-title" for="campaign_notes">Notes</label>
+                            <textarea id="campaign_notes" v-model="form.notes" class="db-field-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-col-12">
+                            <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
+                                <button type="button" class="db-btn py-2 bg-gray-100 w-full sm:w-auto" @click="closeDrawer">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="db-btn py-2 text-white bg-primary w-full sm:w-auto">
+                                    Save campaign
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="db-field-title">Objective</label>
-                        <select v-model="form.objective" class="db-field-control">
-                            <option value="conversions">Conversions</option>
-                            <option value="traffic">Traffic</option>
-                            <option value="awareness">Awareness</option>
-                            <option value="catalog">Catalog sales</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">Status</label>
-                        <select v-model="form.status" class="db-field-control">
-                            <option value="draft">Draft</option>
-                            <option value="active">Active</option>
-                            <option value="paused">Paused</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="db-field-title">Landing path</label>
-                        <input v-model="form.landing_path" class="db-field-control" placeholder="/" />
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">utm_source</label>
-                        <input v-model="form.utm_source" class="db-field-control" />
-                    </div>
-                    <div>
-                        <label class="db-field-title">utm_medium</label>
-                        <input v-model="form.utm_medium" class="db-field-control" />
-                    </div>
-                </div>
-                <div>
-                    <label class="db-field-title">utm_campaign (auto if empty)</label>
-                    <input v-model="form.utm_campaign" class="db-field-control" />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">utm_content</label>
-                        <input v-model="form.utm_content" class="db-field-control" />
-                    </div>
-                    <div>
-                        <label class="db-field-title">utm_term</label>
-                        <input v-model="form.utm_term" class="db-field-control" />
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">Daily budget</label>
-                        <input v-model="form.daily_budget" type="number" min="0" step="0.01" class="db-field-control" />
-                    </div>
-                    <div>
-                        <label class="db-field-title">Total budget</label>
-                        <input v-model="form.total_budget" type="number" min="0" step="0.01" class="db-field-control" />
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">Starts</label>
-                        <input v-model="form.starts_at" type="date" class="db-field-control" />
-                    </div>
-                    <div>
-                        <label class="db-field-title">Ends</label>
-                        <input v-model="form.ends_at" type="date" class="db-field-control" />
-                    </div>
-                </div>
-                <div>
-                    <label class="db-field-title">Notes</label>
-                    <textarea v-model="form.notes" class="db-field-control" rows="3"></textarea>
-                </div>
-                <button type="submit" class="db-btn py-2 text-white bg-primary w-full">Save campaign</button>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Spend modal -->
-    <div v-if="spendOpen" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" @click.self="spendOpen = false">
-        <div class="bg-white rounded-xl w-full max-w-md p-5">
+    <div v-if="spendOpen" class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        @click.self="spendOpen = false">
+        <div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-md p-5 max-h-[90dvh] overflow-y-auto">
             <h3 class="font-bold mb-3">Add spend · {{ spendCampaign?.name }}</h3>
-            <form @submit.prevent="saveSpend" class="space-y-3">
-                <div>
-                    <label class="db-field-title">Date</label>
-                    <input v-model="spendForm.spend_date" type="date" class="db-field-control" required />
-                </div>
-                <div>
-                    <label class="db-field-title">Spend amount</label>
-                    <input v-model="spendForm.spend" type="number" min="0" step="0.01" class="db-field-control" required />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="db-field-title">Impressions</label>
-                        <input v-model="spendForm.impressions" type="number" min="0" class="db-field-control" />
+            <form @submit.prevent="saveSpend">
+                <div class="form-row">
+                    <div class="form-col-12">
+                        <label class="db-field-title" for="spend_date">Date</label>
+                        <input id="spend_date" v-model="spendForm.spend_date" type="date"
+                            class="db-field-control relative" required />
                     </div>
-                    <div>
-                        <label class="db-field-title">Clicks</label>
-                        <input v-model="spendForm.clicks" type="number" min="0" class="db-field-control" />
+                    <div class="form-col-12">
+                        <label class="db-field-title" for="spend_amount">Spend amount</label>
+                        <input id="spend_amount" v-model="spendForm.spend" type="number" min="0" step="0.01"
+                            class="db-field-control" required />
+                    </div>
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="spend_impressions">Impressions</label>
+                        <input id="spend_impressions" v-model="spendForm.impressions" type="number" min="0"
+                            class="db-field-control" />
+                    </div>
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="spend_clicks">Clicks</label>
+                        <input id="spend_clicks" v-model="spendForm.clicks" type="number" min="0"
+                            class="db-field-control" />
+                    </div>
+                    <div class="form-col-12">
+                        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
+                            <button type="button" class="db-btn py-2 bg-gray-100 w-full sm:w-auto"
+                                @click="spendOpen = false">Cancel</button>
+                            <button type="submit" class="db-btn py-2 text-white bg-primary w-full sm:w-auto">
+                                Save spend
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <button type="submit" class="db-btn py-2 text-white bg-primary w-full">Save spend</button>
             </form>
         </div>
     </div>

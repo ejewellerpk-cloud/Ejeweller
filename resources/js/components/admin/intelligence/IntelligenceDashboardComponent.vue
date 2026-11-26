@@ -11,9 +11,9 @@
                     <option v-for="s in sites" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
                 <input type="date" v-model="from" @change="refresh"
-                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
+                    class="relative bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
                 <input type="date" v-model="to" @change="refresh"
-                    class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
+                    class="relative bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm" />
                 <button type="button" @click="refresh"
                     class="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold">
                     Refresh

@@ -269,15 +269,20 @@ iframe.w-full.rounded-2xl {
     left: inherit !important;
 }
 
+/* Keep the picker hit-area inside the input only (not the whole page). */
+input[type="date"] {
+    position: relative;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
     background: transparent;
     color: transparent;
     cursor: pointer;
     position: absolute;
     inset: 0;
-    z-index: 10;
-    height: 100%;
-    width: 100%;
+    z-index: 1;
+    height: auto;
+    width: auto;
 }
 
 .drawer:where([dir="ltr"], [dir="ltr"] *) {
