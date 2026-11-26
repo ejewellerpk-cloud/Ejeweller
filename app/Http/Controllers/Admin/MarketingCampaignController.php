@@ -35,7 +35,7 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
     {
         try {
             return MarketingCampaignResource::collection($this->campaigns->list($request));
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return response(['status' => false, 'message' => $e->getMessage()], 422);
         }
     }
@@ -127,7 +127,8 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
     public function catalog(Request $request)
     {
         try {
-            return response(['status' => true, 'data' => $this->campaigns->catalogFeed()]);
+            // Metadata only in admin UI — full items stream via /feeds/meta-catalog.csv
+            return response(['status' => true, 'data' => $this->campaigns->catalogFeed(false)]);
         } catch (Exception $e) {
             return response(['status' => false, 'message' => $e->getMessage()], 422);
         }
@@ -140,7 +141,7 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
 
             return response([
                 'status' => true,
-                'data' => $this->campaigns->audienceExport($segment),
+                'data' => $this->campaigns->audienceExport($segment, false),
             ]);
         } catch (Exception $e) {
             return response(['status' => false, 'message' => $e->getMessage()], 422);

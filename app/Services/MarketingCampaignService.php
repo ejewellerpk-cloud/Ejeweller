@@ -12,9 +12,9 @@ use App\Models\User;
 use Carbon\Carbon;
 use Dipokhalder\Settings\Facades\Settings;
 use Exception;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class MarketingCampaignService
@@ -23,11 +23,15 @@ class MarketingCampaignService
         'name', 'channel', 'status', 'objective', 'utm_campaign',
     ];
 
-    public function list(PaginateRequest $request): LengthAwarePaginator
+    public function list(PaginateRequest $request)
     {
-        $method = $request->get('paginate', 0) > 0 ? 'paginate' : 'get';
+        if (!Schema::hasTable('marketing_campaigns')) {
+            return collect();
+        }
+
         $requests = $request->all();
-        $count = $request->get('paginate') ?: 20;
+        $method = (int) $request->get('paginate', 0) === 1 ? 'paginate' : 'get';
+        $methodValue = (int) $request->get('paginate', 0) === 1 ? $request->get('per_page', 20) : '*';
         $column = in_array($request->get('order_column'), $this->campaignFilter, true)
             ? $request->get('order_column')
             : 'id';
@@ -38,18 +42,22 @@ class MarketingCampaignService
         return MarketingCampaign::query()
             ->withSum(['spends as total_spend'], 'spend')
             ->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->campaignFilter, true) && $request !== null && $request !== '') {
-                        $query->where($key, 'like', '%' . $request . '%');
+                foreach ($requests as $key => $value) {
+                    if (in_array($key, $this->campaignFilter, true) && $value !== null && $value !== '') {
+                        $query->where($key, 'like', '%' . $value . '%');
                     }
                 }
             })
             ->orderBy($column, $type)
-            ->$method($count);
+            ->$method($methodValue);
     }
 
     public function store(array $data): MarketingCampaign
     {
+        if (!Schema::hasTable('marketing_campaigns')) {
+            throw new Exception('Campaigns table missing. Run: php artisan migrate --force');
+        }
+
         if (empty($data['utm_campaign'])) {
             $data['utm_campaign'] = MarketingCampaign::slugifyCampaignName($data['name'] ?? 'campaign');
         }
@@ -116,6 +124,17 @@ class MarketingCampaignService
     {
         $from = $from ?: now()->subDays(29)->toDateString();
         $to = $to ?: now()->toDateString();
+
+        if (!Schema::hasTable('marketing_campaigns')) {
+            return [
+                'from' => $from,
+                'to' => $to,
+                'campaigns' => [],
+                'totals' => ['spend' => 0, 'revenue' => 0, 'orders' => 0, 'roas' => null],
+                'message' => 'Run php artisan migrate --force to create campaign tables.',
+            ];
+        }
+
         $siteId = $this->defaultAnalyticsSiteId();
 
         $campaigns = MarketingCampaign::query()
@@ -167,37 +186,42 @@ class MarketingCampaignService
         ];
     }
 
-    public function catalogFeed(): array
+    public function catalogFeed(bool $includeItems = true): array
     {
         $currency = $this->defaultCurrency();
         $base = rtrim(config('app.url'), '/');
+        $company = Settings::group('company')->get('company_name') ?: config('app.name');
 
-        $products = Product::query()
-            ->with(['brand', 'category'])
+        $query = Product::query()
+            ->with(['brand:id,name', 'category:id,name', 'media'])
             ->where('status', \App\Enums\Status::ACTIVE)
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
 
+        $count = (clone $query)->count();
         $items = [];
-        foreach ($products as $product) {
-            $price = (float) ($product->selling_price ?? 0);
-            $inStock = (int) ($product->stock ?? 0) > 0;
-            $items[] = [
-                'id' => (string) $product->id,
-                'title' => $product->name,
-                'description' => Str::limit(strip_tags((string) ($product->description ?? $product->name)), 5000),
-                'availability' => $inStock ? 'in stock' : 'out of stock',
-                'condition' => 'new',
-                'price' => number_format($price, 2, '.', '') . ' ' . $currency,
-                'link' => $base . '/product/' . $product->slug,
-                'image_link' => $product->cover ?: $product->image,
-                'brand' => $product->brand?->name ?: Settings::group('company')->get('company_name') ?: config('app.name'),
-                'google_product_category' => $product->category?->name,
-            ];
+
+        if ($includeItems) {
+            $query->chunkById(200, function ($products) use (&$items, $currency, $base, $company) {
+                foreach ($products as $product) {
+                    $price = (float) ($product->selling_price ?? 0);
+                    $items[] = [
+                        'id' => (string) $product->id,
+                        'title' => $product->name,
+                        'description' => Str::limit(strip_tags((string) ($product->description ?? $product->name)), 5000),
+                        'availability' => 'in stock',
+                        'condition' => 'new',
+                        'price' => number_format($price, 2, '.', '') . ' ' . $currency,
+                        'link' => $base . '/product/' . $product->slug,
+                        'image_link' => $product->cover ?: $product->image,
+                        'brand' => $product->brand?->name ?: $company,
+                        'google_product_category' => $product->category?->name,
+                    ];
+                }
+            });
         }
 
         return [
-            'count' => count($items),
+            'count' => $count,
             'currency' => $currency,
             'items' => $items,
             'csv_url' => url('/feeds/meta-catalog.csv'),
@@ -207,7 +231,7 @@ class MarketingCampaignService
 
     public function catalogCsv(): string
     {
-        $feed = $this->catalogFeed();
+        $feed = $this->catalogFeed(true);
         $headers = ['id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand', 'google_product_category'];
         $fh = fopen('php://temp', 'r+');
         fputcsv($fh, $headers);
@@ -221,7 +245,7 @@ class MarketingCampaignService
         return $csv;
     }
 
-    public function audienceExport(string $segment = 'all'): array
+    public function audienceExport(string $segment = 'all', bool $includeRows = true): array
     {
         $query = User::query()->whereNotNull('email')->where('email', '!=', '');
 
@@ -235,32 +259,35 @@ class MarketingCampaignService
             $query->whereIn('id', $userIds);
         }
 
-        $users = $query->orderBy('id')->limit(50000)->get(['id', 'name', 'email', 'phone']);
+        $count = (clone $query)->count();
+        $rows = [];
 
-        $rows = $users->map(function (User $user) {
-            $parts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [''];
-
-            return [
-                'email' => strtolower(trim((string) $user->email)),
-                'email_hash' => hash('sha256', strtolower(trim((string) $user->email))),
-                'phone' => preg_replace('/\D+/', '', (string) ($user->phone ?? '')),
-                'fn' => strtolower(trim($parts[0] ?? '')),
-                'ln' => strtolower(trim($parts[1] ?? '')),
-            ];
-        })->values()->all();
+        if ($includeRows) {
+            $query->orderBy('id')->limit(10000)->get(['id', 'name', 'email', 'phone'])
+                ->each(function (User $user) use (&$rows) {
+                    $parts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [''];
+                    $rows[] = [
+                        'email' => strtolower(trim((string) $user->email)),
+                        'email_hash' => hash('sha256', strtolower(trim((string) $user->email))),
+                        'phone' => preg_replace('/\D+/', '', (string) ($user->phone ?? '')),
+                        'fn' => strtolower(trim($parts[0] ?? '')),
+                        'ln' => strtolower(trim($parts[1] ?? '')),
+                    ];
+                });
+        }
 
         return [
             'segment' => $segment,
-            'count' => count($rows),
+            'count' => $count,
             'rows' => $rows,
             'meta_ready' => true,
-            'note' => 'Upload email hashes in Meta Ads Manager → Audiences → Custom Audience → Customer list.',
+            'note' => 'Upload CSV in Meta Ads Manager → Audiences → Customer list.',
         ];
     }
 
     public function audienceCsv(string $segment = 'all'): string
     {
-        $export = $this->audienceExport($segment);
+        $export = $this->audienceExport($segment, true);
         $fh = fopen('php://temp', 'r+');
         fputcsv($fh, ['email', 'phone', 'fn', 'ln']);
         foreach ($export['rows'] as $row) {
