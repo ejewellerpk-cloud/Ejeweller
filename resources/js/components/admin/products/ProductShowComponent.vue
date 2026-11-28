@@ -397,30 +397,32 @@
                 <div class="db-card-body">
                     <form @submit.prevent="offerSsave" class="d-block w-full">
                         <div class="form-row">
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 offer-field-overflow">
                                 <label for="offer_start_date" class="db-field-title required">{{
                                     $t("label.offer_start_date")
                                     }}</label>
                                 <Datepicker hideInputIcon autoApply v-model="form.offer_start_date"
                                     :enableTimePicker="true" :is24="false" :monthChangeOnScroll="false" utc="false"
+                                    teleport="body"
                                     :input-class-name="offerError.offer_start_date ? 'invalid' : ''">
                                     <template #am-pm-button="{ toggle, value }">
-                                        <button @click="toggle">{{ value }}</button>
+                                        <button type="button" @click="toggle">{{ value }}</button>
                                     </template>
                                 </Datepicker>
                                 <small class="db-field-alert" v-if="offerError.offer_start_date">{{
                                     offerError.offer_start_date[0]
                                     }}</small>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 offer-field-overflow">
                                 <label for="offer_end_date" class="db-field-title required">{{
                                     $t("label.offer_end_date")
                                     }}</label>
                                 <Datepicker hideInputIcon autoApply v-model="form.offer_end_date"
                                     :enableTimePicker="true" :is24="false" :monthChangeOnScroll="false" utc="false"
+                                    teleport="body"
                                     :input-class-name="offerError.offer_end_date ? 'invalid' : ''">
                                     <template #am-pm-button="{ toggle, value }">
-                                        <button @click="toggle">{{ value }}</button>
+                                        <button type="button" @click="toggle">{{ value }}</button>
                                     </template>
                                 </Datepicker>
                                 <small class="db-field-alert" v-if="offerError.offer_end_date">{{
@@ -615,6 +617,7 @@ import ProductSeoComponent from "./seo/ProductSeoComponent";
 import ProductVideoListComponent from "./video/ProductVideoListComponent";
 import { quillEditor } from 'vue3-quill'
 import Datepicker from "@vuepic/vue-datepicker";
+import "@vuepic/vue-datepicker/dist/main.css";
 import activityEnum from "../../../enums/modules/activityEnum";
 import PrintButtonComponent from "../components/buttons/PrintButtonComponent.vue";
 
@@ -1075,3 +1078,16 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.offer-field-overflow {
+    position: relative;
+    z-index: 20;
+    overflow: visible;
+}
+
+:deep(.dp__main),
+:deep(.dp__input_wrap) {
+    width: 100%;
+}
+</style>
