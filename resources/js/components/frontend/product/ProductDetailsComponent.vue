@@ -306,16 +306,12 @@
                                     :class="temp.stock === temp.quantity ? 'cursor-not-allowed' : temp.quantity === temp.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
                                     class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
                             </div>
-                            <div v-if="!initialVariations.length || selectedVariation != null">
-                                <p v-if="temp.stock > 0" class="capitalize">
-                                    {{ $t('label.available') }}:
-                                    <b>({{ temp.stock }}) </b>
-                                    {{ product.unit }}
-                                </p>
-                                <p v-else class="capitalize text-danger">
-                                    {{ $t('label.stock_out') }}
-                                </p>
-                            </div>
+                            <p
+                                v-if="(!initialVariations.length || selectedVariation != null) && temp.stock <= 0"
+                                class="capitalize text-danger"
+                            >
+                                {{ $t('label.stock_out') }}
+                            </p>
                         </dd>
                     </dl>
 
