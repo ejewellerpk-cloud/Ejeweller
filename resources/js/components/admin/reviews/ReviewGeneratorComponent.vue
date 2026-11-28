@@ -284,24 +284,43 @@ export default {
                 event.preventDefault();
             }
         },
-        batchSizeFor(quantity) {
-            if (quantity <= 20) {
-                return 1;
-            }
-            if (quantity <= 80) {
+        batchSizeFor(quantity, hasImages) {
+            // Smaller chunks when images need conversion work on the server.
+            if (hasImages) {
+                if (quantity <= 30) {
+                    return 2;
+                }
                 return 5;
             }
-            return 10;
+            if (quantity <= 25) {
+                return 5;
+            }
+            if (quantity <= 100) {
+                return 10;
+            }
+            return 15;
         },
-        buildGenerateForm(quantity) {
+        buildGenerateForm(quantity, { mediaToken = null, attachImages = false, cleanupMedia = false } = {}) {
             const fd = new FormData();
             fd.append("product_id", this.form.product_id);
             fd.append("quantity", quantity);
-            this.imageItems.forEach((item) => {
-                if (item?.file) {
-                    fd.append("images[]", item.file);
-                }
-            });
+
+            if (mediaToken) {
+                fd.append("media_token", mediaToken);
+            }
+
+            if (attachImages) {
+                this.imageItems.forEach((item) => {
+                    if (item?.file) {
+                        fd.append("images[]", item.file);
+                    }
+                });
+            }
+
+            if (cleanupMedia) {
+                fd.append("cleanup_media", "1");
+            }
+
             return fd;
         },
         setProgress(done, total) {
@@ -429,9 +448,11 @@ export default {
             }
 
             const productId = String(this.form.product_id);
-            const batchSize = this.batchSizeFor(qty);
+            const hasImages = this.imageItems.some((item) => item?.file);
+            const batchSize = this.batchSizeFor(qty, hasImages);
             let done = 0;
             let createdTotal = 0;
+            let mediaToken = null;
 
             this.progress.active = true;
             this.setProgress(0, qty);
@@ -439,9 +460,22 @@ export default {
             try {
                 while (done < qty) {
                     const chunk = Math.min(batchSize, qty - done);
+                    const isFirst = done === 0;
+                    const isLast = done + chunk >= qty;
+
                     const res = await this.$store.dispatch("review/generate", {
-                        form: this.buildGenerateForm(chunk),
+                        form: this.buildGenerateForm(chunk, {
+                            mediaToken,
+                            attachImages: isFirst && hasImages,
+                            cleanupMedia: isLast && hasImages,
+                        }),
                     });
+
+                    if (res.data?.meta?.media_token) {
+                        mediaToken = res.data.meta.media_token;
+                    } else if (isLast) {
+                        mediaToken = null;
+                    }
 
                     const generated =
                         res.data?.meta?.generated ??
@@ -451,7 +485,6 @@ export default {
                     done += chunk;
                     this.setProgress(Math.min(done, qty), qty);
 
-                    // Let the browser paint the updated bar between batches
                     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
                 }
 
@@ -465,8 +498,15 @@ export default {
                 });
             } catch (err) {
                 this.errors = err.response?.data?.errors || {};
-                if (err.response?.data?.message && !Object.keys(this.errors).length) {
-                    alertService.error(err.response.data.message);
+                const message = err.response?.data?.message;
+                if (message && !Object.keys(this.errors).length) {
+                    alertService.error(message);
+                } else if (err.message === "Network Error" || !err.response) {
+                    alertService.error(
+                        this.$t("message.reviews_generator_network_error", {
+                            count: createdTotal || done,
+                        })
+                    );
                 } else if (done > 0) {
                     alertService.error(
                         this.$t("message.reviews_generator_progress_partial", {

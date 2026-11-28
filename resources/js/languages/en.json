@@ -1047,6 +1047,7 @@
         "reviews_generator_progress_finishing": "Finishing up…",
         "reviews_generator_progress_hint": "Please keep this window open until generation completes.",
         "reviews_generator_progress_partial": "{count} reviews were created before an error stopped the process.",
+        "reviews_generator_network_error": "Connection interrupted while generating. {count} review(s) may already be saved — check the list and retry the rest.",
         "reviews_deleted_count": "{count} review(s) deleted successfully.",
         "reviews_delete_all_confirm": "This will permanently delete all reviews matching the current filters (or every review if no filters are set).",
         "photo_update": "Photo updated successfully.",

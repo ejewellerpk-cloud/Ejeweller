@@ -98,14 +98,19 @@ class ReviewController extends AdminController implements HasMiddleware
         }
     }
 
-    public function generate(AdminGenerateReviewsRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    public function generate(AdminGenerateReviewsRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            $reviews = $this->reviewGeneratorService->generate($request);
+            @set_time_limit(180);
+            @ini_set('max_execution_time', '180');
 
-            return ProductReviewResource::collection($reviews)->additional([
+            $result = $this->reviewGeneratorService->generate($request);
+
+            return response()->json([
+                'data' => [],
                 'meta' => [
-                    'generated' => count($reviews),
+                    'generated'   => (int) ($result['generated'] ?? 0),
+                    'media_token' => $result['media_token'] ?? null,
                 ],
             ]);
         } catch (Exception $exception) {

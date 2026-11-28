@@ -56,6 +56,7 @@ class ReviewGeneratorService
     ];
 
     /**
+     * @return array{generated:int, media_token:?string}
      * @throws Exception
      */
     public function generate(AdminGenerateReviewsRequest $request): array
@@ -66,17 +67,12 @@ class ReviewGeneratorService
             $uploaded = $request->file('images', []) ?: [];
             $uploaded = array_values(array_filter($uploaded, fn ($file) => $file instanceof UploadedFile));
 
-            $tempPaths = [];
-            foreach ($uploaded as $file) {
-                $stored = $file->store('temp/review-generator');
-                if ($stored) {
-                    $tempPaths[] = Storage::path($stored);
-                }
-            }
+            [$mediaToken, $tempPaths] = $this->resolveMediaPool($request->input('media_token'), $uploaded);
 
-            $created = [];
+            $createdIds = [];
+            $postedAtById = [];
 
-            DB::transaction(function () use ($product, $quantity, $tempPaths, &$created) {
+            DB::transaction(function () use ($product, $quantity, &$createdIds, &$postedAtById) {
                 $existingTexts = ProductReview::query()
                     ->where('product_id', $product->id)
                     ->whereNotNull('review')
@@ -94,22 +90,22 @@ class ReviewGeneratorService
                     ->unique()
                     ->all();
 
-                $existingNames = User::query()
-                    ->whereIn('id', $existingUserIds)
-                    ->pluck('name')
-                    ->map(fn ($name) => $this->normalizeText((string) $name))
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->all();
+                $existingNames = empty($existingUserIds)
+                    ? []
+                    : User::query()
+                        ->whereIn('id', $existingUserIds)
+                        ->pluck('name')
+                        ->map(fn ($name) => $this->normalizeText((string) $name))
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
 
                 $reviewers = $this->buildReviewerQueue($quantity, $existingNames);
                 $timestamps = $this->buildReviewTimestamps($product, $quantity);
                 $usedComments = $existingTexts;
-                $usedNames = $existingNames;
 
                 foreach ($reviewers as $i => $reviewer) {
-                    $usedNames[] = $this->normalizeText($reviewer['name']);
                     $user = $this->resolveReviewer($reviewer['name'], $i);
                     $comment = $this->composeUniqueComment($usedComments, $reviewer['gender']);
                     $star = $this->pickStar();
@@ -127,24 +123,79 @@ class ReviewGeneratorService
                     $review->updated_at = $postedAt;
                     $review->save();
 
-                    $this->attachRandomImages($review, $tempPaths);
-                    $this->backdateReviewMedia($review, $postedAt);
-
-                    $created[] = $review->load(['product', 'user']);
+                    $createdIds[] = $review->id;
+                    $postedAtById[$review->id] = $postedAt;
                 }
             });
 
-            foreach ($tempPaths as $path) {
-                if (is_file($path)) {
-                    @unlink($path);
+            // Keep heavy media work outside the DB transaction to avoid timeouts / HTTP2 drops.
+            if (!empty($tempPaths) && !empty($createdIds)) {
+                $reviews = ProductReview::query()->whereIn('id', $createdIds)->get();
+                foreach ($reviews as $review) {
+                    $this->attachRandomImages($review, $tempPaths);
+                    if (isset($postedAtById[$review->id])) {
+                        $this->backdateReviewMedia($review, $postedAtById[$review->id]);
+                    }
                 }
             }
 
-            return $created;
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
+            if ($request->boolean('cleanup_media') && $mediaToken) {
+                Storage::deleteDirectory('temp/review-generator/' . $mediaToken);
+                $mediaToken = null;
+            }
+
+            return [
+                'generated'   => count($createdIds),
+                'media_token' => $mediaToken,
+            ];
+        } catch (\Throwable $exception) {
+            Log::error('Review generator failed', [
+                'message' => $exception->getMessage(),
+                'file'    => $exception->getFile(),
+                'line'    => $exception->getLine(),
+            ]);
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Upload once and reuse across progress batches via media_token.
+     *
+     * @param  array<int, UploadedFile>  $uploaded
+     * @return array{0:?string, 1:array<int, string>}
+     */
+    private function resolveMediaPool(?string $token, array $uploaded): array
+    {
+        if (!empty($uploaded)) {
+            $token = (string) Str::uuid();
+            foreach ($uploaded as $index => $file) {
+                $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+                $name = 'img_' . $index . '_' . Str::lower(Str::random(8)) . '.' . $ext;
+                $stored = $file->storeAs('temp/review-generator/' . $token, $name);
+                if (!$stored) {
+                    throw new Exception('Unable to store review generator image.', 422);
+                }
+            }
+        }
+
+        if (!$token || !Str::isUuid($token)) {
+            return [null, []];
+        }
+
+        $directory = 'temp/review-generator/' . $token;
+        if (!Storage::exists($directory)) {
+            return [$token, []];
+        }
+
+        $paths = [];
+        foreach (Storage::files($directory) as $relative) {
+            $absolute = Storage::path($relative);
+            if (is_file($absolute)) {
+                $paths[] = $absolute;
+            }
+        }
+
+        return [$token, $paths];
     }
 
     /**
@@ -319,19 +370,22 @@ class ReviewGeneratorService
             $email = 'reviewgen.' . $slug . '.' . $index . '.' . Str::lower(Str::random(6)) . '@shopperzz.internal';
         }
 
+        // Pre-hashed password (never used for login) — avoids slow bcrypt per fake reviewer.
         $user = User::create([
             'name'              => $name,
             'email'             => $email,
             'phone'             => $phoneBase,
             'username'          => 'rg_' . Str::lower(Str::random(10)),
-            'password'          => bcrypt(Str::random(16)),
+            'password'          => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
             'email_verified_at' => now(),
             'status'            => Status::ACTIVE,
             'country_code'      => '+92',
             'is_guest'          => Ask::YES,
         ]);
 
-        $user->assignRole(EnumRole::CUSTOMER);
+        if (!$user->hasRole(EnumRole::CUSTOMER)) {
+            $user->assignRole(EnumRole::CUSTOMER);
+        }
 
         return $user;
     }
