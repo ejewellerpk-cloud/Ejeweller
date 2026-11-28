@@ -726,12 +726,12 @@
     "src": "public/themes/default/fonts/urbanist/Urbanist-SemiBold.ttf"
   },
   "resources/css/app.css": {
-    "file": "assets/app-G7lOxeAo.css",
+    "file": "assets/app-C1X98Dma.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/admin.js": {
-    "file": "assets/admin-DMb-90OC.js",
+    "file": "assets/admin-BvZaSrnt.js",
     "name": "admin",
     "src": "resources/js/admin.js",
     "isEntry": true,
@@ -1012,7 +1012,7 @@
     ]
   },
   "resources/js/components/admin/campaigns/CampaignHubComponent.vue": {
-    "file": "assets/CampaignHubComponent-BbwPV97d.js",
+    "file": "assets/CampaignHubComponent-BvlgpxoP.js",
     "name": "CampaignHubComponent",
     "src": "resources/js/components/admin/campaigns/CampaignHubComponent.vue",
     "isDynamicEntry": true,
@@ -1027,6 +1027,9 @@
       "_vendor-select-CmqyVmW5.js",
       "_vendor-head-CX_2SlXv.js",
       "_vendor-i18n-Ca7tI5Ew.js"
+    ],
+    "css": [
+      "assets/CampaignHubComponent-Bf5f84eA.css"
     ]
   },
   "resources/js/components/admin/coupons/CouponComponent.vue": {
