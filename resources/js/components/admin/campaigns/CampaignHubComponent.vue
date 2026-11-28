@@ -27,6 +27,15 @@
                             <i class="fa-solid fa-arrow-left"></i>
                             <span>Back to list</span>
                         </button>
+                        <button
+                            v-if="!form.id"
+                            type="button"
+                            class="ch-btn ch-btn--soft"
+                            @click="fillDummyForm"
+                        >
+                            <i class="lab lab-line-flash"></i>
+                            <span>Fill dummy</span>
+                        </button>
                         <button type="button" class="ch-btn ch-btn--primary" @click="saveCampaign">
                             <i class="lab lab-fill-save"></i>
                             <span>Save campaign</span>
@@ -55,15 +64,16 @@
                             <input type="date" v-model="to" class="ch-date-range__input" @change="refreshActive" />
                         </div>
 
-                        <button
-                            v-if="activeTab === 'campaigns'"
-                            type="button"
-                            class="ch-btn ch-btn--primary"
-                            @click="openCreate"
-                        >
-                            <i class="lab lab-line-plus"></i>
-                            <span>New campaign</span>
-                        </button>
+                        <template v-if="activeTab === 'campaigns'">
+                            <button type="button" class="ch-btn ch-btn--soft" @click="createDummyCampaign">
+                                <i class="lab lab-line-flash"></i>
+                                <span>Dummy campaign</span>
+                            </button>
+                            <button type="button" class="ch-btn ch-btn--primary" @click="openCreate">
+                                <i class="lab lab-line-plus"></i>
+                                <span>New campaign</span>
+                            </button>
+                        </template>
                     </template>
                 </div>
             </header>
@@ -308,6 +318,14 @@
 
                     <div class="ch-editor__foot">
                         <button type="button" class="ch-btn ch-btn--soft" @click="closeDrawer">Cancel</button>
+                        <button
+                            v-if="!form.id"
+                            type="button"
+                            class="ch-btn ch-btn--soft"
+                            @click="fillDummyForm"
+                        >
+                            Fill dummy data
+                        </button>
                         <button type="submit" class="ch-btn ch-btn--primary">Save campaign</button>
                     </div>
                 </form>
@@ -452,7 +470,10 @@
                     <div class="ch-empty__icon"><i class="lab lab-line-promotion"></i></div>
                     <h3>No campaigns yet</h3>
                     <p>Create a Meta campaign, push it to Ads Manager, then track spend & ROAS here.</p>
-                    <button type="button" class="ch-btn ch-btn--primary" @click="openCreate">Create first campaign</button>
+                    <div class="ch-toolbar" style="justify-content:center">
+                        <button type="button" class="ch-btn ch-btn--soft" @click="createDummyCampaign">Create dummy campaign</button>
+                        <button type="button" class="ch-btn ch-btn--primary" @click="openCreate">Create first campaign</button>
+                    </div>
                 </div>
             </section>
 
@@ -973,6 +994,74 @@ export default {
             this.$nextTick(() => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
+        },
+        dummyCampaignPayload(products = []) {
+            const stamp = Date.now().toString().slice(-6);
+            const start = new Date();
+            const end = new Date();
+            end.setDate(end.getDate() + 14);
+            const first = products[0];
+
+            return {
+                name: `Dummy Test Campaign ${stamp}`,
+                channel: 'meta',
+                objective: 'conversions',
+                status: 'draft',
+                utm_source: 'facebook',
+                utm_medium: 'cpc',
+                utm_campaign: `dummy-test-${stamp}`,
+                utm_content: 'dummy_ad',
+                utm_term: 'jewellery',
+                landing_path: first?.slug ? `/product/${first.slug}` : '/',
+                daily_budget: 500,
+                total_budget: 5000,
+                starts_at: start.toISOString().slice(0, 10),
+                ends_at: end.toISOString().slice(0, 10),
+                notes: 'Auto-generated dummy campaign for testing. Safe to delete.',
+                product_ids: products.slice(0, 2).map((p) => p.id),
+            };
+        },
+        async fillDummyForm() {
+            this.loading.isActive = true;
+            try {
+                if (!this.productResults.length) {
+                    await this.loadProductPicker();
+                }
+                const products = this.productResults.slice(0, 2);
+                const dummy = this.dummyCampaignPayload(products);
+                this.form = {
+                    ...emptyForm(),
+                    ...dummy,
+                    id: this.form.id,
+                };
+                this.selectedProducts = [...products];
+                this.productPreview = null;
+                if (products[0]) {
+                    await this.prepareProductById(products[0].id);
+                }
+                alertService.success('Dummy data filled — review and Save');
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        async createDummyCampaign() {
+            this.loading.isActive = true;
+            try {
+                const res = await axios.get('admin/campaigns/products', { params: { limit: 3 } });
+                const products = res.data?.data || [];
+                const payload = this.dummyCampaignPayload(products);
+                await axios.post('admin/campaigns', payload);
+                alertService.successFlip(1, 'Dummy campaign');
+                this.editorOpen = false;
+                this.activeTab = 'campaigns';
+                await this.loadCampaigns();
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
+            }
         },
         openEdit(c) {
             const products = c.products || [];
