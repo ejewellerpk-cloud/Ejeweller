@@ -607,7 +607,7 @@
             </button>
             <div class="text-white text-sm sm:text-base font-medium tracking-wide drop-shadow-md text-center">
                 <div v-if="previewSlides.length > 0">
-                    <span>{{ previewLocalCounter }}</span>
+                    <span>{{ previewGlobalCounter }}</span>
                     <span v-if="previewGalleryLoading" class="block text-[11px] sm:text-xs text-white/60 font-normal mt-0.5">
                         Loading more photos…
                     </span>
@@ -1143,12 +1143,12 @@ export default {
         isPreviewImageZoomed: function () {
             return this.previewPinch.active || this.previewPinch.panning || this.previewPinch.scale > 1.05;
         },
-        previewLocalCounter: function () {
-            const slide = this.previewSlides[this.previewIndex];
-            if (!slide) {
+        previewGlobalCounter: function () {
+            if (!this.previewSlides.length) {
                 return '';
             }
-            return `${slide.localIndex + 1} / ${slide.localCount}`;
+            const current = Math.min(this.previewIndex + 1, this.previewSlides.length);
+            return `${current} / ${this.previewSlides.length}`;
         },
         canPreviewPrev: function () {
             return this.previewIndex > 0;
