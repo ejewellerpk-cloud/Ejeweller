@@ -7,8 +7,10 @@ use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\MarketingCampaignResource;
 use App\Models\MarketingCampaign;
 use App\Models\MarketingCampaignSpend;
+use App\Models\Product;
 use App\Services\CartRecoveryService;
 use App\Services\MarketingCampaignService;
+use App\Services\MetaCatalogSyncService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -20,6 +22,7 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
     public function __construct(
         protected MarketingCampaignService $campaigns,
         protected CartRecoveryService $recovery,
+        protected MetaCatalogSyncService $metaCatalog,
     ) {
         parent::__construct();
     }
@@ -185,13 +188,91 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
     public function products(Request $request)
     {
         try {
+            $items = $this->campaigns->productsForPicker(
+                $request->input('search'),
+                (int) $request->input('limit', 40)
+            );
+            $statuses = $this->metaCatalog->statusesForProductIds(array_column($items, 'id'));
+            foreach ($items as &$item) {
+                $item['meta_sync'] = $statuses[$item['id']] ?? null;
+            }
+
+            return response(['status' => true, 'data' => $items]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function prepareProduct(Product $product)
+    {
+        try {
+            $data = $this->metaCatalog->prepare($product, false);
+
+            return response(['status' => (bool) ($data['ok'] ?? false), 'data' => $data]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function validateProduct(Product $product)
+    {
+        try {
+            $data = $this->metaCatalog->validate($product);
+
+            return response(['status' => (bool) ($data['ok'] ?? false), 'data' => $data]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function syncProduct(Product $product, Request $request)
+    {
+        try {
+            $result = $this->metaCatalog->syncProduct($product, (bool) $request->boolean('force'));
+
             return response([
-                'status' => true,
-                'data' => $this->campaigns->productsForPicker(
-                    $request->input('search'),
-                    (int) $request->input('limit', 40)
-                ),
-            ]);
+                'status' => (bool) ($result['ok'] ?? false),
+                'message' => $result['message'] ?? null,
+                'data' => $result,
+            ], ($result['ok'] ?? false) ? 200 : 422);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function syncProductsBulk(Request $request)
+    {
+        $data = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+            'force' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            $result = $this->metaCatalog->syncMany($data['product_ids'], (bool) ($data['force'] ?? false));
+
+            return response(['status' => true, 'data' => $result]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function catalogSyncStatus()
+    {
+        try {
+            return response(['status' => true, 'data' => $this->metaCatalog->dashboard()]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function catalogRetryFailed(Request $request)
+    {
+        try {
+            $ids = $request->input('product_ids');
+            $result = $this->metaCatalog->retryFailed(is_array($ids) ? $ids : null);
+
+            return response(['status' => true, 'data' => $result]);
         } catch (Exception $e) {
             return response(['status' => false, 'message' => $e->getMessage()], 422);
         }

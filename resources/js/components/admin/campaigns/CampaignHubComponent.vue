@@ -376,20 +376,82 @@
 
             <!-- CATALOG -->
             <section v-show="activeTab === 'catalog'" class="ch-panel">
-                <div class="ch-feature ch-feature--catalog">
-                    <div class="ch-feature__copy">
-                        <h2 class="ch-panel__title">Meta product catalog</h2>
+                <div class="ch-panel__head">
+                    <div>
+                        <h2 class="ch-panel__title">Meta catalog sync</h2>
                         <p class="ch-panel__hint">
-                            {{ catalog.count || 0 }} products ready. Paste this feed URL into Meta Commerce Manager → Catalog → Data Sources.
+                            Products sync from your database into the connected Meta Catalog — no manual re-entry.
+                            <span v-if="!catalogSync.configured" class="ch-warn-inline"> Set Catalog ID in Facebook CAPI settings.</span>
                         </p>
-                        <code class="ch-feed-url">{{ catalog.csv_url || feedUrl }}</code>
-                        <div class="ch-toolbar mt-4">
-                            <button type="button" class="ch-btn ch-btn--primary" @click="copyUrl(catalog.csv_url || feedUrl)">
-                                Copy feed URL
-                            </button>
-                            <a :href="catalog.csv_url || feedUrl" target="_blank" class="ch-btn ch-btn--soft">Open CSV</a>
+                    </div>
+                    <div class="ch-toolbar">
+                        <button type="button" class="ch-btn ch-btn--soft" @click="loadCatalogSync">Refresh</button>
+                        <button type="button" class="ch-btn ch-btn--primary" @click="syncSelectedToMeta" :disabled="!selectedProducts.length">
+                            Sync selected ({{ selectedProducts.length || 0 }})
+                        </button>
+                        <button type="button" class="ch-btn ch-btn--dark" @click="retryFailedCatalog">Retry failed</button>
+                    </div>
+                </div>
+
+                <div class="ch-kpi-grid">
+                    <div class="ch-kpi"><span class="ch-kpi__label">Tracked</span><strong class="ch-kpi__value">{{ catalogTotals.tracked || 0 }}</strong></div>
+                    <div class="ch-kpi"><span class="ch-kpi__label">Synced</span><strong class="ch-kpi__value">{{ catalogTotals.synced || 0 }}</strong></div>
+                    <div class="ch-kpi"><span class="ch-kpi__label">Pending</span><strong class="ch-kpi__value">{{ catalogTotals.pending || 0 }}</strong></div>
+                    <div class="ch-kpi"><span class="ch-kpi__label">Failed</span><strong class="ch-kpi__value">{{ catalogTotals.failed || 0 }}</strong></div>
+                    <div class="ch-kpi"><span class="ch-kpi__label">Needs attention</span><strong class="ch-kpi__value">{{ catalogTotals.needs_attention || 0 }}</strong></div>
+                    <div class="ch-kpi"><span class="ch-kpi__label">Missing images</span><strong class="ch-kpi__value">{{ catalogTotals.missing_images || 0 }}</strong></div>
+                </div>
+
+                <div class="ch-feature ch-feature--catalog mt-4">
+                    <div class="ch-feature__copy">
+                        <h3 class="ch-panel__title" style="font-size:1rem">CSV feed (fallback)</h3>
+                        <p class="ch-panel__hint">
+                            {{ catalog.count || 0 }} active products. Optional: paste feed URL into Commerce Manager → Data Sources.
+                        </p>
+                        <code class="ch-feed-url">{{ catalogSync.csv_url || catalog.csv_url || feedUrl }}</code>
+                        <div class="ch-toolbar mt-3">
+                            <button type="button" class="ch-btn ch-btn--soft" @click="copyUrl(catalogSync.csv_url || catalog.csv_url || feedUrl)">Copy feed URL</button>
+                            <a :href="catalogSync.csv_url || catalog.csv_url || feedUrl" target="_blank" class="ch-btn ch-btn--soft">Open CSV</a>
                         </div>
                     </div>
+                </div>
+
+                <div class="ch-table-wrap mt-4">
+                    <table class="ch-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Status</th>
+                                <th class="hidden sm:table-cell">Last sync</th>
+                                <th>Issues</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in (catalogSync.recent || [])" :key="'cs-' + row.product_id">
+                                <td>
+                                    <div class="ch-td-title">{{ row.name || ('#' + row.product_id) }}</div>
+                                    <div class="ch-td-sub">Retailer · {{ row.retailer_id }}</div>
+                                </td>
+                                <td><span class="ch-sync-badge" :class="'is-' + row.sync_status">{{ row.sync_status }}</span></td>
+                                <td class="hidden sm:table-cell text-xs text-[var(--ch-muted)]">{{ row.last_synced_at || '—' }}</td>
+                                <td class="text-xs text-[var(--ch-muted)]">
+                                    <span v-if="row.last_error">{{ row.last_error }}</span>
+                                    <span v-else-if="(row.errors || []).length">{{ row.errors[0].message }}</span>
+                                    <span v-else>—</span>
+                                </td>
+                                <td>
+                                    <div class="ch-row-actions justify-end">
+                                        <button type="button" class="ch-btn ch-btn--soft ch-btn--sm" @click="prepareProductById(row.product_id)">Preview</button>
+                                        <button type="button" class="ch-btn ch-btn--primary ch-btn--sm" @click="syncProductById(row.product_id)">Sync</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!(catalogSync.recent || []).length">
+                                <td colspan="5" class="ch-empty-cell">No synced products yet. Select products in a campaign and click Sync to Meta.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </div>
@@ -508,14 +570,22 @@
                     <section class="ch-form-section">
                         <div class="ch-form-section__head">
                             <div>
-                                <h4 class="ch-form-section__title">Products & media</h4>
+                                <h4 class="ch-form-section__title">Products & Meta catalog</h4>
                                 <p class="ch-panel__hint">
-                                    Select products — their images (and video links) attach automatically. Push to Meta uses covers for creatives.
+                                    Select a product — details, images, price, and landing URL load from your database. Sync to Meta Catalog before or after saving the campaign.
                                 </p>
                             </div>
-                            <span class="ch-pill-count" v-if="selectedProducts.length">
-                                {{ selectedProducts.length }} selected
-                            </span>
+                            <div class="ch-toolbar">
+                                <span class="ch-pill-count" v-if="selectedProducts.length">{{ selectedProducts.length }} selected</span>
+                                <button
+                                    v-if="selectedProducts.length"
+                                    type="button"
+                                    class="ch-btn ch-btn--primary ch-btn--sm"
+                                    @click="syncSelectedToMeta"
+                                >
+                                    Sync selected to Meta
+                                </button>
+                            </div>
                         </div>
 
                         <div class="ch-selected-products" v-if="selectedProducts.length">
@@ -523,21 +593,58 @@
                                 v-for="p in selectedProducts"
                                 :key="'sel-' + p.id"
                                 class="ch-selected-product"
+                                :class="{ 'is-active': productPreview?.product_id === p.id }"
+                                @click="prepareProductById(p.id)"
                             >
                                 <img :src="p.cover || p.thumb" :alt="p.name" />
                                 <div class="min-w-0">
                                     <strong class="truncate block">{{ p.name }}</strong>
                                     <span class="ch-selected-product__meta">
-                                        {{ (p.images || []).length || 1 }} image{{ ((p.images || []).length || 1) === 1 ? '' : 's' }}
-                                        <template v-if="(p.videos || []).length">
-                                            · {{ p.videos.length }} video{{ p.videos.length === 1 ? '' : 's' }}
-                                        </template>
+                                        {{ (p.images || []).length || 1 }} img
+                                        <template v-if="(p.videos || []).length"> · {{ p.videos.length }} vid</template>
+                                        <template v-if="p.meta_sync?.sync_status"> · {{ p.meta_sync.sync_status }}</template>
                                     </span>
                                 </div>
-                                <button type="button" class="ch-icon-btn" aria-label="Remove" @click="removeSelectedProduct(p.id)">
+                                <button type="button" class="ch-icon-btn" aria-label="Remove" @click.stop="removeSelectedProduct(p.id)">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </article>
+                        </div>
+
+                        <div v-if="productPreview" class="ch-meta-preview">
+                            <div class="ch-meta-preview__media">
+                                <img :src="productPreview.preview?.image || productPreview.payload?.image_link" alt="" />
+                            </div>
+                            <div class="ch-meta-preview__body">
+                                <div class="ch-form-section__head" style="margin-bottom:0.5rem">
+                                    <div>
+                                        <h5 class="ch-meta-preview__title">{{ productPreview.preview?.title }}</h5>
+                                        <p class="ch-panel__hint">{{ productPreview.preview?.url }}</p>
+                                    </div>
+                                    <span class="ch-sync-badge" :class="'is-' + (productPreview.sync_status || productPreview.meta?.sync_status || 'pending')">
+                                        {{ productPreview.sync_status || productPreview.meta?.sync_status || 'pending' }}
+                                    </span>
+                                </div>
+                                <p class="ch-meta-preview__desc">{{ productPreview.preview?.description }}</p>
+                                <div class="ch-meta-preview__facts">
+                                    <span>Price {{ productPreview.preview?.price }}</span>
+                                    <span v-if="productPreview.preview?.sale_price">Sale {{ productPreview.preview.sale_price }}</span>
+                                    <span>{{ productPreview.preview?.availability }}</span>
+                                    <span v-if="productPreview.preview?.brand">{{ productPreview.preview.brand }}</span>
+                                    <span v-if="productPreview.preview?.category">{{ productPreview.preview.category }}</span>
+                                </div>
+                                <ul v-if="(productPreview.errors || []).length" class="ch-meta-list is-error">
+                                    <li v-for="(e, i) in productPreview.errors" :key="'pe-' + i">{{ e.message || e }}</li>
+                                </ul>
+                                <ul v-if="(productPreview.warnings || []).length" class="ch-meta-list is-warn">
+                                    <li v-for="(w, i) in productPreview.warnings" :key="'pw-' + i">{{ w.message || w }}</li>
+                                </ul>
+                                <div class="ch-toolbar mt-3">
+                                    <button type="button" class="ch-btn ch-btn--soft ch-btn--sm" @click="validateProductById(productPreview.product_id)">Validate</button>
+                                    <button type="button" class="ch-btn ch-btn--primary ch-btn--sm" @click="syncProductById(productPreview.product_id)">Sync to Meta</button>
+                                    <a v-if="productPreview.preview?.url" :href="productPreview.preview.url" target="_blank" class="ch-btn ch-btn--soft ch-btn--sm">Open landing</a>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="ch-product-search">
@@ -561,13 +668,19 @@
                                 <div class="ch-product-tile__media">
                                     <img :src="p.thumb || p.cover" :alt="p.name" />
                                     <span v-if="(p.videos || []).length" class="ch-product-tile__badge">Video</span>
+                                    <span v-if="p.meta_sync?.sync_status" class="ch-product-tile__sync" :class="'is-' + p.meta_sync.sync_status">
+                                        {{ p.meta_sync.sync_status }}
+                                    </span>
                                     <span v-if="isProductSelected(p.id)" class="ch-product-tile__check">
                                         <i class="fa-solid fa-check"></i>
                                     </span>
                                 </div>
                                 <div class="ch-product-tile__body">
                                     <strong class="truncate">{{ p.name }}</strong>
-                                    <span>{{ formatMoney(p.selling_price) }}</span>
+                                    <span>
+                                        <template v-if="p.sale_price">{{ formatMoney(p.sale_price) }} · </template>
+                                        {{ formatMoney(p.selling_price) }}
+                                    </span>
                                 </div>
                             </button>
                         </div>
@@ -675,6 +788,7 @@ export default {
             audience: {},
             audienceSegment: 'all',
             catalog: {},
+            catalogSync: { totals: {}, recent: [], configured: false },
             feedUrl: `${window.location.origin}/feeds/meta-catalog.csv`,
             drawerOpen: false,
             form: emptyForm(),
@@ -683,6 +797,7 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productSearchTimer: null,
+            productPreview: null,
             spendOpen: false,
             spendCampaign: null,
             spendForm: { spend_date: to.toISOString().slice(0, 10), spend: '', impressions: '', clicks: '' },
@@ -699,6 +814,9 @@ export default {
                 { label: 'ROAS', value: t.roas != null ? `${t.roas}x` : '—' },
             ];
         },
+        catalogTotals() {
+            return this.catalogSync.totals || {};
+        },
     },
     mounted() {
         this.loadCampaigns();
@@ -714,7 +832,10 @@ export default {
             if (this.activeTab === 'performance') this.loadPerformance();
             if (this.activeTab === 'recovery') this.loadRecovery();
             if (this.activeTab === 'audiences') this.loadAudiences();
-            if (this.activeTab === 'catalog') this.loadCatalog();
+            if (this.activeTab === 'catalog') {
+                this.loadCatalog();
+                this.loadCatalogSync();
+            }
         },
         formatMoney(v) {
             const n = Number(v || 0);
@@ -822,9 +943,18 @@ export default {
                 this.loading.isActive = false;
             }
         },
+        async loadCatalogSync() {
+            try {
+                const res = await axios.get('admin/campaigns/catalog/sync-status');
+                this.catalogSync = res.data?.data || { totals: {}, recent: [] };
+            } catch (e) {
+                this.catalogSync = { totals: {}, recent: [], configured: false };
+            }
+        },
         openCreate() {
             this.form = emptyForm();
             this.selectedProducts = [];
+            this.productPreview = null;
             this.productSearch = '';
             this.drawerOpen = true;
             this.loadProductPicker();
@@ -839,12 +969,15 @@ export default {
                 product_ids: products.map((p) => p.id),
             };
             this.selectedProducts = [...products];
+            this.productPreview = null;
             this.productSearch = '';
             this.drawerOpen = true;
             this.loadProductPicker();
+            if (products[0]) this.prepareProductById(products[0].id);
         },
         closeDrawer() {
             this.drawerOpen = false;
+            this.productPreview = null;
         },
         isProductSelected(id) {
             return this.form.product_ids.includes(id);
@@ -856,10 +989,12 @@ export default {
             }
             this.selectedProducts = [...this.selectedProducts, product];
             this.form.product_ids = this.selectedProducts.map((p) => p.id);
+            this.prepareProductById(product.id);
         },
         removeSelectedProduct(id) {
             this.selectedProducts = this.selectedProducts.filter((p) => p.id !== id);
             this.form.product_ids = this.selectedProducts.map((p) => p.id);
+            if (this.productPreview?.product_id === id) this.productPreview = null;
         },
         onProductSearch() {
             clearTimeout(this.productSearchTimer);
@@ -877,6 +1012,96 @@ export default {
             } finally {
                 this.productSearchLoading = false;
             }
+        },
+        async prepareProductById(productId) {
+            if (!productId) return;
+            try {
+                const res = await axios.get(`admin/campaigns/products/${productId}/prepare`);
+                this.productPreview = res.data?.data || null;
+                this.applyMetaSyncToSelected(productId, this.productPreview?.meta);
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            }
+        },
+        async validateProductById(productId) {
+            try {
+                const res = await axios.post(`admin/campaigns/products/${productId}/validate`);
+                this.productPreview = res.data?.data || null;
+                if (res.data?.status) alertService.success('Product validated for Meta');
+                else alertService.error('Validation issues found — check preview');
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            }
+        },
+        async syncProductById(productId) {
+            this.loading.isActive = true;
+            try {
+                const res = await axios.post(`admin/campaigns/products/${productId}/sync-meta`, { force: true });
+                const d = res.data?.data || {};
+                if (res.data?.status || d.ok) {
+                    alertService.success(res.data?.message || d.message || 'Synced to Meta Catalog');
+                    this.productPreview = d.data || d;
+                    this.applyMetaSyncToSelected(productId, this.productPreview?.meta || this.productPreview);
+                    this.loadCatalogSync();
+                    this.loadProductPicker();
+                } else {
+                    alertService.error(res.data?.message || d.message || 'Sync failed');
+                    if (d.data) this.productPreview = d.data;
+                }
+            } catch (e) {
+                const d = e.response?.data?.data;
+                if (d?.data) this.productPreview = d.data;
+                else if (d) this.productPreview = d;
+                alertService.error(e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        async syncSelectedToMeta() {
+            const ids = this.selectedProducts.map((p) => p.id);
+            if (!ids.length) {
+                alertService.error('Select products first');
+                return;
+            }
+            if (!confirm(`Sync ${ids.length} product(s) to Meta Catalog?`)) return;
+            this.loading.isActive = true;
+            try {
+                const res = await axios.post('admin/campaigns/products/sync-meta-bulk', {
+                    product_ids: ids,
+                    force: true,
+                });
+                const d = res.data?.data || {};
+                alertService.success(`Synced ok:${d.ok || 0} failed:${d.failed || 0} skipped:${d.skipped || 0}`);
+                this.loadCatalogSync();
+                this.loadProductPicker();
+                if (this.productPreview?.product_id) this.prepareProductById(this.productPreview.product_id);
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        async retryFailedCatalog() {
+            this.loading.isActive = true;
+            try {
+                const res = await axios.post('admin/campaigns/catalog/retry-failed');
+                const d = res.data?.data || {};
+                alertService.success(`Retry ok:${d.ok || 0} failed:${d.failed || 0}`);
+                this.loadCatalogSync();
+            } catch (e) {
+                alertService.error(e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
+            }
+        },
+        applyMetaSyncToSelected(productId, meta) {
+            if (!meta) return;
+            this.selectedProducts = this.selectedProducts.map((p) => (
+                p.id === productId ? { ...p, meta_sync: meta } : p
+            ));
+            this.productResults = this.productResults.map((p) => (
+                p.id === productId ? { ...p, meta_sync: meta } : p
+            ));
         },
         async saveCampaign() {
             this.loading.isActive = true;
@@ -1906,6 +2131,127 @@ export default {
 
 .ch-product-tile__body span {
     color: var(--ch-muted);
+}
+
+.ch-product-tile__sync {
+    position: absolute;
+    left: 0.4rem;
+    bottom: 0.4rem;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.35rem;
+    border-radius: 6px;
+    background: rgba(28, 25, 23, 0.75);
+    color: #fff;
+}
+
+.ch-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: var(--ch-soft);
+    color: var(--ch-muted);
+}
+
+.ch-sync-badge.is-synced { background: rgba(15, 118, 110, 0.12); color: var(--ch-accent); }
+.ch-sync-badge.is-pending,
+.ch-sync-badge.is-stale { background: rgba(180, 83, 9, 0.12); color: var(--ch-accent-2); }
+.ch-sync-badge.is-failed,
+.ch-sync-badge.is-needs_attention { background: rgba(185, 28, 28, 0.1); color: var(--ch-danger); }
+
+.ch-selected-product.is-active {
+    border-color: var(--ch-accent);
+    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
+}
+
+.ch-selected-product { cursor: pointer; }
+
+.ch-meta-preview {
+    display: grid;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem;
+    border: 1px solid var(--ch-line);
+    border-radius: 14px;
+    background: #fff;
+}
+
+@media (min-width: 768px) {
+    .ch-meta-preview {
+        grid-template-columns: 8.5rem 1fr;
+        align-items: start;
+    }
+}
+
+.ch-meta-preview__media {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--ch-soft);
+}
+
+.ch-meta-preview__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ch-meta-preview__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.ch-meta-preview__desc {
+    margin: 0.35rem 0 0.55rem;
+    color: var(--ch-muted);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ch-meta-preview__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.ch-meta-preview__facts span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: var(--ch-soft);
+    color: var(--ch-ink);
+}
+
+.ch-meta-list {
+    margin: 0.55rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.78rem;
+}
+
+.ch-meta-list.is-error { color: var(--ch-danger); }
+.ch-meta-list.is-warn { color: var(--ch-accent-2); }
+
+.ch-warn-inline { color: var(--ch-accent-2); font-weight: 700; }
+
+.ch-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .ch-modal {

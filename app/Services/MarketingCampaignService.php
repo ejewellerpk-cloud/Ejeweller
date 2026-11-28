@@ -118,7 +118,8 @@ class MarketingCampaignService
         $limit = max(1, min(80, $limit));
 
         $query = Product::query()
-            ->with(['videos', 'media'])
+            ->with(['videos', 'media', 'brand:id,name', 'category:id,name'])
+            ->withSum('productStocks as product_stocks_sum_quantity', 'quantity')
             ->where('status', \App\Enums\Status::ACTIVE)
             ->when($search, function ($q) use ($search) {
                 $term = '%' . trim($search) . '%';
@@ -156,15 +157,36 @@ class MarketingCampaignService
 
     private function mapProductForCampaign(Product $product): array
     {
+        $price = (float) ($product->selling_price ?? 0);
+        $offerActive = \App\Libraries\AppLibrary::isProductOfferActive(
+            $product->discount,
+            $product->offer_start_date,
+            $product->offer_end_date
+        );
+        $salePrice = $offerActive
+            ? \App\Libraries\AppLibrary::productOfferPrice(
+                $price,
+                $product->discount,
+                $product->offer_start_date,
+                $product->offer_end_date
+            )
+            : null;
+
         return [
             'id' => $product->id,
             'name' => $product->name,
             'sku' => $product->sku,
             'slug' => $product->slug,
-            'selling_price' => (float) ($product->selling_price ?? 0),
+            'description' => \Illuminate\Support\Str::limit(strip_tags((string) ($product->description ?? '')), 280),
+            'selling_price' => $price,
+            'discount' => (float) ($product->discount ?? 0),
+            'sale_price' => $salePrice !== null && $salePrice < $price ? round($salePrice, 2) : null,
+            'category' => $product->category?->name,
+            'brand' => $product->brand?->name,
+            'stock' => (int) $product->stock,
             'cover' => $product->cover,
             'thumb' => $product->thumb,
-            'images' => array_slice($product->images ?? [], 0, 4),
+            'images' => array_slice($product->images ?? [], 0, 8),
             'videos' => $product->videos->map(fn ($v) => [
                 'id' => $v->id,
                 'video_provider' => $v->video_provider,

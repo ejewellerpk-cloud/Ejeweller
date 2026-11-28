@@ -68,12 +68,21 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="site_meta_catalog_id">
+                            Meta Product Catalog ID
+                        </label>
+                        <input v-model="form.site_meta_catalog_id" type="text" id="site_meta_catalog_id"
+                            class="db-field-control" placeholder="123456789012345" />
+                        <small class="text-gray-500">Commerce Manager → Catalog → Settings. Required for automatic product sync.</small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title" for="site_meta_marketing_token">
                             Meta Marketing API Token (optional)
                         </label>
                         <input v-model="form.site_meta_marketing_token" type="text" id="site_meta_marketing_token"
                             class="db-field-control" />
-                        <small class="text-gray-500">Needs ads_management permission. CSV export works without this.</small>
+                        <small class="text-gray-500">Needs ads_management + catalog_management. CSV export works without this.</small>
                     </div>
 
                     <div class="form-col-12" v-if="metaStatusMessage">
@@ -139,6 +148,7 @@ export default {
                 site_facebook_capi_status: null,
                 site_meta_ad_account_id: null,
                 site_meta_page_id: null,
+                site_meta_catalog_id: null,
                 site_meta_marketing_token: null,
                 site_guest_checkout: null,
             },
@@ -183,6 +193,7 @@ export default {
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_meta_ad_account_id: res.data.data.site_meta_ad_account_id,
                     site_meta_page_id: res.data.data.site_meta_page_id,
+                    site_meta_catalog_id: res.data.data.site_meta_catalog_id,
                     site_meta_marketing_token: res.data.data.site_meta_marketing_token,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                 }

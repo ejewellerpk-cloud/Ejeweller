@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\PersonalAccessToken;
+use App\Models\Product;
 use App\MediaLibrary\SafeFileManipulator;
+use App\Observers\ProductMetaCatalogObserver;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
@@ -29,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
+        Product::observe(ProductMetaCatalogObserver::class);
+
         $storageLink = public_path('storage');
         $storageTarget = storage_path('app/public');
         if (!file_exists($storageLink)) {
@@ -52,6 +56,10 @@ class AppServiceProvider extends ServiceProvider
             $schedule->command('campaigns:process-recovery --enqueue')
                 ->everyThirtyMinutes()
                 ->withoutOverlapping(15);
+
+            $schedule->command('meta-catalog:sync-stale')
+                ->everyFifteenMinutes()
+                ->withoutOverlapping(10);
         });
     }
 }

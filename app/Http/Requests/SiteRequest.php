@@ -53,6 +53,7 @@ class SiteRequest extends FormRequest
             'site_facebook_capi_status'                   => ['nullable', 'numeric'],
             'site_meta_ad_account_id'                     => ['nullable', 'string', 'max:64'],
             'site_meta_page_id'                           => ['nullable', 'string', 'max:64'],
+            'site_meta_catalog_id'                        => ['nullable', 'string', 'max:64'],
             'site_meta_marketing_token'                   => ['nullable', 'string', 'max:2048'],
             'site_guest_checkout'                         => ['nullable', 'numeric'],
             'site_default_checkout_country'               => ['nullable', 'string', 'max:190'],
