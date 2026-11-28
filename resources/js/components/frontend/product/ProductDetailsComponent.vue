@@ -401,7 +401,7 @@
                                 <div class="flex flex-wrap gap-3" v-if="review.images && review.images.length > 0">
                                     <img v-for="(reviewImage, imgIndex) in review.images" :key="imgIndex" :src="reviewImage" alt="review image" loading="lazy"
                                         class="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-85 transition-all duration-300 border border-gray-200" 
-                                        @click="previewImage(review.images, imgIndex, review)" data-modal="imagePreviewModal">
+                                        @click="previewImage(review, imgIndex)" data-modal="imagePreviewModal">
                                 </div>
                             </div>
 
@@ -605,24 +605,55 @@
             <button @click="hidePreviewImage" class="text-white hover:text-gray-300 transition-colors pointer-events-auto p-2">
                 <i class="fa-solid fa-xmark text-xl sm:text-2xl"></i>
             </button>
-            <div class="text-white text-sm sm:text-base font-medium tracking-wide drop-shadow-md">
-                <span v-if="previewImages && previewImages.length > 0">
-                    {{ previewIndex + 1 }} / {{ previewImages.length }}
-                </span>
+            <div class="text-white text-sm sm:text-base font-medium tracking-wide drop-shadow-md text-center">
+                <div v-if="previewSlides.length > 0">
+                    <span>{{ previewLocalCounter }}</span>
+                    <span v-if="previewSlides.length > 1" class="block text-[11px] sm:text-xs text-white/60 font-normal mt-0.5">
+                        Swipe for more photos
+                    </span>
+                </div>
             </div>
             <!-- Empty div for flex balance -->
             <div class="w-10"></div>
         </div>
 
+        <!-- Desktop / tablet arrows -->
+        <button
+            v-if="canPreviewPrev"
+            type="button"
+            class="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white items-center justify-center backdrop-blur-sm transition pointer-events-auto"
+            @click.stop="slidePreviewPrev"
+            aria-label="Previous photo"
+        >
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+        </button>
+        <button
+            v-if="canPreviewNext"
+            type="button"
+            class="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white items-center justify-center backdrop-blur-sm transition pointer-events-auto"
+            @click.stop="slidePreviewNext"
+            aria-label="Next photo"
+        >
+            <i class="fa-solid fa-chevron-right text-sm"></i>
+        </button>
+
         <!-- Swiper Container (Full Screen) -->
-        <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewImages && previewImages.length > 0">
-            <Swiper :initialSlide="previewIndex"
+        <div class="absolute inset-0 w-full h-full flex items-center justify-center" v-if="previewSlides.length > 0">
+            <Swiper
+                :key="'review-preview-' + previewSessionKey"
+                :initialSlide="previewIndex"
                 v-bind="galleryLightboxSwiperProps"
                 :allowTouchMove="!isPreviewImageZoomed"
+                @swiper="onPreviewSwiper"
                 @slideChange="handlePreviewSlideChange"
                 :modules="modules"
                 class="w-full h-full product-image-preview-swiper">
-                <SwiperSlide v-for="(img, idx) in previewImages" :key="idx" class="w-full h-full" @click.self="hidePreviewImage">
+                <SwiperSlide
+                    v-for="(slide, idx) in previewSlides"
+                    :key="(slide.reviewId || 'r') + '-' + idx"
+                    class="w-full h-full"
+                    @click.self="hidePreviewImage"
+                >
                     <div class="w-full h-full flex items-center justify-center p-4 overflow-hidden lightbox-image-zoom-wrap"
                         @click="onPreviewImageTap($event)"
                         @click.self="hidePreviewImage"
@@ -631,7 +662,7 @@
                         @touchend="onPreviewPinchEnd"
                         @touchcancel="onPreviewPinchEnd"
                         @wheel="onPreviewWheel($event, idx)">
-                        <img :src="img" alt="review"
+                        <img :src="slide.url" alt="review"
                             :style="getPreviewImageStyle(idx)"
                             class="max-w-full max-h-[85vh] object-contain transition-transform duration-150 ease-out origin-center select-none pointer-events-none"
                             loading="lazy" />
@@ -921,8 +952,10 @@ export default {
                 totalPrice: 0,
                 maximum_purchase_quantity: 0
             },
-            previewImages: [],
+            previewSlides: [],
             previewIndex: 0,
+            previewSessionKey: 0,
+            previewSwiperInstance: null,
             previewReview: null,
             previewHistoryActive: false,
             _onPreviewPopState: null,
@@ -1104,6 +1137,19 @@ export default {
         },
         isPreviewImageZoomed: function () {
             return this.previewPinch.active || this.previewPinch.panning || this.previewPinch.scale > 1.05;
+        },
+        previewLocalCounter: function () {
+            const slide = this.previewSlides[this.previewIndex];
+            if (!slide) {
+                return '';
+            }
+            return `${slide.localIndex + 1} / ${slide.localCount}`;
+        },
+        canPreviewPrev: function () {
+            return this.previewIndex > 0;
+        },
+        canPreviewNext: function () {
+            return this.previewIndex < this.previewSlides.length - 1;
         },
         galleryLoopEnabled: function () {
             const media = this.combinedMedia || [];
@@ -1561,9 +1607,69 @@ export default {
                 this.resetPreviewPinch();
             }
         },
+        onPreviewSwiper: function (swiper) {
+            this.previewSwiperInstance = swiper;
+        },
         handlePreviewSlideChange: function (swiper) {
             this.previewIndex = swiper.activeIndex;
+            const slide = this.previewSlides[this.previewIndex];
+            if (slide?.review) {
+                this.previewReview = slide.review;
+            }
             this.resetPreviewPinch();
+        },
+        slidePreviewPrev: function () {
+            if (!this.canPreviewPrev) {
+                return;
+            }
+            this.previewSwiperInstance?.slidePrev?.();
+        },
+        slidePreviewNext: function () {
+            if (!this.canPreviewNext) {
+                return;
+            }
+            this.previewSwiperInstance?.slideNext?.();
+        },
+        buildReviewPreviewSlides: function () {
+            const ordered = this.reviews?.slice()?.reverse() || [];
+            const slides = [];
+            ordered.forEach((review) => {
+                const images = Array.isArray(review?.images) ? review.images : [];
+                if (!images.length) {
+                    return;
+                }
+                images.forEach((url, imgIndex) => {
+                    slides.push({
+                        url,
+                        review,
+                        reviewId: review.id ?? review.user_id ?? review.name,
+                        localIndex: imgIndex,
+                        localCount: images.length,
+                    });
+                });
+            });
+            return slides;
+        },
+        findPreviewStartIndex: function (slides, reviewObj, imageIndex) {
+            if (!slides.length) {
+                return 0;
+            }
+            const targetId = reviewObj?.id;
+            for (let i = 0; i < slides.length; i++) {
+                const slide = slides[i];
+                const sameReview = targetId != null
+                    ? Number(slide.review?.id) === Number(targetId)
+                    : slide.review === reviewObj;
+                if (sameReview && slide.localIndex === Number(imageIndex)) {
+                    return i;
+                }
+            }
+            for (let i = 0; i < slides.length; i++) {
+                if (slides[i].review === reviewObj) {
+                    return i + Math.min(Number(imageIndex) || 0, (slides[i].localCount || 1) - 1);
+                }
+            }
+            return Math.min(Number(imageIndex) || 0, slides.length - 1);
         },
         handleMediaLightboxSlideChange: function (swiper) {
             this.mediaLightboxIndex = swiper.realIndex;
@@ -1819,17 +1925,38 @@ export default {
             this.props.search.review_limit = this.product.rating_star_count;
             this.show();
         },
-        previewImage: function (images, index, reviewObj = null) {
-            this.previewImages = images || [];
-            this.previewIndex = index || 0;
-            this.previewReview = reviewObj;
+        previewImage: function (reviewObj, imageIndex = 0) {
+            const slides = this.buildReviewPreviewSlides();
+            if (!slides.length && reviewObj?.images?.length) {
+                (reviewObj.images || []).forEach((url, imgIndex) => {
+                    slides.push({
+                        url,
+                        review: reviewObj,
+                        reviewId: reviewObj.id ?? reviewObj.name,
+                        localIndex: imgIndex,
+                        localCount: reviewObj.images.length,
+                    });
+                });
+            }
+            if (!slides.length) {
+                return;
+            }
+
+            const startIndex = this.findPreviewStartIndex(slides, reviewObj, imageIndex);
+            this.previewSlides = slides;
+            this.previewIndex = startIndex;
+            this.previewReview = slides[startIndex]?.review || reviewObj;
+            this.previewSessionKey += 1;
+            this.previewSwiperInstance = null;
+            this.resetPreviewPinch();
+
             document.body.classList.add('image-preview-open');
             appService.modalShow('#imagePreviewModal');
             if (!this.previewHistoryActive) {
                 history.pushState({ productReviewPreview: 1 }, '');
                 this.previewHistoryActive = true;
                 this._onPreviewPopState = () => {
-                    if (this.previewImages.length > 0) {
+                    if (this.previewSlides.length > 0) {
                         this.hidePreviewImage(true);
                     }
                 };
@@ -1840,8 +1967,10 @@ export default {
             appService.modalHide('#imagePreviewModal');
             document.body.classList.remove('image-preview-open');
             this.resetPreviewPinch();
-            this.previewImages = [];
+            this.previewSlides = [];
+            this.previewIndex = 0;
             this.previewReview = null;
+            this.previewSwiperInstance = null;
             if (fromPopState) {
                 if (this._onPreviewPopState) {
                     window.removeEventListener('popstate', this._onPreviewPopState);
