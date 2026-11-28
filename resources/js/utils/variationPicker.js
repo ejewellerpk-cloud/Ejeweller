@@ -155,7 +155,6 @@ export function buildVisibleLevels(tree, selectedIds) {
                 ...opt,
                 available: isOptionAvailable(opt, tree, selectedIds, levelIndex),
                 selected: Number(selectedIds[levelIndex]) === Number(opt.id),
-                stockCount: getNodeStock(opt),
             })),
         });
 

@@ -214,6 +214,9 @@
                                 Sales
                             </th>
                             <th class="db-table-head-th">
+                                {{ $t('label.stock') }}
+                            </th>
+                            <th class="db-table-head-th">
                                 {{ $t('label.status') }}
                             </th>
                             <th class="db-table-head-th hidden-print"
@@ -244,6 +247,14 @@
                                 <span class="text-slate-400 text-[11px]"> sold</span>
                             </td>
                             <td class="db-table-body-td">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold"
+                                    :class="stockBadgeClass(product)"
+                                >
+                                    {{ Number(product.stock) || 0 }}
+                                </span>
+                            </td>
+                            <td class="db-table-body-td">
                                 <span :class="statusClass(product.status)">
                                     {{ enums.statusEnumArray[product.status] }}
                                 </span>
@@ -263,7 +274,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" colspan="8">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL+'/images/default/not-found/not_found.png'" alt="Not Found">
@@ -431,6 +442,17 @@ export default {
         },
         statusClass: function (status) {
             return appService.statusClass(status);
+        },
+        stockBadgeClass: function (product) {
+            const stock = Number(product?.stock) || 0;
+            const warning = Number(product?.low_stock_quantity_warning) || 0;
+            if (stock <= 0) {
+                return 'bg-[#FEE4E2] text-[#B42318]';
+            }
+            if (warning > 0 && stock <= warning) {
+                return 'bg-[#FEF0C7] text-[#B54708]';
+            }
+            return 'bg-[#D9F7E6] text-[#0F7A3F]';
         },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);

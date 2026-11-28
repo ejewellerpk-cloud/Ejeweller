@@ -41,6 +41,7 @@ class ProductAdminResource extends JsonResource
             "status"                     => $this->status,
             "can_purchasable"            => $this->can_purchasable,
             "show_stock_out"             => $this->show_stock_out,
+            "stock"                      => (int) $this->stock,
             "maximum_purchase_quantity"  => $this->maximum_purchase_quantity,
             "low_stock_quantity_warning" => $this->low_stock_quantity_warning,
             "weight"                     => $this->weight,
