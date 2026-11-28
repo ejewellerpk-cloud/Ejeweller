@@ -401,10 +401,20 @@
                                 <label for="offer_start_date" class="db-field-title required">{{
                                     $t("label.offer_start_date")
                                     }}</label>
-                                <Datepicker hideInputIcon autoApply v-model="form.offer_start_date"
-                                    :enableTimePicker="true" :is24="false" :monthChangeOnScroll="false" utc="false"
+                                <Datepicker
+                                    hideInputIcon
+                                    autoApply
+                                    text-input
+                                    v-model="form.offer_start_date"
+                                    :enableTimePicker="true"
+                                    :is24="false"
+                                    :monthChangeOnScroll="false"
+                                    utc="false"
                                     teleport="body"
-                                    :input-class-name="offerError.offer_start_date ? 'invalid' : ''">
+                                    :start-date="offerCalendarStartDate"
+                                    :text-input-options="offerDateTextInputOptions"
+                                    :input-class-name="offerError.offer_start_date ? 'invalid' : ''"
+                                >
                                     <template #am-pm-button="{ toggle, value }">
                                         <button type="button" @click="toggle">{{ value }}</button>
                                     </template>
@@ -417,10 +427,20 @@
                                 <label for="offer_end_date" class="db-field-title required">{{
                                     $t("label.offer_end_date")
                                     }}</label>
-                                <Datepicker hideInputIcon autoApply v-model="form.offer_end_date"
-                                    :enableTimePicker="true" :is24="false" :monthChangeOnScroll="false" utc="false"
+                                <Datepicker
+                                    hideInputIcon
+                                    autoApply
+                                    text-input
+                                    v-model="form.offer_end_date"
+                                    :enableTimePicker="true"
+                                    :is24="false"
+                                    :monthChangeOnScroll="false"
+                                    utc="false"
                                     teleport="body"
-                                    :input-class-name="offerError.offer_end_date ? 'invalid' : ''">
+                                    :start-date="offerCalendarStartDate"
+                                    :text-input-options="offerDateTextInputOptions"
+                                    :input-class-name="offerError.offer_end_date ? 'invalid' : ''"
+                                >
                                     <template #am-pm-button="{ toggle, value }">
                                         <button type="button" @click="toggle">{{ value }}</button>
                                     </template>
@@ -679,8 +699,21 @@ export default {
                 add_to_flash_sale: "",
                 discount: "",
                 offer_selling_price: "",
-                offer_start_date: "",
+                offer_start_date: new Date(),
                 offer_end_date: "",
+            },
+            offerDateTextInputOptions: {
+                enterSubmit: true,
+                tabSubmit: true,
+                openMenu: true,
+                format: [
+                    "MM/dd/yyyy hh:mm aa",
+                    "MM/dd/yyyy",
+                    "yyyy-MM-dd HH:mm:ss",
+                    "yyyy-MM-dd",
+                    "dd/MM/yyyy hh:mm aa",
+                    "dd/MM/yyyy",
+                ],
             },
             shippingAndReturnForm: {
                 shipping_type: shippingTypeEnum.FREE,
@@ -714,6 +747,9 @@ export default {
         currentSellingPriceDisplay: function () {
             return this.product?.old_currency_price || this.product?.flat_selling_price || "";
         },
+        offerCalendarStartDate: function () {
+            return new Date();
+        },
     },
     mounted() {
         this.loading.isActive = true;
@@ -731,6 +767,13 @@ export default {
         // Removed manual multiTargets in favor of Vue reactive activeTab state
         floatNumber(e) {
             return appService.floatNumber(e);
+        },
+        normalizeOfferDate(value) {
+            if (value === null || value === undefined || value === "" || value === "null") {
+                return null;
+            }
+            const parsed = value instanceof Date ? value : new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
         },
         roundOfferAmount(value) {
             const amount = parseFloat(value);
@@ -789,8 +832,8 @@ export default {
                 this.shippingAndReturnForm.is_product_quantity_multiply = res.data.data.is_product_quantity_multiply;
                 this.form.add_to_flash_sale = res.data.data.add_to_flash_sale;
                 this.form.discount = res.data.data.discount_percentage;
-                this.form.offer_start_date = res.data.data.offer_start_date;
-                this.form.offer_end_date = res.data.data.offer_end_date;
+                this.form.offer_start_date = this.normalizeOfferDate(res.data.data.offer_start_date) || new Date();
+                this.form.offer_end_date = this.normalizeOfferDate(res.data.data.offer_end_date);
                 this.syncOfferSellingPriceFromDiscount();
                 this.loading.isActive = false;
             }).catch((error) => {
@@ -1059,7 +1102,7 @@ export default {
                             add_to_flash_sale: askEnum.NO,
                             discount: "",
                             offer_selling_price: "",
-                            offer_start_date: "",
+                            offer_start_date: new Date(),
                             offer_end_date: "",
                         };
                         this.syncOfferSellingPriceFromDiscount();
@@ -1089,5 +1132,9 @@ export default {
 :deep(.dp__main),
 :deep(.dp__input_wrap) {
     width: 100%;
+}
+
+:deep(.dp__input) {
+    cursor: text;
 }
 </style>
