@@ -115,6 +115,22 @@ export const review = {
                     });
             });
         },
+        generate: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post("admin/reviews/generate", payload.form, {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         uploadImage: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios

@@ -12,6 +12,14 @@
                 <div class="reviews-page__toolbar">
                     <router-link
                         v-if="permissionChecker('reviews')"
+                        :to="{ name: 'admin.review.generate' }"
+                        class="reviews-btn reviews-btn--ghost"
+                    >
+                        <i class="lab lab-line-star"></i>
+                        <span>{{ $t('button.generate_reviews') }}</span>
+                    </router-link>
+                    <router-link
+                        v-if="permissionChecker('reviews')"
                         :to="{ name: 'admin.review.create' }"
                         class="reviews-btn reviews-btn--primary"
                     >
@@ -292,6 +300,11 @@ export default {
         }
     },
     mounted() {
+        const queryProductId = this.$route.query.product_id;
+        if (queryProductId) {
+            this.props.search.product_id = Number(queryProductId) || queryProductId;
+            this.showFilter = true;
+        }
         this.list();
         this.loadStats();
         this.loading.isActive = true;

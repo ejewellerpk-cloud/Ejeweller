@@ -6,6 +6,8 @@ const ReviewShowComponent = () =>
     import("../../components/admin/reviews/ReviewShowComponent");
 const ReviewCreateComponent = () =>
     import("../../components/admin/reviews/ReviewCreateComponent");
+const ReviewGeneratorComponent = () =>
+    import("../../components/admin/reviews/ReviewGeneratorComponent");
 
 export default [
     {
@@ -40,6 +42,17 @@ export default [
                     auth: true,
                     permissionUrl: "reviews",
                     breadcrumb: "add",
+                },
+            },
+            {
+                path: "generate",
+                component: ReviewGeneratorComponent,
+                name: "admin.review.generate",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "reviews",
+                    breadcrumb: "reviews_generator",
                 },
             },
             {

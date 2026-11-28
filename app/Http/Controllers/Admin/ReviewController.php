@@ -6,11 +6,13 @@ use Exception;
 use App\Exports\ReviewExport;
 use App\Models\ProductReview;
 use App\Services\ReviewService;
+use App\Services\ReviewGeneratorService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ChangeImageRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\AdminProductReviewRequest;
+use App\Http\Requests\AdminGenerateReviewsRequest;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\ReviewDetailsResource;
 use App\Http\Resources\ProductReviewResource;
@@ -20,11 +22,13 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 class ReviewController extends AdminController implements HasMiddleware
 {
     public ReviewService $reviewService;
+    public ReviewGeneratorService $reviewGeneratorService;
 
-    public function __construct(ReviewService $reviewService)
+    public function __construct(ReviewService $reviewService, ReviewGeneratorService $reviewGeneratorService)
     {
         parent::__construct();
         $this->reviewService = $reviewService;
+        $this->reviewGeneratorService = $reviewGeneratorService;
     }
 
     public static function middleware(): array
@@ -34,6 +38,7 @@ class ReviewController extends AdminController implements HasMiddleware
             new Middleware('permission:reviews', only: ['show']),
             new Middleware('permission:reviews', only: ['export']),
             new Middleware('permission:reviews', only: ['store']),
+            new Middleware('permission:reviews', only: ['generate']),
             new Middleware('permission:reviews', only: ['uploadImage']),
             new Middleware('permission:reviews', only: ['deleteImage']),
             new Middleware('permission:reviews', only: ['update']),
@@ -84,6 +89,21 @@ class ReviewController extends AdminController implements HasMiddleware
     {
         try {
             return new ProductReviewResource($this->reviewService->store($request));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function generate(AdminGenerateReviewsRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $reviews = $this->reviewGeneratorService->generate($request);
+
+            return ProductReviewResource::collection($reviews)->additional([
+                'meta' => [
+                    'generated' => count($reviews),
+                ],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

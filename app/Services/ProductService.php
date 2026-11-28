@@ -1124,8 +1124,7 @@ class ProductService
     {
         try {
             return Product::select('id', 'name', 'buying_price', 'status', 'sku')
-                ->with('productTaxes')
-                ->with('variations')
+                ->with(['productTaxes', 'variations', 'media'])
                 ->orderBy('name', 'asc')
                 ->get();
         } catch (Exception $exception) {

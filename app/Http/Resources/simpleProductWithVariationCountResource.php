@@ -21,7 +21,9 @@ class simpleProductWithVariationCountResource extends JsonResource
             'buying_price'      => AppLibrary::convertAmountFormat($this->buying_price),
             'is_variation'      => count($this->variations) > 0 ? true : false,
             'sku'               => $this->sku,
-            'taxes'             => $this->productTaxes->pluck('tax_id')
+            'taxes'             => $this->productTaxes->pluck('tax_id'),
+            'cover'             => $this->cover,
+            'thumb'             => $this->thumb,
         ];
     }
 }

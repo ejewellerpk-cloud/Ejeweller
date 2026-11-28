@@ -866,6 +866,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
     Route::prefix('reviews')->name('reviews.')->group(function () {
         Route::get('/', [ReviewController::class, 'index']);
         Route::post('/', [ReviewController::class, 'store']);
+        Route::post('/generate', [ReviewController::class, 'generate']);
         Route::get('/stats', [ReviewController::class, 'stats']);
         Route::get('/export', [ReviewController::class, 'export']);
         Route::get('/show/{productReview}', [ReviewController::class, 'show']);
