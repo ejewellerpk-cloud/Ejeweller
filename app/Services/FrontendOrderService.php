@@ -186,6 +186,28 @@ class FrontendOrderService
                     $userId = $user->id;
                 }
 
+                // Persist guest checkout address into the customer's address book so the
+                // next checkout can auto-select it (OrderAddress alone is order history only).
+                if (
+                    $userId
+                    && (int) $request->order_type === OrderType::DELIVERY
+                    && (int) ($request->shipping_id ?? 0) <= 0
+                    && $request->guest_info
+                ) {
+                    $syncedAddress = $this->syncAddressBookFromGuestInfo(
+                        (int) $userId,
+                        json_decode($request->guest_info)
+                    );
+                    if ($syncedAddress) {
+                        $request->merge([
+                            'shipping_id' => $syncedAddress->id,
+                            'billing_id'  => (int) ($request->billing_id ?? 0) > 0
+                                ? $request->billing_id
+                                : $syncedAddress->id,
+                        ]);
+                    }
+                }
+
                 // Server-side pricing: never trust client prices/totals/discount/tax/shipping.
                 $pricing = app(OrderPricingService::class)->calculate(
                     [
@@ -542,5 +564,54 @@ class FrontendOrderService
         Transaction::where('order_id', $order->id)->delete();
         CapturePaymentNotification::where('order_id', $order->id)->delete();
         $order->delete();
+    }
+
+    /**
+     * Save (or reuse) guest checkout details in addresses so future checkouts auto-select them.
+     */
+    private function syncAddressBookFromGuestInfo(int $userId, $guestInfo): ?Address
+    {
+        if (!$guestInfo || $userId <= 0) {
+            return null;
+        }
+
+        $payload = [
+            'full_name'    => trim((string) ($guestInfo->full_name ?? '')),
+            'email'        => trim((string) ($guestInfo->email ?? '')),
+            'country_code' => trim((string) ($guestInfo->country_code ?? '')),
+            'phone'        => trim((string) ($guestInfo->phone ?? '')),
+            'country'      => trim((string) ($guestInfo->country ?? '')),
+            'state'        => trim((string) ($guestInfo->state ?? '')),
+            'city'         => trim((string) ($guestInfo->city ?? '')),
+            'zip_code'     => trim((string) ($guestInfo->zip_code ?? '')),
+            'address'      => trim((string) ($guestInfo->address ?? '')),
+        ];
+
+        if ($payload['full_name'] === '' || $payload['phone'] === '' || $payload['address'] === '') {
+            return null;
+        }
+
+        $existing = Address::query()
+            ->where('user_id', $userId)
+            ->where('phone', $payload['phone'])
+            ->where('address', $payload['address'])
+            ->where('city', $payload['city'])
+            ->where('state', $payload['state'])
+            ->where('country', $payload['country'])
+            ->first();
+
+        if ($existing) {
+            $existing->fill([
+                'full_name'    => $payload['full_name'],
+                'email'        => $payload['email'] ?: $existing->email,
+                'country_code' => $payload['country_code'] ?: $existing->country_code,
+                'zip_code'     => $payload['zip_code'] !== '' ? $payload['zip_code'] : $existing->zip_code,
+            ]);
+            $existing->save();
+
+            return $existing;
+        }
+
+        return Address::create($payload + ['user_id' => $userId]);
     }
 }

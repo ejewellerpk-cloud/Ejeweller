@@ -439,14 +439,9 @@ export default {
                 if (this.logged) {
                     // Address picker is ready — hide skeleton before form lookups finish.
                     this.loading.isActive = false;
-                    if (this.slug === "shipping" && Object.keys(this.selectedAddress).length === 0) {
-                        const defaultAddress = this.pickDefaultAddress(
-                            addresses.length ? addresses : this.$store.getters["frontendAddress/lists"]
-                        );
-                        if (defaultAddress) {
-                            this.activeAddress(defaultAddress);
-                        }
-                    }
+                    this.ensureDefaultSelection(
+                        addresses.length ? addresses : this.$store.getters["frontendAddress/lists"]
+                    );
                     // Apply default country/flag/states when background warm finishes.
                     this.ensureFormLookups();
                 } else {
@@ -520,6 +515,10 @@ export default {
                 })
                 .catch(() => {});
         },
+        hasValidSelectedAddress: function () {
+            const selected = this.selectedAddress || {};
+            return !!(selected.id && Number(selected.id) > 0);
+        },
         pickDefaultAddress: function (list) {
             if (!list || list.length === 0) {
                 return null;
@@ -530,6 +529,37 @@ export default {
             return list.reduce((latest, address) => {
                 return (parseInt(address.id, 10) > parseInt(latest.id, 10)) ? address : latest;
             }, list[0]);
+        },
+        /**
+         * Auto-select last/saved address when cart has no valid shipping_id.
+         * Object.keys(selectedAddress) was wrong — empty guest form leftovers blocked selection.
+         */
+        ensureDefaultSelection: function (list) {
+            if (!this.logged || this.slug !== 'shipping') {
+                return;
+            }
+            const addresses = Array.isArray(list) ? list : [];
+            if (!addresses.length) {
+                return;
+            }
+
+            if (this.hasValidSelectedAddress()) {
+                const match = addresses.find(
+                    (a) => Number(a.id) === Number(this.selectedAddress.id)
+                );
+                if (match) {
+                    // Re-bind fresh API object so UI highlight + shipping charge stay correct.
+                    if (match !== this.selectedAddress) {
+                        this.activeAddress(match);
+                    }
+                    return;
+                }
+            }
+
+            const defaultAddress = this.pickDefaultAddress(addresses);
+            if (defaultAddress) {
+                this.activeAddress(defaultAddress);
+            }
         },
         resolveCountryIso2(countryName) {
             const match = (this.countries || []).find((c) => c.name === countryName);

@@ -216,6 +216,7 @@ import sourceEnum from "../../../../enums/modules/sourceEnum";
 import ENV from "../../../../config/env";
 import ActivityEnum from "../../../../enums/modules/activityEnum";
 import axios from "axios";
+import { invalidateAddressListsCache } from "../../../../services/checkoutAddressBootstrap";
 
 const SwichOnPagePanel = defineAsyncComponent(() =>
     import("./SwichOnPagePanel.vue")
@@ -623,6 +624,8 @@ export default {
                         defaultMenu: orderResponse.data.data.guest_defaultMenu
                     });
                     axios.defaults.headers.common['Authorization'] = `Bearer ${orderResponse.data.data.guest_token}`;
+                    // New guest account now has an address book entry — drop stale empty cache.
+                    invalidateAddressListsCache();
                 }
 
                 this.pendingOrderTotal = orderResponse.data.data.total ?? this.total;

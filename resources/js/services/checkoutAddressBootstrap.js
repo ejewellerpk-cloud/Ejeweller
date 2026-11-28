@@ -27,17 +27,28 @@ export function invalidateAddressListsCache() {
     addressListsFetched = false;
 }
 
-export function ensureAddressLists(store) {
+export function ensureAddressLists(store, { force = false } = {}) {
     if (!store.getters.authStatus) {
         return Promise.resolve([]);
     }
 
+    if (force) {
+        addressListsFetched = false;
+        addressListsPromise = null;
+    }
+
     if (addressListsFetched) {
-        return Promise.resolve(store.getters["frontendAddress/lists"] || []);
+        const cached = store.getters["frontendAddress/lists"] || [];
+        // Empty cached result after a failed/early fetch must not stick forever.
+        if (cached.length > 0) {
+            return Promise.resolve(cached);
+        }
+        addressListsFetched = false;
+        addressListsPromise = null;
     }
 
     const existing = store.getters["frontendAddress/lists"];
-    if (existing && existing.length > 0) {
+    if (!force && existing && existing.length > 0) {
         addressListsFetched = true;
         return Promise.resolve(existing);
     }
@@ -48,7 +59,7 @@ export function ensureAddressLists(store) {
                 search: {
                     paginate: 0,
                     order_column: "id",
-                    order_type: "asc",
+                    order_type: "desc",
                 },
             })
             .then((res) => {
@@ -179,7 +190,8 @@ export function warmCheckoutAddressFormLookups(store, { guest = false } = {}) {
 export function bootstrapCheckoutAddress(store, { guest = false } = {}) {
     return (async () => {
         if (!guest) {
-            const addresses = await ensureAddressLists(store);
+            // Always refresh on checkout mount so newly saved / guest-backfilled addresses appear.
+            const addresses = await ensureAddressLists(store, { force: true });
             // Do not await — address cards should paint immediately.
             warmCheckoutAddressFormLookups(store, { guest: false }).catch(() => {});
             return [addresses, null, null, null];
