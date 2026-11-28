@@ -101,8 +101,8 @@ class ReviewController extends AdminController implements HasMiddleware
     public function generate(AdminGenerateReviewsRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            @set_time_limit(180);
-            @ini_set('max_execution_time', '180');
+            @set_time_limit(300);
+            @ini_set('max_execution_time', '300');
 
             $result = $this->reviewGeneratorService->generate($request);
 

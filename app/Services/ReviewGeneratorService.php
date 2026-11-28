@@ -83,56 +83,66 @@ class ReviewGeneratorService
                     ->values()
                     ->all();
 
-                $existingUserIds = ProductReview::query()
-                    ->where('product_id', $product->id)
-                    ->pluck('user_id')
+                $existingNames = User::query()
+                    ->whereIn('id', function ($query) use ($product) {
+                        $query->select('user_id')
+                            ->from('product_reviews')
+                            ->where('product_id', $product->id)
+                            ->whereNotNull('user_id');
+                    })
+                    ->pluck('name')
+                    ->map(fn ($name) => $this->normalizeText((string) $name))
                     ->filter()
                     ->unique()
+                    ->values()
                     ->all();
-
-                $existingNames = empty($existingUserIds)
-                    ? []
-                    : User::query()
-                        ->whereIn('id', $existingUserIds)
-                        ->pluck('name')
-                        ->map(fn ($name) => $this->normalizeText((string) $name))
-                        ->filter()
-                        ->unique()
-                        ->values()
-                        ->all();
 
                 $reviewers = $this->buildReviewerQueue($quantity, $existingNames);
                 $timestamps = $this->buildReviewTimestamps($product, $quantity);
+                $users = $this->createReviewersBulk($reviewers);
                 $usedComments = $existingTexts;
 
+                $reviewRows = [];
                 foreach ($reviewers as $i => $reviewer) {
-                    $user = $this->resolveReviewer($reviewer['name'], $i);
-                    $comment = $this->composeUniqueComment($usedComments, $reviewer['gender']);
-                    $star = $this->pickStar();
                     $postedAt = $timestamps[$i];
-
-                    $review = new ProductReview([
-                        'user_id'              => $user->id,
+                    $reviewRows[] = [
+                        'user_id'              => $users[$i]->id,
                         'product_id'           => $product->id,
-                        'star'                 => $star,
-                        'review'               => $comment,
+                        'star'                 => $this->pickStar(),
+                        'review'               => $this->composeUniqueComment($usedComments, $reviewer['gender']),
                         'status'               => ReviewStatus::APPROVED,
                         'is_verified_purchase' => random_int(1, 100) <= 55 ? Ask::YES : Ask::NO,
-                    ]);
-                    $review->created_at = $postedAt;
-                    $review->updated_at = $postedAt;
-                    $review->save();
+                        'created_at'           => $postedAt->format('Y-m-d H:i:s'),
+                        'updated_at'           => $postedAt->format('Y-m-d H:i:s'),
+                    ];
+                }
 
+                foreach (array_chunk($reviewRows, 100) as $chunk) {
+                    ProductReview::insert($chunk);
+                }
+
+                $userIds = array_map(static fn (User $user) => $user->id, $users);
+                $createdReviews = ProductReview::query()
+                    ->where('product_id', $product->id)
+                    ->whereIn('user_id', $userIds)
+                    ->orderBy('id')
+                    ->get(['id', 'user_id', 'created_at']);
+
+                foreach ($createdReviews as $review) {
                     $createdIds[] = $review->id;
-                    $postedAtById[$review->id] = $postedAt;
+                    $postedAtById[$review->id] = Carbon::parse($review->created_at);
                 }
             });
 
-            // Keep heavy media work outside the DB transaction to avoid timeouts / HTTP2 drops.
-            // Each uploaded file is attached at most once (never reused across reviews/batches).
+            // Keep media work outside the DB transaction. Skip image conversions for speed.
             if (!empty($tempPaths) && !empty($createdIds)) {
                 $reviews = ProductReview::query()->whereIn('id', $createdIds)->get();
-                $this->distributeUniqueImages($reviews, $tempPaths, $postedAtById);
+                ProductReview::$skipConversions = true;
+                try {
+                    $this->distributeUniqueImages($reviews, $tempPaths, $postedAtById);
+                } finally {
+                    ProductReview::$skipConversions = false;
+                }
             }
 
             if ($request->boolean('cleanup_media') && $mediaToken) {
@@ -348,42 +358,80 @@ class ReviewGeneratorService
         return $first . ' ' . $last . ' ' . $suffix;
     }
 
-    private function resolveReviewer(string $name, int $index): User
+    /**
+     * Bulk-insert fake reviewers (much faster than one User::create + assignRole each).
+     *
+     * @param  array<int, array{name: string, gender: string}>  $reviewers
+     * @return array<int, User>
+     */
+    private function createReviewersBulk(array $reviewers): array
     {
-        $slug = Str::slug($name, '.');
-        if ($slug === '') {
-            $slug = 'buyer.' . $index;
+        $now = Carbon::now()->format('Y-m-d H:i:s');
+        $password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+        $batchKey = Str::lower(Str::random(8));
+        $rows = [];
+        $emails = [];
+        $usedPhones = [];
+
+        foreach ($reviewers as $i => $reviewer) {
+            $slug = Str::slug($reviewer['name'], '.');
+            if ($slug === '') {
+                $slug = 'buyer.' . $i;
+            }
+
+            $email = 'reviewgen.' . $slug . '.' . $batchKey . '.' . $i . '@shopperzz.internal';
+            $emails[] = $email;
+
+            do {
+                $phone = '3' . str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT);
+            } while (isset($usedPhones[$phone]));
+            $usedPhones[$phone] = true;
+
+            $rows[] = [
+                'name'              => $reviewer['name'],
+                'email'             => $email,
+                'phone'             => $phone,
+                'username'          => 'rg_' . $batchKey . $i . Str::lower(Str::random(4)),
+                'password'          => $password,
+                'email_verified_at' => $now,
+                'status'            => Status::ACTIVE,
+                'country_code'      => '+92',
+                'is_guest'          => Ask::YES,
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ];
         }
 
-        $email = 'reviewgen.' . $slug . '.' . $index . '.' . Str::lower(Str::random(4)) . '@shopperzz.internal';
-
-        $phoneBase = '3' . str_pad((string) (random_int(100000000, 999999999)), 9, '0', STR_PAD_LEFT);
-        while (User::withTrashed()->where('phone', $phoneBase)->exists()) {
-            $phoneBase = '3' . str_pad((string) (random_int(100000000, 999999999)), 9, '0', STR_PAD_LEFT);
+        foreach (array_chunk($rows, 100) as $chunk) {
+            User::insert($chunk);
         }
 
-        while (User::withTrashed()->where('email', $email)->exists()) {
-            $email = 'reviewgen.' . $slug . '.' . $index . '.' . Str::lower(Str::random(6)) . '@shopperzz.internal';
+        $usersByEmail = User::query()
+            ->whereIn('email', $emails)
+            ->get()
+            ->keyBy('email');
+
+        $ordered = [];
+        $roleRows = [];
+        foreach ($emails as $i => $email) {
+            /** @var User $user */
+            $user = $usersByEmail->get($email);
+            if (!$user) {
+                throw new Exception('Failed to create reviewer account.', 422);
+            }
+            $ordered[$i] = $user;
+            $roleRows[] = [
+                'role_id'    => EnumRole::CUSTOMER,
+                'model_type' => User::class,
+                'model_id'   => $user->id,
+            ];
         }
 
-        // Pre-hashed password (never used for login) — avoids slow bcrypt per fake reviewer.
-        $user = User::create([
-            'name'              => $name,
-            'email'             => $email,
-            'phone'             => $phoneBase,
-            'username'          => 'rg_' . Str::lower(Str::random(10)),
-            'password'          => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-            'email_verified_at' => now(),
-            'status'            => Status::ACTIVE,
-            'country_code'      => '+92',
-            'is_guest'          => Ask::YES,
-        ]);
-
-        if (!$user->hasRole(EnumRole::CUSTOMER)) {
-            $user->assignRole(EnumRole::CUSTOMER);
+        foreach (array_chunk($roleRows, 100) as $chunk) {
+            DB::table('model_has_roles')->insertOrIgnore($chunk);
         }
 
-        return $user;
+        return $ordered;
     }
 
     /**
@@ -738,11 +786,7 @@ class ReviewGeneratorService
             return;
         }
 
-        $review->addMedia($path)
-            ->preservingOriginal()
-            ->toMediaCollection('product-review');
-
-        // Remove from the shared pool so no other review/batch can reuse this file.
-        @unlink($path);
+        // Move (not copy) into media library — faster, and removes file from the shared pool.
+        $review->addMedia($path)->toMediaCollection('product-review');
     }
 }

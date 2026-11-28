@@ -228,6 +228,7 @@ export default {
                 total: 0,
                 percent: 0,
             },
+            progressTimer: null,
             imageItems: [],
             showImageDialog: false,
             isDragging: false,
@@ -255,6 +256,7 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener("paste", this.onPaste);
+        this.stopProgressTicker();
         this.revokeAllUrls();
     },
     computed: {
@@ -287,20 +289,34 @@ export default {
             }
         },
         batchSizeFor(quantity, hasImages) {
-            // Smaller chunks when images need conversion work on the server.
+            // Large batches — backend is bulk-optimized now.
             if (hasImages) {
-                if (quantity <= 30) {
-                    return 2;
+                return Math.min(quantity, 50);
+            }
+            return Math.min(quantity, 100);
+        },
+        startProgressTicker(fromDone, targetDone, total) {
+            this.stopProgressTicker();
+            const span = Math.max(1, targetDone - fromDone);
+            const startedAt = Date.now();
+            // Rough estimate: ~25ms per review text-only, ~80ms with images in the chunk.
+            const hasImages = this.imageItems.some((item) => item?.file);
+            const estimatedMs = Math.max(600, span * (hasImages ? 80 : 25));
+
+            this.progressTimer = setInterval(() => {
+                const elapsed = Date.now() - startedAt;
+                const ratio = Math.min(0.92, elapsed / estimatedMs);
+                const softDone = fromDone + Math.floor(span * ratio);
+                if (softDone > this.progress.done && softDone < targetDone) {
+                    this.setProgress(softDone, total);
                 }
-                return 5;
+            }, 120);
+        },
+        stopProgressTicker() {
+            if (this.progressTimer) {
+                clearInterval(this.progressTimer);
+                this.progressTimer = null;
             }
-            if (quantity <= 25) {
-                return 5;
-            }
-            if (quantity <= 100) {
-                return 10;
-            }
-            return 15;
         },
         buildGenerateForm(quantity, { mediaToken = null, attachImages = false, cleanupMedia = false } = {}) {
             const fd = new FormData();
@@ -470,6 +486,9 @@ export default {
                     const chunk = Math.min(batchSize, qty - done);
                     const isFirst = done === 0;
                     const isLast = done + chunk >= qty;
+                    const targetDone = done + chunk;
+
+                    this.startProgressTicker(done, targetDone, qty);
 
                     const res = await this.$store.dispatch("review/generate", {
                         form: this.buildGenerateForm(chunk, {
@@ -478,6 +497,8 @@ export default {
                             cleanupMedia: isLast && hasImages,
                         }),
                     });
+
+                    this.stopProgressTicker();
 
                     if (res.data?.meta?.media_token) {
                         mediaToken = res.data.meta.media_token;
@@ -492,8 +513,6 @@ export default {
                     createdTotal += Number(generated) || chunk;
                     done += chunk;
                     this.setProgress(Math.min(done, qty), qty);
-
-                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
                 }
 
                 this.setProgress(qty, qty);
@@ -505,6 +524,7 @@ export default {
                     query: { product_id: productId },
                 });
             } catch (err) {
+                this.stopProgressTicker();
                 this.errors = err.response?.data?.errors || {};
                 const message = err.response?.data?.message;
                 if (message && !Object.keys(this.errors).length) {
@@ -523,6 +543,7 @@ export default {
                     );
                 }
             } finally {
+                this.stopProgressTicker();
                 this.progress.active = false;
                 this.setProgress(0, 0);
             }

@@ -12,6 +12,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 class ProductReview extends Model implements HasMedia
 {
     use InteractsWithMedia;
+
+    /**
+     * When true, media is stored without generating thumb/preview conversions
+     * (used by the bulk reviews generator for speed). Original URLs still work.
+     */
+    public static bool $skipConversions = false;
+
     protected $table    = "product_reviews";
     protected $fillable = ['user_id', 'product_id', 'star', 'review', 'status', 'is_verified_purchase'];
     protected $casts    = [
@@ -78,6 +85,10 @@ class ProductReview extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
+        if (self::$skipConversions) {
+            return;
+        }
+
         $this->addMediaConversion('thumb')->fit(Fit::Fill, 112, 72)->format('webp')->quality(70)->nonOptimized();
         // Large enough for product-page lightbox without serving oversized originals.
         $this->addMediaConversion('preview')->fit(Fit::Max, 1600, 1600)->format('webp')->quality(82)->nonOptimized();
