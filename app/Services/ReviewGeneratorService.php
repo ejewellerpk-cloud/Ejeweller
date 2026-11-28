@@ -4,18 +4,16 @@ namespace App\Services;
 
 use Exception;
 use App\Enums\Ask;
-use App\Enums\Role as EnumRole;
 use App\Enums\ReviewStatus;
-use App\Enums\Status;
 use App\Http\Requests\AdminGenerateReviewsRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Models\Product;
 use App\Models\ProductReview;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -83,14 +81,11 @@ class ReviewGeneratorService
                     ->values()
                     ->all();
 
-                $existingNames = User::query()
-                    ->whereIn('id', function ($query) use ($product) {
-                        $query->select('user_id')
-                            ->from('product_reviews')
-                            ->where('product_id', $product->id)
-                            ->whereNotNull('user_id');
-                    })
-                    ->pluck('name')
+                // Names live on reviews only — do not create User rows.
+                $existingNames = ProductReview::query()
+                    ->where('product_id', $product->id)
+                    ->whereNotNull('reviewer_name')
+                    ->pluck('reviewer_name')
                     ->map(fn ($name) => $this->normalizeText((string) $name))
                     ->filter()
                     ->unique()
@@ -99,14 +94,13 @@ class ReviewGeneratorService
 
                 $reviewers = $this->buildReviewerQueue($quantity, $existingNames);
                 $timestamps = $this->buildReviewTimestamps($product, $quantity);
-                $users = $this->createReviewersBulk($reviewers);
                 $usedComments = $existingTexts;
+                $hasReviewerName = Schema::hasColumn('product_reviews', 'reviewer_name');
 
-                $reviewRows = [];
                 foreach ($reviewers as $i => $reviewer) {
                     $postedAt = $timestamps[$i];
-                    $reviewRows[] = [
-                        'user_id'              => $users[$i]->id,
+                    $row = [
+                        'user_id'              => null,
                         'product_id'           => $product->id,
                         'star'                 => $this->pickStar(),
                         'review'               => $this->composeUniqueComment($usedComments, $reviewer['gender']),
@@ -115,22 +109,14 @@ class ReviewGeneratorService
                         'created_at'           => $postedAt->format('Y-m-d H:i:s'),
                         'updated_at'           => $postedAt->format('Y-m-d H:i:s'),
                     ];
-                }
 
-                foreach (array_chunk($reviewRows, 100) as $chunk) {
-                    ProductReview::insert($chunk);
-                }
+                    if ($hasReviewerName) {
+                        $row['reviewer_name'] = $reviewer['name'];
+                    }
 
-                $userIds = array_map(static fn (User $user) => $user->id, $users);
-                $createdReviews = ProductReview::query()
-                    ->where('product_id', $product->id)
-                    ->whereIn('user_id', $userIds)
-                    ->orderBy('id')
-                    ->get(['id', 'user_id', 'created_at']);
-
-                foreach ($createdReviews as $review) {
-                    $createdIds[] = $review->id;
-                    $postedAtById[$review->id] = Carbon::parse($review->created_at);
+                    $id = (int) DB::table('product_reviews')->insertGetId($row);
+                    $createdIds[] = $id;
+                    $postedAtById[$id] = $postedAt->copy();
                 }
             });
 
@@ -356,82 +342,6 @@ class ReviewGeneratorService
         $suffix = chr(65 + ($seed % 26));
 
         return $first . ' ' . $last . ' ' . $suffix;
-    }
-
-    /**
-     * Bulk-insert fake reviewers (much faster than one User::create + assignRole each).
-     *
-     * @param  array<int, array{name: string, gender: string}>  $reviewers
-     * @return array<int, User>
-     */
-    private function createReviewersBulk(array $reviewers): array
-    {
-        $now = Carbon::now()->format('Y-m-d H:i:s');
-        $password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
-        $batchKey = Str::lower(Str::random(8));
-        $rows = [];
-        $emails = [];
-        $usedPhones = [];
-
-        foreach ($reviewers as $i => $reviewer) {
-            $slug = Str::slug($reviewer['name'], '.');
-            if ($slug === '') {
-                $slug = 'buyer.' . $i;
-            }
-
-            $email = 'reviewgen.' . $slug . '.' . $batchKey . '.' . $i . '@shopperzz.internal';
-            $emails[] = $email;
-
-            do {
-                $phone = '3' . str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT);
-            } while (isset($usedPhones[$phone]));
-            $usedPhones[$phone] = true;
-
-            $rows[] = [
-                'name'              => $reviewer['name'],
-                'email'             => $email,
-                'phone'             => $phone,
-                'username'          => 'rg_' . $batchKey . $i . Str::lower(Str::random(4)),
-                'password'          => $password,
-                'email_verified_at' => $now,
-                'status'            => Status::ACTIVE,
-                'country_code'      => '+92',
-                'is_guest'          => Ask::YES,
-                'created_at'        => $now,
-                'updated_at'        => $now,
-            ];
-        }
-
-        foreach (array_chunk($rows, 100) as $chunk) {
-            User::insert($chunk);
-        }
-
-        $usersByEmail = User::query()
-            ->whereIn('email', $emails)
-            ->get()
-            ->keyBy('email');
-
-        $ordered = [];
-        $roleRows = [];
-        foreach ($emails as $i => $email) {
-            /** @var User $user */
-            $user = $usersByEmail->get($email);
-            if (!$user) {
-                throw new Exception('Failed to create reviewer account.', 422);
-            }
-            $ordered[$i] = $user;
-            $roleRows[] = [
-                'role_id'    => EnumRole::CUSTOMER,
-                'model_type' => User::class,
-                'model_id'   => $user->id,
-            ];
-        }
-
-        foreach (array_chunk($roleRows, 100) as $chunk) {
-            DB::table('model_has_roles')->insertOrIgnore($chunk);
-        }
-
-        return $ordered;
     }
 
     /**

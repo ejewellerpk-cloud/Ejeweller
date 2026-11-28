@@ -20,16 +20,27 @@ class ProductReview extends Model implements HasMedia
     public static bool $skipConversions = false;
 
     protected $table    = "product_reviews";
-    protected $fillable = ['user_id', 'product_id', 'star', 'review', 'status', 'is_verified_purchase'];
+    protected $fillable = ['user_id', 'reviewer_name', 'product_id', 'star', 'review', 'status', 'is_verified_purchase'];
     protected $casts    = [
         'id'                   => 'integer',
         'user_id'              => 'integer',
+        'reviewer_name'        => 'string',
         'product_id'           => 'integer',
         'star'                 => 'integer',
         'review'               => 'string',
         'status'               => 'integer',
         'is_verified_purchase' => 'integer',
     ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        $named = trim((string) ($this->reviewer_name ?? ''));
+        if ($named !== '') {
+            return $named;
+        }
+
+        return (string) ($this->user?->name ?: 'Guest');
+    }
 
     /**
      * Full-size (or preview) URLs for lightbox / detail views.
