@@ -6,50 +6,70 @@
             <!-- Hero header -->
             <header class="ch-hero">
                 <div class="ch-hero__copy min-w-0">
-                    <p class="ch-kicker">Growth workspace</p>
-                    <h1 class="ch-title">{{ $t('menu.campaigns') || 'Campaigns' }}</h1>
+                    <p class="ch-kicker">{{ editorOpen ? 'Campaign workspace' : 'Growth workspace' }}</p>
+                    <h1 class="ch-title">
+                        <template v-if="editorOpen">{{ form.id ? 'Edit campaign' : 'New campaign' }}</template>
+                        <template v-else>{{ $t('menu.campaigns') || 'Campaigns' }}</template>
+                    </h1>
                     <p class="ch-sub">
-                        Launch Meta ads, track ROAS, recover carts, sync audiences & catalog — one place.
+                        <template v-if="editorOpen">
+                            Configure basics, tracking, budget, and link products from your catalog — laptop-optimized workspace.
+                        </template>
+                        <template v-else>
+                            Launch Meta ads, track ROAS, recover carts, sync audiences & catalog — one place.
+                        </template>
                     </p>
                 </div>
 
                 <div class="ch-hero__actions">
-                    <div
-                        class="ch-meta-pill"
-                        :class="metaStatus.ok ? 'is-ok' : metaStatus.checked ? 'is-bad' : 'is-idle'"
-                        @click="checkMetaStatus"
-                        role="button"
-                        tabindex="0"
-                    >
-                        <span class="ch-meta-pill__dot"></span>
-                        <span class="ch-meta-pill__text">
-                            <template v-if="!metaStatus.checked">Check Meta</template>
-                            <template v-else-if="metaStatus.ok">Meta connected</template>
-                            <template v-else>Meta issue</template>
-                        </span>
-                    </div>
+                    <template v-if="editorOpen">
+                        <button type="button" class="ch-btn ch-btn--soft" @click="closeDrawer">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>Back to list</span>
+                        </button>
+                        <button type="button" class="ch-btn ch-btn--primary" @click="saveCampaign">
+                            <i class="lab lab-fill-save"></i>
+                            <span>Save campaign</span>
+                        </button>
+                    </template>
+                    <template v-else>
+                        <div
+                            class="ch-meta-pill"
+                            :class="metaStatus.ok ? 'is-ok' : metaStatus.checked ? 'is-bad' : 'is-idle'"
+                            @click="checkMetaStatus"
+                            role="button"
+                            tabindex="0"
+                        >
+                            <span class="ch-meta-pill__dot"></span>
+                            <span class="ch-meta-pill__text">
+                                <template v-if="!metaStatus.checked">Check Meta</template>
+                                <template v-else-if="metaStatus.ok">Meta connected</template>
+                                <template v-else>Meta issue</template>
+                            </span>
+                        </div>
 
-                    <div class="ch-date-range">
-                        <label class="ch-date-range__label">From</label>
-                        <input type="date" v-model="from" class="ch-date-range__input" @change="refreshActive" />
-                        <label class="ch-date-range__label">To</label>
-                        <input type="date" v-model="to" class="ch-date-range__input" @change="refreshActive" />
-                    </div>
+                        <div class="ch-date-range">
+                            <label class="ch-date-range__label">From</label>
+                            <input type="date" v-model="from" class="ch-date-range__input" @change="refreshActive" />
+                            <label class="ch-date-range__label">To</label>
+                            <input type="date" v-model="to" class="ch-date-range__input" @change="refreshActive" />
+                        </div>
 
-                    <button
-                        v-if="activeTab === 'campaigns'"
-                        type="button"
-                        class="ch-btn ch-btn--primary"
-                        @click="openCreate"
-                    >
-                        <i class="lab lab-line-plus"></i>
-                        <span>New campaign</span>
-                    </button>
+                        <button
+                            v-if="activeTab === 'campaigns'"
+                            type="button"
+                            class="ch-btn ch-btn--primary"
+                            @click="openCreate"
+                        >
+                            <i class="lab lab-line-plus"></i>
+                            <span>New campaign</span>
+                        </button>
+                    </template>
                 </div>
             </header>
 
-            <!-- Tabs -->
-            <nav class="ch-tabs" aria-label="Campaign sections">
+            <!-- Tabs (hidden while editing) -->
+            <nav v-show="!editorOpen" class="ch-tabs" aria-label="Campaign sections">
                 <button
                     v-for="tab in tabs"
                     :key="tab.id"
@@ -63,8 +83,238 @@
                 </button>
             </nav>
 
+            <!-- CAMPAIGN EDITOR (full section, not modal) -->
+            <section v-if="editorOpen" class="ch-panel ch-editor" aria-labelledby="campaign-editor-title">
+                <form class="ch-editor__form" @submit.prevent="saveCampaign">
+                    <div class="ch-editor__layout">
+                        <div class="ch-editor__main">
+                            <section class="ch-form-section">
+                                <h2 id="campaign-editor-title" class="ch-form-section__title">Basics</h2>
+                                <div class="ch-form-grid ch-form-grid--3">
+                                    <div class="ch-field ch-field--span-2">
+                                        <label for="campaign_name">Name</label>
+                                        <input id="campaign_name" v-model="form.name" required />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_status">Status</label>
+                                        <select id="campaign_status" v-model="form.status">
+                                            <option value="draft">Draft</option>
+                                            <option value="active">Active</option>
+                                            <option value="paused">Paused</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_channel">Channel</label>
+                                        <select id="campaign_channel" v-model="form.channel">
+                                            <option value="meta">Meta (Facebook/IG)</option>
+                                            <option value="google">Google Ads</option>
+                                            <option value="tiktok">TikTok</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_objective">Objective</label>
+                                        <select id="campaign_objective" v-model="form.objective">
+                                            <option value="conversions">Conversions</option>
+                                            <option value="traffic">Traffic</option>
+                                            <option value="awareness">Awareness</option>
+                                            <option value="catalog">Catalog sales</option>
+                                        </select>
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_landing">Landing path</label>
+                                        <input id="campaign_landing" v-model="form.landing_path" placeholder="/" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="ch-form-section">
+                                <h2 class="ch-form-section__title">Tracking & UTM</h2>
+                                <div class="ch-form-grid ch-form-grid--3">
+                                    <div class="ch-field">
+                                        <label for="campaign_utm_source">utm_source</label>
+                                        <input id="campaign_utm_source" v-model="form.utm_source" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_utm_medium">utm_medium</label>
+                                        <input id="campaign_utm_medium" v-model="form.utm_medium" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_utm_campaign">utm_campaign</label>
+                                        <input id="campaign_utm_campaign" v-model="form.utm_campaign" placeholder="Auto if empty" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_utm_content">utm_content</label>
+                                        <input id="campaign_utm_content" v-model="form.utm_content" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_utm_term">utm_term</label>
+                                        <input id="campaign_utm_term" v-model="form.utm_term" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="ch-form-section">
+                                <h2 class="ch-form-section__title">Budget & schedule</h2>
+                                <div class="ch-form-grid ch-form-grid--4">
+                                    <div class="ch-field">
+                                        <label for="campaign_daily_budget">Daily budget</label>
+                                        <input id="campaign_daily_budget" v-model="form.daily_budget" type="number" min="0" step="0.01" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_total_budget">Total budget</label>
+                                        <input id="campaign_total_budget" v-model="form.total_budget" type="number" min="0" step="0.01" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_starts_at">Starts</label>
+                                        <input id="campaign_starts_at" v-model="form.starts_at" type="date" />
+                                    </div>
+                                    <div class="ch-field">
+                                        <label for="campaign_ends_at">Ends</label>
+                                        <input id="campaign_ends_at" v-model="form.ends_at" type="date" />
+                                    </div>
+                                    <div class="ch-field ch-field--full">
+                                        <label for="campaign_notes">Notes</label>
+                                        <textarea id="campaign_notes" v-model="form.notes" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <aside class="ch-editor__aside">
+                            <section class="ch-form-section ch-form-section--products">
+                                <div class="ch-form-section__head">
+                                    <div>
+                                        <h2 class="ch-form-section__title">Products & Meta catalog</h2>
+                                        <p class="ch-panel__hint">
+                                            Select products — images, price, and landing URL load automatically from your store.
+                                        </p>
+                                    </div>
+                                    <div class="ch-toolbar">
+                                        <span class="ch-pill-count" v-if="selectedProducts.length">{{ selectedProducts.length }} selected</span>
+                                        <button
+                                            v-if="selectedProducts.length"
+                                            type="button"
+                                            class="ch-btn ch-btn--primary ch-btn--sm"
+                                            @click="syncSelectedToMeta"
+                                        >
+                                            Sync selected
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="ch-selected-products" v-if="selectedProducts.length">
+                                    <article
+                                        v-for="p in selectedProducts"
+                                        :key="'sel-' + p.id"
+                                        class="ch-selected-product"
+                                        :class="{ 'is-active': productPreview?.product_id === p.id }"
+                                        @click="prepareProductById(p.id)"
+                                    >
+                                        <img :src="p.cover || p.thumb" :alt="p.name" />
+                                        <div class="min-w-0">
+                                            <strong class="truncate block">{{ p.name }}</strong>
+                                            <span class="ch-selected-product__meta">
+                                                {{ (p.images || []).length || 1 }} img
+                                                <template v-if="(p.videos || []).length"> · {{ p.videos.length }} vid</template>
+                                                <template v-if="p.meta_sync?.sync_status"> · {{ p.meta_sync.sync_status }}</template>
+                                            </span>
+                                        </div>
+                                        <button type="button" class="ch-icon-btn" aria-label="Remove" @click.stop="removeSelectedProduct(p.id)">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </article>
+                                </div>
+
+                                <div v-if="productPreview" class="ch-meta-preview">
+                                    <div class="ch-meta-preview__media">
+                                        <img :src="productPreview.preview?.image || productPreview.payload?.image_link" alt="" />
+                                    </div>
+                                    <div class="ch-meta-preview__body">
+                                        <div class="ch-form-section__head" style="margin-bottom:0.5rem">
+                                            <div>
+                                                <h3 class="ch-meta-preview__title">{{ productPreview.preview?.title }}</h3>
+                                                <p class="ch-panel__hint truncate">{{ productPreview.preview?.url }}</p>
+                                            </div>
+                                            <span class="ch-sync-badge" :class="'is-' + (productPreview.sync_status || productPreview.meta?.sync_status || 'pending')">
+                                                {{ productPreview.sync_status || productPreview.meta?.sync_status || 'pending' }}
+                                            </span>
+                                        </div>
+                                        <p class="ch-meta-preview__desc">{{ productPreview.preview?.description }}</p>
+                                        <div class="ch-meta-preview__facts">
+                                            <span>Price {{ productPreview.preview?.price }}</span>
+                                            <span v-if="productPreview.preview?.sale_price">Sale {{ productPreview.preview.sale_price }}</span>
+                                            <span>{{ productPreview.preview?.availability }}</span>
+                                            <span v-if="productPreview.preview?.brand">{{ productPreview.preview.brand }}</span>
+                                            <span v-if="productPreview.preview?.category">{{ productPreview.preview.category }}</span>
+                                        </div>
+                                        <ul v-if="(productPreview.errors || []).length" class="ch-meta-list is-error">
+                                            <li v-for="(e, i) in productPreview.errors" :key="'pe-' + i">{{ e.message || e }}</li>
+                                        </ul>
+                                        <ul v-if="(productPreview.warnings || []).length" class="ch-meta-list is-warn">
+                                            <li v-for="(w, i) in productPreview.warnings" :key="'pw-' + i">{{ w.message || w }}</li>
+                                        </ul>
+                                        <div class="ch-toolbar mt-3">
+                                            <button type="button" class="ch-btn ch-btn--soft ch-btn--sm" @click="validateProductById(productPreview.product_id)">Validate</button>
+                                            <button type="button" class="ch-btn ch-btn--primary ch-btn--sm" @click="syncProductById(productPreview.product_id)">Sync to Meta</button>
+                                            <a v-if="productPreview.preview?.url" :href="productPreview.preview.url" target="_blank" class="ch-btn ch-btn--soft ch-btn--sm">Open landing</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="ch-product-search">
+                                    <input
+                                        v-model="productSearch"
+                                        type="search"
+                                        placeholder="Search products by name or SKU…"
+                                        @input="onProductSearch"
+                                    />
+                                </div>
+
+                                <div class="ch-product-grid ch-product-grid--editor" v-if="productResults.length">
+                                    <button
+                                        v-for="p in productResults"
+                                        :key="'pick-' + p.id"
+                                        type="button"
+                                        class="ch-product-tile"
+                                        :class="{ 'is-selected': isProductSelected(p.id) }"
+                                        @click="toggleProduct(p)"
+                                    >
+                                        <div class="ch-product-tile__media">
+                                            <img :src="p.thumb || p.cover" :alt="p.name" />
+                                            <span v-if="(p.videos || []).length" class="ch-product-tile__badge">Video</span>
+                                            <span v-if="p.meta_sync?.sync_status" class="ch-product-tile__sync" :class="'is-' + p.meta_sync.sync_status">
+                                                {{ p.meta_sync.sync_status }}
+                                            </span>
+                                            <span v-if="isProductSelected(p.id)" class="ch-product-tile__check">
+                                                <i class="fa-solid fa-check"></i>
+                                            </span>
+                                        </div>
+                                        <div class="ch-product-tile__body">
+                                            <strong class="truncate">{{ p.name }}</strong>
+                                            <span>
+                                                <template v-if="p.sale_price">{{ formatMoney(p.sale_price) }} · </template>
+                                                {{ formatMoney(p.selling_price) }}
+                                            </span>
+                                        </div>
+                                    </button>
+                                </div>
+                                <p v-else-if="productSearchLoading" class="ch-panel__hint">Loading products…</p>
+                                <p v-else class="ch-panel__hint">No products found. Try another search.</p>
+                            </section>
+                        </aside>
+                    </div>
+
+                    <div class="ch-editor__foot">
+                        <button type="button" class="ch-btn ch-btn--soft" @click="closeDrawer">Cancel</button>
+                        <button type="submit" class="ch-btn ch-btn--primary">Save campaign</button>
+                    </div>
+                </form>
+            </section>
+
             <!-- CAMPAIGNS -->
-            <section v-show="activeTab === 'campaigns'" class="ch-panel">
+            <section v-show="!editorOpen && activeTab === 'campaigns'" class="ch-panel">
                 <div class="ch-panel__head">
                     <div>
                         <h2 class="ch-panel__title">Active & draft campaigns</h2>
@@ -207,7 +457,7 @@
             </section>
 
             <!-- PERFORMANCE -->
-            <section v-show="activeTab === 'performance'" class="ch-panel">
+            <section v-show="!editorOpen && activeTab === 'performance'" class="ch-panel">
                 <div class="ch-kpi-grid">
                     <div v-for="kpi in performanceKpis" :key="kpi.label" class="ch-kpi">
                         <span class="ch-kpi__label">{{ kpi.label }}</span>
@@ -289,7 +539,7 @@
             </section>
 
             <!-- RECOVERY -->
-            <section v-show="activeTab === 'recovery'" class="ch-panel">
+            <section v-show="!editorOpen && activeTab === 'recovery'" class="ch-panel">
                 <div class="ch-kpi-grid">
                     <div class="ch-kpi">
                         <span class="ch-kpi__label">Cart abandon rate</span>
@@ -340,7 +590,7 @@
             </section>
 
             <!-- AUDIENCES -->
-            <section v-show="activeTab === 'audiences'" class="ch-panel">
+            <section v-show="!editorOpen && activeTab === 'audiences'" class="ch-panel">
                 <div class="ch-feature">
                     <div class="ch-feature__copy">
                         <h2 class="ch-panel__title">Customer audiences</h2>
@@ -375,7 +625,7 @@
             </section>
 
             <!-- CATALOG -->
-            <section v-show="activeTab === 'catalog'" class="ch-panel">
+            <section v-show="!editorOpen && activeTab === 'catalog'" class="ch-panel">
                 <div class="ch-panel__head">
                     <div>
                         <h2 class="ch-panel__title">Meta catalog sync</h2>
@@ -454,246 +704,6 @@
                     </table>
                 </div>
             </section>
-        </div>
-    </div>
-
-    <!-- Create / Edit full-page modal -->
-    <div v-if="drawerOpen" class="ch-overlay ch-overlay--page" @click.self="closeDrawer">
-        <div class="ch-page-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-modal-title">
-            <div class="ch-page-modal__head">
-                <div class="min-w-0">
-                    <p class="ch-kicker">Campaign</p>
-                    <h3 id="campaign-modal-title" class="ch-drawer__title">
-                        {{ form.id ? 'Edit campaign' : 'New campaign' }}
-                    </h3>
-                    <p class="ch-panel__hint">Fill details, then save. Meta push is available from the campaigns list.</p>
-                </div>
-                <button type="button" class="ch-icon-btn" aria-label="Close" @click="closeDrawer">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <form class="ch-page-modal__body" @submit.prevent="saveCampaign">
-                <div class="ch-form-sections">
-                    <section class="ch-form-section">
-                        <h4 class="ch-form-section__title">Basics</h4>
-                        <div class="ch-form-grid ch-form-grid--3">
-                            <div class="ch-field ch-field--span-2">
-                                <label for="campaign_name">Name</label>
-                                <input id="campaign_name" v-model="form.name" required />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_status">Status</label>
-                                <select id="campaign_status" v-model="form.status">
-                                    <option value="draft">Draft</option>
-                                    <option value="active">Active</option>
-                                    <option value="paused">Paused</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_channel">Channel</label>
-                                <select id="campaign_channel" v-model="form.channel">
-                                    <option value="meta">Meta (Facebook/IG)</option>
-                                    <option value="google">Google Ads</option>
-                                    <option value="tiktok">TikTok</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_objective">Objective</label>
-                                <select id="campaign_objective" v-model="form.objective">
-                                    <option value="conversions">Conversions</option>
-                                    <option value="traffic">Traffic</option>
-                                    <option value="awareness">Awareness</option>
-                                    <option value="catalog">Catalog sales</option>
-                                </select>
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_landing">Landing path</label>
-                                <input id="campaign_landing" v-model="form.landing_path" placeholder="/" />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="ch-form-section">
-                        <h4 class="ch-form-section__title">Tracking & UTM</h4>
-                        <div class="ch-form-grid ch-form-grid--3">
-                            <div class="ch-field">
-                                <label for="campaign_utm_source">utm_source</label>
-                                <input id="campaign_utm_source" v-model="form.utm_source" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_utm_medium">utm_medium</label>
-                                <input id="campaign_utm_medium" v-model="form.utm_medium" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_utm_campaign">utm_campaign</label>
-                                <input id="campaign_utm_campaign" v-model="form.utm_campaign" placeholder="Auto if empty" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_utm_content">utm_content</label>
-                                <input id="campaign_utm_content" v-model="form.utm_content" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_utm_term">utm_term</label>
-                                <input id="campaign_utm_term" v-model="form.utm_term" />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="ch-form-section">
-                        <h4 class="ch-form-section__title">Budget & schedule</h4>
-                        <div class="ch-form-grid ch-form-grid--4">
-                            <div class="ch-field">
-                                <label for="campaign_daily_budget">Daily budget</label>
-                                <input id="campaign_daily_budget" v-model="form.daily_budget" type="number" min="0" step="0.01" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_total_budget">Total budget</label>
-                                <input id="campaign_total_budget" v-model="form.total_budget" type="number" min="0" step="0.01" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_starts_at">Starts</label>
-                                <input id="campaign_starts_at" v-model="form.starts_at" type="date" />
-                            </div>
-                            <div class="ch-field">
-                                <label for="campaign_ends_at">Ends</label>
-                                <input id="campaign_ends_at" v-model="form.ends_at" type="date" />
-                            </div>
-                            <div class="ch-field ch-field--full">
-                                <label for="campaign_notes">Notes</label>
-                                <textarea id="campaign_notes" v-model="form.notes" rows="3"></textarea>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="ch-form-section">
-                        <div class="ch-form-section__head">
-                            <div>
-                                <h4 class="ch-form-section__title">Products & Meta catalog</h4>
-                                <p class="ch-panel__hint">
-                                    Select a product — details, images, price, and landing URL load from your database. Sync to Meta Catalog before or after saving the campaign.
-                                </p>
-                            </div>
-                            <div class="ch-toolbar">
-                                <span class="ch-pill-count" v-if="selectedProducts.length">{{ selectedProducts.length }} selected</span>
-                                <button
-                                    v-if="selectedProducts.length"
-                                    type="button"
-                                    class="ch-btn ch-btn--primary ch-btn--sm"
-                                    @click="syncSelectedToMeta"
-                                >
-                                    Sync selected to Meta
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="ch-selected-products" v-if="selectedProducts.length">
-                            <article
-                                v-for="p in selectedProducts"
-                                :key="'sel-' + p.id"
-                                class="ch-selected-product"
-                                :class="{ 'is-active': productPreview?.product_id === p.id }"
-                                @click="prepareProductById(p.id)"
-                            >
-                                <img :src="p.cover || p.thumb" :alt="p.name" />
-                                <div class="min-w-0">
-                                    <strong class="truncate block">{{ p.name }}</strong>
-                                    <span class="ch-selected-product__meta">
-                                        {{ (p.images || []).length || 1 }} img
-                                        <template v-if="(p.videos || []).length"> · {{ p.videos.length }} vid</template>
-                                        <template v-if="p.meta_sync?.sync_status"> · {{ p.meta_sync.sync_status }}</template>
-                                    </span>
-                                </div>
-                                <button type="button" class="ch-icon-btn" aria-label="Remove" @click.stop="removeSelectedProduct(p.id)">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </article>
-                        </div>
-
-                        <div v-if="productPreview" class="ch-meta-preview">
-                            <div class="ch-meta-preview__media">
-                                <img :src="productPreview.preview?.image || productPreview.payload?.image_link" alt="" />
-                            </div>
-                            <div class="ch-meta-preview__body">
-                                <div class="ch-form-section__head" style="margin-bottom:0.5rem">
-                                    <div>
-                                        <h5 class="ch-meta-preview__title">{{ productPreview.preview?.title }}</h5>
-                                        <p class="ch-panel__hint">{{ productPreview.preview?.url }}</p>
-                                    </div>
-                                    <span class="ch-sync-badge" :class="'is-' + (productPreview.sync_status || productPreview.meta?.sync_status || 'pending')">
-                                        {{ productPreview.sync_status || productPreview.meta?.sync_status || 'pending' }}
-                                    </span>
-                                </div>
-                                <p class="ch-meta-preview__desc">{{ productPreview.preview?.description }}</p>
-                                <div class="ch-meta-preview__facts">
-                                    <span>Price {{ productPreview.preview?.price }}</span>
-                                    <span v-if="productPreview.preview?.sale_price">Sale {{ productPreview.preview.sale_price }}</span>
-                                    <span>{{ productPreview.preview?.availability }}</span>
-                                    <span v-if="productPreview.preview?.brand">{{ productPreview.preview.brand }}</span>
-                                    <span v-if="productPreview.preview?.category">{{ productPreview.preview.category }}</span>
-                                </div>
-                                <ul v-if="(productPreview.errors || []).length" class="ch-meta-list is-error">
-                                    <li v-for="(e, i) in productPreview.errors" :key="'pe-' + i">{{ e.message || e }}</li>
-                                </ul>
-                                <ul v-if="(productPreview.warnings || []).length" class="ch-meta-list is-warn">
-                                    <li v-for="(w, i) in productPreview.warnings" :key="'pw-' + i">{{ w.message || w }}</li>
-                                </ul>
-                                <div class="ch-toolbar mt-3">
-                                    <button type="button" class="ch-btn ch-btn--soft ch-btn--sm" @click="validateProductById(productPreview.product_id)">Validate</button>
-                                    <button type="button" class="ch-btn ch-btn--primary ch-btn--sm" @click="syncProductById(productPreview.product_id)">Sync to Meta</button>
-                                    <a v-if="productPreview.preview?.url" :href="productPreview.preview.url" target="_blank" class="ch-btn ch-btn--soft ch-btn--sm">Open landing</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="ch-product-search">
-                            <input
-                                v-model="productSearch"
-                                type="search"
-                                placeholder="Search products by name or SKU…"
-                                @input="onProductSearch"
-                            />
-                        </div>
-
-                        <div class="ch-product-grid" v-if="productResults.length">
-                            <button
-                                v-for="p in productResults"
-                                :key="'pick-' + p.id"
-                                type="button"
-                                class="ch-product-tile"
-                                :class="{ 'is-selected': isProductSelected(p.id) }"
-                                @click="toggleProduct(p)"
-                            >
-                                <div class="ch-product-tile__media">
-                                    <img :src="p.thumb || p.cover" :alt="p.name" />
-                                    <span v-if="(p.videos || []).length" class="ch-product-tile__badge">Video</span>
-                                    <span v-if="p.meta_sync?.sync_status" class="ch-product-tile__sync" :class="'is-' + p.meta_sync.sync_status">
-                                        {{ p.meta_sync.sync_status }}
-                                    </span>
-                                    <span v-if="isProductSelected(p.id)" class="ch-product-tile__check">
-                                        <i class="fa-solid fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="ch-product-tile__body">
-                                    <strong class="truncate">{{ p.name }}</strong>
-                                    <span>
-                                        <template v-if="p.sale_price">{{ formatMoney(p.sale_price) }} · </template>
-                                        {{ formatMoney(p.selling_price) }}
-                                    </span>
-                                </div>
-                            </button>
-                        </div>
-                        <p v-else-if="productSearchLoading" class="ch-panel__hint">Loading products…</p>
-                        <p v-else class="ch-panel__hint">No products found. Try another search.</p>
-                    </section>
-                </div>
-
-                <div class="ch-page-modal__foot">
-                    <button type="button" class="ch-btn ch-btn--soft" @click="closeDrawer">Cancel</button>
-                    <button type="submit" class="ch-btn ch-btn--primary">Save campaign</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -790,7 +800,7 @@ export default {
             catalog: {},
             catalogSync: { totals: {}, recent: [], configured: false },
             feedUrl: `${window.location.origin}/feeds/meta-catalog.csv`,
-            drawerOpen: false,
+            editorOpen: false,
             form: emptyForm(),
             selectedProducts: [],
             productResults: [],
@@ -824,6 +834,7 @@ export default {
     },
     methods: {
         switchTab(id) {
+            this.editorOpen = false;
             this.activeTab = id;
             this.refreshActive();
         },
@@ -956,8 +967,12 @@ export default {
             this.selectedProducts = [];
             this.productPreview = null;
             this.productSearch = '';
-            this.drawerOpen = true;
+            this.activeTab = 'campaigns';
+            this.editorOpen = true;
             this.loadProductPicker();
+            this.$nextTick(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         },
         openEdit(c) {
             const products = c.products || [];
@@ -971,12 +986,16 @@ export default {
             this.selectedProducts = [...products];
             this.productPreview = null;
             this.productSearch = '';
-            this.drawerOpen = true;
+            this.activeTab = 'campaigns';
+            this.editorOpen = true;
             this.loadProductPicker();
             if (products[0]) this.prepareProductById(products[0].id);
+            this.$nextTick(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         },
         closeDrawer() {
-            this.drawerOpen = false;
+            this.editorOpen = false;
             this.productPreview = null;
         },
         isProductSelected(id) {
@@ -1817,20 +1836,6 @@ export default {
     display: flex;
 }
 
-.ch-overlay--page {
-    align-items: stretch;
-    justify-content: stretch;
-    padding: 0;
-}
-
-@media (min-width: 768px) {
-    .ch-overlay--page {
-        align-items: center;
-        justify-content: center;
-        padding: 1.25rem;
-    }
-}
-
 .ch-overlay--center {
     align-items: flex-end;
     justify-content: center;
@@ -1844,77 +1849,98 @@ export default {
     }
 }
 
-.ch-page-modal {
-    width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
-    background: #fff;
+.ch-editor {
+    padding: 0 !important;
+    overflow: visible;
+}
+
+.ch-editor__form {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    gap: 0;
+}
+
+.ch-editor__layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
 }
 
 @media (min-width: 768px) {
-    .ch-page-modal {
-        width: min(100%, 72rem);
-        height: min(94dvh, 920px);
-        max-height: 94dvh;
-        border-radius: 20px;
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+    .ch-editor__layout { padding: 1.15rem 1.25rem; gap: 1.15rem; }
+}
+
+/* Laptop / desktop: split workspace — settings left, products right */
+@media (min-width: 1100px) {
+    .ch-editor__layout {
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+        align-items: start;
+        gap: 1.25rem;
+        padding: 1.25rem 1.5rem 1rem;
     }
 }
 
-.ch-page-modal__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+.ch-editor__main,
+.ch-editor__aside {
+    display: grid;
     gap: 1rem;
-    padding: 1.15rem 1.25rem;
-    border-bottom: 1px solid var(--ch-line);
-    background:
-        radial-gradient(700px 180px at 0% 0%, rgba(15, 118, 110, 0.08), transparent 60%),
-        #fff;
-    flex-shrink: 0;
+    min-width: 0;
 }
 
-@media (min-width: 768px) {
-    .ch-page-modal__head { padding: 1.35rem 1.75rem; }
+@media (min-width: 1100px) {
+    .ch-editor__aside {
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100dvh - 7rem);
+        overflow: auto;
+        padding-right: 0.15rem;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
-.ch-page-modal__body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 1.15rem 1.25rem 1.4rem;
-    -webkit-overflow-scrolling: touch;
+.ch-form-section--products {
+    min-height: 100%;
 }
 
-@media (min-width: 768px) {
-    .ch-page-modal__body { padding: 1.35rem 1.75rem 1.6rem; }
-}
-
-.ch-page-modal__foot {
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 0.55rem;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--ch-line);
-    position: sticky;
-    bottom: 0;
-    background: #fff;
+.ch-product-grid--editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (min-width: 640px) {
-    .ch-page-modal__foot {
+    .ch-product-grid--editor { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1100px) {
+    .ch-product-grid--editor { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1400px) {
+    .ch-product-grid--editor { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.ch-editor__foot {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.55rem;
+    padding: 1rem;
+    border-top: 1px solid var(--ch-line);
+    background: linear-gradient(180deg, #fff, #fafaf9);
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+}
+
+@media (min-width: 640px) {
+    .ch-editor__foot {
         flex-direction: row;
         justify-content: flex-end;
+        padding: 1rem 1.25rem 1.15rem;
     }
 }
 
-.ch-form-sections {
-    display: grid;
-    gap: 1rem;
+@media (min-width: 1100px) {
+    .ch-editor__foot { padding: 1rem 1.5rem 1.25rem; }
 }
 
 .ch-form-section {
@@ -2187,6 +2213,12 @@ export default {
     .ch-meta-preview {
         grid-template-columns: 8.5rem 1fr;
         align-items: start;
+    }
+}
+
+@media (min-width: 1100px) {
+    .ch-editor__aside .ch-meta-preview {
+        grid-template-columns: 6.5rem 1fr;
     }
 }
 
