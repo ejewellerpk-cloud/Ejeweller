@@ -64,7 +64,7 @@ class ProductDetailsAdminResource extends JsonResource
             'old_price'                    => AppLibrary::convertAmountFormat($price),
             'old_currency_price'           => AppLibrary::currencyAmountFormat($price),
             'discount'                     => $isOffer ? AppLibrary::convertAmountFormat(($price / 100) * $discount) : 0,
-            'discount_percentage'          => $isOffer ? AppLibrary::convertAmountFormat($discount) : 0,
+            'discount_percentage'          => AppLibrary::convertAmountFormat($discount),
             'flash_sale'                   => $this->add_to_flash_sale == Ask::YES,
             'is_offer'                     => $isOffer,
             'rating_star'                  => $this->rating_star,

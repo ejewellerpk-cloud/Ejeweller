@@ -429,14 +429,32 @@
                             </div>
 
                             <div class="form-col-12 sm:form-col-6">
+                                <label class="db-field-title">
+                                    {{ $t("label.current_selling_price") }}
+                                </label>
+                                <input :value="currentSellingPriceDisplay" type="text" class="db-field-control" readonly
+                                    disabled />
+                            </div>
+
+                            <div class="form-col-12 sm:form-col-6">
                                 <label for="discount" class="db-field-title required">
                                     {{ $t("label.discount_percentage") }}
                                 </label>
-                                <input v-model="form.discount" v-on:keypress="floatNumber($event)"
+                                <input v-model="form.discount" @input="onOfferDiscountInput"
+                                    v-on:keypress="floatNumber($event)"
                                     v-bind:class="offerError.discount ? 'invalid' : ''" type="text" id="discount"
                                     class="db-field-control" />
                                 <small class="db-field-alert" v-if="offerError.discount">{{ offerError.discount[0]
                                     }}</small>
+                            </div>
+
+                            <div class="form-col-12 sm:form-col-6">
+                                <label for="offer_selling_price" class="db-field-title">
+                                    {{ $t("label.selling_price") }}
+                                </label>
+                                <input v-model="form.offer_selling_price" @input="onOfferSellingPriceInput"
+                                    v-on:keypress="floatNumber($event)" type="text" id="offer_selling_price"
+                                    class="db-field-control" />
                             </div>
 
                             <div class="form-col-12 sm:form-col-6">
@@ -657,6 +675,7 @@ export default {
             form: {
                 add_to_flash_sale: "",
                 discount: "",
+                offer_selling_price: "",
                 offer_start_date: "",
                 offer_end_date: "",
             },
@@ -685,6 +704,13 @@ export default {
             const current = this.localImageOrder.find((image) => image.url === this.livePreview);
             return current ? current.id : null;
         },
+        baseSellingPrice: function () {
+            const price = parseFloat(this.product?.old_price);
+            return Number.isFinite(price) ? price : 0;
+        },
+        currentSellingPriceDisplay: function () {
+            return this.product?.old_currency_price || this.product?.flat_selling_price || "";
+        },
     },
     mounted() {
         this.loading.isActive = true;
@@ -702,6 +728,39 @@ export default {
         // Removed manual multiTargets in favor of Vue reactive activeTab state
         floatNumber(e) {
             return appService.floatNumber(e);
+        },
+        roundOfferAmount(value) {
+            const amount = parseFloat(value);
+            if (!Number.isFinite(amount)) {
+                return "";
+            }
+            return (Math.round(amount * 100) / 100).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+        },
+        syncOfferSellingPriceFromDiscount() {
+            const base = this.baseSellingPrice;
+            const discount = parseFloat(this.form.discount);
+            if (!base) {
+                this.form.offer_selling_price = "";
+                return;
+            }
+            if (!Number.isFinite(discount) || this.form.discount === "" || this.form.discount === null) {
+                this.form.offer_selling_price = this.roundOfferAmount(base);
+                return;
+            }
+            const price = base - ((base / 100) * discount);
+            this.form.offer_selling_price = this.roundOfferAmount(Math.max(0, price));
+        },
+        onOfferDiscountInput() {
+            this.syncOfferSellingPriceFromDiscount();
+        },
+        onOfferSellingPriceInput() {
+            const base = this.baseSellingPrice;
+            const price = parseFloat(this.form.offer_selling_price);
+            if (!base || !Number.isFinite(price) || this.form.offer_selling_price === "" || this.form.offer_selling_price === null) {
+                return;
+            }
+            const discount = ((base - price) / base) * 100;
+            this.form.discount = this.roundOfferAmount(Math.max(0, Math.min(100, discount)));
         },
         switchImage: function (image, index) {
             this.livePreview = image.url;
@@ -729,6 +788,7 @@ export default {
                 this.form.discount = res.data.data.discount_percentage;
                 this.form.offer_start_date = res.data.data.offer_start_date;
                 this.form.offer_end_date = res.data.data.offer_end_date;
+                this.syncOfferSellingPriceFromDiscount();
                 this.loading.isActive = false;
             }).catch((error) => {
                 this.loading.isActive = false;
@@ -942,8 +1002,8 @@ export default {
                     form: this.form,
                 }).then((res) => {
                     alertService.success(this.$t("message.product_offer"));
-                    this.loading.isActive = false;
                     this.offerError = {};
+                    this.show();
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.offerError = err.response.data.errors;
@@ -992,12 +1052,14 @@ export default {
                     this.$store.dispatch('product/clearOffer', this.$route.params.id).then((res) => {
                         this.loading.isActive = false;
                         alertService.success(this.$t('message.offer_cleared_success'));
-                        this.form =  {
+                        this.form = {
                             add_to_flash_sale: askEnum.NO,
                             discount: "",
+                            offer_selling_price: "",
                             offer_start_date: "",
                             offer_end_date: "",
-                        }
+                        };
+                        this.syncOfferSellingPriceFromDiscount();
                     }).catch((err) => {
                         this.loading.isActive = false;
                         alertService.error(err.response.data.message);
