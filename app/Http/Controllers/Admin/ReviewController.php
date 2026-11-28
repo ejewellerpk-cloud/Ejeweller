@@ -13,6 +13,8 @@ use App\Http\Requests\ChangeImageRequest;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\AdminProductReviewRequest;
 use App\Http\Requests\AdminGenerateReviewsRequest;
+use App\Http\Requests\AdminBulkReviewDeleteRequest;
+use App\Http\Requests\AdminDeleteFilteredReviewsRequest;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\ReviewDetailsResource;
 use App\Http\Resources\ProductReviewResource;
@@ -43,6 +45,8 @@ class ReviewController extends AdminController implements HasMiddleware
             new Middleware('permission:reviews', only: ['deleteImage']),
             new Middleware('permission:reviews', only: ['update']),
             new Middleware('permission:reviews', only: ['destroy']),
+            new Middleware('permission:reviews', only: ['bulkDestroy']),
+            new Middleware('permission:reviews', only: ['destroyFiltered']),
             new Middleware('permission:reviews', only: ['changeStatus']),
             new Middleware('permission:reviews', only: ['stats']),
         ];
@@ -142,6 +146,36 @@ class ReviewController extends AdminController implements HasMiddleware
             $this->reviewService->destroy($productReview);
 
             return response('', 202);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function bulkDestroy(AdminBulkReviewDeleteRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $deleted = $this->reviewService->bulkDestroy($request->validated('ids'));
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Selected reviews deleted.',
+                'data'    => ['deleted' => $deleted],
+            ]);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function destroyFiltered(AdminDeleteFilteredReviewsRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $deleted = $this->reviewService->destroyFiltered($request->validated());
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Matching reviews deleted.',
+                'data'    => ['deleted' => $deleted],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

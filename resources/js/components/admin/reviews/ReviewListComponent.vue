@@ -92,6 +92,33 @@
                                 search-placeholder="--"
                             />
                         </div>
+                        <div>
+                            <label class="reviews-field-label" for="star">{{ $t('label.rating') }}</label>
+                            <select
+                                id="star"
+                                v-model="props.search.star"
+                                class="db-field-control"
+                            >
+                                <option value="">{{ $t('label.all') }}</option>
+                                <option v-for="rate in 5" :key="rate" :value="rate">
+                                    {{ rate }} ★
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="reviews-field-label" for="images_count">{{ $t('label.review_images') }}</label>
+                            <select
+                                id="images_count"
+                                v-model="props.search.images_count"
+                                class="db-field-control"
+                            >
+                                <option
+                                    v-for="opt in imageCountOptions"
+                                    :key="String(opt.value)"
+                                    :value="opt.value === null ? '' : opt.value"
+                                >{{ opt.label }}</option>
+                            </select>
+                        </div>
                         <div class="reviews-filters__actions">
                             <button type="submit" class="reviews-btn reviews-btn--primary">
                                 <i class="lab lab-line-search lab-font-size-16"></i>
@@ -106,6 +133,44 @@
                 </form>
             </div>
 
+            <!-- Bulk bar -->
+            <div
+                v-if="permissionChecker('reviews') && reviews.length > 0"
+                class="reviews-bulk hidden-print"
+            >
+                <label class="reviews-bulk__select-all">
+                    <input
+                        type="checkbox"
+                        :checked="allPageSelected"
+                        @change="toggleSelectAllPage"
+                    />
+                    <span>{{ $t('label.select_all') }}</span>
+                    <span v-if="selectedIds.length" class="reviews-bulk__count">
+                        ({{ selectedIds.length }})
+                    </span>
+                </label>
+                <div class="reviews-bulk__actions">
+                    <button
+                        type="button"
+                        class="reviews-btn reviews-btn--danger"
+                        :disabled="!selectedIds.length || bulkBusy"
+                        @click="bulkDeleteSelected"
+                    >
+                        <i class="lab lab-line-trash"></i>
+                        <span>{{ $t('button.delete_selected') }}</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="reviews-btn reviews-btn--danger-outline"
+                        :disabled="bulkBusy"
+                        @click="deleteFilteredAll"
+                    >
+                        <i class="lab lab-line-trash"></i>
+                        <span>{{ $t('button.delete_all_filtered') }}</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Review feed -->
             <div id="print" class="reviews-feed">
                 <template v-if="reviews.length > 0">
@@ -113,10 +178,20 @@
                         v-for="review in reviews"
                         :key="review.id"
                         class="review-card"
-                        :class="statusAccentClass(review.status)"
+                        :class="[statusAccentClass(review.status), { 'is-selected': isSelected(review.id) }]"
                     >
                         <div class="review-card__top">
                             <div class="review-card__identity">
+                                <label
+                                    v-if="permissionChecker('reviews')"
+                                    class="review-card__check hidden-print"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="isSelected(review.id)"
+                                        @change="toggleSelect(review.id)"
+                                    />
+                                </label>
                                 <div class="review-card__avatar" aria-hidden="true">
                                     {{ initials(review.user_name) }}
                                 </div>
@@ -177,6 +252,9 @@
                         <p class="review-card__body">{{ plainReview(review.review) }}</p>
 
                         <div v-if="review.images && review.images.length" class="review-card__photos">
+                            <span class="review-card__photo-count">
+                                {{ review.images.length }} {{ $t('label.images') }}
+                            </span>
                             <img
                                 v-for="(img, imgIndex) in review.images"
                                 :key="imgIndex"
@@ -186,6 +264,9 @@
                                 loading="lazy"
                             />
                         </div>
+                        <p v-else class="review-card__no-photos hidden-print">
+                            {{ $t('label.no_images') }}
+                        </p>
 
                         <div v-if="permissionChecker('reviews')" class="review-card__actions hidden-print">
                             <button
@@ -273,6 +354,8 @@ export default {
             },
             showFilter: false,
             activeStatusTab: 'all',
+            selectedIds: [],
+            bulkBusy: false,
             printObj: {
                 id: "print",
                 popTitle: this.$t('menu.reviews')
@@ -287,6 +370,8 @@ export default {
                     user_id: null,
                     product_id: null,
                     status: null,
+                    star: '',
+                    images_count: '',
                 }
             },
             productSearch: {
@@ -346,6 +431,28 @@ export default {
                 { key: 'rejected', label: 'Rejected', count: this.stats.rejected || 0, tone: 'is-rejected' },
             ];
         },
+        imageCountOptions: function () {
+            return [
+                { value: null, label: this.$t('label.all') },
+                { value: 'none', label: this.$t('label.no_images') },
+                { value: '1', label: this.$t('label.images_count_n', { count: 1 }) },
+                { value: '2', label: this.$t('label.images_count_n', { count: 2 }) },
+                { value: '3plus', label: this.$t('label.images_count_3plus') },
+            ];
+        },
+        pageIds: function () {
+            return (this.reviews || []).map((r) => Number(r.id));
+        },
+        allPageSelected: function () {
+            return this.pageIds.length > 0 && this.pageIds.every((id) => this.selectedIds.includes(id));
+        },
+        somePageSelected: function () {
+            return this.pageIds.some((id) => this.selectedIds.includes(id));
+        },
+        hasActiveFilters: function () {
+            const s = this.props.search;
+            return !!(s.user_id || s.product_id || s.status || s.star || s.images_count);
+        },
     },
     methods: {
         plainReview: function (text) {
@@ -383,6 +490,7 @@ export default {
             this.$store.dispatch('review/lists', this.props.search)
                 .then(() => {
                     this.loading.isActive = false;
+                    this.pruneSelection();
                 })
                 .catch(() => {
                     this.loading.isActive = false;
@@ -390,6 +498,7 @@ export default {
         },
         clear: function () {
             this.activeStatusTab = 'all';
+            this.selectedIds = [];
             this.props.search = {
                 paginate: 1,
                 page: 1,
@@ -399,8 +508,82 @@ export default {
                 user_id: null,
                 product_id: null,
                 status: null,
+                star: '',
+                images_count: '',
             };
             this.list();
+        },
+        isSelected: function (id) {
+            return this.selectedIds.includes(Number(id));
+        },
+        toggleSelect: function (id) {
+            const value = Number(id);
+            if (this.selectedIds.includes(value)) {
+                this.selectedIds = this.selectedIds.filter((item) => item !== value);
+            } else {
+                this.selectedIds = [...this.selectedIds, value];
+            }
+        },
+        toggleSelectAllPage: function (event) {
+            const checked = event?.target?.checked;
+            if (checked) {
+                const merged = new Set([...this.selectedIds, ...this.pageIds]);
+                this.selectedIds = Array.from(merged);
+            } else {
+                this.selectedIds = this.selectedIds.filter((id) => !this.pageIds.includes(id));
+            }
+        },
+        pruneSelection: function () {
+            // Keep selection across pages; nothing to prune aggressively.
+        },
+        bulkDeleteSelected: function () {
+            if (!this.selectedIds.length) {
+                return;
+            }
+            appService.destroyConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                this.$store.dispatch('review/bulkDestroy', { ids: this.selectedIds }).then((res) => {
+                    const count = res.data?.data?.deleted ?? this.selectedIds.length;
+                    this.selectedIds = [];
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                    this.loadStats();
+                    this.list(this.props.search.page);
+                    alertService.success(this.$t('message.reviews_deleted_count', { count }));
+                }).catch((err) => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || 'Unable to delete reviews');
+                });
+            }).catch(() => {});
+        },
+        deleteFilteredAll: function () {
+            appService.destroyConfirmation().then(() => {
+                this.bulkBusy = true;
+                this.loading.isActive = true;
+                const payload = {
+                    confirm: 1,
+                    user_id: this.props.search.user_id || undefined,
+                    product_id: this.props.search.product_id || undefined,
+                    star: this.props.search.star || undefined,
+                    status: this.props.search.status || undefined,
+                    images_count: this.props.search.images_count || undefined,
+                };
+                this.$store.dispatch('review/destroyFiltered', payload).then((res) => {
+                    const count = res.data?.data?.deleted ?? 0;
+                    this.selectedIds = [];
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                    this.loadStats();
+                    this.list(1);
+                    alertService.success(this.$t('message.reviews_deleted_count', { count }));
+                }).catch((err) => {
+                    this.bulkBusy = false;
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || 'Unable to delete reviews');
+                });
+            }).catch(() => {});
         },
         reviewStatusLabel: function (status) {
             const map = {
@@ -655,9 +838,70 @@ export default {
 
 @media (min-width: 768px) {
     .reviews-filters__grid {
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: end;
     }
+}
+
+@media (min-width: 1100px) {
+    .reviews-filters__grid {
+        grid-template-columns: 1.2fr 1.2fr 0.7fr 0.9fr auto;
+    }
+}
+
+.reviews-bulk {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 1px solid var(--rp-line);
+    border-radius: 0.9rem;
+}
+
+.reviews-bulk__select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--rp-ink);
+    cursor: pointer;
+}
+
+.reviews-bulk__count {
+    color: var(--rp-muted);
+    font-weight: 600;
+}
+
+.reviews-bulk__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.reviews-btn--danger {
+    background: #b42318;
+    color: #fff;
+}
+
+.reviews-btn--danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.reviews-btn--danger-outline {
+    background: #fff;
+    color: #b42318;
+    border-color: #f3c4bf;
+}
+
+.reviews-btn--danger-outline:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .reviews-field-label {
@@ -714,6 +958,18 @@ export default {
     align-items: flex-start;
     gap: 0.75rem;
     min-width: 0;
+}
+
+.review-card__check {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.7rem;
+    cursor: pointer;
+}
+
+.review-card.is-selected {
+    border-color: #1a1c1e;
+    box-shadow: 0 0 0 1px #1a1c1e;
 }
 
 .review-card__avatar {
@@ -851,8 +1107,24 @@ export default {
 .review-card__photos {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.9rem;
+}
+
+.review-card__photo-count {
+    flex-basis: 100%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--rp-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.review-card__no-photos {
+    margin: 0 0 0.9rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
 }
 
 .review-card__photo {

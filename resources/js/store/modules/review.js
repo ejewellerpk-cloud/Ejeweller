@@ -206,6 +206,30 @@ export const review = {
                     });
             });
         },
+        bulkDestroy: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post("admin/reviews/bulk-delete", { ids: payload.ids })
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
+        destroyFiltered: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .post("admin/reviews/delete-filtered", payload)
+                    .then((res) => {
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         reset: function (context) {
             context.commit("reset");
         },

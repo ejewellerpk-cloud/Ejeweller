@@ -867,6 +867,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/', [ReviewController::class, 'index']);
         Route::post('/', [ReviewController::class, 'store']);
         Route::post('/generate', [ReviewController::class, 'generate']);
+        Route::post('/bulk-delete', [ReviewController::class, 'bulkDestroy']);
+        Route::post('/delete-filtered', [ReviewController::class, 'destroyFiltered']);
         Route::get('/stats', [ReviewController::class, 'stats']);
         Route::get('/export', [ReviewController::class, 'export']);
         Route::get('/show/{productReview}', [ReviewController::class, 'show']);

@@ -24,6 +24,7 @@ class ReviewService
         'product_id',
         'star',
         'status',
+        'images_count',
         'except'
     ];
 
@@ -39,31 +40,118 @@ class ReviewService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return ProductReview::with(['product', 'user'])->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->reviewFilter)) {
-                        if ($key == "except") {
-                            $explodes = explode('|', $request);
-                            if (count($explodes)) {
-                                foreach ($explodes as $explode) {
-                                    $query->where('id', '!=', $explode);
-                                }
-                            }
-                        } else {
-                            if ($key == "user_id") {
-                                $query->where($key, $request);
-                            } else if ($key == "product_id") {
-                                $query->where($key, $request);
-                            } else if ($key == "star" || $key == "status") {
-                                $query->where($key, $request);
-                            } else {
-                                $query->where($key, 'like', '%' . $request . '%');
-                            }
-                        }
+            return $this->filteredQuery($requests)
+                ->with(['product', 'user'])
+                ->orderBy($orderColumn, $orderType)
+                ->$method($methodValue);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    protected function filteredQuery(array $requests)
+    {
+        $query = ProductReview::query();
+
+        foreach ($requests as $key => $value) {
+            if ($value === null || $value === '' || !in_array($key, $this->reviewFilter, true)) {
+                continue;
+            }
+
+            if ($key === 'except') {
+                $explodes = explode('|', (string) $value);
+                foreach ($explodes as $explode) {
+                    if ($explode !== '') {
+                        $query->where('id', '!=', $explode);
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method($methodValue);
+                continue;
+            }
+
+            if ($key === 'images_count') {
+                $this->applyImagesCountFilter($query, $value);
+                continue;
+            }
+
+            if (in_array($key, ['user_id', 'product_id', 'star', 'status'], true)) {
+                $query->where($key, $value);
+            }
+        }
+
+        return $query;
+    }
+
+    protected function applyImagesCountFilter($query, $value): void
+    {
+        $mediaScope = function ($mediaQuery) {
+            $mediaQuery->where('collection_name', 'product-review');
+        };
+
+        if ($value === 'none' || (string) $value === '0') {
+            $query->whereDoesntHave('media', $mediaScope);
+            return;
+        }
+
+        if ($value === '3plus' || $value === '3+') {
+            $query->whereHas('media', $mediaScope, '>=', 3);
+            return;
+        }
+
+        $count = (int) $value;
+        if ($count > 0) {
+            $query->whereHas('media', $mediaScope, '=', $count);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function bulkDestroy(array $ids): int
+    {
+        try {
+            $deleted = 0;
+            DB::transaction(function () use ($ids, &$deleted) {
+                $reviews = ProductReview::whereIn('id', $ids)->get();
+                foreach ($reviews as $review) {
+                    $review->clearMediaCollection('product-review');
+                    $review->delete();
+                    $deleted++;
+                }
+            });
+
+            return $deleted;
         } catch (Exception $exception) {
+            DB::rollBack();
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Delete every review matching the same filters as the list endpoint.
+     *
+     * @throws Exception
+     */
+    public function destroyFiltered(array $requests): int
+    {
+        try {
+            $deleted = 0;
+            DB::transaction(function () use ($requests, &$deleted) {
+                $this->filteredQuery($requests)
+                    ->orderBy('id')
+                    ->chunkById(100, function ($reviews) use (&$deleted) {
+                        foreach ($reviews as $review) {
+                            $review->clearMediaCollection('product-review');
+                            $review->delete();
+                            $deleted++;
+                        }
+                    });
+            });
+
+            return $deleted;
+        } catch (Exception $exception) {
+            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
