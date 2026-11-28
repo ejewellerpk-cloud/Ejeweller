@@ -170,7 +170,7 @@ class PurchaseService
     public function edit(Purchase $purchase): Purchase
     {
         try {
-            return $purchase;
+            return $purchase->load(['stocks.product.media', 'stocks.stockTaxes', 'supplier', 'media']);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

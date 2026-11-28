@@ -21,6 +21,8 @@ class ProductWithVariationResource extends JsonResource
             'variation_names'   => $this->variation_names,
             'product_name'      => $this?->product?->name,
             'sku'               => $this->sku,
+            'cover'             => $this?->product?->cover,
+            'thumb'             => $this?->product?->thumb,
             'price'             => $this->price,
             'quantity'          => abs($this->quantity),
             'discount'          => $this->discount,

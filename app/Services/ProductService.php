@@ -1123,8 +1123,7 @@ class ProductService
     {
         try {
             return Product::select('id', 'name', 'buying_price', 'can_purchasable', 'status', 'sku')
-                ->with('productTaxes')
-                ->with('variations')
+                ->with(['productTaxes', 'variations', 'media'])
                 ->where('can_purchasable', ASK::YES)
                 ->where('status', Status::ACTIVE)
                 ->orderBy('name', 'asc')

@@ -1,206 +1,253 @@
 <template>
     <LoadingComponent :props="loading" />
+    <PurchaseSupplierQuickModal ref="supplierModal" @created="onSupplierCreated" />
+
     <div class="col-12">
-        <form @submit.prevent="save" class="block w-full">
-            <div class="db-card mb-6">
-                <div class="db-card-header">
-                    <h3 class="db-card-title">{{ $t("menu.purchase") }}</h3>
+        <form @submit.prevent="save" class="po-page block w-full">
+            <div class="po-header">
+                <div class="min-w-0">
+                    <h1 class="po-header__title">{{ $t('menu.purchase') }}</h1>
+                    <p class="po-header__subtitle">{{ $t('message.purchase_form_hint') }}</p>
                 </div>
-                <div class="db-card-body">
-                    <div class="row">
-                        <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title required">{{
-                                $t("label.date")
-                            }}</label>
-                            <Datepicker hideInputIcon autoApply v-model="props.form.date" :enableTimePicker="true"
-                                :is24="false" :monthChangeOnScroll="false" utc="false" 
-                                :input-class-name="errors.date ? 'invalid' : ''">
-                                <template #am-pm-button="{ toggle, value }">
-                                    <button @click="toggle">{{ value }}</button>
-                                </template>
-                            </Datepicker>
-                            <small class="db-field-alert" v-if="errors.date">
-                                {{ errors.date[0] }}
-                            </small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title ">{{
-                                $t("label.reference_no")
-                            }}</label>
-                            <input name="reference_no" v-model="props.form.reference_no" type="text"
-                                class="db-field-control" />
-                            <small class="db-field-alert" v-if="errors.reference_no">{{ errors.reference_no[0] }}</small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title required">{{
-                                $t("label.status")
-                            }}</label>
-
-                            <vue-select v-model="props.form.status" class="db-field-control f-b-custom-select"
-                                :options="enums.statusEnumArray" label-by="statusKey" value-by="statusValue"
-                                :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                                search-placeholder="--" />
-                            <small class="db-field-alert" v-if="errors.status">{{ errors.status[0] }}</small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title ">{{
-                                $t("label.attachments")
-                            }}</label>
-                            <input @change="changeFile" v-bind:class="errors.file ? 'invalid' : ''" type="file"
-                                ref="fileProperty" accept="image/png , image/jpeg, image/jpg , application/pdf "
-                                class="db-field-control cursor-pointer" id="image" />
-                            <small class="db-field-alert" v-if="errors.file">{{
-                                errors.file[0]
-                            }}</small>
-                        </div>
-                        <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title required">{{ $t("label.supplier") }}</label>
-
-                            <vue-select v-model="props.form.supplier_id" class="db-field-control f-b-custom-select"
-                                :options="suppliers" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
-                                :clearOnClose="true" placeholder="--" search-placeholder="--" />
-
-                            <small class="db-field-alert" v-if="errors.supplier_id">{{
-                                errors.supplier_id[0]
-                            }}</small>
-                        </div>
-                        <div class="form-col-12">
-                            <div class="rounded-lg border border-amber-100">
-                                <h4 class="w-full px-4 py-3 font-medium rounded-t-lg bg-amber-100 text-amber-600">
-                                    {{ $t("message.selection_message") }}
-                                </h4>
-                                <div class="row p-5">
-                                    <div class="form-col-12 ">
-                                        <label class="db-field-title required">{{
-                                            $t("label.add_products")
-                                        }}</label>
-                                        <div class="relative w-full h-12">
-                                            <button type="button"
-                                                class="lab-line-qrcode absolute top-1/2 -translate-y-1/2 left-4 z-10 cursor-pointer"></button>
-                                            <vue-select class="h-full pr-4 pl-11" v-model="productId" :options="products"
-                                                label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
-                                                :clearOnClose="true" :placeholder="$t('label.select_one')"
-                                                search-placeholder="--" @update:modelValue="selectProduct($event)" />
-                                        </div>
-                                        <small class="db-field-alert" v-if="errors.products">{{
-                                            errors.products[0]
-                                        }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-col-12">
-                            <label class="db-field-title">{{ $t('label.products') }}</label>
-                            <div class="db-table-responsive border rounded-md">
-                                <table class="db-table">
-                                    <thead class="db-table-head border-t-0">
-                                        <tr class="db-table-head-tr">
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.product") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.unit_cost") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.quantity") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.discount") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.taxes") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.sub_total") }}
-                                            </th>
-                                            <th class="db-table-head-th">
-                                                {{ $t("label.actions") }}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="db-table-body">
-                                        <tr v-for="(item, index) of datatable" :key="index" class="db-table-body-tr">
-                                            <td class="db-table-body-td font-medium">
-                                                {{ item.name }}
-                                                <span v-if="item.variation_names">
-                                                    ( {{ $t('label.variation') }} : {{ item.variation_names }})
-                                                </span>
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                {{ floatFormat(item.price) }}
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                <input v-on:keypress="onlyNumber($event)" @keyup="updateQuantity(index)"
-                                                    v-model="item.quantity" @click=" $event.target.select()" type="number"
-                                                    min="1" class="db-field-control">
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                {{ Number(item.total_discount) === 0 ? "" : "-" }}
-                                                {{ floatFormat(item.total_discount) }}
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                {{ floatFormat(item.total_tax) }}
-                                                ({{ floatFormat(item.total_tax_rate) }}%)
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                {{ floatFormat(item.total) }}
-                                            </td>
-                                            <td class="db-table-body-td">
-                                                <SmIconSidebarModalEditComponent @click.prevent="editDatatable(index)" />
-                                                <SmIconDeleteComponent @click.prevent="removeProduct(index)" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th class="db-table-body-td" colspan="2">{{ $t('label.total') }}</th>
-                                            <th class="db-table-body-td ">
-                                                <span class="pl-3">
-                                                    {{ Number.isInteger(totalQuantity) ? totalQuantity : 0 }}
-                                                </span>
-                                            </th>
-                                            <th class="db-table-body-td">
-                                                {{ floatFormat(totalDiscount) }}
-                                            </th>
-                                            <th class="db-table-body-td">
-                                                {{ floatFormat(totalTax) }}
-                                            </th>
-                                            <th class="db-table-body-td">
-                                                {{ floatFormat(totalPrice) }}
-                                            </th>
-                                            <th class="db-table-body-td"></th>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <ProductModalComponent :item="selectedProduct" :modal="modal" :productId="this.productId"
-                            v-on:submitItem="modalSubmit" ref="productModal" />
-                    </div>
-                    <div class="row pt-5">
-                        <div class="form-col-12">
-                            <div :class="errors.note ? 'invalid textarea-error-box-style' : ''">
-                                <label class="db-field-title">
-                                    {{ $t("label.note") }}
-                                </label>
-                                <quill-editor v-model:value="props.form.note" class="!h-40 textarea-border-radius" />
-                                <small class="db-field-alert" v-if="errors.note">{{ errors.note[0] }}</small>
-                            </div>
-                        </div>
-                        <div class="form-col-12">
-                            <div class="flex flex-wrap gap-3">
-                                <button v-if="permissionChecker('purchase_create')" type="submit"
-                                    class="db-btn text-white bg-primary">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                    <span class="tracking-wide">
-                                        {{ $t("button.save") }}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <router-link :to="{ name: 'admin.purchase.list' }" class="db-btn h-[37px] text-white bg-gray-600">
+                    <i class="lab lab-line-undo"></i>
+                    <span>{{ $t('button.back') }}</span>
+                </router-link>
             </div>
+
+            <div class="po-grid">
+                <section class="po-card">
+                    <div class="po-card__head">
+                        <h2 class="po-card__title">{{ $t('label.purchase_details') }}</h2>
+                    </div>
+                    <div class="po-card__body">
+                        <div class="row">
+                            <div class="form-col-12 sm:form-col-6">
+                                <label class="db-field-title required">{{ $t('label.date') }}</label>
+                                <Datepicker
+                                    hideInputIcon
+                                    autoApply
+                                    v-model="props.form.date"
+                                    :enableTimePicker="true"
+                                    :is24="false"
+                                    :monthChangeOnScroll="false"
+                                    utc="false"
+                                    :input-class-name="errors.date ? 'invalid' : ''"
+                                >
+                                    <template #am-pm-button="{ toggle, value }">
+                                        <button type="button" @click="toggle">{{ value }}</button>
+                                    </template>
+                                </Datepicker>
+                                <small class="db-field-alert" v-if="errors.date">{{ errors.date[0] }}</small>
+                            </div>
+                            <div class="form-col-12 sm:form-col-6">
+                                <label class="db-field-title">{{ $t('label.reference_no') }}</label>
+                                <input name="reference_no" v-model="props.form.reference_no" type="text" class="db-field-control" />
+                                <small class="db-field-alert" v-if="errors.reference_no">{{ errors.reference_no[0] }}</small>
+                            </div>
+                            <div class="form-col-12 sm:form-col-6">
+                                <label class="db-field-title required">{{ $t('label.status') }}</label>
+                                <vue-select
+                                    v-model="props.form.status"
+                                    class="db-field-control f-b-custom-select"
+                                    :options="enums.statusEnumArray"
+                                    label-by="statusKey"
+                                    value-by="statusValue"
+                                    :closeOnSelect="true"
+                                    :searchable="true"
+                                    :clearOnClose="true"
+                                    placeholder="--"
+                                    search-placeholder="--"
+                                />
+                                <small class="db-field-alert" v-if="errors.status">{{ errors.status[0] }}</small>
+                            </div>
+                            <div class="form-col-12 sm:form-col-6">
+                                <label class="db-field-title">{{ $t('label.attachments') }}</label>
+                                <input
+                                    @change="changeFile"
+                                    :class="errors.file ? 'invalid' : ''"
+                                    type="file"
+                                    ref="fileProperty"
+                                    accept="image/png,image/jpeg,image/jpg,application/pdf"
+                                    class="db-field-control cursor-pointer"
+                                    id="purchase_attachment"
+                                />
+                                <small class="db-field-alert" v-if="errors.file">{{ errors.file[0] }}</small>
+                            </div>
+                            <div class="form-col-12">
+                                <label class="db-field-title required">{{ $t('label.supplier') }}</label>
+                                <div class="po-supplier">
+                                    <vue-select
+                                        v-model="props.form.supplier_id"
+                                        class="db-field-control f-b-custom-select po-supplier__select"
+                                        :options="suppliers"
+                                        label-by="name"
+                                        value-by="id"
+                                        :closeOnSelect="true"
+                                        :searchable="true"
+                                        :clearOnClose="true"
+                                        placeholder="--"
+                                        search-placeholder="--"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="db-btn h-[38px] text-white bg-primary po-supplier__add"
+                                        @click="openSupplierModal"
+                                    >
+                                        <i class="lab lab-add-circle-line"></i>
+                                        <span>{{ $t('button.add') }}</span>
+                                    </button>
+                                </div>
+                                <small class="db-field-alert" v-if="errors.supplier_id">{{ errors.supplier_id[0] }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="po-card">
+                    <div class="po-card__head">
+                        <h2 class="po-card__title">{{ $t('label.add_products') }}</h2>
+                        <p class="po-card__hint">{{ $t('message.selection_message') }}</p>
+                    </div>
+                    <div class="po-card__body">
+                        <div class="po-product-pick">
+                            <i class="lab lab-line-qrcode po-product-pick__icon"></i>
+                            <vue-select
+                                class="po-product-pick__select"
+                                v-model="productId"
+                                :options="products"
+                                label-by="name"
+                                value-by="id"
+                                :closeOnSelect="true"
+                                :searchable="true"
+                                :clearOnClose="true"
+                                :placeholder="$t('label.select_one')"
+                                search-placeholder="--"
+                                @update:modelValue="selectProduct($event)"
+                            />
+                        </div>
+                        <small class="db-field-alert" v-if="errors.products">{{ errors.products[0] }}</small>
+                    </div>
+                </section>
+
+                <section class="po-card po-card--wide">
+                    <div class="po-card__head po-card__head--row">
+                        <h2 class="po-card__title">{{ $t('label.products') }}</h2>
+                        <span class="po-chip" v-if="datatable.length">{{ datatable.length }} {{ $t('label.items') }}</span>
+                    </div>
+                    <div class="po-card__body !pt-0 !px-0">
+                        <div class="db-table-responsive">
+                            <table class="db-table po-table">
+                                <thead class="db-table-head border-t-0">
+                                    <tr class="db-table-head-tr">
+                                        <th class="db-table-head-th">{{ $t('label.product') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.unit_cost') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.quantity') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.discount') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.taxes') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.sub_total') }}</th>
+                                        <th class="db-table-head-th">{{ $t('label.actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="db-table-body" v-if="datatable.length">
+                                    <tr v-for="(item, index) of datatable" :key="`${item.product_id}-${item.variation_id}-${index}`" class="db-table-body-tr">
+                                        <td class="db-table-body-td">
+                                            <div class="po-product-cell">
+                                                <img
+                                                    class="po-product-cell__thumb"
+                                                    :src="item.cover || item.thumb || defaultProductImage"
+                                                    :alt="item.name"
+                                                    loading="lazy"
+                                                />
+                                                <div class="min-w-0">
+                                                    <p class="po-product-cell__name">{{ item.name }}</p>
+                                                    <p class="po-product-cell__meta" v-if="item.variation_names || item.sku">
+                                                        <span v-if="item.variation_names">{{ $t('label.variation') }}: {{ item.variation_names }}</span>
+                                                        <span v-if="item.sku">SKU: {{ item.sku }}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="db-table-body-td">{{ floatFormat(item.price) }}</td>
+                                        <td class="db-table-body-td">
+                                            <input
+                                                v-on:keypress="onlyNumber($event)"
+                                                @keyup="updateQuantity(index)"
+                                                v-model="item.quantity"
+                                                @click="$event.target.select()"
+                                                type="number"
+                                                min="1"
+                                                class="db-field-control po-qty"
+                                            />
+                                        </td>
+                                        <td class="db-table-body-td">
+                                            {{ Number(item.total_discount) === 0 ? '' : '-' }}{{ floatFormat(item.total_discount) }}
+                                        </td>
+                                        <td class="db-table-body-td">
+                                            {{ floatFormat(item.total_tax) }}
+                                            <span class="text-slate-400">({{ floatFormat(item.total_tax_rate) }}%)</span>
+                                        </td>
+                                        <td class="db-table-body-td font-semibold">{{ floatFormat(item.total) }}</td>
+                                        <td class="db-table-body-td">
+                                            <SmIconSidebarModalEditComponent @click.prevent="editDatatable(index)" />
+                                            <SmIconDeleteComponent @click.prevent="removeProduct(index)" />
+                                        </td>
+                                    </tr>
+                                    <tr class="po-totals">
+                                        <th class="db-table-body-td" colspan="2">{{ $t('label.total') }}</th>
+                                        <th class="db-table-body-td">{{ Number.isInteger(totalQuantity) ? totalQuantity : 0 }}</th>
+                                        <th class="db-table-body-td">{{ floatFormat(totalDiscount) }}</th>
+                                        <th class="db-table-body-td">{{ floatFormat(totalTax) }}</th>
+                                        <th class="db-table-body-td">{{ floatFormat(totalPrice) }}</th>
+                                        <th class="db-table-body-td"></th>
+                                    </tr>
+                                </tbody>
+                                <tbody class="db-table-body" v-else>
+                                    <tr class="db-table-body-tr">
+                                        <td class="db-table-body-td text-center py-10 text-slate-400" colspan="7">
+                                            {{ $t('message.purchase_no_products') }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="po-card po-card--wide">
+                    <div class="po-card__head">
+                        <h2 class="po-card__title">{{ $t('label.note') }}</h2>
+                    </div>
+                    <div class="po-card__body">
+                        <div :class="errors.note ? 'invalid textarea-error-box-style' : ''">
+                            <quill-editor v-model:value="props.form.note" class="!h-40 textarea-border-radius" />
+                            <small class="db-field-alert" v-if="errors.note">{{ errors.note[0] }}</small>
+                        </div>
+                        <div class="flex flex-wrap gap-3 mt-5">
+                            <button
+                                v-if="permissionChecker('purchase_create') || permissionChecker('purchase_edit')"
+                                type="submit"
+                                class="db-btn text-white bg-primary"
+                            >
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span class="tracking-wide">{{ $t('button.save') }}</span>
+                            </button>
+                            <router-link :to="{ name: 'admin.purchase.list' }" class="db-btn text-white bg-gray-600">
+                                <i class="lab lab-fill-close-circle"></i>
+                                <span>{{ $t('button.cancel') }}</span>
+                            </router-link>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <ProductModalComponent
+                :item="selectedProduct"
+                :modal="modal"
+                :productId="productId"
+                v-on:submitItem="modalSubmit"
+                ref="productModal"
+            />
         </form>
     </div>
 </template>
@@ -215,6 +262,8 @@ import ProductModalComponent from "../components/product/ProductModalComponent"
 import appService from '../../../services/appService';
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent.vue";
 import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
+import PurchaseSupplierQuickModal from "./PurchaseSupplierQuickModal.vue";
+import ENV from "../../../config/env";
 
 export default {
     name: 'PurchaseCreateAndEditComponent',
@@ -224,7 +273,8 @@ export default {
         LoadingComponent,
         ProductModalComponent,
         SmIconDeleteComponent,
-        SmIconSidebarModalEditComponent
+        SmIconSidebarModalEditComponent,
+        PurchaseSupplierQuickModal,
     },
     data() {
         return {
@@ -268,10 +318,13 @@ export default {
                 variation_names: "",
                 product_id: 0,
                 sku: "",
+                cover: "",
+                thumb: "",
                 is_variation: false,
                 mode: 'add'
             },
-            dataTableIndex: null
+            dataTableIndex: null,
+            defaultProductImage: (ENV.API_URL || '') + '/images/default/product/thumb.png',
         }
     },
     mounted() {
@@ -319,6 +372,14 @@ export default {
         permissionChecker(e) {
             return appService.permissionChecker(e);
         },
+        openSupplierModal() {
+            this.$refs.supplierModal?.open?.();
+        },
+        onSupplierCreated(supplier) {
+            if (supplier?.id) {
+                this.props.form.supplier_id = supplier.id;
+            }
+        },
         changeFile: function (e) {
             this.file = e.target.files[0];
         },
@@ -330,6 +391,9 @@ export default {
         },
         taxRateById(id) {
             return this.$refs.productModal.taxRateById(id);
+        },
+        productImage(product) {
+            return product?.cover || product?.thumb || this.defaultProductImage;
         },
         selectProduct: function (id) {
             const product = this.products.find(product => product.id === id);
@@ -344,6 +408,8 @@ export default {
                     variation_id: 0,
                     variation_names: '',
                     product_id: product.id,
+                    cover: product.cover || '',
+                    thumb: product.thumb || '',
                     is_variation: product.is_variation,
                     mode: 'add'
                 }
@@ -403,6 +469,8 @@ export default {
                 variation_names: this.selectedProduct.variation_names,
                 product_id: this.selectedProduct.product_id,
                 is_variation: this.selectedProduct.is_variation,
+                cover: this.selectedProduct.cover || '',
+                thumb: this.selectedProduct.thumb || '',
                 tax: tax,
                 total_tax: total_tax,
                 total_tax_rate: total_tax_rate,
@@ -430,6 +498,8 @@ export default {
                 productExist.item_id = finalItem.is_variation ? finalItem.variation_id : finalItem.product_id;
                 productExist.variation_names = finalItem.variation_names;
                 productExist.variation_id = finalItem.variation_id;
+                productExist.cover = finalItem.cover || productExist.cover || '';
+                productExist.thumb = finalItem.thumb || productExist.thumb || '';
             }
         },
         editDatatable: function (index) {
@@ -445,6 +515,8 @@ export default {
                 product_id: product.product_id,
                 is_variation: product.is_variation,
                 sku: product.sku,
+                cover: product.cover || '',
+                thumb: product.thumb || '',
                 mode: 'edit'
             }
 
@@ -543,12 +615,15 @@ export default {
                         total_tax_rate = total_tax_rate + +tax.tax_rate;
                     }
                 }
+                const listed = this.products.find((p) => Number(p.id) === Number(product.product_id));
                 products.push({
                     product_id: product.product_id,
                     item_id: product.item_id,
                     variation_names: product.variation_names,
                     sku: product.sku,
                     name: product.product_name,
+                    cover: product.cover || listed?.cover || '',
+                    thumb: product.thumb || listed?.thumb || '',
                     price: this.floatFormat(product.price),
                     quantity: product.quantity,
                     discount: product.discount > 0 ? product.discount / product.quantity : 0,
@@ -576,9 +651,193 @@ export default {
             this.props.form.products = [];
             this.datatable = [];
             this.file = "";
-            this.$refs["fileProperty"].value = "";
+            if (this.$refs.fileProperty) {
+                this.$refs.fileProperty.value = "";
+            }
             this.errors = {}
         }
     }
 }
 </script>
+
+<style scoped>
+.po-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.po-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.po-header__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+
+.po-header__subtitle {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    max-width: 36rem;
+    line-height: 1.45;
+}
+
+.po-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.po-card {
+    background: #fff;
+    border: 1px solid #e8eaf0;
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    overflow: hidden;
+}
+
+.po-card__head {
+    padding: 1rem 1.25rem 0.25rem;
+}
+
+.po-card__head--row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.po-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.po-card__hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.po-card__body {
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.po-supplier {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: stretch;
+}
+
+.po-supplier__select {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.po-supplier__add {
+    flex: 0 0 auto;
+}
+
+.po-product-pick {
+    position: relative;
+}
+
+.po-product-pick__icon {
+    position: absolute;
+    top: 50%;
+    left: 0.95rem;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: #6b7280;
+    pointer-events: none;
+}
+
+.po-product-pick__select {
+    width: 100%;
+}
+
+.po-product-pick__select :deep(.vs__dropdown-toggle),
+.po-product-pick__select :deep(input),
+.po-product-pick__select :deep(.db-field-control) {
+    padding-left: 2.5rem;
+}
+
+.po-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.po-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 14rem;
+}
+
+.po-product-cell__thumb {
+    width: 3rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: 0.65rem;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.po-product-cell__name {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.po-product-cell__meta {
+    margin: 0.2rem 0 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.po-qty {
+    max-width: 5.5rem;
+}
+
+.po-totals th {
+    background: #f8fafc;
+    font-weight: 700;
+}
+
+@media (min-width: 1024px) {
+    .po-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .po-card--wide {
+        grid-column: 1 / -1;
+    }
+}
+</style>
