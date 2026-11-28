@@ -233,7 +233,7 @@
                     <div v-if="showVariationBlock" class="pdp-variation-block mb-4 sm:mb-3 rounded-xl border border-primary/15 bg-primary/[0.03] p-3 sm:p-3.5">
                         <div class="flex items-center justify-between gap-2 mb-2.5">
                             <p class="text-sm sm:text-base font-extrabold text-heading leading-tight">
-                                {{ $t('label.select_options') || 'Select your options' }}
+                                {{ $t('label.select_options') }}
                                 <span class="text-red-500">*</span>
                             </p>
                             <span v-if="selectedVariationSummary" class="text-xs font-semibold text-primary truncate max-w-[55%]">
@@ -722,7 +722,7 @@
                 class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary"
                 :class="needsVariationSelection ? 'opacity-80' : ''">
                 <i class="lab-line-bag text-sm font-bold"></i>
-                <span>{{ needsVariationSelection ? ($t('label.select_options') || 'Select options') : $t("button.add_to_cart") }}</span>
+                <span>{{ needsVariationSelection ? $t('label.select_options') : $t("button.add_to_cart") }}</span>
             </button>
             <button @click.prevent="buyNow" type="button"
                 class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy"
