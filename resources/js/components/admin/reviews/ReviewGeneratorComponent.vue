@@ -55,7 +55,6 @@
                         v-model.number="form.quantity"
                         type="number"
                         min="1"
-                        max="50"
                         class="db-field-control rg-qty"
                         :class="errors.quantity ? 'invalid' : ''"
                     />
@@ -341,7 +340,7 @@ export default {
             }
 
             const qty = Number(this.form.quantity);
-            if (!qty || qty < 1 || qty > 50) {
+            if (!Number.isFinite(qty) || qty < 1) {
                 this.errors.quantity = [this.$t("message.reviews_generator_quantity_hint")];
                 return;
             }

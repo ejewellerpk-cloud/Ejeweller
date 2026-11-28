@@ -15,7 +15,7 @@ class AdminGenerateReviewsRequest extends FormRequest
     {
         return [
             'product_id' => ['required', 'numeric', 'exists:products,id'],
-            'quantity'   => ['required', 'integer', 'min:1', 'max:50'],
+            'quantity'   => ['required', 'integer', 'min:1'],
             'images'     => ['nullable', 'array'],
             'images.*'   => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192'],
         ];
