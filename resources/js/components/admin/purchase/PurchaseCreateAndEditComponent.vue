@@ -22,7 +22,7 @@
                     </div>
                     <div class="po-card__body">
                         <div class="row">
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.date') }}</label>
                                 <Datepicker
                                     hideInputIcon
@@ -32,6 +32,7 @@
                                     :is24="false"
                                     :monthChangeOnScroll="false"
                                     utc="false"
+                                    teleport="body"
                                     :input-class-name="errors.date ? 'invalid' : ''"
                                 >
                                     <template #am-pm-button="{ toggle, value }">
@@ -45,7 +46,7 @@
                                 <input name="reference_no" v-model="props.form.reference_no" type="text" class="db-field-control" />
                                 <small class="db-field-alert" v-if="errors.reference_no">{{ errors.reference_no[0] }}</small>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.status') }}</label>
                                 <vue-select
                                     v-model="props.form.status"
@@ -74,7 +75,7 @@
                                 />
                                 <small class="db-field-alert" v-if="errors.file">{{ errors.file[0] }}</small>
                             </div>
-                            <div class="form-col-12">
+                            <div class="form-col-12 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.supplier') }}</label>
                                 <div class="po-supplier">
                                     <vue-select
@@ -109,11 +110,11 @@
                         <h2 class="po-card__title">{{ $t('label.add_products') }}</h2>
                         <p class="po-card__hint">{{ $t('message.selection_message') }}</p>
                     </div>
-                    <div class="po-card__body">
+                    <div class="po-card__body po-field-overflow">
                         <div class="po-product-pick">
-                            <i class="lab lab-line-qrcode po-product-pick__icon"></i>
+                            <i class="lab lab-line-qrcode po-product-pick__icon" aria-hidden="true"></i>
                             <vue-select
-                                class="po-product-pick__select"
+                                class="db-field-control f-b-custom-select po-product-pick__select"
                                 v-model="productId"
                                 :options="products"
                                 label-by="name"
@@ -124,7 +125,22 @@
                                 :placeholder="$t('label.select_one')"
                                 search-placeholder="--"
                                 @update:modelValue="selectProduct($event)"
-                            />
+                            >
+                                <template #dropdown-item="{ option }">
+                                    <div class="po-option">
+                                        <img
+                                            class="po-option__thumb"
+                                            :src="productImage(option)"
+                                            :alt="option.name"
+                                            loading="lazy"
+                                        />
+                                        <div class="po-option__meta">
+                                            <span class="po-option__name">{{ option.name }}</span>
+                                            <span class="po-option__sku" v-if="option.sku">SKU: {{ option.sku }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </vue-select>
                         </div>
                         <small class="db-field-alert" v-if="errors.products">{{ errors.products[0] }}</small>
                     </div>
@@ -255,6 +271,7 @@
 <script lang="js">
 import purchaseStatusEnum from "../../../enums/modules/purchaseStatusEnum";
 import Datepicker from "@vuepic/vue-datepicker";
+import "@vuepic/vue-datepicker/dist/main.css";
 import { quillEditor } from 'vue3-quill'
 import alertService from "../../../services/alertService";
 import LoadingComponent from "../components/LoadingComponent";
@@ -419,6 +436,9 @@ export default {
                     this.modal.isShowModal = true;
                 } else {
                     this.productCheck();
+                    this.$nextTick(() => {
+                        this.productId = null;
+                    });
                 }
             }
         },
@@ -702,7 +722,13 @@ export default {
     border: 1px solid #e8eaf0;
     border-radius: 1rem;
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-    overflow: hidden;
+    overflow: visible;
+}
+
+.po-field-overflow {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
 }
 
 .po-card__head {
@@ -753,6 +779,7 @@ export default {
 
 .po-product-pick {
     position: relative;
+    z-index: 5;
 }
 
 .po-product-pick__icon {
@@ -760,19 +787,51 @@ export default {
     top: 50%;
     left: 0.95rem;
     transform: translateY(-50%);
-    z-index: 2;
+    z-index: 3;
     color: #6b7280;
     pointer-events: none;
 }
 
 .po-product-pick__select {
     width: 100%;
+    padding-left: 2.4rem;
 }
 
-.po-product-pick__select :deep(.vs__dropdown-toggle),
-.po-product-pick__select :deep(input),
-.po-product-pick__select :deep(.db-field-control) {
-    padding-left: 2.5rem;
+.po-option {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.15rem 0;
+    min-width: 0;
+}
+
+.po-option__thumb {
+    width: 2.25rem;
+    height: 2.25rem;
+    object-fit: cover;
+    border-radius: 0.45rem;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.po-option__meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.po-option__name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.25;
+}
+
+.po-option__sku {
+    font-size: 0.7rem;
+    color: #6b7280;
 }
 
 .po-chip {
