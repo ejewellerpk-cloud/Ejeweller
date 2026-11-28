@@ -367,102 +367,123 @@
         </div>
     </div>
 
-    <!-- Create / Edit drawer -->
-    <div v-if="drawerOpen" class="ch-overlay" @click.self="closeDrawer">
-        <aside class="ch-drawer" role="dialog" aria-modal="true">
-            <div class="ch-drawer__head">
-                <div>
+    <!-- Create / Edit full-page modal -->
+    <div v-if="drawerOpen" class="ch-overlay ch-overlay--page" @click.self="closeDrawer">
+        <div class="ch-page-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-modal-title">
+            <div class="ch-page-modal__head">
+                <div class="min-w-0">
                     <p class="ch-kicker">Campaign</p>
-                    <h3 class="ch-drawer__title">{{ form.id ? 'Edit campaign' : 'New campaign' }}</h3>
+                    <h3 id="campaign-modal-title" class="ch-drawer__title">
+                        {{ form.id ? 'Edit campaign' : 'New campaign' }}
+                    </h3>
+                    <p class="ch-panel__hint">Fill details, then save. Meta push is available from the campaigns list.</p>
                 </div>
                 <button type="button" class="ch-icon-btn" aria-label="Close" @click="closeDrawer">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <form class="ch-drawer__body" @submit.prevent="saveCampaign">
-                <div class="ch-form-grid">
-                    <div class="ch-field ch-field--full">
-                        <label for="campaign_name">Name</label>
-                        <input id="campaign_name" v-model="form.name" required />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_channel">Channel</label>
-                        <select id="campaign_channel" v-model="form.channel">
-                            <option value="meta">Meta (Facebook/IG)</option>
-                            <option value="google">Google Ads</option>
-                            <option value="tiktok">TikTok</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_objective">Objective</label>
-                        <select id="campaign_objective" v-model="form.objective">
-                            <option value="conversions">Conversions</option>
-                            <option value="traffic">Traffic</option>
-                            <option value="awareness">Awareness</option>
-                            <option value="catalog">Catalog sales</option>
-                        </select>
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_status">Status</label>
-                        <select id="campaign_status" v-model="form.status">
-                            <option value="draft">Draft</option>
-                            <option value="active">Active</option>
-                            <option value="paused">Paused</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_landing">Landing path</label>
-                        <input id="campaign_landing" v-model="form.landing_path" placeholder="/" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_utm_source">utm_source</label>
-                        <input id="campaign_utm_source" v-model="form.utm_source" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_utm_medium">utm_medium</label>
-                        <input id="campaign_utm_medium" v-model="form.utm_medium" />
-                    </div>
-                    <div class="ch-field ch-field--full">
-                        <label for="campaign_utm_campaign">utm_campaign (auto if empty)</label>
-                        <input id="campaign_utm_campaign" v-model="form.utm_campaign" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_utm_content">utm_content</label>
-                        <input id="campaign_utm_content" v-model="form.utm_content" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_utm_term">utm_term</label>
-                        <input id="campaign_utm_term" v-model="form.utm_term" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_daily_budget">Daily budget</label>
-                        <input id="campaign_daily_budget" v-model="form.daily_budget" type="number" min="0" step="0.01" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_total_budget">Total budget</label>
-                        <input id="campaign_total_budget" v-model="form.total_budget" type="number" min="0" step="0.01" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_starts_at">Starts</label>
-                        <input id="campaign_starts_at" v-model="form.starts_at" type="date" />
-                    </div>
-                    <div class="ch-field">
-                        <label for="campaign_ends_at">Ends</label>
-                        <input id="campaign_ends_at" v-model="form.ends_at" type="date" />
-                    </div>
-                    <div class="ch-field ch-field--full">
-                        <label for="campaign_notes">Notes</label>
-                        <textarea id="campaign_notes" v-model="form.notes" rows="3"></textarea>
-                    </div>
+            <form class="ch-page-modal__body" @submit.prevent="saveCampaign">
+                <div class="ch-form-sections">
+                    <section class="ch-form-section">
+                        <h4 class="ch-form-section__title">Basics</h4>
+                        <div class="ch-form-grid ch-form-grid--3">
+                            <div class="ch-field ch-field--span-2">
+                                <label for="campaign_name">Name</label>
+                                <input id="campaign_name" v-model="form.name" required />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_status">Status</label>
+                                <select id="campaign_status" v-model="form.status">
+                                    <option value="draft">Draft</option>
+                                    <option value="active">Active</option>
+                                    <option value="paused">Paused</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_channel">Channel</label>
+                                <select id="campaign_channel" v-model="form.channel">
+                                    <option value="meta">Meta (Facebook/IG)</option>
+                                    <option value="google">Google Ads</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_objective">Objective</label>
+                                <select id="campaign_objective" v-model="form.objective">
+                                    <option value="conversions">Conversions</option>
+                                    <option value="traffic">Traffic</option>
+                                    <option value="awareness">Awareness</option>
+                                    <option value="catalog">Catalog sales</option>
+                                </select>
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_landing">Landing path</label>
+                                <input id="campaign_landing" v-model="form.landing_path" placeholder="/" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="ch-form-section">
+                        <h4 class="ch-form-section__title">Tracking & UTM</h4>
+                        <div class="ch-form-grid ch-form-grid--3">
+                            <div class="ch-field">
+                                <label for="campaign_utm_source">utm_source</label>
+                                <input id="campaign_utm_source" v-model="form.utm_source" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_utm_medium">utm_medium</label>
+                                <input id="campaign_utm_medium" v-model="form.utm_medium" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_utm_campaign">utm_campaign</label>
+                                <input id="campaign_utm_campaign" v-model="form.utm_campaign" placeholder="Auto if empty" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_utm_content">utm_content</label>
+                                <input id="campaign_utm_content" v-model="form.utm_content" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_utm_term">utm_term</label>
+                                <input id="campaign_utm_term" v-model="form.utm_term" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="ch-form-section">
+                        <h4 class="ch-form-section__title">Budget & schedule</h4>
+                        <div class="ch-form-grid ch-form-grid--4">
+                            <div class="ch-field">
+                                <label for="campaign_daily_budget">Daily budget</label>
+                                <input id="campaign_daily_budget" v-model="form.daily_budget" type="number" min="0" step="0.01" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_total_budget">Total budget</label>
+                                <input id="campaign_total_budget" v-model="form.total_budget" type="number" min="0" step="0.01" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_starts_at">Starts</label>
+                                <input id="campaign_starts_at" v-model="form.starts_at" type="date" />
+                            </div>
+                            <div class="ch-field">
+                                <label for="campaign_ends_at">Ends</label>
+                                <input id="campaign_ends_at" v-model="form.ends_at" type="date" />
+                            </div>
+                            <div class="ch-field ch-field--full">
+                                <label for="campaign_notes">Notes</label>
+                                <textarea id="campaign_notes" v-model="form.notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-                <div class="ch-drawer__foot">
+
+                <div class="ch-page-modal__foot">
                     <button type="button" class="ch-btn ch-btn--soft" @click="closeDrawer">Cancel</button>
                     <button type="submit" class="ch-btn ch-btn--primary">Save campaign</button>
                 </div>
             </form>
-        </aside>
+        </div>
     </div>
 
     <!-- Spend modal -->
@@ -1417,7 +1438,20 @@ export default {
     z-index: 50;
     background: rgba(28, 25, 23, 0.45);
     display: flex;
-    justify-content: flex-end;
+}
+
+.ch-overlay--page {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+}
+
+@media (min-width: 768px) {
+    .ch-overlay--page {
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+    }
 }
 
 .ch-overlay--center {
@@ -1433,22 +1467,108 @@ export default {
     }
 }
 
-.ch-drawer,
-.ch-modal {
-    width: min(100%, 34rem);
+.ch-page-modal {
+    width: 100%;
     height: 100dvh;
     max-height: 100dvh;
     background: #fff;
-    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .ch-page-modal {
+        width: min(100%, 72rem);
+        height: min(94dvh, 920px);
+        max-height: 94dvh;
+        border-radius: 20px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+    }
+}
+
+.ch-page-modal__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.25rem;
+    border-bottom: 1px solid var(--ch-line);
+    background:
+        radial-gradient(700px 180px at 0% 0%, rgba(15, 118, 110, 0.08), transparent 60%),
+        #fff;
+    flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .ch-page-modal__head { padding: 1.35rem 1.75rem; }
+}
+
+.ch-page-modal__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.15rem 1.25rem 1.4rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+    .ch-page-modal__body { padding: 1.35rem 1.75rem 1.6rem; }
+}
+
+.ch-page-modal__foot {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.55rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ch-line);
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+}
+
+@media (min-width: 640px) {
+    .ch-page-modal__foot {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+}
+
+.ch-form-sections {
+    display: grid;
+    gap: 1rem;
+}
+
+.ch-form-section {
+    border: 1px solid var(--ch-line);
+    border-radius: 14px;
+    padding: 1rem;
+    background: linear-gradient(180deg, #fff, #fafaf9);
+}
+
+@media (min-width: 768px) {
+    .ch-form-section { padding: 1.15rem 1.25rem; }
+}
+
+.ch-form-section__title {
+    margin: 0 0 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ch-muted);
 }
 
 .ch-modal {
     width: min(100%, 28rem);
     height: auto;
     max-height: 92dvh;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
     border-radius: 18px 18px 0 0;
+    overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -1462,15 +1582,13 @@ export default {
     gap: 1rem;
     padding: 1.1rem 1.2rem;
     border-bottom: 1px solid var(--ch-line);
-    position: sticky;
-    top: 0;
     background: #fff;
-    z-index: 2;
+    flex-shrink: 0;
 }
 
 .ch-drawer__title {
     margin: 0.2rem 0 0;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
@@ -1483,6 +1601,7 @@ export default {
     display: grid;
     place-items: center;
     background: #fff;
+    flex-shrink: 0;
 }
 
 .ch-drawer__body {
@@ -1497,9 +1616,22 @@ export default {
     gap: 0.85rem;
 }
 
+.ch-form-grid--3,
+.ch-form-grid--4 {
+    grid-template-columns: 1fr;
+}
+
 @media (min-width: 640px) {
     .ch-form-grid { grid-template-columns: 1fr 1fr; }
+    .ch-form-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ch-form-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ch-field--full { grid-column: 1 / -1; }
+}
+
+@media (min-width: 900px) {
+    .ch-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ch-form-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ch-field--span-2 { grid-column: span 2; }
 }
 
 .ch-drawer__foot {
