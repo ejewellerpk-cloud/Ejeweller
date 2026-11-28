@@ -122,16 +122,17 @@
                                 :closeOnSelect="true"
                                 :searchable="true"
                                 :clearOnClose="true"
-                                :placeholder="$t('label.select_one')"
+                                :max-height="320"
+                                :placeholder="products.length ? $t('label.select_one') : $t('message.purchase_no_catalog_products')"
                                 search-placeholder="--"
                                 @update:modelValue="selectProduct($event)"
                             >
                                 <template #dropdown-item="{ option }">
-                                    <div class="po-option">
+                                    <div class="po-option" v-if="option">
                                         <img
                                             class="po-option__thumb"
                                             :src="productImage(option)"
-                                            :alt="option.name"
+                                            :alt="option.name || ''"
                                             loading="lazy"
                                         />
                                         <div class="po-option__meta">
@@ -141,6 +142,9 @@
                                     </div>
                                 </template>
                             </vue-select>
+                            <p class="po-product-pick__count" v-if="products.length">
+                                {{ products.length }} {{ $t('label.products') }}
+                            </p>
                         </div>
                         <small class="db-field-alert" v-if="errors.products">{{ errors.products[0] }}</small>
                     </div>
@@ -593,10 +597,11 @@ export default {
         },
         productList: function () {
             this.loading.isActive = true;
-            this.$store.dispatch('product/getPurchasableProduct').then(res => {
+            this.$store.dispatch('product/getPurchasableProduct').then(() => {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                alertService.error(err.response?.data?.message || this.$t('message.something_wrong'));
             });
         },
         loadInitialVariations: function (product_id) {
@@ -795,6 +800,19 @@ export default {
 .po-product-pick__select {
     width: 100%;
     padding-left: 2.4rem;
+}
+
+.po-product-pick__count {
+    margin: 0.45rem 0 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.po-product-pick :deep([data-is-focusing="true"]),
+.po-product-pick :deep(.vue-select),
+.po-product-pick :deep([role="listbox"]) {
+    z-index: 40;
 }
 
 .po-option {

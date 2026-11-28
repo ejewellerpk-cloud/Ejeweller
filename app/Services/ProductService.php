@@ -1122,9 +1122,9 @@ class ProductService
     public function purchasableProducts()
     {
         try {
+            // Purchase create needs every active catalog item (not only storefront can_purchasable).
             return Product::select('id', 'name', 'buying_price', 'can_purchasable', 'status', 'sku')
                 ->with(['productTaxes', 'variations', 'media'])
-                ->where('can_purchasable', ASK::YES)
                 ->where('status', Status::ACTIVE)
                 ->orderBy('name', 'asc')
                 ->get();
