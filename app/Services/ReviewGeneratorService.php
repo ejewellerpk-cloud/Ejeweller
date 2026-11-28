@@ -12,6 +12,7 @@ use App\Libraries\QueryExceptionLibrary;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -140,23 +141,29 @@ class ReviewGeneratorService
 
             DB::transaction(function () use ($product, $quantity, $tempPaths, &$created) {
                 $reviewers = $this->buildReviewerQueue($quantity);
+                $timestamps = $this->buildReviewTimestamps($product, $quantity);
                 $usedComments = [];
 
                 foreach ($reviewers as $i => $reviewer) {
                     $user = $this->resolveReviewer($reviewer['name'], $i);
                     $comment = $this->pickComment($usedComments, $reviewer['gender']);
                     $star = $this->pickStar();
+                    $postedAt = $timestamps[$i];
 
-                    $review = ProductReview::create([
+                    $review = new ProductReview([
                         'user_id'              => $user->id,
                         'product_id'           => $product->id,
                         'star'                 => $star,
                         'review'               => $comment,
                         'status'               => ReviewStatus::APPROVED,
-                        'is_verified_purchase' => Ask::NO,
+                        'is_verified_purchase' => random_int(1, 100) <= 55 ? Ask::YES : Ask::NO,
                     ]);
+                    $review->created_at = $postedAt;
+                    $review->updated_at = $postedAt;
+                    $review->save();
 
                     $this->attachRandomImages($review, $tempPaths);
+                    $this->backdateReviewMedia($review, $postedAt);
 
                     $created[] = $review->load(['product', 'user']);
                 }
@@ -172,6 +179,100 @@ class ReviewGeneratorService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Marketplace-style posting times:
+     * - Always after product created_at (+ delivery lag)
+     * - Never in the future
+     * - Spread over the listing lifetime with mild recency bias
+     * - Prefer Pakistan evening / lunch posting hours
+     * - Avoid identical timestamps
+     *
+     * @return array<int, Carbon>
+     */
+    private function buildReviewTimestamps(Product $product, int $quantity): array
+    {
+        $now = Carbon::now();
+        $listedAt = $product->created_at
+            ? Carbon::parse($product->created_at)
+            : $now->copy()->subMonths(3);
+
+        // Real buyers usually review after delivery (a few days), not instantly at listing.
+        $earliest = $listedAt->copy()->addDays(random_int(2, 8))->addHours(random_int(1, 10));
+        if ($earliest->greaterThanOrEqualTo($now)) {
+            $earliest = $listedAt->copy()->addHours(random_int(4, 48));
+        }
+        if ($earliest->greaterThanOrEqualTo($now)) {
+            $earliest = $listedAt->copy()->addMinutes(random_int(15, 180));
+        }
+        if ($earliest->greaterThanOrEqualTo($now)) {
+            $earliest = $now->copy()->subMinutes(max(5, $quantity * 3));
+        }
+
+        $latest = $now->copy()->subMinutes(random_int(20, 360));
+        if ($latest->lte($earliest)) {
+            $latest = $now->copy()->subMinutes(5);
+        }
+
+        $startTs = $earliest->getTimestamp();
+        $endTs = max($startTs + 60, $latest->getTimestamp());
+        $span = max(1, $endTs - $startTs);
+
+        $timestamps = [];
+        for ($i = 0; $i < $quantity; $i++) {
+            $u = mt_rand() / mt_getrandmax();
+            // ~65% recent-weighted (like live stores), ~35% flatter older trail
+            $position = random_int(1, 100) <= 65 ? ($u * $u) : $u;
+            $base = Carbon::createFromTimestamp((int) round($startTs + ($span * $position)));
+
+            $hourRoll = random_int(1, 100);
+            if ($hourRoll <= 48) {
+                $hour = random_int(19, 23); // evening peak
+            } elseif ($hourRoll <= 72) {
+                $hour = random_int(11, 14); // lunch / afternoon
+            } elseif ($hourRoll <= 90) {
+                $hour = random_int(15, 18);
+            } else {
+                $hour = random_int(8, 10);
+            }
+
+            $base->setTime($hour, random_int(0, 59), random_int(0, 59));
+
+            if ($base->lt($earliest)) {
+                $base = $earliest->copy()->addMinutes(random_int(5, 120));
+            }
+            if ($base->gt($now)) {
+                $base = $now->copy()->subMinutes(random_int(5, 90));
+            }
+
+            $timestamps[] = $base;
+        }
+
+        usort($timestamps, static fn (Carbon $a, Carbon $b) => $a->getTimestamp() <=> $b->getTimestamp());
+
+        for ($i = 1; $i < count($timestamps); $i++) {
+            if ($timestamps[$i]->lte($timestamps[$i - 1])) {
+                $timestamps[$i] = $timestamps[$i - 1]->copy()->addMinutes(random_int(12, 140))->addSeconds(random_int(5, 50));
+            }
+            if ($timestamps[$i]->gt($now)) {
+                $timestamps[$i] = $now->copy()->subSeconds(($quantity - $i) * random_int(20, 55));
+                if ($timestamps[$i]->lte($timestamps[$i - 1])) {
+                    $timestamps[$i] = $timestamps[$i - 1]->copy()->addSeconds(random_int(15, 45));
+                }
+            }
+        }
+
+        return $timestamps;
+    }
+
+    private function backdateReviewMedia(ProductReview $review, Carbon $postedAt): void
+    {
+        foreach ($review->getMedia('product-review') as $media) {
+            $media->created_at = $postedAt;
+            $media->updated_at = $postedAt;
+            $media->save();
         }
     }
 
