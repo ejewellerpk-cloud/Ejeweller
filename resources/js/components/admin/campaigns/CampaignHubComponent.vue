@@ -1005,7 +1005,7 @@ export default {
             return {
                 name: `Dummy Test Campaign ${stamp}`,
                 channel: 'meta',
-                objective: 'conversions',
+                objective: 'traffic',
                 status: 'draft',
                 utm_source: 'facebook',
                 utm_medium: 'cpc',

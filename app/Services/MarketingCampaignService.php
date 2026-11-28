@@ -539,20 +539,23 @@ class MarketingCampaignService
             ];
         }
 
+        // Link-ad creatives we create work best with TRAFFIC; SALES/catalog still map to OUTCOME_SALES.
         $objective = match ($campaign->objective) {
             'traffic' => 'OUTCOME_TRAFFIC',
             'awareness' => 'OUTCOME_AWARENESS',
             'catalog', 'conversions' => 'OUTCOME_SALES',
-            default => 'OUTCOME_SALES',
+            default => 'OUTCOME_TRAFFIC',
         };
 
+        // Budget lives on the ad set, so campaign-level Advantage budget sharing must be declared.
         $payload = [
             'access_token' => $token,
-            'name' => $campaign->name,
+            'name' => trim((string) $campaign->name) ?: ('Campaign ' . $campaign->id),
             'objective' => $objective,
             'status' => 'PAUSED',
-            'special_ad_categories' => json_encode([]),
+            'special_ad_categories' => '[]',
             'buying_type' => 'AUCTION',
+            'is_adset_budget_sharing_enabled' => 'false',
         ];
 
         $response = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/campaigns", $payload);
@@ -560,7 +563,8 @@ class MarketingCampaignService
         if (!$response->successful()) {
             return [
                 'ok' => false,
-                'message' => 'Meta campaign create failed: ' . ($response->json('error.message') ?? $response->body()),
+                'message' => 'Meta campaign create failed: ' . $this->formatMetaError($response),
+                'meta_error' => $response->json('error'),
             ];
         }
 
@@ -662,11 +666,19 @@ class MarketingCampaignService
             'promoted_object' => json_encode(['page_id' => $pageId]),
         ];
 
+        // OUTCOME_SALES ad sets often need a pixel; fall back to traffic-style goals when pushing link ads.
+        if (in_array($campaign->objective, ['conversions', 'catalog'], true)) {
+            // Keep LINK_CLICKS + page_id for storefront product links without requiring pixel setup.
+            $adSetPayload['optimization_goal'] = 'LINK_CLICKS';
+            $adSetPayload['destination_type'] = 'WEBSITE';
+        }
+
         $adSetRes = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/adsets", $adSetPayload);
         if (!$adSetRes->successful()) {
             return [
                 'ads_created' => 0,
-                'message' => 'Campaign created but ad set failed: ' . ($adSetRes->json('error.message') ?? $adSetRes->body()),
+                'message' => 'Campaign created but ad set failed: ' . $this->formatMetaError($adSetRes),
+                'meta_error' => $adSetRes->json('error'),
             ];
         }
 
@@ -802,6 +814,37 @@ class MarketingCampaignService
             : ('act_' . $adAccount);
 
         return [(string) $token, $accountId];
+    }
+
+    private function formatMetaError($response): string
+    {
+        $error = $response->json('error') ?? [];
+        if (!is_array($error) || $error === []) {
+            return (string) $response->body();
+        }
+
+        $parts = array_filter([
+            $error['error_user_msg'] ?? null,
+            $error['error_user_title'] ?? null,
+            $error['message'] ?? null,
+        ]);
+
+        $text = implode(' — ', array_unique($parts)) ?: 'Unknown Meta API error';
+        if (!empty($error['error_subcode'])) {
+            $text .= ' (subcode ' . $error['error_subcode'] . ')';
+        }
+        if (!empty($error['error_data']['blame_field_specs'])) {
+            $fields = collect($error['error_data']['blame_field_specs'])
+                ->flatten()
+                ->filter()
+                ->unique()
+                ->implode(', ');
+            if ($fields !== '') {
+                $text .= ' [fields: ' . $fields . ']';
+            }
+        }
+
+        return $text;
     }
 
     private function campaignAttribution(?int $siteId, string $from, string $to): array
