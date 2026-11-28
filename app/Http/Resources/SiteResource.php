@@ -53,6 +53,7 @@ class SiteResource extends JsonResource
             "site_facebook_capi_token"                   => $this->info['site_facebook_capi_token'] ?? '',
             "site_facebook_capi_status"                  => $this->info['site_facebook_capi_status'] ?? 10,
             "site_meta_ad_account_id"                    => $this->info['site_meta_ad_account_id'] ?? '',
+            "site_meta_page_id"                          => $this->info['site_meta_page_id'] ?? '',
             "site_meta_marketing_token"                  => $this->info['site_meta_marketing_token'] ?? '',
             "site_homepage_theme"                        => $this->info['site_homepage_theme'] ?? 'default',
             "site_show_stock_out"                        => isset($this->info['site_show_stock_out']) ? (int) $this->info['site_show_stock_out'] : \App\Enums\Activity::ENABLE,

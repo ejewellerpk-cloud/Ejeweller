@@ -182,6 +182,21 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
         }
     }
 
+    public function products(Request $request)
+    {
+        try {
+            return response([
+                'status' => true,
+                'data' => $this->campaigns->productsForPicker(
+                    $request->input('search'),
+                    (int) $request->input('limit', 40)
+                ),
+            ]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
     public function pushToMeta(MarketingCampaign $campaign)
     {
         try {

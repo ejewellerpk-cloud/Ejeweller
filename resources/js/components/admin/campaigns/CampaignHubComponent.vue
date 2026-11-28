@@ -101,6 +101,20 @@
                             <span>Meta ID</span>
                             <code class="truncate">{{ c.external_campaign_id }}</code>
                         </div>
+                        <div class="ch-card__products" v-if="(c.products || []).length">
+                            <div
+                                v-for="p in (c.products || []).slice(0, 4)"
+                                :key="'mp-' + p.id"
+                                class="ch-prod-chip"
+                                :title="p.name"
+                            >
+                                <img :src="p.thumb || p.cover" :alt="p.name" />
+                                <span v-if="(p.videos || []).length" class="ch-prod-chip__vid">▶</span>
+                            </div>
+                            <span v-if="(c.products || []).length > 4" class="ch-prod-more">
+                                +{{ c.products.length - 4 }}
+                            </span>
+                        </div>
 
                         <div class="ch-card__actions">
                             <button type="button" class="ch-btn ch-btn--soft" @click="copyUrl(c.tracking_url)">Copy link</button>
@@ -138,6 +152,20 @@
                                 <td>
                                     <div class="ch-td-title">{{ c.name }}</div>
                                     <div v-if="c.external_campaign_id" class="ch-td-sub">Meta · {{ c.external_campaign_id }}</div>
+                                    <div class="ch-card__products ch-card__products--inline" v-if="(c.products || []).length">
+                                        <div
+                                            v-for="p in (c.products || []).slice(0, 5)"
+                                            :key="'tp-' + p.id"
+                                            class="ch-prod-chip"
+                                            :title="p.name"
+                                        >
+                                            <img :src="p.thumb || p.cover" :alt="p.name" />
+                                            <span v-if="(p.videos || []).length" class="ch-prod-chip__vid">▶</span>
+                                        </div>
+                                        <span v-if="(c.products || []).length > 5" class="ch-prod-more">
+                                            +{{ c.products.length - 5 }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="ch-channel" :class="'ch-channel--' + c.channel">{{ channelLabel(c.channel) }}</span>
@@ -476,6 +504,76 @@
                             </div>
                         </div>
                     </section>
+
+                    <section class="ch-form-section">
+                        <div class="ch-form-section__head">
+                            <div>
+                                <h4 class="ch-form-section__title">Products & media</h4>
+                                <p class="ch-panel__hint">
+                                    Select products — their images (and video links) attach automatically. Push to Meta uses covers for creatives.
+                                </p>
+                            </div>
+                            <span class="ch-pill-count" v-if="selectedProducts.length">
+                                {{ selectedProducts.length }} selected
+                            </span>
+                        </div>
+
+                        <div class="ch-selected-products" v-if="selectedProducts.length">
+                            <article
+                                v-for="p in selectedProducts"
+                                :key="'sel-' + p.id"
+                                class="ch-selected-product"
+                            >
+                                <img :src="p.cover || p.thumb" :alt="p.name" />
+                                <div class="min-w-0">
+                                    <strong class="truncate block">{{ p.name }}</strong>
+                                    <span class="ch-selected-product__meta">
+                                        {{ (p.images || []).length || 1 }} image{{ ((p.images || []).length || 1) === 1 ? '' : 's' }}
+                                        <template v-if="(p.videos || []).length">
+                                            · {{ p.videos.length }} video{{ p.videos.length === 1 ? '' : 's' }}
+                                        </template>
+                                    </span>
+                                </div>
+                                <button type="button" class="ch-icon-btn" aria-label="Remove" @click="removeSelectedProduct(p.id)">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </article>
+                        </div>
+
+                        <div class="ch-product-search">
+                            <input
+                                v-model="productSearch"
+                                type="search"
+                                placeholder="Search products by name or SKU…"
+                                @input="onProductSearch"
+                            />
+                        </div>
+
+                        <div class="ch-product-grid" v-if="productResults.length">
+                            <button
+                                v-for="p in productResults"
+                                :key="'pick-' + p.id"
+                                type="button"
+                                class="ch-product-tile"
+                                :class="{ 'is-selected': isProductSelected(p.id) }"
+                                @click="toggleProduct(p)"
+                            >
+                                <div class="ch-product-tile__media">
+                                    <img :src="p.thumb || p.cover" :alt="p.name" />
+                                    <span v-if="(p.videos || []).length" class="ch-product-tile__badge">Video</span>
+                                    <span v-if="isProductSelected(p.id)" class="ch-product-tile__check">
+                                        <i class="fa-solid fa-check"></i>
+                                    </span>
+                                </div>
+                                <div class="ch-product-tile__body">
+                                    <strong class="truncate">{{ p.name }}</strong>
+                                    <span>{{ formatMoney(p.selling_price) }}</span>
+                                </div>
+                            </button>
+                        </div>
+                        <p v-else-if="productSearchLoading" class="ch-panel__hint">Loading products…</p>
+                        <p v-else class="ch-panel__hint">No products found. Try another search.</p>
+                    </section>
                 </div>
 
                 <div class="ch-page-modal__foot">
@@ -548,6 +646,7 @@ const emptyForm = () => ({
     starts_at: '',
     ends_at: '',
     notes: '',
+    product_ids: [],
 });
 
 export default {
@@ -579,6 +678,11 @@ export default {
             feedUrl: `${window.location.origin}/feeds/meta-catalog.csv`,
             drawerOpen: false,
             form: emptyForm(),
+            selectedProducts: [],
+            productResults: [],
+            productSearch: '',
+            productSearchLoading: false,
+            productSearchTimer: null,
             spendOpen: false,
             spendCampaign: null,
             spendForm: { spend_date: to.toISOString().slice(0, 10), spend: '', impressions: '', clicks: '' },
@@ -720,27 +824,71 @@ export default {
         },
         openCreate() {
             this.form = emptyForm();
+            this.selectedProducts = [];
+            this.productSearch = '';
             this.drawerOpen = true;
+            this.loadProductPicker();
         },
         openEdit(c) {
+            const products = c.products || [];
             this.form = {
                 ...emptyForm(),
                 ...c,
                 starts_at: c.starts_at || '',
                 ends_at: c.ends_at || '',
+                product_ids: products.map((p) => p.id),
             };
+            this.selectedProducts = [...products];
+            this.productSearch = '';
             this.drawerOpen = true;
+            this.loadProductPicker();
         },
         closeDrawer() {
             this.drawerOpen = false;
         },
+        isProductSelected(id) {
+            return this.form.product_ids.includes(id);
+        },
+        toggleProduct(product) {
+            if (this.isProductSelected(product.id)) {
+                this.removeSelectedProduct(product.id);
+                return;
+            }
+            this.selectedProducts = [...this.selectedProducts, product];
+            this.form.product_ids = this.selectedProducts.map((p) => p.id);
+        },
+        removeSelectedProduct(id) {
+            this.selectedProducts = this.selectedProducts.filter((p) => p.id !== id);
+            this.form.product_ids = this.selectedProducts.map((p) => p.id);
+        },
+        onProductSearch() {
+            clearTimeout(this.productSearchTimer);
+            this.productSearchTimer = setTimeout(() => this.loadProductPicker(), 280);
+        },
+        async loadProductPicker() {
+            this.productSearchLoading = true;
+            try {
+                const res = await axios.get('admin/campaigns/products', {
+                    params: { search: this.productSearch || undefined, limit: 40 },
+                });
+                this.productResults = res.data?.data || [];
+            } catch (e) {
+                this.productResults = [];
+            } finally {
+                this.productSearchLoading = false;
+            }
+        },
         async saveCampaign() {
             this.loading.isActive = true;
             try {
+                const payload = {
+                    ...this.form,
+                    product_ids: this.selectedProducts.map((p) => p.id),
+                };
                 if (this.form.id) {
-                    await axios.post(`admin/campaigns/${this.form.id}`, this.form);
+                    await axios.post(`admin/campaigns/${this.form.id}`, payload);
                 } else {
-                    await axios.post('admin/campaigns', this.form);
+                    await axios.post('admin/campaigns', payload);
                 }
                 alertService.successFlip(1, 'Campaign');
                 this.closeDrawer();
@@ -830,7 +978,11 @@ export default {
                 alertService.success('Already linked to Meta: ' + c.external_campaign_id);
                 return;
             }
-            if (!confirm(`Create PAUSED Meta campaign for "${c.name}"?`)) return;
+            const productCount = (c.products || []).length;
+            const msg = productCount
+                ? `Create PAUSED Meta campaign for "${c.name}" with ${productCount} product ad(s) from store images?`
+                : `Create PAUSED Meta campaign for "${c.name}"? (No products linked — creatives will be empty until you attach products.)`;
+            if (!confirm(msg)) return;
             this.loading.isActive = true;
             try {
                 const res = await axios.post(`admin/campaigns/${c.id}/push-meta`);
@@ -1557,6 +1709,202 @@ export default {
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    color: var(--ch-muted);
+}
+
+.ch-form-section__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.ch-form-section__head .ch-form-section__title { margin: 0; }
+
+.ch-pill-count {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.12);
+    color: var(--ch-accent);
+}
+
+.ch-card__products {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+}
+
+.ch-card__products--inline {
+    margin-top: 0.45rem;
+}
+
+.ch-prod-chip {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--ch-line);
+    background: var(--ch-soft);
+    flex-shrink: 0;
+}
+
+.ch-prod-chip img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ch-prod-chip__vid {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    font-size: 7px;
+    line-height: 1;
+    padding: 1px 2px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+}
+
+.ch-prod-more {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ch-muted);
+}
+
+.ch-selected-products {
+    display: grid;
+    gap: 0.55rem;
+    margin-bottom: 0.85rem;
+}
+
+.ch-selected-product {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--ch-line);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.ch-selected-product img {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.ch-selected-product__meta {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--ch-muted);
+}
+
+.ch-product-search input {
+    width: 100%;
+    min-height: 2.6rem;
+    border: 1px solid var(--ch-line);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+    background: #fff;
+    margin-bottom: 0.85rem;
+}
+
+.ch-product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+    .ch-product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+    .ch-product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.ch-product-tile {
+    text-align: left;
+    border: 1px solid var(--ch-line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    padding: 0;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ch-product-tile.is-selected {
+    border-color: var(--ch-accent);
+    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.18);
+}
+
+.ch-product-tile__media {
+    position: relative;
+    aspect-ratio: 1;
+    background: var(--ch-soft);
+}
+
+.ch-product-tile__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ch-product-tile__badge {
+    position: absolute;
+    left: 0.4rem;
+    top: 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    background: rgba(28, 25, 23, 0.78);
+    color: #fff;
+}
+
+.ch-product-tile__check {
+    position: absolute;
+    right: 0.4rem;
+    top: 0.4rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--ch-accent);
+    color: #fff;
+    font-size: 0.7rem;
+}
+
+.ch-product-tile__body {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.55rem 0.65rem 0.7rem;
+    font-size: 0.78rem;
+}
+
+.ch-product-tile__body strong {
+    font-size: 0.82rem;
+}
+
+.ch-product-tile__body span {
     color: var(--ch-muted);
 }
 

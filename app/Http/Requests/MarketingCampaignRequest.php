@@ -39,6 +39,8 @@ class MarketingCampaignRequest extends FormRequest
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'external_campaign_id' => ['nullable', 'string', 'max:64'],
             'notes' => ['nullable', 'string'],
+            'product_ids' => ['nullable', 'array'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
         ];
     }
 }

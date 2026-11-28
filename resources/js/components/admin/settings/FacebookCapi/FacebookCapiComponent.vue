@@ -59,6 +59,15 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="site_meta_page_id">
+                            Meta Page ID (optional)
+                        </label>
+                        <input v-model="form.site_meta_page_id" type="text" id="site_meta_page_id"
+                            class="db-field-control" placeholder="123456789012345" />
+                        <small class="text-gray-500">Needed to auto-create ads from product images when you Push to Meta</small>
+                    </div>
+
+                    <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title" for="site_meta_marketing_token">
                             Meta Marketing API Token (optional)
                         </label>
@@ -129,6 +138,7 @@ export default {
                 site_facebook_capi_token: null,
                 site_facebook_capi_status: null,
                 site_meta_ad_account_id: null,
+                site_meta_page_id: null,
                 site_meta_marketing_token: null,
                 site_guest_checkout: null,
             },
@@ -172,6 +182,7 @@ export default {
                     site_facebook_capi_token: res.data.data.site_facebook_capi_token,
                     site_facebook_capi_status: res.data.data.site_facebook_capi_status !== null ? Number(res.data.data.site_facebook_capi_status) : null,
                     site_meta_ad_account_id: res.data.data.site_meta_ad_account_id,
+                    site_meta_page_id: res.data.data.site_meta_page_id,
                     site_meta_marketing_token: res.data.data.site_meta_marketing_token,
                     site_guest_checkout: res.data.data.site_guest_checkout,
                 }

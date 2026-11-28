@@ -936,6 +936,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/audiences/export', [MarketingCampaignController::class, 'exportAudienceCsv']);
         Route::post('/audiences/sync', [MarketingCampaignController::class, 'syncAudience']);
         Route::get('/meta/status', [MarketingCampaignController::class, 'metaStatus']);
+        Route::get('/products', [MarketingCampaignController::class, 'products']);
         Route::get('/recovery', [MarketingCampaignController::class, 'recoveryOverview']);
         Route::post('/recovery/enqueue', [MarketingCampaignController::class, 'recoveryEnqueue']);
         Route::post('/recovery/process', [MarketingCampaignController::class, 'recoveryProcess']);

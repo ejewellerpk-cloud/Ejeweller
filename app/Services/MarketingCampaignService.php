@@ -40,6 +40,7 @@ class MarketingCampaignService
             : 'desc';
 
         return MarketingCampaign::query()
+            ->with(['products' => fn ($q) => $q->with(['videos', 'media'])])
             ->withSum(['spends as total_spend'], 'spend')
             ->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $value) {
@@ -58,6 +59,9 @@ class MarketingCampaignService
             throw new Exception('Campaigns table missing. Run: php artisan migrate --force');
         }
 
+        $productIds = $data['product_ids'] ?? null;
+        unset($data['product_ids']);
+
         if (empty($data['utm_campaign'])) {
             $data['utm_campaign'] = MarketingCampaign::slugifyCampaignName($data['name'] ?? 'campaign');
         }
@@ -68,17 +72,25 @@ class MarketingCampaignService
         $data['currency'] = $data['currency'] ?? $this->defaultCurrency();
         $data['status'] = $data['status'] ?? 'draft';
 
-        return MarketingCampaign::query()->create($data);
+        $campaign = MarketingCampaign::query()->create($data);
+        $this->syncProducts($campaign, $productIds);
+
+        return $this->show($campaign->fresh());
     }
 
     public function show(MarketingCampaign $campaign): MarketingCampaign
     {
-        return $campaign->load(['spends' => fn ($q) => $q->orderByDesc('spend_date')])
-            ->loadSum(['spends as total_spend'], 'spend');
+        return $campaign->load([
+            'spends' => fn ($q) => $q->orderByDesc('spend_date'),
+            'products' => fn ($q) => $q->with(['videos', 'media']),
+        ])->loadSum(['spends as total_spend'], 'spend');
     }
 
     public function update(MarketingCampaign $campaign, array $data): MarketingCampaign
     {
+        $productIds = array_key_exists('product_ids', $data) ? $data['product_ids'] : false;
+        unset($data['product_ids']);
+
         if (isset($data['utm_campaign']) && $data['utm_campaign'] !== $campaign->utm_campaign) {
             $exists = MarketingCampaign::query()
                 ->where('utm_campaign', $data['utm_campaign'])
@@ -91,7 +103,76 @@ class MarketingCampaignService
 
         $campaign->update($data);
 
+        if ($productIds !== false) {
+            $this->syncProducts($campaign, $productIds);
+        }
+
         return $this->show($campaign->fresh());
+    }
+
+    /**
+     * Lightweight product catalog for campaign media picker.
+     */
+    public function productsForPicker(?string $search = null, int $limit = 40): array
+    {
+        $limit = max(1, min(80, $limit));
+
+        $query = Product::query()
+            ->with(['videos', 'media'])
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->when($search, function ($q) use ($search) {
+                $term = '%' . trim($search) . '%';
+                $q->where(function ($inner) use ($term) {
+                    $inner->where('name', 'like', $term)
+                        ->orWhere('sku', 'like', $term)
+                        ->orWhere('slug', 'like', $term);
+                });
+            })
+            ->orderByDesc('id')
+            ->limit($limit);
+
+        return $query->get()->map(fn (Product $p) => $this->mapProductForCampaign($p))->values()->all();
+    }
+
+    private function syncProducts(MarketingCampaign $campaign, mixed $productIds): void
+    {
+        if (!Schema::hasTable('marketing_campaign_product')) {
+            return;
+        }
+
+        $ids = collect(is_array($productIds) ? $productIds : [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $sync = [];
+        foreach ($ids as $index => $id) {
+            $sync[$id] = ['sort_order' => $index];
+        }
+
+        $campaign->products()->sync($sync);
+    }
+
+    private function mapProductForCampaign(Product $product): array
+    {
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'slug' => $product->slug,
+            'selling_price' => (float) ($product->selling_price ?? 0),
+            'cover' => $product->cover,
+            'thumb' => $product->thumb,
+            'images' => array_slice($product->images ?? [], 0, 4),
+            'videos' => $product->videos->map(fn ($v) => [
+                'id' => $v->id,
+                'video_provider' => $v->video_provider,
+                'link' => $v->link,
+                'thumbnail' => $v->thumbnail_url ?: null,
+            ])->values()->all(),
+            'url' => rtrim(config('app.url'), '/') . '/product/' . $product->slug,
+        ];
     }
 
     public function destroy(MarketingCampaign $campaign): void
@@ -443,7 +524,6 @@ class MarketingCampaignService
             default => 'OUTCOME_SALES',
         };
 
-        // Create a PAUSED campaign shell first. Ad sets/creatives come in the next iteration.
         $payload = [
             'access_token' => $token,
             'name' => $campaign->name,
@@ -470,18 +550,216 @@ class MarketingCampaignService
             ];
         }
 
+        $campaign->load(['products' => fn ($q) => $q->with(['videos', 'media'])]);
+        $products = $campaign->products;
+        $mediaSummary = $this->attachMetaCreativesFromProducts(
+            $token,
+            $accountId,
+            $metaId,
+            $campaign,
+            $products
+        );
+
+        $noteParts = ['Meta campaign created (PAUSED).'];
+        if (($mediaSummary['ads_created'] ?? 0) > 0) {
+            $noteParts[] = 'Created ' . $mediaSummary['ads_created'] . ' ad(s) from product images.';
+        } elseif (!empty($mediaSummary['message'])) {
+            $noteParts[] = $mediaSummary['message'];
+        } else {
+            $noteParts[] = 'No products linked — add products in Campaign Hub, then recreate or finish creatives in Ads Manager.';
+        }
+
         $campaign->update([
             'external_campaign_id' => $metaId,
             'status' => $campaign->status === 'draft' ? 'paused' : $campaign->status,
-            'notes' => trim(($campaign->notes ? $campaign->notes . "\n" : '') . 'Meta campaign created (PAUSED). Add ad set + creatives in Ads Manager or next site release.'),
+            'notes' => trim(($campaign->notes ? $campaign->notes . "\n" : '') . implode(' ', $noteParts)),
         ]);
+
+        $adsCreated = (int) ($mediaSummary['ads_created'] ?? 0);
+        $message = $adsCreated > 0
+            ? "Meta campaign created as PAUSED with {$adsCreated} product ad(s) using your product images. Review & activate in Ads Manager."
+            : ('Meta campaign created as PAUSED. ' . ($mediaSummary['message'] ?? 'Link products (images/videos) on the campaign, then push again after unlinking — or finish creatives in Ads Manager.'));
 
         return [
             'ok' => true,
             'external_campaign_id' => $metaId,
-            'message' => 'Meta campaign created as PAUSED. Open Ads Manager to add ads/creatives, then activate.',
+            'ads_created' => $adsCreated,
+            'media' => $mediaSummary,
+            'message' => $message,
             'ads_manager_url' => 'https://www.facebook.com/adsmanager/manage/campaigns?act=' . str_replace('act_', '', $accountId),
         ];
+    }
+
+    /**
+     * Create PAUSED ad set + link ads from selected product cover images.
+     */
+    private function attachMetaCreativesFromProducts(
+        string $token,
+        string $accountId,
+        string $metaCampaignId,
+        MarketingCampaign $campaign,
+        $products
+    ): array {
+        if ($products->isEmpty()) {
+            return [
+                'ads_created' => 0,
+                'message' => 'No products linked to this campaign — product images/videos were not attached.',
+            ];
+        }
+
+        $pageId = $this->resolveMetaPageId($token);
+        if (!$pageId) {
+            return [
+                'ads_created' => 0,
+                'message' => 'Set Meta Page ID in Facebook CAPI settings so product creatives can be created automatically.',
+            ];
+        }
+
+        $dailyBudget = (float) ($campaign->daily_budget ?: 500);
+        // Meta expects budget in the account's smallest currency unit (e.g. cents).
+        $budgetMinor = max(100, (int) round($dailyBudget * 100));
+
+        $optimizationGoal = match ($campaign->objective) {
+            'traffic' => 'LINK_CLICKS',
+            'awareness' => 'REACH',
+            default => 'LINK_CLICKS',
+        };
+
+        $adSetPayload = [
+            'access_token' => $token,
+            'name' => $campaign->name . ' — Ad set',
+            'campaign_id' => $metaCampaignId,
+            'daily_budget' => $budgetMinor,
+            'billing_event' => 'IMPRESSIONS',
+            'optimization_goal' => $optimizationGoal,
+            'bid_strategy' => 'LOWEST_COST_WITHOUT_CAP',
+            'status' => 'PAUSED',
+            'targeting' => json_encode([
+                'geo_locations' => ['countries' => ['PK']],
+            ]),
+            'promoted_object' => json_encode(['page_id' => $pageId]),
+        ];
+
+        $adSetRes = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/adsets", $adSetPayload);
+        if (!$adSetRes->successful()) {
+            return [
+                'ads_created' => 0,
+                'message' => 'Campaign created but ad set failed: ' . ($adSetRes->json('error.message') ?? $adSetRes->body()),
+            ];
+        }
+
+        $adSetId = (string) ($adSetRes->json('id') ?? '');
+        if ($adSetId === '') {
+            return [
+                'ads_created' => 0,
+                'message' => 'Campaign created but Meta returned no ad set id.',
+            ];
+        }
+
+        $created = 0;
+        $errors = [];
+        $base = rtrim(config('app.url'), '/');
+
+        foreach ($products->take(5) as $product) {
+            $image = $product->cover ?: $product->image;
+            $link = $base . '/product/' . $product->slug;
+            if ($campaign->utm_query) {
+                $link .= (str_contains($link, '?') ? '&' : '?') . $campaign->utm_query;
+            }
+
+            if (!$image || str_contains((string) $image, '/images/default/product/')) {
+                $errors[] = $product->name . ': missing product image';
+                continue;
+            }
+
+            $storySpec = [
+                'page_id' => $pageId,
+                'link_data' => [
+                    'message' => Str::limit(strip_tags((string) ($product->description ?? $product->name)), 500),
+                    'link' => $link,
+                    'name' => $product->name,
+                    'description' => 'Shop now',
+                    'picture' => $image,
+                    'call_to_action' => [
+                        'type' => 'SHOP_NOW',
+                        'value' => ['link' => $link],
+                    ],
+                ],
+            ];
+
+            $creativeRes = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/adcreatives", [
+                'access_token' => $token,
+                'name' => $campaign->name . ' — ' . $product->name,
+                'object_story_spec' => json_encode($storySpec),
+            ]);
+
+            if (!$creativeRes->successful()) {
+                $errors[] = $product->name . ': ' . ($creativeRes->json('error.message') ?? 'creative failed');
+                continue;
+            }
+
+            $creativeId = (string) ($creativeRes->json('id') ?? '');
+            if ($creativeId === '') {
+                $errors[] = $product->name . ': no creative id';
+                continue;
+            }
+
+            $adRes = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/ads", [
+                'access_token' => $token,
+                'name' => $product->name,
+                'adset_id' => $adSetId,
+                'creative' => json_encode(['creative_id' => $creativeId]),
+                'status' => 'PAUSED',
+            ]);
+
+            if (!$adRes->successful()) {
+                $errors[] = $product->name . ': ' . ($adRes->json('error.message') ?? 'ad failed');
+                continue;
+            }
+
+            $created++;
+        }
+
+        $videoHint = $products->sum(fn ($p) => $p->videos->count());
+        $message = $created > 0
+            ? "Attached {$created} product image ad(s)."
+            : 'Could not attach product creatives.';
+        if ($videoHint > 0) {
+            $message .= " {$videoHint} product video(s) are linked in-store — upload those in Ads Manager if you want video ads (Meta requires hosted video assets).";
+        }
+        if ($errors) {
+            $message .= ' Issues: ' . implode('; ', array_slice($errors, 0, 3));
+        }
+
+        return [
+            'ads_created' => $created,
+            'adset_id' => $adSetId,
+            'page_id' => $pageId,
+            'errors' => $errors,
+            'message' => $message,
+        ];
+    }
+
+    private function resolveMetaPageId(string $token): ?string
+    {
+        $configured = Settings::group('site')->get('site_meta_page_id');
+        if ($configured) {
+            return preg_replace('/\D+/', '', (string) $configured) ?: null;
+        }
+
+        $response = Http::get('https://graph.facebook.com/v21.0/me/accounts', [
+            'access_token' => $token,
+            'fields' => 'id,name',
+            'limit' => 1,
+        ]);
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        $id = $response->json('data.0.id');
+
+        return $id ? (string) $id : null;
     }
 
     /**
