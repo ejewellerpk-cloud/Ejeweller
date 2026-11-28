@@ -39,7 +39,7 @@ class ReviewService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return ProductReview::with('product')->where(function ($query) use ($requests) {
+            return ProductReview::with(['product', 'user'])->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->reviewFilter)) {
                         if ($key == "except") {
@@ -63,6 +63,21 @@ class ReviewService
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method($methodValue);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    public function stats(): array
+    {
+        try {
+            return [
+                'all'      => ProductReview::count(),
+                'pending'  => ProductReview::where('status', ReviewStatus::PENDING)->count(),
+                'approved' => ProductReview::where('status', ReviewStatus::APPROVED)->count(),
+                'rejected' => ProductReview::where('status', ReviewStatus::REJECTED)->count(),
+            ];
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

@@ -39,6 +39,7 @@ class ReviewController extends AdminController implements HasMiddleware
             new Middleware('permission:reviews', only: ['update']),
             new Middleware('permission:reviews', only: ['destroy']),
             new Middleware('permission:reviews', only: ['changeStatus']),
+            new Middleware('permission:reviews', only: ['stats']),
         ];
     }
 
@@ -46,6 +47,15 @@ class ReviewController extends AdminController implements HasMiddleware
     {
         try {
             return  ReviewResource::collection($this->reviewService->list($request));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function stats(): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            return response()->json(['data' => $this->reviewService->stats()]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

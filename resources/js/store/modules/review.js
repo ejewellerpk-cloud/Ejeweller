@@ -8,6 +8,12 @@ export const review = {
         page: {},
         show: {},
         pagination: [],
+        stats: {
+            all: 0,
+            pending: 0,
+            approved: 0,
+            rejected: 0,
+        },
     },
     getters: {
         lists: function (state) {
@@ -22,8 +28,24 @@ export const review = {
         show: function (state) {
             return state.show;
         },
+        stats: function (state) {
+            return state.stats;
+        },
     },
     actions: {
+        stats: function (context) {
+            return new Promise((resolve, reject) => {
+                axios
+                    .get("admin/reviews/stats")
+                    .then((res) => {
+                        context.commit("stats", res.data.data || {});
+                        resolve(res);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
         lists: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = "admin/reviews";
@@ -190,6 +212,14 @@ export const review = {
         },
         show: function (state, payload) {
             state.show = payload;
+        },
+        stats: function (state, payload) {
+            state.stats = {
+                all: Number(payload.all || 0),
+                pending: Number(payload.pending || 0),
+                approved: Number(payload.approved || 0),
+                rejected: Number(payload.rejected || 0),
+            };
         },
         reset: function (state) {
             state.temp.temp_id = null;

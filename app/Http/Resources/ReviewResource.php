@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-
+use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReviewResource extends JsonResource
@@ -21,11 +21,13 @@ class ReviewResource extends JsonResource
             "user_name"            => $this->user?->name,
             "product_id"           => $this->product_id,
             "product_name"         => $this->product?->name,
+            "product_thumb"        => $this->product?->thumb,
             "star"                 => $this->star,
             "review"               => $this->review,
             "images"               => $this->images,
             "status"               => (int) ($this->status ?? \App\Enums\ReviewStatus::APPROVED),
             "is_verified_purchase" => (int) ($this->is_verified_purchase ?? \App\Enums\Ask::NO),
+            "date"                 => $this->created_at ? AppLibrary::date($this->created_at, 'd M Y') : '',
         ];
     }
 }
