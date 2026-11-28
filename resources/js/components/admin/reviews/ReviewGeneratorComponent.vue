@@ -63,39 +63,33 @@
                     <small class="db-field-alert" v-if="errors.quantity">{{ errors.quantity[0] }}</small>
                 </div>
 
-                <div class="rg-section">
-                    <label class="rg-label">{{ $t('label.upload_images') }}</label>
-                    <p class="rg-help mb-3">{{ $t('message.reviews_generator_images_hint') }}</p>
-                    <div class="rg-images">
-                        <div class="relative" v-for="(_, index) in maxImages" :key="index">
+                <div class="rg-section rg-section--wide">
+                    <div class="rg-images-head">
+                        <div>
+                            <label class="rg-label">{{ $t('label.upload_images') }}</label>
+                            <p class="rg-help">{{ $t('message.reviews_generator_images_hint') }}</p>
+                        </div>
+                        <button type="button" class="rg-btn rg-btn--primary" @click="openImageDialog">
+                            <i class="lab lab-fill-image"></i>
+                            <span>{{ $t('button.select_images') }}</span>
+                        </button>
+                    </div>
+
+                    <div v-if="imageItems.length" class="rg-images">
+                        <div class="relative" v-for="(item, index) in imageItems" :key="item.id">
                             <button
-                                v-if="imageUrl[index]"
                                 @click="removeImage(index)"
                                 type="button"
                                 class="lab-fill-close text-xs w-5 h-5 leading-5 rounded-full shadow absolute -top-1 -right-1 text-danger bg-white z-10"
                             ></button>
-                            <img
-                                v-if="imageUrl[index]"
-                                :src="imageUrl[index]"
-                                alt="review"
-                                class="rg-images__preview"
-                            />
-                            <label
-                                v-else
-                                class="rg-images__slot"
-                            >
-                                <input
-                                    @change="handleImageUpload($event, index)"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                                    class="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                                <i class="lab-fill-image text-xl text-text"></i>
-                                <span>{{ $t('label.add_image') }}</span>
-                            </label>
+                            <img :src="item.url" alt="review" class="rg-images__preview" />
                         </div>
                     </div>
+                    <p v-else class="rg-empty-images">{{ $t('message.reviews_generator_no_images') }}</p>
                     <small class="db-field-alert" v-if="errors['images.0']">{{ errors['images.0'][0] }}</small>
+                    <p v-if="imageItems.length" class="rg-help mt-2">
+                        {{ $t('message.reviews_generator_images_selected', { count: imageItems.length }) }}
+                    </p>
                 </div>
 
                 <div class="rg-actions">
@@ -111,11 +105,84 @@
             </form>
         </div>
     </div>
+
+    <!-- Image picker dialog -->
+    <div
+        v-if="showImageDialog"
+        class="rg-dialog"
+        @keydown.esc.prevent="closeImageDialog"
+    >
+        <div class="rg-dialog__backdrop" @click="closeImageDialog"></div>
+        <div
+            class="rg-dialog__panel"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="$t('button.select_images')"
+            tabindex="-1"
+            ref="imageDialog"
+        >
+            <div class="rg-dialog__header">
+                <h2 class="rg-dialog__title">{{ $t('button.select_images') }}</h2>
+                <button type="button" class="rg-dialog__close" @click="closeImageDialog" aria-label="Close">
+                    <i class="lab lab-line-cross"></i>
+                </button>
+            </div>
+
+            <div
+                class="rg-dropzone"
+                :class="{ 'is-dragging': isDragging }"
+                @click="openFileBrowser"
+                @dragenter.prevent="onDragEnter"
+                @dragover.prevent="onDragOver"
+                @dragleave.prevent="onDragLeave"
+                @drop.prevent="onDrop"
+            >
+                <input
+                    ref="fileInput"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg,image/gif"
+                    multiple
+                    class="sr-only"
+                    @change="onFileInputChange"
+                />
+                <i class="lab lab-fill-image rg-dropzone__icon"></i>
+                <p class="rg-dropzone__title">{{ $t('message.reviews_generator_dropzone_title') }}</p>
+                <p class="rg-dropzone__hint">{{ $t('message.reviews_generator_dropzone_hint') }}</p>
+            </div>
+
+            <div v-if="imageItems.length" class="rg-dialog__previews">
+                <div class="relative" v-for="(item, index) in imageItems" :key="item.id">
+                    <button
+                        @click.stop="removeImage(index)"
+                        type="button"
+                        class="lab-fill-close text-xs w-5 h-5 leading-5 rounded-full shadow absolute -top-1 -right-1 text-danger bg-white z-10"
+                    ></button>
+                    <img :src="item.url" alt="review" class="rg-images__preview" />
+                </div>
+            </div>
+
+            <div class="rg-dialog__footer">
+                <span class="rg-dialog__count">
+                    {{ $t('message.reviews_generator_images_selected', { count: imageItems.length }) }}
+                </span>
+                <div class="rg-dialog__footer-actions">
+                    <button type="button" class="rg-btn rg-btn--ghost" @click="clearImages" :disabled="!imageItems.length">
+                        {{ $t('button.clear') }}
+                    </button>
+                    <button type="button" class="rg-btn rg-btn--primary" @click="closeImageDialog">
+                        {{ $t('button.done') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
 import LoadingComponent from "../components/LoadingComponent";
 import alertService from "../../../services/alertService";
+
+let imageSeq = 0;
 
 export default {
     name: "ReviewGeneratorComponent",
@@ -125,9 +192,10 @@ export default {
             loading: {
                 isActive: false,
             },
-            maxImages: 8,
-            imageUrl: Array(8).fill(null),
-            images: {},
+            imageItems: [],
+            showImageDialog: false,
+            isDragging: false,
+            dragDepth: 0,
             form: {
                 product_id: null,
                 quantity: 10,
@@ -147,6 +215,11 @@ export default {
             .finally(() => {
                 this.loading.isActive = false;
             });
+        window.addEventListener("paste", this.onPaste);
+    },
+    beforeUnmount() {
+        window.removeEventListener("paste", this.onPaste);
+        this.revokeAllUrls();
     },
     computed: {
         products() {
@@ -160,21 +233,104 @@ export default {
         },
     },
     methods: {
-        handleImageUpload(event, index) {
-            const input = event.target;
-            if (!input.files || !input.files[0]) {
+        openImageDialog() {
+            this.showImageDialog = true;
+            this.$nextTick(() => {
+                this.$refs.imageDialog?.focus?.();
+            });
+        },
+        closeImageDialog() {
+            this.showImageDialog = false;
+            this.isDragging = false;
+            this.dragDepth = 0;
+        },
+        openFileBrowser() {
+            this.$refs.fileInput?.click();
+        },
+        onFileInputChange(event) {
+            const files = event.target?.files;
+            if (files?.length) {
+                this.addFiles(Array.from(files));
+            }
+            if (event.target) {
+                event.target.value = "";
+            }
+        },
+        onDragEnter() {
+            this.dragDepth += 1;
+            this.isDragging = true;
+        },
+        onDragOver() {
+            this.isDragging = true;
+        },
+        onDragLeave() {
+            this.dragDepth = Math.max(0, this.dragDepth - 1);
+            if (this.dragDepth === 0) {
+                this.isDragging = false;
+            }
+        },
+        onDrop(event) {
+            this.isDragging = false;
+            this.dragDepth = 0;
+            const files = Array.from(event.dataTransfer?.files || []);
+            this.addFiles(files);
+        },
+        onPaste(event) {
+            if (!this.showImageDialog) {
                 return;
             }
-            const file = input.files[0];
-            this.imageUrl[index] = URL.createObjectURL(file);
-            this.images[index] = file;
+            const items = Array.from(event.clipboardData?.items || []);
+            const files = [];
+            items.forEach((item) => {
+                if (item.type && item.type.startsWith("image/")) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        files.push(file);
+                    }
+                }
+            });
+            if (files.length) {
+                event.preventDefault();
+                this.addFiles(files);
+            }
+        },
+        isAcceptedImage(file) {
+            if (!file || !file.type) {
+                return false;
+            }
+            return /image\/(jpeg|jpg|png|webp|gif)/i.test(file.type);
+        },
+        addFiles(files) {
+            const accepted = files.filter((file) => this.isAcceptedImage(file));
+            if (!accepted.length) {
+                alertService.error(this.$t("message.reviews_generator_invalid_image"));
+                return;
+            }
+            accepted.forEach((file) => {
+                this.imageItems.push({
+                    id: `img-${Date.now()}-${imageSeq++}`,
+                    file,
+                    url: URL.createObjectURL(file),
+                });
+            });
         },
         removeImage(index) {
-            if (this.imageUrl[index]) {
-                URL.revokeObjectURL(this.imageUrl[index]);
+            const item = this.imageItems[index];
+            if (item?.url) {
+                URL.revokeObjectURL(item.url);
             }
-            this.imageUrl[index] = null;
-            this.images[index] = null;
+            this.imageItems.splice(index, 1);
+        },
+        clearImages() {
+            this.revokeAllUrls();
+            this.imageItems = [];
+        },
+        revokeAllUrls() {
+            this.imageItems.forEach((item) => {
+                if (item?.url) {
+                    URL.revokeObjectURL(item.url);
+                }
+            });
         },
         generate() {
             this.errors = {};
@@ -194,9 +350,9 @@ export default {
             fd.append("product_id", this.form.product_id);
             fd.append("quantity", qty);
 
-            Object.keys(this.images).forEach((key) => {
-                if (this.images[key]) {
-                    fd.append("images[]", this.images[key]);
+            this.imageItems.forEach((item) => {
+                if (item?.file) {
+                    fd.append("images[]", item.file);
                 }
             });
 
@@ -225,13 +381,6 @@ export default {
                     this.loading.isActive = false;
                 });
         },
-    },
-    beforeUnmount() {
-        this.imageUrl.forEach((url) => {
-            if (url) {
-                URL.revokeObjectURL(url);
-            }
-        });
     },
 };
 </script>
@@ -280,6 +429,10 @@ export default {
 
 .rg-section {
     max-width: 40rem;
+}
+
+.rg-section--wide {
+    max-width: 52rem;
 }
 
 .rg-label {
@@ -342,6 +495,15 @@ export default {
     color: #6b7280;
 }
 
+.rg-images-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
 .rg-images {
     display: flex;
     flex-wrap: wrap;
@@ -354,25 +516,17 @@ export default {
     object-fit: cover;
     border-radius: 0.75rem;
     border: 1px solid #e5e7eb;
+    display: block;
 }
 
-.rg-images__slot {
-    position: relative;
-    width: 5.5rem;
-    height: 5.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    cursor: pointer;
-    background: #eff0f6;
-    border: 1px dashed #c7cbd6;
+.rg-empty-images {
+    margin: 0;
+    padding: 1rem;
+    border: 1px dashed #d1d5db;
     border-radius: 0.75rem;
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: capitalize;
+    color: #9ca3af;
+    font-size: 0.8125rem;
+    background: #fafafa;
 }
 
 .rg-actions {
@@ -409,5 +563,150 @@ export default {
 .rg-btn--muted {
     background: #4b5563;
     color: #fff;
+}
+
+.rg-btn--ghost {
+    background: #eff0f6;
+    color: #374151;
+}
+
+.rg-btn--ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.rg-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.rg-dialog__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.rg-dialog__panel {
+    position: relative;
+    width: min(40rem, 100%);
+    max-height: min(90vh, 44rem);
+    overflow: auto;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    outline: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.rg-dialog__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid #eef0f5;
+}
+
+.rg-dialog__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.rg-dialog__close {
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 9999px;
+    background: #f3f4f6;
+    color: #4b5563;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rg-dropzone {
+    margin: 1rem 1.15rem 0;
+    padding: 1.75rem 1rem;
+    border: 2px dashed #c7cbd6;
+    border-radius: 0.9rem;
+    background: #f8f9fc;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.rg-dropzone:hover,
+.rg-dropzone.is-dragging {
+    border-color: #4f46e5;
+    background: #eef2ff;
+}
+
+.rg-dropzone__icon {
+    font-size: 1.75rem;
+    color: #6b7280;
+}
+
+.rg-dropzone__title {
+    margin: 0.65rem 0 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.rg-dropzone__hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.45;
+}
+
+.rg-dialog__previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem 1.15rem 0;
+}
+
+.rg-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.15rem 1.15rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #eef0f5;
+}
+
+.rg-dialog__count {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.rg-dialog__footer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 </style>
