@@ -55,6 +55,7 @@ class SimpleProductDetailsResource extends JsonResource
             'unit'                      => $this->unit?->name,
             'stock'                     => (int) $this->stock,
             'sku'                       => $this->sku,
+            'variation_count'           => (int) ($this->variations_count ?? 0),
             "maximum_purchase_quantity" => $this->maximum_purchase_quantity,
             'shipping'                  => [
                 'shipping_type'                => $this->shipping_type,

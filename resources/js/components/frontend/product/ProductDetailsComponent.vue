@@ -229,9 +229,41 @@
 
                     <h2 class="pdp-title text-2xl sm:text-xl lg:text-2xl font-bold capitalize text-heading mb-3 sm:mb-1.5 leading-snug">{{ product.name }}</h2>
 
-                    <!-- Etsy-Style Shipping, Delivery, Rating & Fees Row -->
+                    <!-- Variations first: shoppers pick size/color before reading shipping/reviews -->
+                    <div v-if="showVariationBlock" class="pdp-variation-block mb-4 sm:mb-3 rounded-xl border border-primary/15 bg-primary/[0.03] p-3 sm:p-3.5">
+                        <div class="flex items-center justify-between gap-2 mb-2.5">
+                            <p class="text-sm sm:text-base font-extrabold text-heading leading-tight">
+                                {{ $t('label.select_options') || 'Select your options' }}
+                                <span class="text-red-500">*</span>
+                            </p>
+                            <span v-if="selectedVariationSummary" class="text-xs font-semibold text-primary truncate max-w-[55%]">
+                                {{ selectedVariationSummary }}
+                            </span>
+                        </div>
+
+                        <div v-if="variationsLoading && !showVariationComponent" class="space-y-3 animate-pulse" aria-hidden="true">
+                            <div class="h-3 w-20 rounded bg-gray-200"></div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="h-10 w-16 rounded-lg bg-gray-200"></span>
+                                <span class="h-10 w-16 rounded-lg bg-gray-200"></span>
+                                <span class="h-10 w-20 rounded-lg bg-gray-200"></span>
+                                <span class="h-10 w-14 rounded-lg bg-gray-200"></span>
+                            </div>
+                        </div>
+
+                        <VariationComponent
+                            v-if="showVariationComponent && product.slug"
+                            :product-slug="product.slug"
+                            :variation-tree-data="allVariationTree"
+                            :initial-variant-id="initialVariantIdFromRoute"
+                            :fallback-image="product.image"
+                            :method="selectedVariationMethod"
+                            :variations="initialVariations"
+                        />
+                    </div>
+
+                    <!-- Shipping, Delivery, Rating & Fees -->
                     <div class="grid grid-cols-3 gap-1 py-2 my-2 sm:py-1 sm:my-1 text-center text-xs sm:text-xs">
-                        <!-- 1. Star Ratings Column -->
                         <div @click="scrollToReviews" class="flex flex-col items-center justify-center px-1 cursor-pointer hover:opacity-85 transition-opacity">
                             <div class="flex items-center gap-1 mb-1">
                                 <span class="text-sm font-black text-gray-900">{{ product.rating_star_count > 0 ? (product.rating_star / product.rating_star_count).toFixed(1) : '5.0' }}</span>
@@ -241,8 +273,6 @@
                                 ({{ product.rating_star_count }} {{ product.rating_star_count > 1 ? $t('label.reviews') : $t('label.review') }})
                             </span>
                         </div>
-                        
-                        <!-- 2. Dynamic Estimated Delivery Column -->
                         <div class="flex flex-col items-center justify-center px-1">
                             <div class="flex items-center gap-1.5 mb-1 text-primary">
                                 <i class="fa-solid fa-truck-fast text-xs"></i>
@@ -252,8 +282,6 @@
                                 {{ getEstimatedDeliveryDate() }}
                             </span>
                         </div>
-                        
-                        <!-- 3. Shipping Fee Column -->
                         <div class="flex flex-col items-center justify-center px-1">
                             <div class="flex items-center gap-1 mb-1 text-green-600">
                                 <i class="fa-solid fa-box text-xs"></i>
@@ -264,18 +292,6 @@
                             </span>
                         </div>
                     </div>
-
-
-
-                    <VariationComponent
-                        v-if="showVariationComponent && product.slug"
-                        :product-slug="product.slug"
-                        :variation-tree-data="allVariationTree"
-                        :initial-variant-id="initialVariantIdFromRoute"
-                        :fallback-image="product.image"
-                        :method="selectedVariationMethod"
-                        :variations="initialVariations"
-                    />
 
                     <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 sm:mb-2 sm:gap-y-1">
                         <dt class="capitalize text-lg sm:text-base font-semibold leading-tight">{{ $t('label.quantity') }}:</dt>
@@ -698,14 +714,19 @@
                 }}
             </span>
         </div>
+        <p v-if="needsVariationSelection" class="text-center text-[11px] font-bold text-amber-700 bg-amber-50 rounded-lg px-2 py-1">
+            {{ $t('message.select_all_options') || 'Select size / color above first' }}
+        </p>
         <div class="flex items-center justify-center gap-1.5 w-full">
             <button @click.prevent="addToCart" type="button"
-                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary">
+                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 text-[10px] min-[375px]:text-xs whitespace-nowrap bg-primary shadow-btn-primary"
+                :class="needsVariationSelection ? 'opacity-80' : ''">
                 <i class="lab-line-bag text-sm font-bold"></i>
-                <span>{{ $t("button.add_to_cart") }}</span>
+                <span>{{ needsVariationSelection ? ($t('label.select_options') || 'Select options') : $t("button.add_to_cart") }}</span>
             </button>
             <button @click.prevent="buyNow" type="button"
-                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy">
+                class="flex-1 min-w-0 h-10 px-1 rounded-full text-white font-extrabold flex items-center justify-center gap-1 active:scale-[0.98] transition-all duration-300 whitespace-nowrap animate-flash-buy"
+                :class="needsVariationSelection ? 'opacity-80' : ''">
                 <i class="fa-solid fa-bolt text-yellow-300 animate-bolt-strike text-xs min-[375px]:text-sm"></i>
                 <span class="text-[10px] min-[375px]:text-xs font-black uppercase tracking-wide">{{ $t("button.buy_now") || 'Buy Now' }}</span>
             </button>
@@ -768,6 +789,7 @@
 
 <script>
 import { ref, computed, defineAsyncComponent, nextTick } from "vue";
+import VariationComponent from "../components/VariationComponent.vue";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { FreeMode, Navigation, Thumbs, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -802,7 +824,7 @@ import {
 export default {
     name: "ProductDetailsComponent",
     components: {
-        VariationComponent: defineAsyncComponent(() => import("../components/VariationComponent")),
+        VariationComponent,
         RecentlyViewedStripSkeleton,
         RelatedProductsSection: defineAsyncComponent(() => import("./RelatedProductsSection.vue")),
         starRating,
@@ -874,6 +896,8 @@ export default {
             selectedVariation: null,
             productArray: {},
             showVariationComponent: false,
+            variationsLoading: false,
+            expectVariations: false,
             initProduct: {
                 isVariation: false,
                 variationId: null,
@@ -953,6 +977,21 @@ export default {
         },
         allVariationTree: function () {
             return this.$store.getters["frontendProductVariation/allVariation"];
+        },
+        showVariationBlock: function () {
+            return this.expectVariations || this.variationsLoading || this.showVariationComponent;
+        },
+        needsVariationSelection: function () {
+            return this.showVariationComponent && (!this.selectedVariation || !this.selectedVariation.sku);
+        },
+        selectedVariationSummary: function () {
+            if (!this.selectedVariation) {
+                return '';
+            }
+            return this.selectedVariation.sku
+                || this.selectedVariation.name
+                || this.productArray?.variation_names
+                || '';
         },
         product: function () {
             return this.$store.getters["frontendProduct/show"];
@@ -1312,12 +1351,16 @@ export default {
             swiper.slideTo(index);
         },
         validatePurchaseBeforeAction: function () {
-            if (this.showVariationComponent && (!this.selectedVariation || !this.selectedVariation.sku)) {
+            if (this.needsVariationSelection) {
                 alertService.error(
                     this.$t('message.select_all_options')
                     || this.$t('message.please_select_a_variation')
                     || 'Please select all options first!'
                 );
+                const block = this.$el?.querySelector?.('.pdp-variation-block');
+                if (block?.scrollIntoView) {
+                    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return false;
             }
             if ((this.temp.stock || 0) <= 0) {
@@ -1953,51 +1996,61 @@ export default {
                 meta: metaData
             });
         },
-        loadSecondaryProductData: function (data, token) {
-            const run = () => {
-                const tasks = [];
-
-                const productSlug = data.slug;
-                const productId = data.id;
-
-                tasks.push(
-                    this.$store.dispatch('frontendProductVariation/allVariation', productSlug)
-                        .then((allVarRes) => {
-                            if (token !== this.loadToken) {
-                                return;
-                            }
-                            const hasTree = (allVarRes.data.data || []).length > 0;
-                            if (hasTree) {
-                                this.showVariationComponent = true;
-                            }
-                        })
-                        .catch(() => {})
-                );
-
-                tasks.push(
-                    this.$store.dispatch('frontendProductVariation/initialVariation', productId)
-                        .then((initVariationRes) => {
-                            if (token !== this.loadToken) {
-                                return;
-                            }
-                            if (initVariationRes.data.data.length > 0) {
-                                this.showVariationComponent = true;
-                            }
-                            if (!this.showVariationComponent && data.stock > 0) {
-                                this.enableAddToCardButton = false;
-                            }
-                        })
-                        .catch(() => {})
-                );
-
-                return Promise.allSettled(tasks);
-            };
-
-            if (typeof requestIdleCallback === 'function') {
-                requestIdleCallback(run, { timeout: 1500 });
-            } else {
-                setTimeout(run, 150);
+        /**
+         * Start variation tree immediately with product show (no idle delay).
+         * Shoppers need size/color before add-to-cart — never defer this.
+         */
+        loadVariationsImmediate: function (token, slug) {
+            if (!slug) {
+                return Promise.resolve();
             }
+
+            this.variationsLoading = true;
+            this.expectVariations = true;
+
+            return this.$store.dispatch('frontendProductVariation/allVariation', slug)
+                .then((allVarRes) => {
+                    if (token !== this.loadToken) {
+                        return;
+                    }
+                    const hasTree = (allVarRes.data?.data || []).length > 0;
+                    this.expectVariations = hasTree;
+                    if (hasTree) {
+                        this.showVariationComponent = true;
+                    }
+                })
+                .catch(() => {
+                    if (token === this.loadToken) {
+                        this.expectVariations = false;
+                    }
+                })
+                .finally(() => {
+                    if (token === this.loadToken) {
+                        this.variationsLoading = false;
+                    }
+                });
+        },
+        loadSecondaryProductData: function (data, token) {
+            // Tree already started in show(); only fetch legacy first-level cascade here.
+            if (!data?.id) {
+                return Promise.resolve();
+            }
+
+            return this.$store.dispatch('frontendProductVariation/initialVariation', data.id)
+                .then((initVariationRes) => {
+                    if (token !== this.loadToken) {
+                        return;
+                    }
+                    const list = initVariationRes.data?.data || [];
+                    if (list.length > 0) {
+                        this.expectVariations = true;
+                        this.showVariationComponent = true;
+                    }
+                    if (!this.showVariationComponent && data.stock > 0) {
+                        this.enableAddToCardButton = false;
+                    }
+                })
+                .catch(() => {});
         },
         commitShowPayload: function (data) {
             this.$store.commit('frontendProduct/show', data);
@@ -2019,6 +2072,12 @@ export default {
             this.applyProductFromShowResponse(data);
             this.applyProductSeo(data);
             this.loading.isActive = false;
+
+            if (Number(data.variation_count) > 0) {
+                this.expectVariations = true;
+            } else if (!this.showVariationComponent && Number(data.variation_count) === 0) {
+                this.expectVariations = false;
+            }
 
             this.scheduleDeferredDetailWork(data);
             this.loadSecondaryProductData(data, token);
@@ -2082,6 +2141,8 @@ export default {
             this.loading.isActive = true;
             this.selectedVariation = null;
             this.showVariationComponent = false;
+            this.variationsLoading = false;
+            this.expectVariations = false;
             this.enableAddToCardButton = false;
             this.videoPosterMap = {};
             this.mainSwiperActiveIndex = 0;
@@ -2089,6 +2150,8 @@ export default {
             this.$store.commit('frontendProductVariation/allVariation', []);
             this.props.search.slug = this.$route.params.slug;
 
+            // Parallel with product show — matches Quick View (no idle deferral).
+            this.loadVariationsImmediate(token, this.props.search.slug);
             this.requestProductShow(token, false);
         },
         fetchRecentlyViewed: function () {

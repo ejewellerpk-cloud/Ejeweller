@@ -203,9 +203,17 @@ export default {
         productSlug: {
             immediate: true,
             handler(slug) {
-                if (!this.useLegacyOnly && slug && !this.variationTree.length) {
-                    this.loadVariationTree(slug);
+                // Parent PDP already fetches the tree — only self-fetch when used standalone.
+                if (this.useLegacyOnly || !slug || this.variationTree.length) {
+                    return;
                 }
+                if (Array.isArray(this.variationTreeData)) {
+                    if (this.variationTreeData.length > 0) {
+                        this.applyTree(this.variationTreeData);
+                    }
+                    return;
+                }
+                this.loadVariationTree(slug);
             },
         },
         initialVariantId(variantId) {
