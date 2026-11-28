@@ -57,6 +57,11 @@
                         :style="{ backgroundColor: colorSwatchValue(opt.product_attribute_option_name) }"
                     ></span>
                     <span class="variation-option-label">{{ opt.product_attribute_option_name }}</span>
+                    <span
+                        v-if="opt.available && Number(opt.stockCount) > 0"
+                        class="variation-option-stock"
+                        :class="opt.selected ? 'text-white/90' : 'text-gray-500'"
+                    >{{ opt.stockCount }}</span>
                     <span v-if="!opt.available" class="variation-unavailable-mark">×</span>
                 </button>
             </div>
@@ -96,6 +101,10 @@
                         @error="onVariationThumbError"
                     />
                     {{ variation.product_attribute_option_name }}
+                    <span
+                        v-if="variation.sku && variationHasStock(variation)"
+                        class="text-[10px] font-bold opacity-80"
+                    >{{ parseInt(variation.stock, 10) || 0 }}</span>
                 </button>
             </dd>
         </dl>
@@ -397,6 +406,20 @@ export default {
 .variation-option-btn--selected .variation-option-thumb {
     border-color: rgba(255, 255, 255, 0.9);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.variation-option-stock {
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0.15rem 0.35rem;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.06);
+    margin-left: 0.1rem;
+}
+
+.variation-option-btn--selected .variation-option-stock {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .variation-unavailable-mark {

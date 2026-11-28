@@ -293,10 +293,12 @@
                         </div>
                     </div>
 
-                    <dl class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 sm:mb-2 sm:gap-y-1">
-                        <dt class="capitalize text-lg sm:text-base font-semibold leading-tight">{{ $t('label.quantity') }}:</dt>
-                        <dd class="flex items-center gap-6 sm:gap-3">
-                            <div class="flex items-center gap-1 w-20 p-1 rounded-full bg-[#F7F7FC]">
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-2">
+                        <div class="rounded-xl border border-gray-100 bg-[#F7F7FC]/80 px-3 py-2.5 sm:py-2">
+                            <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wide text-gray-400 mb-1.5">
+                                {{ $t('label.quantity') }}
+                            </p>
+                            <div class="flex items-center gap-1 w-full max-w-[7.5rem] p-1 rounded-full bg-white border border-gray-100">
                                 <button @click.prevent="quantityDecrement" type="button"
                                     :class="temp.quantity === 1 ? 'cursor-not-allowed' : ''"
                                     class="lab-fill-circle-minus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
@@ -306,18 +308,31 @@
                                     :class="temp.stock === temp.quantity ? 'cursor-not-allowed' : temp.quantity === temp.maximum_purchase_quantity ? 'cursor-not-allowed' : ''"
                                     class="lab-fill-circle-plus text-lg leading-none transition-all duration-300 hover:text-primary"></button>
                             </div>
-                            <div v-if="!initialVariations.length || selectedVariation != null">
-                                <p v-if="temp.stock > 0" class="capitalize">
-                                    {{ $t('label.available') }}:
-                                    <b>({{ temp.stock }}) </b>
-                                    {{ product.unit }}
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-[#F7F7FC]/80 px-3 py-2.5 sm:py-2">
+                            <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wide text-gray-400 mb-1.5">
+                                {{ $t('label.stock') }}
+                            </p>
+                            <template v-if="needsVariationSelection && selectedVariation == null">
+                                <p class="text-sm font-semibold text-gray-500 leading-tight">
+                                    {{ $t('label.select_options') }}
                                 </p>
-                                <p v-else class="capitalize text-danger">
-                                    {{ $t('label.stock_out') }}
+                            </template>
+                            <template v-else-if="temp.stock > 0">
+                                <p class="text-base sm:text-lg font-extrabold text-heading leading-tight">
+                                    {{ temp.stock }}
+                                    <span class="text-xs sm:text-sm font-semibold text-gray-500 capitalize">{{ product.unit }}</span>
                                 </p>
-                            </div>
-                        </dd>
-                    </dl>
+                                <p v-if="temp.stock <= 12" class="text-[11px] font-bold text-red-500 mt-0.5">
+                                    Only {{ temp.stock }} left
+                                </p>
+                            </template>
+                            <p v-else class="text-sm font-bold capitalize text-danger leading-tight">
+                                {{ $t('label.stock_out') }}
+                            </p>
+                        </div>
+                    </div>
 
                     <dl v-if="temp.quantity > 1" class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 sm:mb-2 sm:gap-y-1">
                         <dt class="capitalize text-lg sm:text-base font-semibold leading-tight">{{ $t('label.total_price') }}:</dt>

@@ -44,12 +44,22 @@ export function getOptionsForLevel(tree, selectedIds, level) {
     return parent ? (parent.children || []) : [];
 }
 
+export function getNodeStock(node) {
+    if (!node) {
+        return 0;
+    }
+    if (node.sku) {
+        return parseInt(node.stock, 10) || 0;
+    }
+    return (node.children || []).reduce((sum, child) => sum + getNodeStock(child), 0);
+}
+
 export function hasAvailableLeaf(node) {
     if (!node) {
         return false;
     }
     if (node.sku) {
-        return (parseInt(node.stock, 10) || 0) > 0;
+        return getNodeStock(node) > 0;
     }
     return (node.children || []).some((child) => hasAvailableLeaf(child));
 }
@@ -145,6 +155,7 @@ export function buildVisibleLevels(tree, selectedIds) {
                 ...opt,
                 available: isOptionAvailable(opt, tree, selectedIds, levelIndex),
                 selected: Number(selectedIds[levelIndex]) === Number(opt.id),
+                stockCount: getNodeStock(opt),
             })),
         });
 
