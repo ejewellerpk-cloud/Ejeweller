@@ -385,7 +385,11 @@
                         </div>
 
                         <div v-if="reviews && reviews.length" class="space-y-6">
-                            <div v-for="(review, index) in reviews?.slice()?.reverse()" :key="index" class="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+                            <div
+                                v-for="review in reviews"
+                                :key="review.id || `${review.user_id}-${review.date}-${review.name}`"
+                                class="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0"
+                            >
                                 <div class="flex items-center justify-between gap-4 mb-2">
                                     <h4 class="text-lg font-bold text-heading capitalize">{{ review.name }}</h4>
                                     <span class="text-sm text-gray-400 font-medium">{{ review.date }}</span>
@@ -399,9 +403,16 @@
                                 <p class="text-base text-gray-600 leading-relaxed mb-4">{{ review.review }}</p>
 
                                 <div class="flex flex-wrap gap-3" v-if="review.images && review.images.length > 0">
-                                    <img v-for="(reviewImage, imgIndex) in review.images" :key="imgIndex" :src="reviewImage" alt="review image" loading="lazy"
-                                        class="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-85 transition-all duration-300 border border-gray-200" 
-                                        @click="previewImage(review, imgIndex)" data-modal="imagePreviewModal">
+                                    <img
+                                        v-for="(reviewImage, imgIndex) in review.images"
+                                        :key="`${review.id || review.name}-img-${imgIndex}`"
+                                        :src="reviewImage"
+                                        alt="review image"
+                                        loading="lazy"
+                                        class="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-85 transition-all duration-300 border border-gray-200"
+                                        @click="previewImage(review, imgIndex)"
+                                        data-modal="imagePreviewModal"
+                                    >
                                 </div>
                             </div>
 
@@ -1636,7 +1647,8 @@ export default {
             this.previewSwiperInstance?.slideNext?.();
         },
         buildReviewPreviewSlides: function () {
-            const ordered = this.reviews?.slice()?.reverse() || [];
+            // Keep API order (photo reviews first) — do not reverse or thumbs vanish after View All.
+            const ordered = Array.isArray(this.reviews) ? this.reviews : [];
             const slides = [];
             ordered.forEach((review) => {
                 const images = Array.isArray(review?.images) ? review.images : [];
