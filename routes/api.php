@@ -836,6 +836,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
     Route::prefix('purchase')->name('purchase.')->group(function () {
         Route::get('/', [PurchaseController::class, 'index']);
         Route::post('/', [PurchaseController::class, 'store']);
+        Route::post('/delete-all', [PurchaseController::class, 'destroyAll']);
         Route::get('/show/{purchase}', [PurchaseController::class, 'show']);
         Route::get('/edit/{purchase}', [PurchaseController::class, 'edit']);
         Route::match(['post', 'put', 'patch'], '/update/{purchase}', [PurchaseController::class, 'update']);
@@ -850,6 +851,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
 
     Route::prefix('stock')->name('stock.')->group(function () {
         Route::get('/', [StockController::class, 'index']);
+        Route::post('/reset-all', [StockController::class, 'resetAll']);
         Route::get('/export', [StockController::class, 'export']);
     });
 

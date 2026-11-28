@@ -267,22 +267,60 @@ class PurchaseService
     {
         try {
             DB::transaction(function () use ($purchase) {
-                if ($purchase->stocks) {
-                    $stockIds = $purchase->stocks->pluck('id');
-                    if (!blank($stockIds)) {
-                        StockTax::whereIn('stock_id', $stockIds)->delete();
-                    }
-                    $purchase->stocks()->delete();
-                }
-                $file = $purchase->getFirstMedia('purchase');
-                $file?->delete();
-                $purchase->delete();
+                $this->deletePurchaseCascade($purchase);
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Permanently remove every purchase (payments, stock rows, attachments).
+     *
+     * @throws Exception
+     */
+    public function destroyAll(): int
+    {
+        try {
+            $deleted = 0;
+
+            Purchase::query()
+                ->with(['stocks', 'purchasePayment'])
+                ->orderBy('id')
+                ->chunkById(25, function ($purchases) use (&$deleted) {
+                    foreach ($purchases as $purchase) {
+                        DB::transaction(function () use ($purchase, &$deleted) {
+                            $this->deletePurchaseCascade($purchase);
+                            $deleted++;
+                        });
+                    }
+                });
+
+            return $deleted;
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    private function deletePurchaseCascade(Purchase $purchase): void
+    {
+        $purchase->loadMissing(['stocks', 'purchasePayment']);
+
+        foreach ($purchase->purchasePayment as $payment) {
+            $payment->clearMediaCollection('purchase_payment');
+            $payment->delete();
+        }
+
+        $stockIds = $purchase->stocks->pluck('id');
+        if ($stockIds->isNotEmpty()) {
+            StockTax::whereIn('stock_id', $stockIds)->delete();
+        }
+        $purchase->stocks()->delete();
+        $purchase->clearMediaCollection('purchase');
+        $purchase->delete();
     }
 
     public function downloadAttachment(Purchase $purchase)

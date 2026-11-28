@@ -4,8 +4,10 @@ namespace App\Services;
 
 use Exception;
 use App\Models\Stock;
+use App\Models\StockTax;
 use App\Enums\Status;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Pagination\Paginator;
@@ -70,6 +72,27 @@ class StockService
             }
 
             return $this->items;
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Wipe the stock ledger so every product/variation available qty becomes 0.
+     *
+     * @throws Exception
+     */
+    public function resetAllToZero(): int
+    {
+        try {
+            return (int) DB::transaction(function () {
+                $count = (int) Stock::query()->count();
+                StockTax::query()->delete();
+                Stock::query()->delete();
+
+                return $count;
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

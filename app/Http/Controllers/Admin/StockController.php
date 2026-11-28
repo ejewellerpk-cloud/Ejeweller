@@ -26,6 +26,7 @@ class StockController extends AdminController implements HasMiddleware
         return [
             new Middleware('permission:stock', only: ['index']),
             new Middleware('permission:stock', only: ['export']),
+            new Middleware('permission:stock', only: ['resetAll']),
         ];
     }
     public function index(PaginateRequest $request): \Illuminate\Foundation\Application|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
@@ -41,6 +42,22 @@ class StockController extends AdminController implements HasMiddleware
     {
         try {
             return Excel::download(new StockExport($this->stockService, $request), 'Stock.xlsx');
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function resetAll(): \Illuminate\Http\Response|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse
+    {
+        try {
+            @set_time_limit(180);
+            $removed = $this->stockService->resetAllToZero();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Stock reset successfully.',
+                'meta'    => ['removed' => $removed],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

@@ -38,7 +38,7 @@ class PurchaseController extends AdminController implements HasMiddleware
             new Middleware('permission:purchase_create', only: ['store']),
             new Middleware('permission:purchase_edit', only: ['edit']),
             new Middleware('permission:purchase_edit', only: ['update']),
-            new Middleware('permission:purchase_delete', only: ['destroy']),
+            new Middleware('permission:purchase_delete', only: ['destroy', 'destroyAll']),
             new Middleware('permission:purchase_show', only: ['show']),
             new Middleware('permission:purchase', only: ['export']),
             new Middleware('permission:purchase', only: ['downloadAttachment']),
@@ -92,6 +92,22 @@ class PurchaseController extends AdminController implements HasMiddleware
         try {
             $this->purchaseService->destroy($purchase);
             return response('', 202);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function destroyAll(): \Illuminate\Http\Response|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse
+    {
+        try {
+            @set_time_limit(300);
+            $deleted = $this->purchaseService->destroyAll();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'All purchases removed successfully.',
+                'meta'    => ['deleted' => $deleted],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

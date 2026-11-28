@@ -17,6 +17,16 @@
                             <ExcelComponent :method="xls" />
                         </div>
                     </div>
+                    <button
+                        v-if="permissionChecker('stock')"
+                        type="button"
+                        class="db-btn h-[37px] text-white bg-red-600 hover:bg-red-700"
+                        :disabled="loading.isActive"
+                        @click="resetAllStock"
+                    >
+                        <i class="lab lab-line-refresh"></i>
+                        <span>{{ $t('button.reset_all_stock') }}</span>
+                    </button>
                 </div>
             </div>
 
@@ -239,6 +249,19 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err.response.data.message);
             });
+        },
+        resetAllStock: function () {
+            appService.submitConfirmation().then(() => {
+                this.loading.isActive = true;
+                this.$store.dispatch('stock/resetAll').then((res) => {
+                    this.loading.isActive = false;
+                    alertService.success(this.$t('message.stock_reset_success'));
+                    this.list(1);
+                }).catch((err) => {
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || this.$t('message.something_wrong'));
+                });
+            }).catch(() => {});
         },
     }
 }

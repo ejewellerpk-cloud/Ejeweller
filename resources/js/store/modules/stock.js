@@ -65,6 +65,15 @@ export const stock = {
                 });
             });
         },
+        resetAll: function (context) {
+            return new Promise((resolve, reject) => {
+                axios.post('admin/stock/reset-all').then((res) => {
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
     },
     mutations: {
         lists: function (state, payload) {

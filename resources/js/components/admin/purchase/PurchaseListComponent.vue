@@ -17,6 +17,16 @@
                             <ExcelComponent :method="xls" />
                         </div>
                     </div>
+                    <button
+                        v-if="permissionChecker('purchase_delete')"
+                        type="button"
+                        class="db-btn h-[37px] text-white bg-red-600 hover:bg-red-700"
+                        :disabled="loading.isActive || !purchases.length"
+                        @click="destroyAll"
+                    >
+                        <i class="lab lab-line-trash"></i>
+                        <span>{{ $t('button.remove_all_purchases') }}</span>
+                    </button>
                     <router-link @click="reset" v-if="permissionChecker('purchase_create')" to="purchase/add"
                         class="db-btn h-[37px] text-white bg-primary">
                         <i class="lab lab-line-add-circle"></i>
@@ -368,6 +378,26 @@ export default {
             }).catch((err) => {
                 this.loading.isActive = false;
             });
+        },
+        destroyAll: function () {
+            appService.destroyConfirmation().then(() => {
+                this.loading.isActive = true;
+                this.$store.dispatch('purchase/destroyAll', {
+                    search: this.props.search,
+                }).then((res) => {
+                    this.loading.isActive = false;
+                    const count = res.data?.meta?.deleted;
+                    alertService.success(
+                        count != null
+                            ? this.$t('message.purchases_removed_success', { count })
+                            : (res.data?.message || this.$t('message.purchases_removed_success', { count: 0 }))
+                    );
+                    this.list(1);
+                }).catch((err) => {
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || this.$t('message.something_wrong'));
+                });
+            }).catch(() => {});
         },
         clear: function () {
             this.props.search = {

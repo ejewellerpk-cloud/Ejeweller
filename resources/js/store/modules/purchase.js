@@ -107,6 +107,18 @@ export const purchase = {
                 });
             });
         },
+        destroyAll: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                axios.post('admin/purchase/delete-all').then((res) => {
+                    if (payload?.search) {
+                        context.dispatch('lists', payload.search).then().catch();
+                    }
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
         export: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = 'admin/purchase/export';
