@@ -939,7 +939,16 @@ class ProductService
                     'quantity'
                 )
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with(['reviews' => fn($query) => $query->with('user', 'media')->take($request->get('review_limit', 3))])
+                ->with(['reviews' => function ($query) use ($request) {
+                    $limit = max(1, (int) $request->get('review_limit', 3));
+                    $query->with(['user', 'media'])
+                        ->withCount(['media as review_media_count' => function ($mediaQuery) {
+                            $mediaQuery->where('collection_name', 'product-review');
+                        }])
+                        ->orderByDesc('review_media_count')
+                        ->orderByDesc('id')
+                        ->take($limit);
+                }])
                 ->withReviewRating()
                 ->where(['id' => $product->id, 'status' => Status::ACTIVE])
                 ->first();
@@ -963,7 +972,16 @@ class ProductService
                     'quantity'
                 )
                 ->with(['wishlist' => fn($query) => $query->where('user_id', Auth::check() ? Auth::user()->id : 0)])
-                ->with(['reviews' => fn($query) => $query->with('user', 'media')->take($request->get('review_limit', 3))])
+                ->with(['reviews' => function ($query) use ($request) {
+                    $limit = max(1, (int) $request->get('review_limit', 3));
+                    $query->with(['user', 'media'])
+                        ->withCount(['media as review_media_count' => function ($mediaQuery) {
+                            $mediaQuery->where('collection_name', 'product-review');
+                        }])
+                        ->orderByDesc('review_media_count')
+                        ->orderByDesc('id')
+                        ->take($limit);
+                }])
                 ->withReviewRating()
                 ->where(['id' => $product->id, 'status' => Status::ACTIVE])
                 ->withTrashed()

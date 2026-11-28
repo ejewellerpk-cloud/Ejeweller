@@ -608,7 +608,10 @@
             <div class="text-white text-sm sm:text-base font-medium tracking-wide drop-shadow-md text-center">
                 <div v-if="previewSlides.length > 0">
                     <span>{{ previewLocalCounter }}</span>
-                    <span v-if="previewSlides.length > 1" class="block text-[11px] sm:text-xs text-white/60 font-normal mt-0.5">
+                    <span v-if="previewGalleryLoading" class="block text-[11px] sm:text-xs text-white/60 font-normal mt-0.5">
+                        Loading more photos…
+                    </span>
+                    <span v-else-if="previewSlides.length > 1" class="block text-[11px] sm:text-xs text-white/60 font-normal mt-0.5">
                         Swipe for more photos
                     </span>
                 </div>
@@ -826,6 +829,7 @@ import starRating from "vue-star-rating";
 import targetService from "../../../services/targetService";
 import router from "../../../router";
 import RecentlyViewedStripSkeleton from "../components/skeleton/RecentlyViewedStripSkeleton.vue";
+import axios from "axios";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import { setFlashSaleTopBar, clearFlashSaleTopBar } from "../../../services/flashSaleTopBar";
@@ -835,7 +839,6 @@ import 'vue-inner-image-zoom/lib/vue-inner-image-zoom.css';
 
 import InnerImageZoom from 'vue-inner-image-zoom';
 import activityEnum from "../../../enums/modules/activityEnum";
-import axios from "axios";
 import { discountPercentage, getDetailPrices, parseAmount, withCartLinePricing } from "../../../utils/productOffer";
 import { trackProductViewed, trackWishlistToggle } from "../../../services/analyticsEcommerceBridge";
 import { captureVideoThumbnail, isSelfHostedVideo } from "../../../utils/videoThumbnail";
@@ -958,6 +961,8 @@ export default {
             previewSwiperInstance: null,
             previewReview: null,
             previewHistoryActive: false,
+            previewGalleryLoading: false,
+            previewReviewsFetch: null,
             _onPreviewPopState: null,
             shareUrl: "",
             copyText: "Copy",
@@ -1925,9 +1930,58 @@ export default {
             this.props.search.review_limit = this.product.rating_star_count;
             this.show();
         },
-        previewImage: function (reviewObj, imageIndex = 0) {
-            const slides = this.buildReviewPreviewSlides();
+        needsMoreReviewsForGallery: function () {
+            const total = Number(this.product?.rating_star_count || 0);
+            const loaded = Array.isArray(this.reviews) ? this.reviews.length : 0;
+            return total > 0 && loaded < total;
+        },
+        ensureAllReviewsForGallery: function () {
+            if (!this.needsMoreReviewsForGallery()) {
+                return Promise.resolve(this.reviews || []);
+            }
+            if (this.previewReviewsFetch) {
+                return this.previewReviewsFetch;
+            }
+
+            const slug = this.props.search.slug || this.$route.params.slug;
+            if (!slug) {
+                return Promise.resolve(this.reviews || []);
+            }
+
+            const limit = Math.max(
+                Number(this.product?.rating_star_count || 0),
+                (this.reviews?.length || 0) + 1,
+                50
+            );
+
+            this.previewReviewsFetch = axios
+                .get(`frontend/product/show/${slug}${appService.requestHandler({
+                    slug,
+                    review_limit: limit,
+                })}`)
+                .then((res) => {
+                    const reviews = res.data?.data?.reviews || [];
+                    if (reviews.length) {
+                        this.$store.commit('frontendProduct/showReviews', reviews);
+                        this.props.search.review_limit = limit;
+                        const cached = this.readProductCache?.(slug);
+                        if (cached && typeof cached === 'object') {
+                            cached.reviews = reviews;
+                            this.writeProductCache?.(slug, cached);
+                        }
+                    }
+                    return reviews;
+                })
+                .finally(() => {
+                    this.previewReviewsFetch = null;
+                });
+
+            return this.previewReviewsFetch;
+        },
+        openPreviewGallery: function (reviewObj, imageIndex = 0) {
+            let slides = this.buildReviewPreviewSlides();
             if (!slides.length && reviewObj?.images?.length) {
+                slides = [];
                 (reviewObj.images || []).forEach((url, imgIndex) => {
                     slides.push({
                         url,
@@ -1939,7 +1993,7 @@ export default {
                 });
             }
             if (!slides.length) {
-                return;
+                return false;
             }
 
             const startIndex = this.findPreviewStartIndex(slides, reviewObj, imageIndex);
@@ -1961,6 +2015,52 @@ export default {
                     }
                 };
                 window.addEventListener('popstate', this._onPreviewPopState);
+            }
+            return true;
+        },
+        refreshOpenPreviewGallery: function (reviewObj, imageIndex = 0) {
+            if (!this.previewSlides.length) {
+                return;
+            }
+            const current = this.previewSlides[this.previewIndex];
+            const slides = this.buildReviewPreviewSlides();
+            if (!slides.length) {
+                return;
+            }
+            const startIndex = this.findPreviewStartIndex(
+                slides,
+                current?.review || reviewObj,
+                current?.localIndex ?? imageIndex
+            );
+            this.previewSlides = slides;
+            this.previewIndex = startIndex;
+            this.previewReview = slides[startIndex]?.review || current?.review || reviewObj;
+            this.previewSessionKey += 1;
+            this.previewSwiperInstance = null;
+            this.resetPreviewPinch();
+        },
+        previewImage: async function (reviewObj, imageIndex = 0) {
+            // Open immediately with currently loaded reviews for zero lag.
+            this.openPreviewGallery(reviewObj, imageIndex);
+
+            // Silently load the rest so swipe continues across all photo reviews
+            // without requiring "View All" on the product page.
+            if (!this.needsMoreReviewsForGallery()) {
+                return;
+            }
+
+            this.previewGalleryLoading = true;
+            try {
+                await this.ensureAllReviewsForGallery();
+                if (this.previewSlides.length > 0) {
+                    this.refreshOpenPreviewGallery(reviewObj, imageIndex);
+                } else {
+                    this.openPreviewGallery(reviewObj, imageIndex);
+                }
+            } catch (e) {
+                // Keep the already-opened limited gallery if the expand request fails.
+            } finally {
+                this.previewGalleryLoading = false;
             }
         },
         hidePreviewImage: function (fromPopState = false) {
