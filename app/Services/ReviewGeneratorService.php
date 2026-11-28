@@ -129,14 +129,10 @@ class ReviewGeneratorService
             });
 
             // Keep heavy media work outside the DB transaction to avoid timeouts / HTTP2 drops.
+            // Each uploaded file is attached at most once (never reused across reviews/batches).
             if (!empty($tempPaths) && !empty($createdIds)) {
                 $reviews = ProductReview::query()->whereIn('id', $createdIds)->get();
-                foreach ($reviews as $review) {
-                    $this->attachRandomImages($review, $tempPaths);
-                    if (isset($postedAtById[$review->id])) {
-                        $this->backdateReviewMedia($review, $postedAtById[$review->id]);
-                    }
-                }
+                $this->distributeUniqueImages($reviews, $tempPaths, $postedAtById);
             }
 
             if ($request->boolean('cleanup_media') && $mediaToken) {
@@ -677,35 +673,76 @@ class ReviewGeneratorService
         return 2;
     }
 
-    private function attachRandomImages(ProductReview $review, array $tempPaths): void
+    /**
+     * Attach each pool image at most once across reviews.
+     * Used files are deleted from the media_token folder so later batches cannot reuse them.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProductReview>  $reviews
+     * @param  array<int, string>  $tempPaths
+     * @param  array<int, Carbon>  $postedAtById
+     */
+    private function distributeUniqueImages($reviews, array $tempPaths, array $postedAtById): void
     {
-        if (empty($tempPaths)) {
+        $pool = array_values(array_filter($tempPaths, static fn ($path) => is_string($path) && is_file($path)));
+        if (empty($pool) || $reviews->isEmpty()) {
             return;
         }
 
-        $roll = random_int(1, 100);
-        if ($roll <= 15) {
-            $count = 0;
-        } elseif ($roll <= 75) {
-            $count = 1;
-        } else {
-            $count = min(2, count($tempPaths));
-        }
+        shuffle($pool);
+        $reviewList = $reviews->values()->all();
+        shuffle($reviewList);
 
-        if ($count === 0) {
-            return;
-        }
+        // Pass 1: one unique image per review until the pool runs out.
+        foreach ($reviewList as $review) {
+            if (empty($pool)) {
+                break;
+            }
 
-        $paths = $tempPaths;
-        shuffle($paths);
-        $selected = array_slice($paths, 0, $count);
+            $path = array_shift($pool);
+            $this->attachOneUniqueImage($review, $path);
 
-        foreach ($selected as $path) {
-            if (is_file($path)) {
-                $review->addMedia($path)
-                    ->preservingOriginal()
-                    ->toMediaCollection('product-review');
+            if (isset($postedAtById[$review->id])) {
+                $this->backdateReviewMedia($review, $postedAtById[$review->id]);
             }
         }
+
+        // Pass 2: optional second unique image for some reviews that already have one.
+        if (!empty($pool)) {
+            shuffle($reviewList);
+            foreach ($reviewList as $review) {
+                if (empty($pool)) {
+                    break;
+                }
+
+                if ($review->getMedia('product-review')->count() < 1) {
+                    continue;
+                }
+
+                if (random_int(1, 100) > 35) {
+                    continue;
+                }
+
+                $path = array_shift($pool);
+                $this->attachOneUniqueImage($review, $path);
+
+                if (isset($postedAtById[$review->id])) {
+                    $this->backdateReviewMedia($review, $postedAtById[$review->id]);
+                }
+            }
+        }
+    }
+
+    private function attachOneUniqueImage(ProductReview $review, ?string $path): void
+    {
+        if (!$path || !is_file($path)) {
+            return;
+        }
+
+        $review->addMedia($path)
+            ->preservingOriginal()
+            ->toMediaCollection('product-review');
+
+        // Remove from the shared pool so no other review/batch can reuse this file.
+        @unlink($path);
     }
 }
