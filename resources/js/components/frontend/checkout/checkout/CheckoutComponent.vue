@@ -171,7 +171,7 @@
     </div>
 
     <!-- Mobile sticky confirm bar -->
-    <div v-if="!swichWaiting && !confirmingOrder" class="lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
+    <div v-if="!swichWaiting && !confirmingOrder" class="checkout-mobile-confirm-bar lg:hidden fixed bottom-[78px] left-0 right-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 py-3">
         <div class="flex items-center gap-3">
             <div class="min-w-0 flex-1">
                 <p class="text-[10px] text-gray-400 font-bold uppercase leading-none mb-0.5">{{ $t('label.total') }}</p>

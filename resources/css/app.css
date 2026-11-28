@@ -165,6 +165,21 @@
     @media (min-width: 640px) {
         .modal-active > div { @apply !my-5 }
     }
+    /* Address sheet: keep panel flush; sticky footer must stay visible above mobile bars */
+    .address-sheet-modal.modal-active {
+        @apply !opacity-100 !visible pointer-events-auto;
+    }
+    .address-sheet-modal.modal-active > div {
+        @apply !my-0;
+    }
+    body.address-modal-open {
+        overflow: hidden;
+    }
+    body.address-modal-open .checkout-mobile-confirm-bar,
+    body.address-modal-open .mobile-bottom-nav {
+        visibility: hidden;
+        pointer-events: none;
+    }
     .canvas-active { @apply !opacity-100 !visible pointer-events-auto }
     .canvas-active > div { @apply !translate-x-0 }
 
