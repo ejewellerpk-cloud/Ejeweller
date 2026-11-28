@@ -52,9 +52,11 @@
                     <label class="rg-label required" for="rg_quantity">{{ $t('label.quantity') }}</label>
                     <input
                         id="rg_quantity"
-                        v-model.number="form.quantity"
+                        v-model="form.quantity"
                         type="number"
                         min="1"
+                        inputmode="numeric"
+                        :placeholder="$t('message.reviews_generator_quantity_placeholder')"
                         class="db-field-control rg-qty"
                         :class="errors.quantity ? 'invalid' : ''"
                     />
@@ -232,7 +234,7 @@ export default {
             dragDepth: 0,
             form: {
                 product_id: null,
-                quantity: 10,
+                quantity: '',
             },
             errors: {},
             productSearch: {
@@ -437,8 +439,14 @@ export default {
                 return;
             }
 
-            const qty = Number(this.form.quantity);
-            if (!Number.isFinite(qty) || qty < 1) {
+            const rawQty = String(this.form.quantity ?? '').trim();
+            if (rawQty === '') {
+                this.errors.quantity = [this.$t("message.reviews_generator_quantity_required")];
+                return;
+            }
+
+            const qty = Number(rawQty);
+            if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty < 1) {
                 this.errors.quantity = [this.$t("message.reviews_generator_quantity_hint")];
                 return;
             }
