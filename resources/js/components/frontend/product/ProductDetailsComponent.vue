@@ -359,18 +359,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-12 flex flex-col gap-3 sm:gap-2">
-                    <!-- Details Section -->
-                    <div class="rounded-[32px] sm:rounded-2xl border border-[#D9DBE9] bg-white p-4 sm:p-4">
-                        <h3 class="capitalize text-2xl sm:text-xl font-bold mb-3 sm:mb-2 flex items-center gap-2 text-heading leading-snug">
-                            <i class="lab-line-document text-primary text-2xl sm:text-xl"></i>
-                            {{ $t('label.product_details') }}
-                        </h3>
-                        <div class="text-description text-base sm:text-sm text-gray-700 leading-relaxed sm:leading-normal" v-html="product.details"></div>
-                    </div>
-
-
-
-                    <!-- Reviews Section -->
+                    <!-- Reviews before description — social proof closer to buy decision -->
                     <div id="product-reviews-section" class="rounded-[32px] border border-[#D9DBE9] bg-white p-4 sm:p-6 scroll-mt-24 sm:scroll-mt-28">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="capitalize text-2xl sm:text-xl font-bold flex items-center gap-3 sm:gap-2 text-heading leading-snug">
@@ -421,6 +410,15 @@
                             </div>
 
                         </div>
+                    </div>
+
+                    <!-- Details Section -->
+                    <div class="rounded-[32px] sm:rounded-2xl border border-[#D9DBE9] bg-white p-4 sm:p-4">
+                        <h3 class="capitalize text-2xl sm:text-xl font-bold mb-3 sm:mb-2 flex items-center gap-2 text-heading leading-snug">
+                            <i class="lab-line-document text-primary text-2xl sm:text-xl"></i>
+                            {{ $t('label.product_details') }}
+                        </h3>
+                        <div class="text-description text-base sm:text-sm text-gray-700 leading-relaxed sm:leading-normal" v-html="product.details"></div>
                     </div>
 
                     <!-- Shipping and Return Section -->
