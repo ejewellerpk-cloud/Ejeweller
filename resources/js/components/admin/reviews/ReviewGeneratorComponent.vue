@@ -92,16 +92,45 @@
                 </div>
 
                 <div class="rg-actions">
-                    <button type="submit" class="rg-btn rg-btn--primary" :disabled="loading.isActive">
+                    <button type="submit" class="rg-btn rg-btn--primary" :disabled="loading.isActive || progress.active">
                         <i class="lab lab-line-star"></i>
                         <span>{{ $t('button.generate_reviews') }}</span>
                     </button>
-                    <router-link :to="{ name: 'admin.review.list' }" class="rg-btn rg-btn--muted">
+                    <router-link
+                        :to="{ name: 'admin.review.list' }"
+                        class="rg-btn rg-btn--muted"
+                        :class="{ 'rg-btn--disabled': progress.active }"
+                        @click="onCancelClick"
+                    >
                         <i class="lab lab-fill-close-circle"></i>
                         <span>{{ $t('button.cancel') }}</span>
                     </router-link>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Realtime generation progress -->
+    <div v-if="progress.active" class="rg-progress" role="status" aria-live="polite">
+        <div class="rg-progress__backdrop"></div>
+        <div class="rg-progress__card">
+            <div class="rg-progress__icon-wrap">
+                <span class="rg-progress__spinner" aria-hidden="true"></span>
+            </div>
+            <h2 class="rg-progress__title">{{ $t('message.reviews_generator_progress_title') }}</h2>
+            <p class="rg-progress__subtitle">{{ progressStatusText }}</p>
+
+            <div class="rg-progress__track" :aria-valuenow="progress.percent" aria-valuemin="0" aria-valuemax="100" role="progressbar">
+                <div class="rg-progress__fill" :style="{ width: progress.percent + '%' }">
+                    <span class="rg-progress__shine"></span>
+                </div>
+            </div>
+
+            <div class="rg-progress__meta">
+                <span class="rg-progress__count">{{ progress.done }} / {{ progress.total }}</span>
+                <span class="rg-progress__percent">{{ progress.percent }}%</span>
+            </div>
+            <p class="rg-progress__hint">{{ $t('message.reviews_generator_progress_hint') }}</p>
         </div>
     </div>
 
@@ -191,6 +220,12 @@ export default {
             loading: {
                 isActive: false,
             },
+            progress: {
+                active: false,
+                done: 0,
+                total: 0,
+                percent: 0,
+            },
             imageItems: [],
             showImageDialog: false,
             isDragging: false,
@@ -230,8 +265,52 @@ export default {
             }
             return this.products.find((p) => Number(p.id) === Number(this.form.product_id)) || null;
         },
+        progressStatusText() {
+            if (!this.progress.active) {
+                return "";
+            }
+            if (this.progress.done >= this.progress.total && this.progress.total > 0) {
+                return this.$t("message.reviews_generator_progress_finishing");
+            }
+            return this.$t("message.reviews_generator_progress_status", {
+                done: this.progress.done,
+                total: this.progress.total,
+            });
+        },
     },
     methods: {
+        onCancelClick(event) {
+            if (this.progress.active) {
+                event.preventDefault();
+            }
+        },
+        batchSizeFor(quantity) {
+            if (quantity <= 20) {
+                return 1;
+            }
+            if (quantity <= 80) {
+                return 5;
+            }
+            return 10;
+        },
+        buildGenerateForm(quantity) {
+            const fd = new FormData();
+            fd.append("product_id", this.form.product_id);
+            fd.append("quantity", quantity);
+            this.imageItems.forEach((item) => {
+                if (item?.file) {
+                    fd.append("images[]", item.file);
+                }
+            });
+            return fd;
+        },
+        setProgress(done, total) {
+            const safeTotal = Math.max(1, total);
+            const safeDone = Math.max(0, Math.min(done, safeTotal));
+            this.progress.done = safeDone;
+            this.progress.total = total;
+            this.progress.percent = Math.round((safeDone / safeTotal) * 100);
+        },
         openImageDialog() {
             this.showImageDialog = true;
             this.$nextTick(() => {
@@ -331,7 +410,7 @@ export default {
                 }
             });
         },
-        generate() {
+        async generate() {
             this.errors = {};
 
             if (!this.form.product_id) {
@@ -345,40 +424,60 @@ export default {
                 return;
             }
 
-            const fd = new FormData();
-            fd.append("product_id", this.form.product_id);
-            fd.append("quantity", qty);
+            if (this.progress.active) {
+                return;
+            }
 
-            this.imageItems.forEach((item) => {
-                if (item?.file) {
-                    fd.append("images[]", item.file);
-                }
-            });
+            const productId = String(this.form.product_id);
+            const batchSize = this.batchSizeFor(qty);
+            let done = 0;
+            let createdTotal = 0;
 
-            this.loading.isActive = true;
-            this.$store
-                .dispatch("review/generate", { form: fd })
-                .then((res) => {
-                    const count =
-                        res.data?.meta?.generated ??
-                        (Array.isArray(res.data?.data) ? res.data.data.length : qty);
-                    alertService.success(
-                        this.$t("message.reviews_generator_success", { count })
-                    );
-                    this.$router.push({
-                        name: "admin.review.list",
-                        query: { product_id: String(this.form.product_id) },
+            this.progress.active = true;
+            this.setProgress(0, qty);
+
+            try {
+                while (done < qty) {
+                    const chunk = Math.min(batchSize, qty - done);
+                    const res = await this.$store.dispatch("review/generate", {
+                        form: this.buildGenerateForm(chunk),
                     });
-                })
-                .catch((err) => {
-                    this.errors = err.response?.data?.errors || {};
-                    if (err.response?.data?.message && !Object.keys(this.errors).length) {
-                        alertService.error(err.response.data.message);
-                    }
-                })
-                .finally(() => {
-                    this.loading.isActive = false;
+
+                    const generated =
+                        res.data?.meta?.generated ??
+                        (Array.isArray(res.data?.data) ? res.data.data.length : chunk);
+
+                    createdTotal += Number(generated) || chunk;
+                    done += chunk;
+                    this.setProgress(Math.min(done, qty), qty);
+
+                    // Let the browser paint the updated bar between batches
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                }
+
+                this.setProgress(qty, qty);
+                alertService.success(
+                    this.$t("message.reviews_generator_success", { count: createdTotal || qty })
+                );
+                this.$router.push({
+                    name: "admin.review.list",
+                    query: { product_id: productId },
                 });
+            } catch (err) {
+                this.errors = err.response?.data?.errors || {};
+                if (err.response?.data?.message && !Object.keys(this.errors).length) {
+                    alertService.error(err.response.data.message);
+                } else if (done > 0) {
+                    alertService.error(
+                        this.$t("message.reviews_generator_progress_partial", {
+                            count: createdTotal || done,
+                        })
+                    );
+                }
+            } finally {
+                this.progress.active = false;
+                this.setProgress(0, 0);
+            }
         },
     },
 };
@@ -572,6 +671,134 @@ export default {
 .rg-btn--ghost:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.rg-btn--disabled {
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+.rg-progress {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.rg-progress__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(2px);
+}
+
+.rg-progress__card {
+    position: relative;
+    width: min(26rem, 100%);
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem 1.35rem 1.35rem;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+    text-align: center;
+}
+
+.rg-progress__icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+}
+
+.rg-progress__spinner {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #4f46e5;
+    animation: rg-spin 0.75s linear infinite;
+}
+
+.rg-progress__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.rg-progress__subtitle {
+    margin: 0.4rem 0 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    line-height: 1.45;
+    min-height: 1.25rem;
+}
+
+.rg-progress__track {
+    margin-top: 1.15rem;
+    height: 0.7rem;
+    border-radius: 9999px;
+    background: #eef0f5;
+    overflow: hidden;
+}
+
+.rg-progress__fill {
+    position: relative;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4f46e5 0%, #6366f1 55%, #818cf8 100%);
+    transition: width 0.35s ease;
+    overflow: hidden;
+}
+
+.rg-progress__shine {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.35) 48%,
+        transparent 66%
+    );
+    animation: rg-shine 1.4s ease-in-out infinite;
+}
+
+.rg-progress__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.65rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.rg-progress__percent {
+    color: #4f46e5;
+}
+
+.rg-progress__hint {
+    margin: 0.85rem 0 0;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+
+@keyframes rg-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rg-shine {
+    0% {
+        transform: translateX(-120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
 }
 
 .rg-dialog {
