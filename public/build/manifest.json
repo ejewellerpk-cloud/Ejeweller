@@ -731,7 +731,7 @@
     "isEntry": true
   },
   "resources/js/admin.js": {
-    "file": "assets/admin-Di2hmzs3.js",
+    "file": "assets/admin-DMb-90OC.js",
     "name": "admin",
     "src": "resources/js/admin.js",
     "isEntry": true,
@@ -1012,7 +1012,7 @@
     ]
   },
   "resources/js/components/admin/campaigns/CampaignHubComponent.vue": {
-    "file": "assets/CampaignHubComponent-DsYvm_X7.js",
+    "file": "assets/CampaignHubComponent-BbwPV97d.js",
     "name": "CampaignHubComponent",
     "src": "resources/js/components/admin/campaigns/CampaignHubComponent.vue",
     "isDynamicEntry": true,
@@ -1502,7 +1502,7 @@
     ]
   },
   "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue": {
-    "file": "assets/OnlineOrderListComponent-CZWwmqTP.js",
+    "file": "assets/OnlineOrderListComponent-CbCKW-xL.js",
     "name": "OnlineOrderListComponent",
     "src": "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue",
     "isDynamicEntry": true,
@@ -1527,7 +1527,7 @@
       "_addressTypeEnum-B8tmtoFX.js"
     ],
     "css": [
-      "assets/OnlineOrderListComponent-CP-oGPwc.css",
+      "assets/OnlineOrderListComponent-BLcDaxrn.css",
       "assets/main-SNBWRz00.css"
     ]
   },
@@ -2693,15 +2693,15 @@
     ]
   },
   "resources/js/components/admin/settings/FacebookCapi/FacebookCapiComponent.vue": {
-    "file": "assets/FacebookCapiComponent-DA9ytKhO.js",
+    "file": "assets/FacebookCapiComponent-DL0KLi6a.js",
     "name": "FacebookCapiComponent",
     "src": "resources/js/components/admin/settings/FacebookCapi/FacebookCapiComponent.vue",
     "isDynamicEntry": true,
     "imports": [
+      "_vendor-axios-BuNY4Ty6.js",
       "_appZone-DK93twxy.js",
       "_LoadingComponent-ByvxDTxY.js",
       "_vendor-vuex-CleJmO-I.js",
-      "_vendor-axios-BuNY4Ty6.js",
       "_vendor-toast-DoMV14bu.js",
       "_vendor-alert-BI_drEsW.js",
       "_vendor-select-CmqyVmW5.js",

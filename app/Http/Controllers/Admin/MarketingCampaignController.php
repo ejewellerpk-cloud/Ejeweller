@@ -171,6 +171,32 @@ class MarketingCampaignController extends AdminController implements HasMiddlewa
         }
     }
 
+    public function metaStatus()
+    {
+        try {
+            $result = $this->campaigns->testMetaConnection();
+
+            return response(['status' => (bool) ($result['ok'] ?? false), 'data' => $result]);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function pushToMeta(MarketingCampaign $campaign)
+    {
+        try {
+            $result = $this->campaigns->pushCampaignToMeta($campaign);
+
+            return response([
+                'status' => (bool) ($result['ok'] ?? false),
+                'message' => $result['message'] ?? null,
+                'data' => $result,
+            ], ($result['ok'] ?? false) ? 200 : 422);
+        } catch (Exception $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
     public function recoveryOverview(Request $request)
     {
         try {

@@ -374,6 +374,136 @@ class MarketingCampaignService
         ];
     }
 
+    public function testMetaConnection(): array
+    {
+        [$token, $accountId] = $this->metaCredentials();
+        if (!$token || !$accountId) {
+            return [
+                'ok' => false,
+                'message' => 'Save Meta Ad Account ID and Marketing API Token in Facebook CAPI settings first.',
+            ];
+        }
+
+        $response = Http::get("https://graph.facebook.com/v21.0/{$accountId}", [
+            'access_token' => $token,
+            'fields' => 'id,name,account_status,currency,timezone_name,amount_spent',
+        ]);
+
+        if (!$response->successful()) {
+            return [
+                'ok' => false,
+                'message' => $response->json('error.message') ?? $response->body(),
+                'ad_account_id' => $accountId,
+            ];
+        }
+
+        $data = $response->json();
+
+        return [
+            'ok' => true,
+            'message' => 'Meta Marketing API connected.',
+            'ad_account_id' => $data['id'] ?? $accountId,
+            'name' => $data['name'] ?? null,
+            'currency' => $data['currency'] ?? null,
+            'timezone' => $data['timezone_name'] ?? null,
+            'account_status' => $data['account_status'] ?? null,
+        ];
+    }
+
+    public function pushCampaignToMeta(MarketingCampaign $campaign): array
+    {
+        if (!in_array($campaign->channel, ['meta', 'facebook', 'instagram'], true)) {
+            return [
+                'ok' => false,
+                'message' => 'Only Meta channel campaigns can be pushed to Meta Ads.',
+            ];
+        }
+
+        if (!empty($campaign->external_campaign_id)) {
+            return [
+                'ok' => true,
+                'already_exists' => true,
+                'external_campaign_id' => $campaign->external_campaign_id,
+                'message' => 'Already linked to Meta campaign ID ' . $campaign->external_campaign_id,
+            ];
+        }
+
+        [$token, $accountId] = $this->metaCredentials();
+        if (!$token || !$accountId) {
+            return [
+                'ok' => false,
+                'message' => 'Save Meta Ad Account ID and Marketing API Token in Facebook CAPI settings first.',
+            ];
+        }
+
+        $objective = match ($campaign->objective) {
+            'traffic' => 'OUTCOME_TRAFFIC',
+            'awareness' => 'OUTCOME_AWARENESS',
+            'catalog', 'conversions' => 'OUTCOME_SALES',
+            default => 'OUTCOME_SALES',
+        };
+
+        // Create a PAUSED campaign shell first. Ad sets/creatives come in the next iteration.
+        $payload = [
+            'access_token' => $token,
+            'name' => $campaign->name,
+            'objective' => $objective,
+            'status' => 'PAUSED',
+            'special_ad_categories' => json_encode([]),
+            'buying_type' => 'AUCTION',
+        ];
+
+        $response = Http::asForm()->post("https://graph.facebook.com/v21.0/{$accountId}/campaigns", $payload);
+
+        if (!$response->successful()) {
+            return [
+                'ok' => false,
+                'message' => 'Meta campaign create failed: ' . ($response->json('error.message') ?? $response->body()),
+            ];
+        }
+
+        $metaId = (string) ($response->json('id') ?? '');
+        if ($metaId === '') {
+            return [
+                'ok' => false,
+                'message' => 'Meta returned success but no campaign id.',
+            ];
+        }
+
+        $campaign->update([
+            'external_campaign_id' => $metaId,
+            'status' => $campaign->status === 'draft' ? 'paused' : $campaign->status,
+            'notes' => trim(($campaign->notes ? $campaign->notes . "\n" : '') . 'Meta campaign created (PAUSED). Add ad set + creatives in Ads Manager or next site release.'),
+        ]);
+
+        return [
+            'ok' => true,
+            'external_campaign_id' => $metaId,
+            'message' => 'Meta campaign created as PAUSED. Open Ads Manager to add ads/creatives, then activate.',
+            'ads_manager_url' => 'https://www.facebook.com/adsmanager/manage/campaigns?act=' . str_replace('act_', '', $accountId),
+        ];
+    }
+
+    /**
+     * @return array{0:?string,1:?string} [token, act_xxx]
+     */
+    private function metaCredentials(): array
+    {
+        $token = Settings::group('site')->get('site_meta_marketing_token')
+            ?: Settings::group('site')->get('site_facebook_capi_token');
+        $adAccount = Settings::group('site')->get('site_meta_ad_account_id');
+
+        if (!$token || !$adAccount) {
+            return [null, null];
+        }
+
+        $accountId = str_starts_with((string) $adAccount, 'act_')
+            ? (string) $adAccount
+            : ('act_' . $adAccount);
+
+        return [(string) $token, $accountId];
+    }
+
     private function campaignAttribution(?int $siteId, string $from, string $to): array
     {
         if (!$siteId || !AnalyticsSchema::hasTable('analytics_sessions') || !AnalyticsSchema::hasTable('analytics_events')) {

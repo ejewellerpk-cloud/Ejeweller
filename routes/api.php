@@ -935,6 +935,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/audiences', [MarketingCampaignController::class, 'audiences']);
         Route::get('/audiences/export', [MarketingCampaignController::class, 'exportAudienceCsv']);
         Route::post('/audiences/sync', [MarketingCampaignController::class, 'syncAudience']);
+        Route::get('/meta/status', [MarketingCampaignController::class, 'metaStatus']);
         Route::get('/recovery', [MarketingCampaignController::class, 'recoveryOverview']);
         Route::post('/recovery/enqueue', [MarketingCampaignController::class, 'recoveryEnqueue']);
         Route::post('/recovery/process', [MarketingCampaignController::class, 'recoveryProcess']);
@@ -943,6 +944,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum'])->group(func
         Route::get('/{campaign}', [MarketingCampaignController::class, 'show']);
         Route::match(['put', 'patch', 'post'], '/{campaign}', [MarketingCampaignController::class, 'update']);
         Route::delete('/{campaign}', [MarketingCampaignController::class, 'destroy']);
+        Route::post('/{campaign}/push-meta', [MarketingCampaignController::class, 'pushToMeta']);
         Route::post('/{campaign}/spends', [MarketingCampaignController::class, 'addSpend']);
         Route::delete('/spends/{spend}', [MarketingCampaignController::class, 'deleteSpend']);
     });

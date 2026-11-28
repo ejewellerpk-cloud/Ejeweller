@@ -67,10 +67,21 @@
                                 </td>
                                 <td class="db-table-body-td">{{ formatMoney(c.total_spend) }}</td>
                                 <td class="db-table-body-td">
-                                    <div class="flex gap-1.5">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <button
+                                            v-if="['meta', 'facebook', 'instagram'].includes(c.channel)"
+                                            type="button"
+                                            class="db-btn py-1 px-2 text-xs text-white bg-primary"
+                                            @click="pushToMeta(c)"
+                                        >
+                                            {{ c.external_campaign_id ? 'Meta linked' : 'Push to Meta' }}
+                                        </button>
                                         <button type="button" class="db-btn py-1 px-2 text-xs bg-gray-100" @click="openSpend(c)">Spend</button>
                                         <button type="button" class="db-btn py-1 px-2 text-xs bg-gray-100" @click="openEdit(c)">Edit</button>
                                         <button type="button" class="db-btn py-1 px-2 text-xs bg-red-50 text-red-600" @click="destroy(c)">Delete</button>
+                                    </div>
+                                    <div v-if="c.external_campaign_id" class="text-[11px] text-gray-500 mt-1 break-all">
+                                        Meta ID: {{ c.external_campaign_id }}
                                     </div>
                                 </td>
                             </tr>
@@ -668,6 +679,28 @@ export default {
                 else alertService.error(d.message || 'Sync failed');
             } catch (e) {
                 alertService.error(e.response?.data?.message || e.message);
+            }
+        },
+        async pushToMeta(c) {
+            if (c.external_campaign_id) {
+                alertService.success('Already linked to Meta: ' + c.external_campaign_id);
+                return;
+            }
+            if (!confirm(`Create PAUSED Meta campaign for "${c.name}"?`)) return;
+            this.loading.isActive = true;
+            try {
+                const res = await axios.post(`admin/campaigns/${c.id}/push-meta`);
+                const d = res.data?.data || {};
+                if (d.ok) {
+                    alertService.success(d.message || 'Pushed to Meta');
+                    this.loadCampaigns();
+                } else {
+                    alertService.error(d.message || res.data?.message || 'Push failed');
+                }
+            } catch (e) {
+                alertService.error(e.response?.data?.data?.message || e.response?.data?.message || e.message);
+            } finally {
+                this.loading.isActive = false;
             }
         },
         async copyUrl(url) {

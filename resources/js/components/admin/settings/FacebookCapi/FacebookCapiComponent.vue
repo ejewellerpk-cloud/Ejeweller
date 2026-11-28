@@ -67,10 +67,20 @@
                         <small class="text-gray-500">Needs ads_management permission. CSV export works without this.</small>
                     </div>
 
-                    <div class="form-col-12">
+                    <div class="form-col-12" v-if="metaStatusMessage">
+                        <div class="rounded-lg border px-3 py-2 text-sm"
+                            :class="metaStatusOk ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700'">
+                            {{ metaStatusMessage }}
+                        </div>
+                    </div>
+
+                    <div class="form-col-12 flex flex-wrap items-center gap-3">
                         <button type="submit" class="text-white db-btn bg-primary">
                             <i class="lab lab-fill-save"></i>
                             <span>{{ $t("button.save") }}</span>
+                        </button>
+                        <button type="button" class="db-btn border" @click="testMetaConnection">
+                            Test Meta connection
                         </button>
                     </div>
                 </div>
@@ -80,6 +90,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import activityEnum from "../../../../enums/modules/activityEnum";
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
@@ -124,6 +135,8 @@ export default {
             enums: {
                 activityEnum: activityEnum,
             },
+            metaStatusOk: false,
+            metaStatusMessage: "",
         }
     },
     mounted() {
@@ -182,6 +195,31 @@ export default {
             } catch (err) {
                 this.loading.isActive = false;
                 alertService.error(err);
+            }
+        },
+        async testMetaConnection() {
+            try {
+                this.loading.isActive = true;
+                const res = await axios.get("admin/campaigns/meta/status");
+                const data = res.data?.data || {};
+                this.metaStatusOk = !!data.ok;
+                this.metaStatusMessage = data.ok
+                    ? `Connected: ${data.name || data.ad_account_id} (${data.currency || "n/a"})`
+                    : (data.message || res.data?.message || "Connection failed");
+                if (data.ok) {
+                    alertService.success(this.metaStatusMessage);
+                } else {
+                    alertService.error(this.metaStatusMessage);
+                }
+            } catch (err) {
+                this.metaStatusOk = false;
+                this.metaStatusMessage = err.response?.data?.data?.message
+                    || err.response?.data?.message
+                    || err.message
+                    || "Connection failed";
+                alertService.error(this.metaStatusMessage);
+            } finally {
+                this.loading.isActive = false;
             }
         },
     }
