@@ -21,101 +21,38 @@ use Illuminate\Support\Str;
 
 class ReviewGeneratorService
 {
-    private const MALE_NAMES = [
-        'Ali Raza', 'Hassan Ahmed', 'Usman Khan', 'Bilal Hussain', 'Hamza Sheikh',
-        'Ahmad Farooq', 'Saad Malik', 'Zain Ali', 'Omar Siddiqui', 'Fahad Iqbal',
-        'Imran Shah', 'Tariq Mehmood', 'Noman Ashraf', 'Waqas Javed', 'Adeel Anwar',
-        'Danish Qureshi', 'Kamran Baig', 'Shahzaib Nawaz', 'Haris Butt', 'Asad Rehman',
-        'Muhammad Umer', 'Abdul Rehman', 'Syed Ali Hassan', 'M. Abdullah', 'Ghulam Mustafa',
+    private const MALE_FIRST = [
+        'Ali', 'Hassan', 'Usman', 'Bilal', 'Hamza', 'Ahmad', 'Saad', 'Zain', 'Omar', 'Fahad',
+        'Imran', 'Tariq', 'Noman', 'Waqas', 'Adeel', 'Danish', 'Kamran', 'Shahzaib', 'Haris', 'Asad',
+        'Umer', 'Rehman', 'Abdullah', 'Mustafa', 'Kashif', 'Junaid', 'Faisal', 'Naveed', 'Salman', 'Rizwan',
+        'Arslan', 'Shahid', 'Yasir', 'Amir', 'Sohail', 'Irfan', 'Babar', 'Talha', 'Hammad', 'Moiz',
+        'Huzaifa', 'Rayyan', 'Ayan', 'Ibrahim', 'Yousuf', 'Basit', 'Sameer', 'Farhan', 'Owais', 'Zubair',
     ];
 
-    private const FEMALE_NAMES = [
-        'Fatima Khan', 'Ayesha Bibi', 'Sana Malik', 'Hira Ahmed', 'Maryam Sheikh',
-        'Noor Fatima', 'Iqra Hussain', 'Laiba Raza', 'Mahnoor Ali', 'Zara Siddiqui',
-        'Amna Farooq', 'Saba Qureshi', 'Mehwish Anwar', 'Rabia Javed', 'Kinza Shah',
-        'Areeba Nawaz', 'Bushra Iqbal', 'Nimra Baig', 'Sadia Mehmood', 'Hafsa Butt',
-        'Saima Parveen', 'Shazia Naz', 'Rubina Kousar', 'Nadia Akhtar', 'Farah Naz',
+    private const FEMALE_FIRST = [
+        'Fatima', 'Ayesha', 'Sana', 'Hira', 'Maryam', 'Noor', 'Iqra', 'Laiba', 'Mahnoor', 'Zara',
+        'Amna', 'Saba', 'Mehwish', 'Rabia', 'Kinza', 'Areeba', 'Bushra', 'Nimra', 'Sadia', 'Hafsa',
+        'Saima', 'Shazia', 'Rubina', 'Nadia', 'Farah', 'Khadija', 'Hina', 'Maham', 'Anam', 'Aima',
+        'Eman', 'Alina', 'Momina', 'Dua', 'Rida', 'Minahil', 'Aiza', 'Hoorain', 'Esha', 'Aleena',
+        'Maira', 'Tuba', 'Komal', 'Sundas', 'Fiza', 'Zoya', 'Iman', 'Aiman', 'Sehrish', 'Nida',
     ];
 
-    /** Gender-neutral English comments. */
-    private const COMMENTS_EN = [
-        'Really good product. Quality matched the pictures and packing was neat.',
-        'Worth the money. Fabric/feel is better than I expected for this price.',
-        'Received on time. Looks exactly like the listing. Happy with it.',
-        'Nice quality overall. Slight color difference in light but still good.',
-        'Recommended. My family liked it and I will order again.',
-        'Decent product for the price. Delivery was quick too.',
-        'Very satisfied. Size was accurate and finishing looks clean.',
-        'Good purchase. Packaging was careful and product is as described.',
-        'Amazing quality! Totally worth buying. Will recommend to friends.',
-        'Product is fine. Nothing fancy but does the job well.',
-        'Better than local market options. Happy with the order.',
-        'Looks premium. Soft material and stitching seems strong.',
-        'Ordered for gift and they loved it. Thanks Shopperzz.',
-        'Simple and useful. Exactly what I needed.',
-        'Quality is okay for daily use. Value for money.',
+    private const LAST_NAMES = [
+        'Khan', 'Ahmed', 'Hussain', 'Sheikh', 'Malik', 'Ali', 'Siddiqui', 'Iqbal', 'Shah', 'Mehmood',
+        'Ashraf', 'Javed', 'Anwar', 'Qureshi', 'Baig', 'Nawaz', 'Butt', 'Rehman', 'Farooq', 'Raza',
+        'Chaudhry', 'Mirza', 'Hashmi', 'Abbasi', 'Gillani', 'Bhatti', 'Dar', 'Waseem', 'Akhtar', 'Naz',
+        'Parveen', 'Kousar', 'Yousaf', 'Awan', 'Rauf', 'Saleem', 'Nadeem', 'Zia', 'Arif', 'Basheer',
     ];
 
-    private const COMMENTS_UR_MALE = [
-        'بہت اچھی کوالٹی ہے، تصاویر جیسی ہی ملی۔ خوش ہوں۔',
-        'قیمت کے حساب سے زبردست چیز ہے۔ دوبارہ ضرور لوں گا۔',
-        'پیکنگ اچھی تھی اور ڈیلیوری بھی وقت پر ہو گئی۔',
-        'بالکل ویسا ہی ہے جیسا سائٹ پر دکھایا گیا تھا۔ شکریہ۔',
-        'فیملی کو پسند آیا۔ کوالٹی اچھی اور فٹنگ درست ہے۔',
-        'اچھا پروڈکٹ ہے، معمولی فرق رنگ میں تھا مگر ٹھیک ہے۔',
-        'پیسے کے قابل ہے۔ سلائی اور فنشنگ صاف ہے۔',
-        'آرڈر کرنے کے قابل ہے۔ دوستوں کو ضرور بتائوں گا۔',
-        'سمپل مگر کام کی چیز ہے۔ مطمئن ہوں۔',
-        'مقامی مارکیٹ سے بہتر ملا۔ تجویز کرتا ہوں۔',
-    ];
-
-    private const COMMENTS_UR_FEMALE = [
-        'بہت اچھی کوالٹی ہے، تصاویر جیسی ہی ملی۔ خوش ہوں۔',
-        'قیمت کے حساب سے زبردست چیز ہے۔ دوبارہ ضرور لوں گی۔',
-        'پیکنگ اچھی تھی اور ڈیلیوری بھی وقت پر ہو گئی۔',
-        'بالکل ویسا ہی ہے جیسا سائٹ پر دکھایا گیا تھا۔ شکریہ۔',
-        'فیملی کو پسند آیا۔ کوالٹی اچھی اور فٹنگ درست ہے۔',
-        'اچھا پروڈکٹ ہے، معمولی فرق رنگ میں تھا مگر ٹھیک ہے۔',
-        'پیسے کے قابل ہے۔ سلائی اور فنشنگ صاف ہے۔',
-        'آرڈر کرنے کے قابل ہے۔ دوستوں کو ضرور بتائوں گی۔',
-        'سمپل مگر کام کی چیز ہے۔ مطمئن ہوں۔',
-        'مقامی مارکیٹ سے بہتر ملی۔ تجویز کرتی ہوں۔',
-    ];
-
-    private const COMMENTS_MIXED_MALE = [
-        'Bohot achi quality hai, bilkul pictures jaisi. Worth it!',
-        'Packing zabardast thi aur product bhi soft nikla. Happy with order.',
-        'Size perfect tha. Delivery bhi fast hui. Recommended.',
-        'Color thora light mein different laga magar overall acha hai.',
-        'Value for money. Ghar walon ko pasand aa gaya.',
-        'Material soft hai aur finishing clean. Dobara lunga.',
-        'Same as shown. Local market se better quality mili.',
-        'Nice product. Gift ke liye liya tha, unko bhi pasand aaya.',
-        'Theek thaak hai daily use ke liye. Paisay wasool.',
-        'Zabardast! Photo jaisi quality, no complaint.',
-        'Delivery on time thi. Product solid feel deta hai.',
-        'Bahut khush hun is purchase se. Will order again inshaAllah.',
-        'Stitching strong hai. Size chart follow kiya to perfect fit.',
-        'Overall satisfied. Thori si delay delivery mein thi warna 5 star.',
-        'Achha deal mila. Recommend karta hun.',
-    ];
-
-    private const COMMENTS_MIXED_FEMALE = [
-        'Bohot achi quality hai, bilkul pictures jaisi. Worth it!',
-        'Packing zabardast thi aur product bhi soft nikla. Happy with order.',
-        'Size perfect tha. Delivery bhi fast hui. Recommended.',
-        'Color thora light mein different laga magar overall acha hai.',
-        'Value for money. Ghar walon ko pasand aa gaya.',
-        'Material soft hai aur finishing clean. Dobara lungi.',
-        'Same as shown. Local market se better quality mili.',
-        'Nice product. Gift ke liye li thi, unko bhi pasand aaya.',
-        'Theek thaak hai daily use ke liye. Paisay wasool.',
-        'Zabardast! Photo jaisi quality, no complaint.',
-        'Delivery on time thi. Product solid feel deta hai.',
-        'Bahut khush hun is purchase se. Will order again inshaAllah.',
-        'Stitching strong hai. Size chart follow ki to perfect fit.',
-        'Overall satisfied. Thori si delay delivery mein thi warna 5 star.',
-        'Achha deal mila. Recommend karti hun.',
+    private const NAME_STYLES = [
+        'first_last',
+        'first_last',
+        'first_last',
+        'first_initial_last',
+        'm_first_last',
+        'syed_first_last',
+        'first_bibi',
+        'first_only_last',
     ];
 
     /**
@@ -140,13 +77,41 @@ class ReviewGeneratorService
             $created = [];
 
             DB::transaction(function () use ($product, $quantity, $tempPaths, &$created) {
-                $reviewers = $this->buildReviewerQueue($quantity);
+                $existingTexts = ProductReview::query()
+                    ->where('product_id', $product->id)
+                    ->whereNotNull('review')
+                    ->pluck('review')
+                    ->map(fn ($text) => $this->normalizeText((string) $text))
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $existingUserIds = ProductReview::query()
+                    ->where('product_id', $product->id)
+                    ->pluck('user_id')
+                    ->filter()
+                    ->unique()
+                    ->all();
+
+                $existingNames = User::query()
+                    ->whereIn('id', $existingUserIds)
+                    ->pluck('name')
+                    ->map(fn ($name) => $this->normalizeText((string) $name))
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $reviewers = $this->buildReviewerQueue($quantity, $existingNames);
                 $timestamps = $this->buildReviewTimestamps($product, $quantity);
-                $usedComments = [];
+                $usedComments = $existingTexts;
+                $usedNames = $existingNames;
 
                 foreach ($reviewers as $i => $reviewer) {
+                    $usedNames[] = $this->normalizeText($reviewer['name']);
                     $user = $this->resolveReviewer($reviewer['name'], $i);
-                    $comment = $this->pickComment($usedComments, $reviewer['gender']);
+                    $comment = $this->composeUniqueComment($usedComments, $reviewer['gender']);
                     $star = $this->pickStar();
                     $postedAt = $timestamps[$i];
 
@@ -183,13 +148,6 @@ class ReviewGeneratorService
     }
 
     /**
-     * Marketplace-style posting times:
-     * - Always after product created_at (+ delivery lag)
-     * - Never in the future
-     * - Spread over the listing lifetime with mild recency bias
-     * - Prefer Pakistan evening / lunch posting hours
-     * - Avoid identical timestamps
-     *
      * @return array<int, Carbon>
      */
     private function buildReviewTimestamps(Product $product, int $quantity): array
@@ -199,7 +157,6 @@ class ReviewGeneratorService
             ? Carbon::parse($product->created_at)
             : $now->copy()->subMonths(3);
 
-        // Real buyers usually review after delivery (a few days), not instantly at listing.
         $earliest = $listedAt->copy()->addDays(random_int(2, 8))->addHours(random_int(1, 10));
         if ($earliest->greaterThanOrEqualTo($now)) {
             $earliest = $listedAt->copy()->addHours(random_int(4, 48));
@@ -223,15 +180,14 @@ class ReviewGeneratorService
         $timestamps = [];
         for ($i = 0; $i < $quantity; $i++) {
             $u = mt_rand() / mt_getrandmax();
-            // ~65% recent-weighted (like live stores), ~35% flatter older trail
             $position = random_int(1, 100) <= 65 ? ($u * $u) : $u;
             $base = Carbon::createFromTimestamp((int) round($startTs + ($span * $position)));
 
             $hourRoll = random_int(1, 100);
             if ($hourRoll <= 48) {
-                $hour = random_int(19, 23); // evening peak
+                $hour = random_int(19, 23);
             } elseif ($hourRoll <= 72) {
-                $hour = random_int(11, 14); // lunch / afternoon
+                $hour = random_int(11, 14);
             } elseif ($hourRoll <= 90) {
                 $hour = random_int(15, 18);
             } else {
@@ -277,27 +233,18 @@ class ReviewGeneratorService
     }
 
     /**
-     * Alternate male/female reviewers so gender grammar stays consistent.
-     *
+     * @param  array<int, string>  $blockedNames
      * @return array<int, array{name: string, gender: string}>
      */
-    private function buildReviewerQueue(int $quantity): array
+    private function buildReviewerQueue(int $quantity, array $blockedNames = []): array
     {
-        $males = self::MALE_NAMES;
-        $females = self::FEMALE_NAMES;
-        shuffle($males);
-        shuffle($females);
-
+        $used = array_fill_keys($blockedNames, true);
         $queue = [];
+
         for ($i = 0; $i < $quantity; $i++) {
             $gender = ($i % 2 === 0) ? 'male' : 'female';
-            $pool = $gender === 'male' ? $males : $females;
-            $nameIndex = intdiv($i, 2) % count($pool);
-            $name = $pool[$nameIndex];
-
-            if (intdiv($i, 2) >= count($pool)) {
-                $name .= ' ' . chr(65 + ($i % 26));
-            }
+            $name = $this->makeUniqueName($gender, $used, $i);
+            $used[$this->normalizeText($name)] = true;
 
             $queue[] = [
                 'name'   => $name,
@@ -310,56 +257,71 @@ class ReviewGeneratorService
         return $queue;
     }
 
+    /**
+     * @param  array<string, bool>  $used
+     */
+    private function makeUniqueName(string $gender, array &$used, int $seed): string
+    {
+        $firstPool = $gender === 'female' ? self::FEMALE_FIRST : self::MALE_FIRST;
+        $lastPool = self::LAST_NAMES;
+
+        for ($attempt = 0; $attempt < 400; $attempt++) {
+            $first = $firstPool[array_rand($firstPool)];
+            $last = $lastPool[array_rand($lastPool)];
+            $style = self::NAME_STYLES[array_rand(self::NAME_STYLES)];
+
+            $name = match ($style) {
+                'first_initial_last' => $first[0] . '. ' . $last,
+                'm_first_last' => $gender === 'male' && random_int(0, 1) === 1
+                    ? 'M. ' . $first . ' ' . $last
+                    : $first . ' ' . $last,
+                'syed_first_last' => $gender === 'male' && random_int(0, 2) === 0
+                    ? 'Syed ' . $first . ' ' . $last
+                    : $first . ' ' . $last,
+                'first_bibi' => $gender === 'female' && random_int(0, 3) === 0
+                    ? $first . ' Bibi'
+                    : $first . ' ' . $last,
+                'first_only_last' => random_int(0, 5) === 0
+                    ? $first . ' ' . $last[0] . '.'
+                    : $first . ' ' . $last,
+                default => $first . ' ' . $last,
+            };
+
+            $key = $this->normalizeText($name);
+            if (!isset($used[$key])) {
+                return $name;
+            }
+        }
+
+        // Extremely rare fallback: force uniqueness with soft middle mark
+        $first = $firstPool[$seed % count($firstPool)];
+        $last = $lastPool[($seed * 7) % count($lastPool)];
+        $suffix = chr(65 + ($seed % 26));
+
+        return $first . ' ' . $last . ' ' . $suffix;
+    }
+
     private function resolveReviewer(string $name, int $index): User
     {
         $slug = Str::slug($name, '.');
-        $email = 'reviewgen.' . $slug . '.' . $index . '@shopperzz.internal';
-
-        $user = User::withTrashed()->where('email', $email)->first();
-
-        if ($user) {
-            if (method_exists($user, 'trashed') && $user->trashed()) {
-                $user->restore();
-            }
-            if ($user->name !== $name) {
-                $user->name = $name;
-                $user->save();
-            }
-            if ((int) $user->status !== Status::ACTIVE) {
-                $user->status = Status::ACTIVE;
-                $user->save();
-            }
-            if (!$user->hasRole(EnumRole::CUSTOMER)) {
-                $user->assignRole(EnumRole::CUSTOMER);
-            }
-
-            return $user;
+        if ($slug === '') {
+            $slug = 'buyer.' . $index;
         }
 
-        // Prefer stable email without index when name is unique in pool
-        $stableEmail = 'reviewgen.' . $slug . '@shopperzz.internal';
-        $user = User::withTrashed()->where('email', $stableEmail)->first();
-        if ($user && $user->name === $name) {
-            if (method_exists($user, 'trashed') && $user->trashed()) {
-                $user->restore();
-            }
-            if (!$user->hasRole(EnumRole::CUSTOMER)) {
-                $user->assignRole(EnumRole::CUSTOMER);
-            }
-
-            return $user;
-        }
-
-        $emailToUse = $user ? $email : $stableEmail;
+        $email = 'reviewgen.' . $slug . '.' . $index . '.' . Str::lower(Str::random(4)) . '@shopperzz.internal';
 
         $phoneBase = '3' . str_pad((string) (random_int(100000000, 999999999)), 9, '0', STR_PAD_LEFT);
         while (User::withTrashed()->where('phone', $phoneBase)->exists()) {
             $phoneBase = '3' . str_pad((string) (random_int(100000000, 999999999)), 9, '0', STR_PAD_LEFT);
         }
 
+        while (User::withTrashed()->where('email', $email)->exists()) {
+            $email = 'reviewgen.' . $slug . '.' . $index . '.' . Str::lower(Str::random(6)) . '@shopperzz.internal';
+        }
+
         $user = User::create([
             'name'              => $name,
-            'email'             => $emailToUse,
+            'email'             => $email,
             'phone'             => $phoneBase,
             'username'          => 'rg_' . Str::lower(Str::random(10)),
             'password'          => bcrypt(Str::random(16)),
@@ -374,32 +336,275 @@ class ReviewGeneratorService
         return $user;
     }
 
-    private function pickComment(array &$used, string $gender): string
+    /**
+     * @param  array<int, string>  $usedNormalized
+     */
+    private function composeUniqueComment(array &$usedNormalized, string $gender): string
     {
-        $bucketRoll = random_int(1, 100);
-        if ($bucketRoll <= 40) {
-            $pool = self::COMMENTS_EN;
-        } elseif ($bucketRoll <= 70) {
-            $pool = $gender === 'female' ? self::COMMENTS_MIXED_FEMALE : self::COMMENTS_MIXED_MALE;
-        } else {
-            $pool = $gender === 'female' ? self::COMMENTS_UR_FEMALE : self::COMMENTS_UR_MALE;
+        for ($attempt = 0; $attempt < 80; $attempt++) {
+            $style = $this->pickCommentStyle();
+            $comment = match ($style) {
+                'en' => $this->composeEnglish($gender),
+                'mixed' => $this->composeMixed($gender),
+                default => $this->composeUrdu($gender),
+            };
+
+            $comment = trim(preg_replace('/\s+/u', ' ', $comment) ?? $comment);
+            $key = $this->normalizeText($comment);
+
+            if ($key !== '' && !in_array($key, $usedNormalized, true)) {
+                $usedNormalized[] = $key;
+
+                return $comment;
+            }
         }
 
-        $available = array_values(array_diff($pool, $used));
-        if (empty($available)) {
-            $available = $pool;
-            $used = array_values(array_diff($used, $pool));
+        $fallback = $this->composeMixed($gender) . ' #' . Str::lower(Str::random(3));
+        $usedNormalized[] = $this->normalizeText($fallback);
+
+        return $fallback;
+    }
+
+    private function pickCommentStyle(): string
+    {
+        $roll = random_int(1, 100);
+        if ($roll <= 38) {
+            return 'en';
+        }
+        if ($roll <= 72) {
+            return 'mixed';
         }
 
-        $comment = $available[array_rand($available)];
-        $used[] = $comment;
+        return 'ur';
+    }
 
-        if ($pool === self::COMMENTS_EN && random_int(0, 4) === 0) {
-            $suffixes = ['', '', ' 👍', ' Highly recommended.', ' JazakAllah.', ''];
-            $comment .= $suffixes[array_rand($suffixes)];
+    private function composeEnglish(string $gender): string
+    {
+        $openings = [
+            'Really liked this.',
+            'Solid buy.',
+            'Happy with the purchase.',
+            'Better than expected.',
+            'Nice find.',
+            'Good experience overall.',
+            'Worth ordering.',
+            'Came as shown.',
+            'Pleasantly surprised.',
+            'No regrets on this one.',
+        ];
+
+        $quality = [
+            'Quality feels neat and tidy.',
+            'Material/feel is better than the price suggests.',
+            'Finishing looks clean.',
+            'Looks premium in hand.',
+            'Stitching and edges are neat.',
+            'Soft feel and decent build.',
+            'Color is close to the photos.',
+            'Slight shade difference in light, still fine.',
+            'Durable enough for daily use.',
+            'Packing protected it well.',
+        ];
+
+        $delivery = [
+            'Delivery was quick.',
+            'Arrived on time.',
+            'Packaging was careful.',
+            'Courier experience was smooth.',
+            'Got it sooner than expected.',
+            '',
+            '',
+        ];
+
+        $closingsMale = [
+            'I will order again.',
+            'Recommended.',
+            'Family liked it too.',
+            'Value for money.',
+            'Thanks.',
+            'Will recommend to friends.',
+            'Exactly what I needed.',
+        ];
+
+        $closingsFemale = [
+            'I will order again.',
+            'Recommended.',
+            'Family liked it too.',
+            'Value for money.',
+            'Thanks.',
+            'Will recommend to friends.',
+            'Exactly what I needed.',
+        ];
+
+        $parts = [
+            $openings[array_rand($openings)],
+            $quality[array_rand($quality)],
+        ];
+
+        $deliveryLine = $delivery[array_rand($delivery)];
+        if ($deliveryLine !== '') {
+            $parts[] = $deliveryLine;
         }
 
-        return trim($comment);
+        $closings = $gender === 'female' ? $closingsFemale : $closingsMale;
+        if (random_int(0, 1) === 1) {
+            $parts[] = $closings[array_rand($closings)];
+        }
+
+        $extra = ['', '', ' 👍', ' Highly recommended.', ' JazakAllah.'];
+
+        return implode(' ', $parts) . $extra[array_rand($extra)];
+    }
+
+    private function composeMixed(string $gender): string
+    {
+        $openings = [
+            'Bohot acha experience raha.',
+            'Product solid nikla.',
+            'Worth it bilkul.',
+            'Same as shown.',
+            'Overall satisfied.',
+            'Zabardast deal mili.',
+            'Theek thaak aur kaam ki cheez.',
+            'Happy with order.',
+            'Photo jaisi quality.',
+            'Mujhe pasand aa gaya.',
+        ];
+
+        $quality = [
+            'Quality achi hai.',
+            'Material soft hai.',
+            'Finishing clean hai.',
+            'Stitching strong lagi.',
+            'Color almost exact hai.',
+            'Packing zabardast thi.',
+            'Feel premium hai.',
+            'Daily use ke liye perfect.',
+            'Local market se better mila.',
+            'Size chart follow kiya to fit theek aa gaya.',
+        ];
+
+        $delivery = [
+            'Delivery bhi fast hui.',
+            'Time pe aa gaya.',
+            'Courier smooth tha.',
+            'Thori delay thi warna perfect.',
+            '',
+            '',
+        ];
+
+        $closingsMale = [
+            'Dobara lunga.',
+            'Recommend karta hun.',
+            'Ghar walon ko pasand aa gaya.',
+            'Paisay wasool.',
+            'Will order again inshaAllah.',
+            'No complaint.',
+        ];
+
+        $closingsFemale = [
+            'Dobara lungi.',
+            'Recommend karti hun.',
+            'Ghar walon ko pasand aa gaya.',
+            'Paisay wasool.',
+            'Will order again inshaAllah.',
+            'No complaint.',
+        ];
+
+        $parts = [
+            $openings[array_rand($openings)],
+            $quality[array_rand($quality)],
+        ];
+
+        $deliveryLine = $delivery[array_rand($delivery)];
+        if ($deliveryLine !== '') {
+            $parts[] = $deliveryLine;
+        }
+
+        $closings = $gender === 'female' ? $closingsFemale : $closingsMale;
+        $parts[] = $closings[array_rand($closings)];
+
+        if ($deliveryLine !== '' && random_int(0, 1) === 1) {
+            $parts[] = $deliveryLine;
+        }
+        $parts[] = $closings[array_rand($closings)];
+
+        return implode(' ', $parts);
+    }
+
+    private function composeUrdu(string $gender): string
+    {
+        $openings = [
+            'بہت اچھا تجربہ رہا۔',
+            'پروڈکٹ زبردست نکلا۔',
+            'تصاویر جیسا ہی ملا۔',
+            'مجھے پسند آیا۔',
+            'اچھی خریداری ہے۔',
+            'بالکل ویسا ہی ہے جیسا دکھایا گیا تھا۔',
+            'قیمت کے حساب سے بہتر ہے۔',
+            'سمپل مگر کام کی چیز ہے۔',
+        ];
+
+        $quality = [
+            'کوالٹی صاف اور اچھی ہے۔',
+            'مٹیریل نرم اور فنشنگ درست ہے۔',
+            'سلائی مضبوط لگتی ہے۔',
+            'رنگ تقریباً ویسا ہی ہے۔',
+            'پیکنگ محفوظ تھی۔',
+            'روزانہ استعمال کے لیے مناسب ہے۔',
+            'مقامی مارکیٹ سے بہتر ملا۔',
+            'فٹنگ درست ہے۔',
+        ];
+
+        $delivery = [
+            'ڈیلیوری وقت پر ہو گئی۔',
+            'کورئیر کا تجربہ اچھا رہا۔',
+            'جلد موصول ہو گیا۔',
+            '',
+            '',
+        ];
+
+        $closingsMale = [
+            'دوبارہ لوں گا۔',
+            'تجویز کرتا ہوں۔',
+            'فیملی کو بھی پسند آیا۔',
+            'پیسے کے قابل ہے۔',
+            'مطمئن ہوں۔',
+            'شکریہ۔',
+        ];
+
+        $closingsFemale = [
+            'دوبارہ لوں گی۔',
+            'تجویز کرتی ہوں۔',
+            'فیملی کو بھی پسند آیا۔',
+            'پیسے کے قابل ہے۔',
+            'مطمئن ہوں۔',
+            'شکریہ۔',
+        ];
+
+        $parts = [
+            $openings[array_rand($openings)],
+            $quality[array_rand($quality)],
+        ];
+
+        $deliveryLine = $delivery[array_rand($delivery)];
+        if ($deliveryLine !== '') {
+            $parts[] = $deliveryLine;
+        }
+
+        $closings = $gender === 'female' ? $closingsFemale : $closingsMale;
+        $parts[] = $closings[array_rand($closings)];
+
+        return implode(' ', $parts);
+    }
+
+    private function normalizeText(string $text): string
+    {
+        $text = mb_strtolower(trim($text));
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+        $text = preg_replace('/[^\p{L}\p{N}\s]+/u', '', $text) ?? $text;
+
+        return trim($text);
     }
 
     private function pickStar(): int
