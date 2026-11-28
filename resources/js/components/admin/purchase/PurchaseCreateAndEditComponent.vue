@@ -16,13 +16,13 @@
             </div>
 
             <div class="po-grid">
-                <section class="po-card">
+                <section class="po-card po-card--details">
                     <div class="po-card__head">
                         <h2 class="po-card__title">{{ $t('label.purchase_details') }}</h2>
                     </div>
                     <div class="po-card__body">
                         <div class="row">
-                            <div class="form-col-12 sm:form-col-6 po-field-overflow">
+                            <div class="form-col-12 sm:form-col-6 lg:form-col-3 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.date') }}</label>
                                 <Datepicker
                                     hideInputIcon
@@ -41,12 +41,12 @@
                                 </Datepicker>
                                 <small class="db-field-alert" v-if="errors.date">{{ errors.date[0] }}</small>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 lg:form-col-3">
                                 <label class="db-field-title">{{ $t('label.reference_no') }}</label>
                                 <input name="reference_no" v-model="props.form.reference_no" type="text" class="db-field-control" />
                                 <small class="db-field-alert" v-if="errors.reference_no">{{ errors.reference_no[0] }}</small>
                             </div>
-                            <div class="form-col-12 sm:form-col-6 po-field-overflow">
+                            <div class="form-col-12 sm:form-col-6 lg:form-col-3 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.status') }}</label>
                                 <vue-select
                                     v-model="props.form.status"
@@ -62,7 +62,7 @@
                                 />
                                 <small class="db-field-alert" v-if="errors.status">{{ errors.status[0] }}</small>
                             </div>
-                            <div class="form-col-12 sm:form-col-6">
+                            <div class="form-col-12 sm:form-col-6 lg:form-col-3">
                                 <label class="db-field-title">{{ $t('label.attachments') }}</label>
                                 <input
                                     @change="changeFile"
@@ -75,7 +75,7 @@
                                 />
                                 <small class="db-field-alert" v-if="errors.file">{{ errors.file[0] }}</small>
                             </div>
-                            <div class="form-col-12 po-field-overflow">
+                            <div class="form-col-12 lg:form-col-8 po-field-overflow">
                                 <label class="db-field-title required">{{ $t('label.supplier') }}</label>
                                 <div class="po-supplier">
                                     <vue-select
@@ -105,12 +105,12 @@
                     </div>
                 </section>
 
-                <section class="po-card">
+                <section class="po-card po-card--picker" :class="{ 'is-open': productSelectOpen }">
                     <div class="po-card__head">
                         <h2 class="po-card__title">{{ $t('label.add_products') }}</h2>
                         <p class="po-card__hint">{{ $t('message.selection_message') }}</p>
                     </div>
-                    <div class="po-card__body po-field-overflow">
+                    <div class="po-card__body">
                         <div class="po-product-pick">
                             <i class="lab lab-line-qrcode po-product-pick__icon" aria-hidden="true"></i>
                             <vue-select
@@ -122,9 +122,12 @@
                                 :closeOnSelect="true"
                                 :searchable="true"
                                 :clearOnClose="true"
-                                :max-height="320"
+                                :max-height="360"
+                                open-direction="bottom"
                                 :placeholder="products.length ? $t('label.select_one') : $t('message.purchase_no_catalog_products')"
                                 search-placeholder="--"
+                                @opened="productSelectOpen = true"
+                                @closed="productSelectOpen = false"
                                 @update:modelValue="selectProduct($event)"
                             >
                                 <template #dropdown-item="{ option }">
@@ -150,7 +153,7 @@
                     </div>
                 </section>
 
-                <section class="po-card po-card--wide">
+                <section class="po-card po-card--table">
                     <div class="po-card__head po-card__head--row">
                         <h2 class="po-card__title">{{ $t('label.products') }}</h2>
                         <span class="po-chip" v-if="datatable.length">{{ datatable.length }} {{ $t('label.items') }}</span>
@@ -234,7 +237,7 @@
                     </div>
                 </section>
 
-                <section class="po-card po-card--wide">
+                <section class="po-card po-card--note">
                     <div class="po-card__head">
                         <h2 class="po-card__title">{{ $t('label.note') }}</h2>
                     </div>
@@ -345,6 +348,7 @@ export default {
                 mode: 'add'
             },
             dataTableIndex: null,
+            productSelectOpen: false,
             defaultProductImage: (ENV.API_URL || '') + '/images/default/product/thumb.png',
         }
     },
@@ -720,6 +724,7 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    position: relative;
 }
 
 .po-card {
@@ -728,6 +733,25 @@ export default {
     border-radius: 1rem;
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
     overflow: visible;
+    position: relative;
+    z-index: 1;
+}
+
+.po-card--details {
+    z-index: 2;
+}
+
+.po-card--picker {
+    z-index: 40;
+}
+
+.po-card--picker.is-open {
+    z-index: 80;
+}
+
+.po-card--table,
+.po-card--note {
+    z-index: 1;
 }
 
 .po-field-overflow {
@@ -784,7 +808,8 @@ export default {
 
 .po-product-pick {
     position: relative;
-    z-index: 5;
+    z-index: 50;
+    max-width: 42rem;
 }
 
 .po-product-pick__icon {
@@ -809,10 +834,14 @@ export default {
     font-weight: 600;
 }
 
-.po-product-pick :deep([data-is-focusing="true"]),
-.po-product-pick :deep(.vue-select),
 .po-product-pick :deep([role="listbox"]) {
-    z-index: 40;
+    z-index: 100 !important;
+    min-width: 100%;
+    max-width: min(42rem, 92vw);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
 }
 
 .po-option {
@@ -906,15 +935,13 @@ export default {
     font-weight: 700;
 }
 
-@media (min-width: 1024px) {
-    .po-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
+@media (max-width: 767px) {
+    .po-product-pick {
+        max-width: 100%;
     }
 
-    .po-card--wide {
-        grid-column: 1 / -1;
+    .po-product-pick :deep([role="listbox"]) {
+        max-width: 100%;
     }
 }
 </style>
